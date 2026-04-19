@@ -742,14 +742,9 @@ async function updateCompany(companyId, fields) {
 }
 
 async function joinCompanyByCode(code, userId) {
-  const { data: co, error } = await supabase.from("companies")
-    .select("id").eq("invite_code", code.trim().toUpperCase()).single();
-  if (error || !co) throw new Error("Invalid invite code — check and try again.");
-  const { error: me } = await supabase.from("company_members")
-    .insert({ company_id: co.id, user_id: userId, role: "member" });
-  if (me && me.code !== "23505") throw me;
-  await supabase.from("profiles").update({ company_id: co.id }).eq("id", userId);
-  return co.id;
+  const { data, error } = await supabase.rpc("join_company_by_invite", { invite_code_input: code.trim() });
+  if (error) throw new Error("Invalid invite code — check and try again.");
+  return data;
 }
 
 async function leaveCompany(companyId, userId) {
