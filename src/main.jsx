@@ -695,7 +695,7 @@ async function upsertMachine(machine) {
   const { error } = await supabase
     .from("machines")
     .upsert(row, { onConflict: "id" });
-  if (error) console.error("upsertMachine:", error);
+  if (error) { console.error("upsertMachine:", error); throw error; }
 }
 
 async function upsertService(machineId, s) {
@@ -4524,13 +4524,18 @@ function Tracker({machines,setMachines,company,profile}){
 
   const addM=async m=>{
     setSaving(true);
-    await upsertMachine(m);
-    setMachines(prev=>[m,...prev]);
-    setSaving(false);setShowAdd(false);
+    try{
+      await upsertMachine(m);
+      setMachines(prev=>[m,...prev]);
+      setShowAdd(false);
+    }catch(e){alert("Save failed: "+e.message);}
+    setSaving(false);
   };
   const updateM=async m=>{
-    await upsertMachine(m);
-    setMachines(prev=>prev.map(x=>x.id===m.id?m:x));
+    try{
+      await upsertMachine(m);
+      setMachines(prev=>prev.map(x=>x.id===m.id?m:x));
+    }catch(e){alert("Save failed: "+e.message);}
   };
   const deleteM=async m=>{
     if(!confirm(`Delete "${m.name}" and all its history?`))return;
