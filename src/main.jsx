@@ -4745,7 +4745,6 @@ function AuthScreen(){
           Never forget a torque<br/>value again.
         </div>
         <div style={{fontSize:10,color:MUT,lineHeight:1.8,marginTop:8}}>
-          Free forever.
         </div>
         <div style={{marginTop:48,display:"flex",flexDirection:"column",gap:12}}>
           {["Track full engine specs, fasteners & torque values","Service history with photo logging","Spec search across your entire inventory","Wiki coming soon — community spec database"].map((f,i)=>(
@@ -4837,7 +4836,7 @@ function AuthScreen(){
           </div>}
 
           <div style={{fontSize:8,color:"#333",textAlign:"center",marginTop:32,lineHeight:1.8}}>
-            Free forever · Your data stays yours<br/>
+            Your data stays yours<br/>
             <span style={{color:"#2a2a2a"}}>ratbench.net</span>
           </div>
         </div>
