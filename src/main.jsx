@@ -5726,7 +5726,7 @@ function WikiHomePage(){
             <div style={{background:SURF,border:"1px solid "+BRD,padding:"12px 16px",borderRadius:2,cursor:"pointer"}}>
               <div style={{fontSize:13,fontWeight:700,color:ACC,marginBottom:4}}>{e.make} {e.model}</div>
               <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-                {e.category&&<span style={{fontSize:10,color:MUT}}>{e.category}</span>}
+                {(e.type||e.category)&&<span style={{fontSize:10,color:MUT}}>{e.type||e.category}</span>}
                 {e.year&&<span style={{fontSize:10,color:MUT}}>{e.year}</span>}
                 {e.engine_make&&<span style={{fontSize:10,color:MUT}}>Engine: {e.engine_make}{e.engine_model?" "+e.engine_model:""}</span>}
                 <span style={{fontSize:10,color:MUT,marginLeft:"auto"}}>{e.view_count||0} views</span>
@@ -5759,22 +5759,41 @@ const WIKI_FIELD_LABELS={
   notes:"Notes",
 };
 
-function WikiEntryPage({slug}){
+function WikiEntryPage({slug,profile}){
   const [entry,setEntry]=React.useState(null);
   const [loading,setLoading]=React.useState(true);
   const [notFound,setNotFound]=React.useState(false);
+  const [editing,setEditing]=React.useState(false);
+  const [form,setForm]=React.useState({});
+  const [summary,setSummary]=React.useState("");
+  const [saving,setSaving]=React.useState(false);
+  const [saveErr,setSaveErr]=React.useState("");
 
   React.useEffect(()=>{
     (async()=>{
       const e=await getWikiEntryBySlug(slug);
       if(!e){setNotFound(true);}
-      else{
-        setEntry(e);
-        incrementViewCount(e.id);
-      }
+      else{setEntry(e);incrementViewCount(e.id);}
       setLoading(false);
     })();
   },[slug]);
+
+  const startEdit=()=>{
+    const d=entry.currentRevision?.data||{};
+    setForm(Object.fromEntries(Object.keys(WIKI_FIELD_LABELS).map(k=>[k,d[k]??entry[k]??""])));
+    setSummary("");setSaveErr("");setEditing(true);
+  };
+
+  const doSave=async()=>{
+    if(!summary.trim()){setSaveErr("Edit summary required.");return;}
+    setSaving(true);setSaveErr("");
+    try{
+      const rev=await saveWikiRevision(entry.id,form,summary,profile);
+      setEntry(e=>({...e,currentRevision:rev}));
+      setEditing(false);
+    }catch(e){setSaveErr(e.message);}
+    setSaving(false);
+  };
 
   if(loading) return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -5789,7 +5808,9 @@ function WikiEntryPage({slug}){
     </div>
   );
 
-  const fields=Object.entries(WIKI_FIELD_LABELS).filter(([k])=>entry[k]!=null&&entry[k]!=="");
+  const revData=entry.currentRevision?.data||{};
+  const fields=Object.entries(WIKI_FIELD_LABELS).filter(([k])=>{const v=revData[k]??entry[k];return v!=null&&v!=="";});
+  const inp={width:"100%",boxSizing:"border-box",background:BG,border:"1px solid "+BRD,color:TXT,fontFamily:"'IBM Plex Mono',monospace",fontSize:11,padding:"5px 8px",borderRadius:2,outline:"none"};
 
   return(
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>
@@ -5806,26 +5827,65 @@ function WikiEntryPage({slug}){
           <div style={{fontSize:10,color:MUT}}>{entry.view_count||0} views</div>
           <div style={{display:"flex",gap:8}}>
             <a href={"/"+slug+"/history"} style={{fontSize:9,color:MUT,textDecoration:"none",border:"1px solid "+BRD,padding:"4px 8px"}}>History</a>
-            <a href={"https://ratbench.net"} style={{fontSize:9,color:ACC,textDecoration:"none",border:"1px solid "+ACC,padding:"4px 8px"}}>Edit ↗</a>
+            {profile
+              ? editing
+                ? <button onClick={()=>setEditing(false)} style={{...btnG,...sm,fontSize:9}}>Cancel</button>
+                : <button onClick={startEdit} style={{...btnG,...sm,fontSize:9,borderColor:ACC,color:ACC}}>Edit</button>
+              : <a href="https://ratbench.net" style={{fontSize:9,color:MUT,textDecoration:"none",border:"1px solid "+BRD,padding:"4px 8px"}}>Login to edit</a>
+            }
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {fields.map(([k,label])=>(
-            <div key={k} style={{background:SURF,border:"1px solid "+BRD,padding:"8px 12px",borderRadius:2}}>
-              <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:2}}>{label}</div>
-              <div style={{fontSize:12,color:TXT}}>{String(entry[k])}</div>
+
+        {editing?(
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+              {Object.entries(WIKI_FIELD_LABELS).map(([k,label])=>(
+                <div key={k}>
+                  <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>{label}</div>
+                  <input value={form[k]||""} onChange={ev=>setForm(f=>({...f,[k]:ev.target.value}))} style={inp}/>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        {fields.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",marginTop:40}}>No spec data yet.</div>}
+            <div style={{marginBottom:8}}>
+              <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>Edit Summary *</div>
+              <input value={summary} onChange={e=>setSummary(e.target.value)} placeholder="What did you change?" style={{...inp,width:"100%"}}/>
+            </div>
+            {saveErr&&<div style={{fontSize:10,color:RED,marginBottom:8}}>{saveErr}</div>}
+            <button onClick={doSave} disabled={saving} style={{...btnG,fontSize:10,background:ACC,color:BG,border:"none",padding:"8px 20px"}}>
+              {saving?"Saving…":"Save"}
+            </button>
+          </div>
+        ):(
+          <>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {fields.map(([k,label])=>(
+                <div key={k} style={{background:SURF,border:"1px solid "+BRD,padding:"8px 12px",borderRadius:2}}>
+                  <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:2}}>{label}</div>
+                  <div style={{fontSize:12,color:TXT}}>{String(revData[k]??entry[k])}</div>
+                </div>
+              ))}
+            </div>
+            {fields.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",marginTop:40}}>No spec data yet.</div>}
+          </>
+        )}
       </div>
     </div>
   );
 }
 
 function WikiApp(){
+  const [profile,setProfile]=React.useState(null);
   const path=window.location.pathname.replace(/^\/+/,"").replace(/\/+$/,"");
-  if(path) return <WikiEntryPage slug={path}/>;
+
+  React.useEffect(()=>{
+    supabase.auth.getSession().then(async({data:{session}})=>{
+      if(!session)return;
+      const{data}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+      if(data)setProfile(data);
+    });
+  },[]);
+
+  if(path) return <WikiEntryPage slug={path} profile={profile}/>;
   return <WikiHomePage/>;
 }
 
