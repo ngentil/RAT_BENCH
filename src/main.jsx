@@ -5673,4 +5673,17 @@ function App(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<React.StrictMode><App /></React.StrictMode>);
+function WikiApp(){
+  return(
+    <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
+      <div style={{fontSize:32}}>🐀</div>
+      <div style={{fontSize:16,fontWeight:700,color:ACC,letterSpacing:"0.08em",textTransform:"uppercase"}}>Rat Bench Wiki</div>
+      <div style={{fontSize:10,color:MUT}}>Coming soon</div>
+    </div>
+  );
+}
+
+const isWiki=window.location.hostname==="wiki.ratbench.net";
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>{isWiki?<WikiApp/>:<App/>}</React.StrictMode>
+);
