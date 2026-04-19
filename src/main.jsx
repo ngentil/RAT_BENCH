@@ -1536,9 +1536,10 @@ function AttachForm({a,onSave,onCancel}){
 }
 
 // ── Machine Form ──────────────────────────────────────────────────────────────
-function MachineForm({existing,onSave,onClose}){
+function MachineForm({existing,onSave,onClose,company}){
   const e=existing||{};
   const isNew=true;
+  const [companyId,setCompanyId]=useState(e.companyId||null);
   const [type,setType]=useState(e.type||"");
   const [name,setName]=useState(e.name||"");
   const [make,setMake]=useState(e.make||"");
@@ -1939,7 +1940,7 @@ function MachineForm({existing,onSave,onClose}){
       setName(finalName);
     }
     if(!isTracked(type)&&!finalName){setNameErr(true);return;}
-    onSave({id:e.id||uid(),type,name:finalName,make:make.trim(),model:model.trim(),
+    onSave({id:e.id||uid(),companyId:companyId||null,type,name:finalName,make:make.trim(),model:model.trim(),
       desc:desc.trim(),source,status,photos,year:year.trim(),colour:colour.trim(),bodyType,driveConfig,plugType:plugType.trim(),strokeType,motorType,motorPower:motorPower.toString(),motorTorque:motorTorque.toString(),controllerBrand:controllerBrand.trim(),packVoltage:packVoltage.toString(),packCapacity:packCapacity.toString(),battChemistry,cellCount:cellCount.toString(),chargePort,maxChargeRate:maxChargeRate.toString(),evRange:evRange.toString(),regenBraking,cylCount,firingOrder:firingOrder.trim(),valveTrain,locknutSize,camType,
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
       iValveFace:iValveFace.toString().trim(),iValveStem:iValveStem.toString().trim(),iValveLift:iValveLift.toString().trim(),iValveWeight:iValveWeight.toString().trim(),
@@ -1981,6 +1982,13 @@ function MachineForm({existing,onSave,onClose}){
         </div>
         {showSectionPicker&&<SectionPicker selected={customSections} onSave={secs=>{setCustomSections(secs);setShowSectionPicker(false);}} onClose={()=>setShowSectionPicker(false)} />}
         <div style={mdlB}>
+          {company&&<div style={{marginBottom:14}}>
+            <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:6}}>Assign to</div>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>setCompanyId(null)} style={{...btnG,...sm,...(!companyId?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}}>Personal</button>
+              <button onClick={()=>setCompanyId(company.id)} style={{...btnG,...sm,...(companyId?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}}>{company.name}</button>
+            </div>
+          </div>}
 
           {/* ── Section header helper inline ── */}
           {/* Basic Info */}
@@ -4036,7 +4044,7 @@ function exportMachinePDF(m, svcs){
   doc.save((m.name||"machine").replace(/[^a-z0-9]/gi,"_")+"_ratbench.pdf");
 }
 
-function MachineCard({machine,onUpdate,onDelete}){
+function MachineCard({machine,onUpdate,onDelete,company}){
   const [open,setOpen]=useState(false);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -4125,7 +4133,7 @@ function MachineCard({machine,onUpdate,onDelete}){
   return (
     <div style={{background:SURF,border:"1px solid "+BRD,borderRadius:3,marginBottom:8,overflow:"hidden"}}>
       {fullImg&&<div onClick={()=>setFullImg(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}><img src={fullImg} alt="" style={{maxWidth:"95vw",maxHeight:"95vh",objectFit:"contain"}} /></div>}
-      {showEdit&&<MachineForm existing={m} onSave={u=>{onUpdate(u);setShowEdit(false);}} onClose={()=>setShowEdit(false)} />}
+      {showEdit&&<MachineForm existing={m} onSave={u=>{onUpdate(u);setShowEdit(false);}} onClose={()=>setShowEdit(false)} company={company}/>}
       {showConfig&&<TileConfig machine={m} onSave={u=>{onUpdate(u);setShowConfig(false);}} onClose={()=>setShowConfig(false)} />
       }
       {showExpandConfig&&<ExpandConfig machine={m} onSave={u=>{onUpdate(u);setShowExpandConfig(false);}} onClose={()=>setShowExpandConfig(false)} />}
@@ -4262,7 +4270,7 @@ function MachineCard({machine,onUpdate,onDelete}){
 }
 
 // ── Tracker ───────────────────────────────────────────────────────────────────
-function Tracker({machines,setMachines}){
+function Tracker({machines,setMachines,company}){
   const [showAdd,setShowAdd]=useState(false);
   const [saving,setSaving]=useState(false);
   const [dragIdx,setDragIdx]=useState(null);
@@ -4324,7 +4332,7 @@ function Tracker({machines,setMachines}){
 
   return (
     <div style={{padding:16,flex:1}}>
-      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} /></ErrorBoundary>}
+      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company}/></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
           <div style={{...mdl,maxHeight:"70vh"}} onClick={ev=>ev.stopPropagation()}>
@@ -4378,7 +4386,7 @@ function Tracker({machines,setMachines}){
             transition:"opacity 0.15s,border-color 0.1s",
           }}
         >
-          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} />
+          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company}/>
         </div>
       ))}
     </div>
@@ -5437,7 +5445,7 @@ function App(){
           </button>
         ))}
       </div>
-      {tab==="tracker" &&<Tracker     machines={machines} setMachines={setMachines} />}
+      {tab==="tracker" &&<Tracker     machines={machines} setMachines={setMachines} company={company}/>}
       {tab==="jobs"    &&<JobBoard    machines={machines} setMachines={setMachines} />}
       {tab==="search"  &&<SpecSearch  machines={machines} />}
       {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut}/>}
