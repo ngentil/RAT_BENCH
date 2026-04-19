@@ -1472,6 +1472,7 @@ function AttachForm({a,onSave,onCancel}){
 // ── Machine Form ──────────────────────────────────────────────────────────────
 function MachineForm({existing,onSave,onClose}){
   const e=existing||{};
+  const isNew=!existing;
   const [type,setType]=useState(e.type||"");
   const [name,setName]=useState(e.name||"");
   const [make,setMake]=useState(e.make||"");
@@ -1839,7 +1840,6 @@ function MachineForm({existing,onSave,onClose}){
   const [outputShaftThread,setOutputShaftThread]=useState(e.outputShaftThread||"");
   const [propShaftDiameter,setPropShaftDiameter]=useState(e.propShaftDiameter||"");
   const [gearboxShaftNotes,setGearboxShaftNotes]=useState(e.gearboxShaftNotes||"");
-  const isNew=true;
   const [editEngine,setEditEngine]=useState(isNew);
   const [editIgnition,setEditIgnition]=useState(isNew);
   const [editStarter,setEditStarter]=useState(isNew);
