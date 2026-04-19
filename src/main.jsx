@@ -1852,15 +1852,15 @@ function MachineForm({existing,onSave,onClose}){
   const [fastAdding,setFastAdding]=useState(false);
 
   const save=()=>{
-    // Auto-generate name for tracked machines
-    if(isTracked(type)&&!name.trim()){
+    let finalName=name.trim();
+    if(isTracked(type)&&!finalName){
       const brand=trackedBrand==="Other"?(trackedBrandOther||"Tracked"):trackedBrand||"Tracked";
       const sub=trackedSubtype==="Other"?(trackedSubtypeOther||"Machine"):trackedSubtype||"Machine";
-      const autoName=[brand,model||sub].filter(Boolean).join(" ");
-      setName(autoName);
+      finalName=[brand,model||sub].filter(Boolean).join(" ");
+      setName(finalName);
     }
-    if(!isTracked(type)&&!name.trim()){setNameErr(true);return;}
-    onSave({id:e.id||uid(),type,name:name.trim(),make:make.trim(),model:model.trim(),
+    if(!isTracked(type)&&!finalName){setNameErr(true);return;}
+    onSave({id:e.id||uid(),type,name:finalName,make:make.trim(),model:model.trim(),
       desc:desc.trim(),source,status,photos,year:year.trim(),colour:colour.trim(),bodyType,driveConfig,plugType:plugType.trim(),strokeType,motorType,motorPower:motorPower.toString(),motorTorque:motorTorque.toString(),controllerBrand:controllerBrand.trim(),packVoltage:packVoltage.toString(),packCapacity:packCapacity.toString(),battChemistry,cellCount:cellCount.toString(),chargePort,maxChargeRate:maxChargeRate.toString(),evRange:evRange.toString(),regenBraking,cylCount,firingOrder:firingOrder.trim(),valveTrain,locknutSize,camType,
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
       iValveFace:iValveFace.toString().trim(),iValveStem:iValveStem.toString().trim(),iValveLift:iValveLift.toString().trim(),iValveWeight:iValveWeight.toString().trim(),
