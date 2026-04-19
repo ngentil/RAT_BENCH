@@ -1472,7 +1472,7 @@ function AttachForm({a,onSave,onCancel}){
 // ── Machine Form ──────────────────────────────────────────────────────────────
 function MachineForm({existing,onSave,onClose}){
   const e=existing||{};
-  const isNew=!existing;
+  const isNew=true;
   const [type,setType]=useState(e.type||"");
   const [name,setName]=useState(e.name||"");
   const [make,setMake]=useState(e.make||"");
