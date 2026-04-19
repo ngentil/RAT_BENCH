@@ -4747,7 +4747,7 @@ function AuthScreen(){
         <div style={{fontSize:10,color:MUT,lineHeight:1.8,marginTop:8}}>
         </div>
         <div style={{marginTop:48,display:"flex",flexDirection:"column",gap:12}}>
-          {["Track full engine specs, fasteners & torque values","Service history with photo logging","Spec search across your entire inventory","Wiki coming soon — community spec database"].map((f,i)=>(
+          {["Track full engine specs, fasteners & torque values","Service history with photo logging","Spec search across your entire inventory"].map((f,i)=>(
             <div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,fontSize:10,color:"#666"}}>
               <span style={{color:ACC,flexShrink:0}}>✓</span>{f}
             </div>
