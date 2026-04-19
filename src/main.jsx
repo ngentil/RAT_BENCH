@@ -5673,14 +5673,160 @@ function App(){
   );
 }
 
-function WikiApp(){
+function WikiHomePage(){
+  const [query,setQuery]=React.useState("");
+  const [results,setResults]=React.useState([]);
+  const [recent,setRecent]=React.useState([]);
+  const [searching,setSearching]=React.useState(false);
+
+  React.useEffect(()=>{
+    searchWiki("").then(r=>setRecent(r||[]));
+  },[]);
+
+  React.useEffect(()=>{
+    if(!query.trim()){setResults([]);return;}
+    const t=setTimeout(async()=>{
+      setSearching(true);
+      const r=await searchWiki(query);
+      setResults(r||[]);
+      setSearching(false);
+    },300);
+    return()=>clearTimeout(t);
+  },[query]);
+
+  const list=query.trim()?results:recent;
+
   return(
-    <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
-      <div style={{fontSize:32}}>🐀</div>
-      <div style={{fontSize:16,fontWeight:700,color:ACC,letterSpacing:"0.08em",textTransform:"uppercase"}}>Rat Bench Wiki</div>
-      <div style={{fontSize:10,color:MUT}}>Coming soon</div>
+    <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>
+      <div style={{background:SURF,borderBottom:"2px solid "+ACC,padding:"12px 18px",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:20}}>🐀</span>
+        <div>
+          <div style={{fontSize:17,fontWeight:700,color:ACC,letterSpacing:"0.04em",textTransform:"uppercase"}}>Rat Bench Wiki</div>
+          <div style={{fontSize:9,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:1}}>community machine specs</div>
+        </div>
+        <div style={{marginLeft:"auto"}}>
+          <a href="https://ratbench.net" style={{fontSize:9,color:MUT,textDecoration:"none",letterSpacing:"0.06em"}}>← App</a>
+        </div>
+      </div>
+      <div style={{maxWidth:680,margin:"0 auto",padding:"24px 16px"}}>
+        <input
+          value={query}
+          onChange={e=>setQuery(e.target.value)}
+          placeholder="Search machines..."
+          style={{width:"100%",boxSizing:"border-box",background:SURF,border:"1px solid "+BRD,color:TXT,fontFamily:"'IBM Plex Mono',monospace",fontSize:13,padding:"10px 14px",borderRadius:2,outline:"none",marginBottom:20}}
+        />
+        {searching&&<div style={{fontSize:10,color:MUT,marginBottom:12}}>Searching…</div>}
+        {list.length===0&&!searching&&(
+          <div style={{fontSize:10,color:MUT,textAlign:"center",marginTop:40}}>
+            {query.trim()?"No results.":"No wiki entries yet."}
+          </div>
+        )}
+        {list.map(e=>(
+          <a key={e.id} href={"/"+e.slug} style={{display:"block",textDecoration:"none",marginBottom:10}}>
+            <div style={{background:SURF,border:"1px solid "+BRD,padding:"12px 16px",borderRadius:2,cursor:"pointer"}}>
+              <div style={{fontSize:13,fontWeight:700,color:ACC,marginBottom:4}}>{e.make} {e.model}</div>
+              <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                {e.category&&<span style={{fontSize:10,color:MUT}}>{e.category}</span>}
+                {e.year&&<span style={{fontSize:10,color:MUT}}>{e.year}</span>}
+                {e.engine_make&&<span style={{fontSize:10,color:MUT}}>Engine: {e.engine_make}{e.engine_model?" "+e.engine_model:""}</span>}
+                <span style={{fontSize:10,color:MUT,marginLeft:"auto"}}>{e.view_count||0} views</span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
     </div>
   );
+}
+
+const WIKI_FIELD_LABELS={
+  make:"Make",model:"Model",category:"Category",year:"Year",serial_number:"Serial No.",
+  engine_make:"Engine Make",engine_model:"Engine Model",engine_type:"Engine Type",
+  engine_cc:"Engine cc",engine_hp:"Engine HP",engine_kw:"Engine kW",
+  engine_serial:"Engine Serial",engine_notes:"Engine Notes",
+  blade_size:"Blade Size",blade_count:"Blade Count",
+  deck_size:"Deck Size (in)",deck_material:"Deck Material",
+  drive_type:"Drive Type",drive_speeds:"Drive Speeds",
+  fuel_type:"Fuel Type",fuel_mix:"Fuel Mix",fuel_tank_l:"Fuel Tank (L)",
+  oil_type:"Oil Type",oil_capacity_l:"Oil Capacity (L)",
+  spark_plug:"Spark Plug",plug_gap_mm:"Plug Gap (mm)",
+  air_filter:"Air Filter",oil_filter:"Oil Filter",
+  blade_bolt_nm:"Blade Bolt (Nm)",wheel_nut_nm:"Wheel Nut (Nm)",
+  tyre_size_front:"Tyre Front",tyre_size_rear:"Tyre Rear",tyre_pressure_front:"Tyre Psi Front",tyre_pressure_rear:"Tyre Psi Rear",
+  belt_drive:"Drive Belt",belt_blade:"Blade Belt",belt_alt:"Alt Belt",
+  battery_cca:"Battery CCA",battery_ah:"Battery Ah",
+  weight_kg:"Weight (kg)",length_mm:"Length (mm)",width_mm:"Width (mm)",height_mm:"Height (mm)",
+  notes:"Notes",
+};
+
+function WikiEntryPage({slug}){
+  const [entry,setEntry]=React.useState(null);
+  const [loading,setLoading]=React.useState(true);
+  const [notFound,setNotFound]=React.useState(false);
+
+  React.useEffect(()=>{
+    (async()=>{
+      const e=await getWikiEntryBySlug(slug);
+      if(!e){setNotFound(true);}
+      else{
+        setEntry(e);
+        incrementViewCount(e.id);
+      }
+      setLoading(false);
+    })();
+  },[slug]);
+
+  if(loading) return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{fontSize:10,color:MUT,fontFamily:"'IBM Plex Mono',monospace"}}>Loading…</div>
+    </div>
+  );
+
+  if(notFound) return(
+    <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
+      <div style={{fontSize:11,color:MUT}}>Entry not found.</div>
+      <a href="/" style={{fontSize:10,color:ACC}}>← Back to wiki</a>
+    </div>
+  );
+
+  const fields=Object.entries(WIKI_FIELD_LABELS).filter(([k])=>entry[k]!=null&&entry[k]!=="");
+
+  return(
+    <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>
+      <div style={{background:SURF,borderBottom:"2px solid "+ACC,padding:"12px 18px",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontSize:20}}>🐀</span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:17,fontWeight:700,color:ACC,letterSpacing:"0.04em",textTransform:"uppercase"}}>{entry.make} {entry.model}</div>
+          <div style={{fontSize:9,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:1}}>Rat Bench Wiki</div>
+        </div>
+        <a href="/" style={{fontSize:9,color:MUT,textDecoration:"none",letterSpacing:"0.06em"}}>← Wiki</a>
+      </div>
+      <div style={{maxWidth:680,margin:"0 auto",padding:"24px 16px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:10,color:MUT}}>{entry.view_count||0} views</div>
+          <div style={{display:"flex",gap:8}}>
+            <a href={"/"+slug+"/history"} style={{fontSize:9,color:MUT,textDecoration:"none",border:"1px solid "+BRD,padding:"4px 8px"}}>History</a>
+            <a href={"https://ratbench.net"} style={{fontSize:9,color:ACC,textDecoration:"none",border:"1px solid "+ACC,padding:"4px 8px"}}>Edit ↗</a>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {fields.map(([k,label])=>(
+            <div key={k} style={{background:SURF,border:"1px solid "+BRD,padding:"8px 12px",borderRadius:2}}>
+              <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:2}}>{label}</div>
+              <div style={{fontSize:12,color:TXT}}>{String(entry[k])}</div>
+            </div>
+          ))}
+        </div>
+        {fields.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",marginTop:40}}>No spec data yet.</div>}
+      </div>
+    </div>
+  );
+}
+
+function WikiApp(){
+  const path=window.location.pathname.replace(/^\/+/,"").replace(/\/+$/,"");
+  if(path) return <WikiEntryPage slug={path}/>;
+  return <WikiHomePage/>;
 }
 
 const isWiki=window.location.hostname==="wiki.ratbench.net";
