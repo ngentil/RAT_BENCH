@@ -4,6 +4,19 @@ import { createClient } from '@supabase/supabase-js';
 import { jsPDF } from 'jspdf';
 import './index.css';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) return (
+      <div style={{padding:24,color:"#ff6b6b",fontFamily:"monospace",background:"#1a0000",border:"1px solid #ff3333",borderRadius:4,margin:16}}>
+        <b>Render error:</b><br/>{this.state.error.message}<br/><pre style={{fontSize:10,marginTop:8,whiteSpace:"pre-wrap"}}>{this.state.error.stack}</pre>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 
 
 // ── SUPABASE CONFIG ───────────────────────────────────────────────────────────
@@ -4245,7 +4258,7 @@ function Tracker({machines,setMachines}){
 
   return (
     <div style={{padding:16,flex:1}}>
-      {showAdd&&<MachineForm onSave={addM} onClose={()=>setShowAdd(false)} />}
+      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} /></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
           <div style={{...mdl,maxHeight:"70vh"}} onClick={ev=>ev.stopPropagation()}>
