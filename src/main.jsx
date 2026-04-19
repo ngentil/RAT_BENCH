@@ -30,6 +30,7 @@ function toDb(m) {
   return {
     id:                   m.id,
     user_id:              m.userId || null,
+    company_id:           m.companyId || null,
     client_id:            m.clientId || null,
     name:                 m.name,
     type:                 m.type,
@@ -337,6 +338,7 @@ function fromDb(r) {
     id:                r.id,
     userId:            r.user_id,
     clientId:          r.client_id,
+    companyId:         r.company_id || null,
     name:              r.name,
     type:              r.type,
     make:              r.make,
@@ -672,7 +674,6 @@ async function getMachines() {
   const { data, error } = await supabase
     .from("machines")
     .select("*")
-    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
   if (error) { console.error("getMachines:", error); return []; }
   return (data || []).map(fromDb);
