@@ -717,6 +717,76 @@ async function deleteServiceApi(id) {
   if (error) console.error("deleteService:", error);
 }
 
+// ── Company API ───────────────────────────────────────────────────────────────
+async function getMyCompany(companyId) {
+  if (!companyId) return null;
+  const { data, error } = await supabase.from("companies").select("*").eq("id", companyId).single();
+  if (error) return null;
+  return data;
+}
+
+async function createCompany(ownerId, fields) {
+  const { data: co, error } = await supabase.from("companies")
+    .insert({ ...fields, owner_id: ownerId }).select().single();
+  if (error) throw error;
+  await supabase.from("company_members").insert({ company_id: co.id, user_id: ownerId, role: "admin" });
+  await supabase.from("profiles").update({ company_id: co.id }).eq("id", ownerId);
+  return co;
+}
+
+async function updateCompany(companyId, fields) {
+  const { data, error } = await supabase.from("companies")
+    .update(fields).eq("id", companyId).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function joinCompanyByCode(code, userId) {
+  const { data: co, error } = await supabase.from("companies")
+    .select("id").eq("invite_code", code.trim().toUpperCase()).single();
+  if (error || !co) throw new Error("Invalid invite code — check and try again.");
+  const { error: me } = await supabase.from("company_members")
+    .insert({ company_id: co.id, user_id: userId, role: "member" });
+  if (me && me.code !== "23505") throw me;
+  await supabase.from("profiles").update({ company_id: co.id }).eq("id", userId);
+  return co.id;
+}
+
+async function leaveCompany(companyId, userId) {
+  await supabase.from("company_members").delete().eq("company_id", companyId).eq("user_id", userId);
+  await supabase.from("profiles").update({ company_id: null }).eq("id", userId);
+}
+
+async function getCompanyMembers(companyId) {
+  const { data: members } = await supabase.from("company_members").select("*").eq("company_id", companyId);
+  if (!members?.length) return [];
+  const { data: profiles } = await supabase.from("profiles")
+    .select("id, username, display_name").in("id", members.map(m => m.user_id));
+  const pm = {};
+  (profiles || []).forEach(p => { pm[p.id] = p; });
+  return members.map(m => ({ ...m, profile: pm[m.user_id] || {} }));
+}
+
+async function removeMember(companyId, userId) {
+  await supabase.from("company_members").delete().eq("company_id", companyId).eq("user_id", userId);
+  await supabase.from("profiles").update({ company_id: null }).eq("id", userId);
+}
+
+async function regenerateInviteCode(companyId) {
+  const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+  const { data, error } = await supabase.from("companies")
+    .update({ invite_code: code }).eq("id", companyId).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function updateProfile(userId, fields) {
+  const { data, error } = await supabase.from("profiles")
+    .update(fields).eq("id", userId).select().single();
+  if (error) throw error;
+  return data;
+}
+
 // ── constants ─────────────────────────────────────────────────────────────────
 const MACHINE_TYPES = [
   {icon:"🪚",label:"Chainsaw"},{icon:"🌿",label:"Trimmer"},{icon:"💨",label:"Blower"},
