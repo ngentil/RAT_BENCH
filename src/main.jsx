@@ -4593,7 +4593,6 @@ function Tracker({machines,setMachines,company,profile}){
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
           <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>
-              {machines.length>0&&<button style={{...btnG,...sm}} onClick={()=>exportAllMachinesPDF(machines)}>📄 All</button>}
         </div>
       </div>
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
