@@ -1239,7 +1239,7 @@ const getExpandFields = (type, strokeType) => EXPAND_SECTIONS.filter(f=>{
 });
 const getTileFields = (type) => TILE_FIELDS.filter(f=>!f.types||f.types.includes(type));
 
-const TABS        = [{id:"tracker",label:"📋 Tracker"},{id:"jobs",label:"🗂 Jobs"},{id:"search",label:"🔍 Search"},{id:"settings",label:"⚙️ Settings"}];
+const TABS        = [{id:"tracker",label:"📋 Tracker"},{id:"jobs",label:"🗂 Jobs"},{id:"search",label:"🔍 Search"}];
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const uid  = () => crypto.randomUUID();
