@@ -4491,6 +4491,27 @@ function MachineCard({machine,onUpdate,onDelete,company,profile}){
 }
 
 // ── Tracker ───────────────────────────────────────────────────────────────────
+function MachineTile({machine,onClick}){
+  const m=machine;
+  const photo=m.photos?.[0];
+  const icon=MACHINE_TYPES.find(t=>t.label===m.type)?.icon||"⚙️";
+  const sc=SCOL[m.status]||MUT;
+  return(
+    <div onClick={onClick} style={{background:SURF,border:"1px solid "+BRD,borderRadius:2,cursor:"pointer",overflow:"hidden",display:"flex",flexDirection:"column"}}>
+      <div style={{height:90,background:"#111",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0}}>
+        {photo
+          ? <img src={photo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+          : <span style={{fontSize:28,opacity:0.4}}>{icon}</span>}
+      </div>
+      <div style={{padding:"8px 10px",flex:1}}>
+        <div style={{fontSize:11,fontWeight:700,color:TXT,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{m.name||`${m.make||""} ${m.model||""}`.trim()||"Unnamed"}</div>
+        {(m.make||m.model)&&<div style={{fontSize:9,color:MUT,marginBottom:5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{m.make} {m.model}</div>}
+        <span style={{fontSize:8,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"2px 6px",borderRadius:2,background:SBG_[m.status]||"#222",color:sc,border:"1px solid "+sc+"55"}}>{m.status||"Active"}</span>
+      </div>
+    </div>
+  );
+}
+
 function Tracker({machines,setMachines,company,profile}){
   const [showAdd,setShowAdd]=useState(false);
   const [saving,setSaving]=useState(false);
@@ -4498,6 +4519,11 @@ function Tracker({machines,setMachines,company,profile}){
   const [dragOver,setDragOver]=useState(null);
   const [showSort,setShowSort]=useState(false);
   const [sortBy,setSortBy]=useState(null);
+  const [view,setView]=useState(()=>localStorage.getItem("trackerView")||"list");
+  const [cols,setCols]=useState(()=>parseInt(localStorage.getItem("trackerCols")||"2"));
+  const [tileOpen,setTileOpen]=useState(null);
+  const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
+  const setColsP=c=>{setCols(c);localStorage.setItem("trackerCols",String(c));setViewP("grid");};
 
   const SORT_OPTS=[
     {k:"name_az",l:"Name A → Z"},
@@ -4592,12 +4618,34 @@ function Tracker({machines,setMachines,company,profile}){
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
+          <div style={{display:"flex",border:"1px solid "+BRD,borderRadius:2,overflow:"hidden"}}>
+            <button onClick={()=>setViewP("list")} style={{padding:"4px 7px",fontSize:10,background:view==="list"?ACC:"none",color:view==="list"?BG:MUT,border:"none",cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace"}}>☰</button>
+            {[1,2,3,4].map(c=>(
+              <button key={c} onClick={()=>setColsP(c)} style={{padding:"4px 7px",fontSize:9,background:view==="grid"&&cols===c?ACC:"none",color:view==="grid"&&cols===c?BG:MUT,border:"none",borderLeft:"1px solid "+BRD,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace"}}>{c}</button>
+            ))}
+          </div>
           <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>
         </div>
       </div>
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
       {machines.length===0&&<Empty t="No machines yet — tap + Add" />}
-      {sorted.map((m,idx)=>(
+      {view==="grid"?(
+        <>
+          <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8}}>
+            {sorted.map(m=>(
+              <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)}/>
+            ))}
+          </div>
+          {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
+            <div style={{position:"fixed",inset:0,background:"#000a",zIndex:200,overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setTileOpen(null);}}>
+              <div style={{maxWidth:640,margin:"24px auto",padding:"0 8px"}}>
+                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile}/>
+                <button onClick={()=>setTileOpen(null)} style={{...btnG,width:"100%",marginTop:8,fontSize:10}}>Close</button>
+              </div>
+            </div>
+          ):null;})()}
+        </>
+      ):sorted.map((m,idx)=>(
         <div
           key={m.id}
           draggable={!sortBy}
@@ -4605,11 +4653,7 @@ function Tracker({machines,setMachines,company,profile}){
           onDragOver={e=>!sortBy&&onDragOver(e,idx)}
           onDrop={e=>!sortBy&&onDrop(e,idx)}
           onDragEnd={onDragEnd}
-          style={{
-            opacity:dragIdx===idx?0.4:1,
-            borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",
-            transition:"opacity 0.15s,border-color 0.1s",
-          }}
+          style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
         >
           <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile}/>
         </div>
