@@ -835,6 +835,21 @@ async function saveWikiRevision(entryId, data, editSummary, profile) {
   return rev;
 }
 
+async function deleteWikiRevision(revId, entryId){
+  const{error}=await supabase.from("wiki_revisions").delete().eq("id",revId);
+  if(error) throw error;
+  const{data:remaining}=await supabase.from("wiki_revisions")
+    .select("id").eq("entry_id",entryId).order("created_at",{ascending:false}).limit(1);
+  await supabase.from("wiki_entries").update({current_rev_id:remaining?.[0]?.id||null}).eq("id",entryId);
+}
+
+async function deleteWikiEntry(entryId){
+  await supabase.from("wiki_revisions").delete().eq("entry_id",entryId);
+  await supabase.from("wiki_contributions").delete().eq("entry_id",entryId);
+  const{error}=await supabase.from("wiki_entries").delete().eq("id",entryId);
+  if(error) throw error;
+}
+
 async function publishToWiki(machine, profile) {
   const slug = makeSlug(machine.make || "", machine.model || "");
   if (!slug || slug === "-") throw new Error("Machine must have a make and model to publish.");
@@ -5993,15 +6008,22 @@ function WikiEntryPage({slug,profile}){
   const [summary,setSummary]=React.useState("");
   const [saving,setSaving]=React.useState(false);
   const [saveErr,setSaveErr]=React.useState("");
+  const [revisions,setRevisions]=React.useState([]);
+  const [showManage,setShowManage]=React.useState(false);
+  const [deleting,setDeleting]=React.useState(false);
 
   React.useEffect(()=>{
     (async()=>{
       const e=await getWikiEntryBySlug(slug);
       if(!e){setNotFound(true);}
-      else{setEntry(e);incrementViewCount(e.id);}
+      else{
+        setEntry(e);
+        incrementViewCount(e.id);
+        if(profile) getWikiRevisions(e.id).then(r=>setRevisions(r||[]));
+      }
       setLoading(false);
     })();
-  },[slug]);
+  },[slug,profile]);
 
   const startEdit=()=>{
     const d=entry.currentRevision?.data||{};
@@ -6093,6 +6115,63 @@ function WikiEntryPage({slug,profile}){
             {fields.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",marginTop:40}}>No spec data yet.</div>}
           </>
         )}
+
+        {/* Manage section — only for contributors */}
+        {profile&&(()=>{
+          const isOwner=entry.created_by===profile.id;
+          const myRevs=revisions.filter(r=>r.edited_by===profile.id);
+          if(!isOwner&&myRevs.length===0) return null;
+          return(
+            <div style={{marginTop:24,borderTop:"1px solid "+BRD,paddingTop:16}}>
+              <button onClick={()=>setShowManage(m=>!m)} style={{...btnG,...sm,fontSize:9,marginBottom:showManage?12:0}}>
+                {showManage?"▲ Hide":"▼ Manage My Contributions"}
+              </button>
+              {showManage&&(
+                <div>
+                  {isOwner&&(
+                    <div style={{marginBottom:16}}>
+                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>Delete Entire Entry</div>
+                      <button disabled={deleting} onClick={async()=>{
+                        if(!confirm("Delete this entire wiki entry and all its revisions? This cannot be undone."))return;
+                        setDeleting(true);
+                        try{await deleteWikiEntry(entry.id);window.location="/";}
+                        catch(e){alert(e.message);setDeleting(false);}
+                      }} style={{...btnG,fontSize:9,color:"#e05555",borderColor:"#e05555"}}>
+                        {deleting?"Deleting…":"🗑 Delete Entire Entry"}
+                      </button>
+                    </div>
+                  )}
+                  {myRevs.length>0&&(
+                    <div>
+                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>My Revisions</div>
+                      {myRevs.map(r=>(
+                        <div key={r.id} style={{background:SURF,border:"1px solid "+BRD,padding:"8px 12px",borderRadius:2,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                          <div>
+                            <div style={{fontSize:10,color:TXT}}>{r.edit_summary||"No summary"}</div>
+                            <div style={{fontSize:9,color:MUT}}>{new Date(r.created_at).toLocaleDateString()}</div>
+                          </div>
+                          <button disabled={deleting} onClick={async()=>{
+                            if(!confirm("Delete this revision?"))return;
+                            setDeleting(true);
+                            try{
+                              await deleteWikiRevision(r.id,entry.id);
+                              setRevisions(prev=>prev.filter(x=>x.id!==r.id));
+                              const updated=await getWikiEntryBySlug(slug);
+                              if(updated)setEntry(updated);
+                            }catch(e){alert(e.message);}
+                            setDeleting(false);
+                          }} style={{...btnG,fontSize:9,color:"#e05555",borderColor:"#e05555",flexShrink:0}}>
+                            🗑 Delete
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
