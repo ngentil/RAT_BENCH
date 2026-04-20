@@ -4618,12 +4618,7 @@ function Tracker({machines,setMachines,company,profile}){
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
-          <div style={{display:"flex",border:"1px solid "+BRD,borderRadius:2,overflow:"hidden"}}>
-            <button onClick={()=>setViewP("list")} style={{padding:"4px 7px",fontSize:10,background:view==="list"?ACC:"none",color:view==="list"?BG:MUT,border:"none",cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace"}}>☰</button>
-            {[1,2,3,4].map(c=>(
-              <button key={c} onClick={()=>setColsP(c)} style={{padding:"4px 7px",fontSize:9,background:view==="grid"&&cols===c?ACC:"none",color:view==="grid"&&cols===c?BG:MUT,border:"none",borderLeft:"1px solid "+BRD,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace"}}>{c}</button>
-            ))}
-          </div>
+          <button onClick={()=>{if(view==="list"){setColsP(2);}else if(cols<4){setColsP(cols+1);}else{setViewP("list");}}} style={{...btnG,...sm,fontSize:9,minWidth:36}}>{view==="list"?"☰":`⊞${cols}`}</button>
           <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>
         </div>
       </div>
