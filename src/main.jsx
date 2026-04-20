@@ -4327,7 +4327,93 @@ function PdfExportModal({m,svcs,onClose}){
   );
 }
 
-function PublishWikiModal({machine,profile,onClose,onPublished}){
+function WikiTrackerModal({machine,profile,onClose}){
+  const [tab,setTab]=React.useState("publish");
+  const [entry,setEntry]=React.useState(null);
+  const [revisions,setRevisions]=React.useState([]);
+  const [loading,setLoading]=React.useState(true);
+  const [deleting,setDeleting]=React.useState(false);
+  const m=machine;
+
+  React.useEffect(()=>{
+    (async()=>{
+      const slug=makeSlug(m.make||"",m.model||"");
+      const e=await getWikiEntryBySlug(slug);
+      if(e){
+        setEntry(e);
+        const r=await getWikiRevisions(e.id);
+        setRevisions(r||[]);
+      }
+      setLoading(false);
+    })();
+  },[]);
+
+  const isOwner=entry&&profile&&entry.created_by===profile.id;
+  const myRevs=revisions.filter(r=>r.edited_by===profile?.id);
+  const hasContribs=isOwner||myRevs.length>0;
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"#000b",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:SURF,border:"1px solid "+BRD,borderRadius:"4px 4px 0 0",width:"100%",maxWidth:520,maxHeight:"80vh",display:"flex",flexDirection:"column"}}>
+        <div style={{padding:"12px 16px",borderBottom:"1px solid "+BRD,display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+          <div style={{display:"flex",gap:12}}>
+            <button onClick={()=>setTab("publish")} style={{fontSize:10,fontWeight:700,letterSpacing:"0.06em",background:"none",border:"none",cursor:"pointer",color:tab==="publish"?ACC:MUT,borderBottom:tab==="publish"?"2px solid "+ACC:"2px solid transparent",paddingBottom:2,fontFamily:"'IBM Plex Mono',monospace"}}>PUBLISH</button>
+            {hasContribs&&<button onClick={()=>setTab("manage")} style={{fontSize:10,fontWeight:700,letterSpacing:"0.06em",background:"none",border:"none",cursor:"pointer",color:tab==="manage"?ACC:MUT,borderBottom:tab==="manage"?"2px solid "+ACC:"2px solid transparent",paddingBottom:2,fontFamily:"'IBM Plex Mono',monospace"}}>MANAGE</button>}
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>
+        </div>
+        <div style={{overflowY:"auto",flex:1,padding:16}}>
+          {tab==="publish"&&<PublishWikiModal machine={m} profile={profile} onClose={onClose} onPublished={onClose} inline/>}
+          {tab==="manage"&&(
+            loading?<div style={{fontSize:10,color:MUT}}>Loading…</div>:
+            !entry?<div style={{fontSize:10,color:MUT}}>No wiki entry found for this machine.</div>:
+            <div>
+              <a href={"https://wiki.ratbench.net/"+makeSlug(m.make||"",m.model||"")} target="_blank" rel="noreferrer" style={{fontSize:10,color:ACC,display:"block",marginBottom:16}}>View on wiki ↗</a>
+              {isOwner&&(
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Delete Entire Entry</div>
+                  <div style={{fontSize:10,color:MUT,marginBottom:8}}>Permanently removes this machine and all revisions from the wiki.</div>
+                  <button disabled={deleting} onClick={async()=>{
+                    if(!confirm(`Delete the entire wiki entry for ${m.make} ${m.model}? This cannot be undone.`))return;
+                    setDeleting(true);
+                    try{await deleteWikiEntry(entry.id);alert("Wiki entry deleted.");onClose();}
+                    catch(e){alert(e.message);setDeleting(false);}
+                  }} style={{...btnG,fontSize:9,color:"#e05555",borderColor:"#e05555"}}>
+                    {deleting?"Deleting…":"🗑 Delete Entire Wiki Entry"}
+                  </button>
+                </div>
+              )}
+              {myRevs.length>0&&(
+                <div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>My Revisions ({myRevs.length})</div>
+                  {myRevs.map(r=>(
+                    <div key={r.id} style={{background:BG,border:"1px solid "+BRD,padding:"8px 12px",borderRadius:2,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                      <div>
+                        <div style={{fontSize:10,color:TXT}}>{r.edit_summary||"No summary"}</div>
+                        <div style={{fontSize:9,color:MUT}}>{new Date(r.created_at).toLocaleDateString()}</div>
+                      </div>
+                      <button disabled={deleting} onClick={async()=>{
+                        if(!confirm("Delete this revision?"))return;
+                        setDeleting(true);
+                        try{
+                          await deleteWikiRevision(r.id,entry.id);
+                          setRevisions(prev=>prev.filter(x=>x.id!==r.id));
+                        }catch(e){alert(e.message);}
+                        setDeleting(false);
+                      }} style={{...btnG,fontSize:9,color:"#e05555",borderColor:"#e05555",flexShrink:0}}>🗑</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PublishWikiModal({machine,profile,onClose,onPublished,inline}){
   const [step,setStep]=useState("loading"); // loading|confirm|merge|done|error
   const [result,setResult]=useState(null);
   const [mergedData,setMergedData]=useState({});
@@ -4389,12 +4475,11 @@ function PublishWikiModal({machine,profile,onClose,onPublished}){
 
   const lbl={fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4};
 
-  return(
-    <div style={ovly} onClick={onClose}>
-      <div style={{...mdl,maxWidth:480}} onClick={e=>e.stopPropagation()}>
+  const inner=(
+    <>
         <div style={mdlH}>
-          <b style={{fontSize:13,textTransform:"uppercase"}}>Publish to Wiki</b>
-          <button style={{...btnG,...sm}} onClick={onClose}>✕</button>
+          {!inline&&<b style={{fontSize:13,textTransform:"uppercase"}}>Publish to Wiki</b>}
+          {!inline&&<button style={{...btnG,...sm}} onClick={onClose}>✕</button>}
         </div>
         <div style={mdlB}>
           {step==="loading"&&<div style={{textAlign:"center",padding:24,color:MUT,fontSize:11}}>Checking wiki…</div>}
@@ -4453,9 +4538,10 @@ function PublishWikiModal({machine,profile,onClose,onPublished}){
             </div>
           </>}
         </div>
-      </div>
-    </div>
+      </>
   );
+  if(inline) return inner;
+  return <div style={ovly} onClick={onClose}><div style={{...mdl,maxWidth:480}} onClick={e=>e.stopPropagation()}>{inner}</div></div>;
 }
 
 function MachineCard({machine,onUpdate,onDelete,company,profile}){
@@ -4549,7 +4635,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile}){
     <div style={{background:SURF,border:"1px solid "+BRD,borderRadius:3,marginBottom:8,overflow:"hidden"}}>
       {fullImg&&<div onClick={()=>setFullImg(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}><img src={fullImg} alt="" style={{maxWidth:"95vw",maxHeight:"95vh",objectFit:"contain"}} /></div>}
       {showEdit&&<MachineForm existing={m} onSave={u=>{onUpdate(u);setShowEdit(false);}} onClose={()=>setShowEdit(false)} company={company}/>}
-      {showWiki&&<PublishWikiModal machine={m} profile={profile} onClose={()=>setShowWiki(false)} onPublished={()=>{}}/>}
+      {showWiki&&<WikiTrackerModal machine={m} profile={profile} onClose={()=>setShowWiki(false)}/>}
       {showConfig&&<TileConfig machine={m} onSave={u=>{onUpdate(u);setShowConfig(false);}} onClose={()=>setShowConfig(false)} />
       }
       {showExpandConfig&&<ExpandConfig machine={m} onSave={u=>{onUpdate(u);setShowExpandConfig(false);}} onClose={()=>setShowExpandConfig(false)} />}
@@ -6078,7 +6164,7 @@ function WikiEntryPage({slug,profile}){
               ? editing
                 ? <button onClick={()=>setEditing(false)} style={{...btnG,...sm,fontSize:9}}>Cancel</button>
                 : <button onClick={startEdit} style={{...btnG,...sm,fontSize:9,borderColor:ACC,color:ACC}}>Edit</button>
-              : <a href="https://ratbench.net" style={{fontSize:9,color:MUT,textDecoration:"none",border:"1px solid "+BRD,padding:"4px 8px"}}>Login to edit</a>
+              : null
             }
           </div>
         </div>
@@ -6265,6 +6351,14 @@ function WikiLoginBar({profile,onLogin,onLogout}){
             <input value={pw} onChange={e=>setPw(e.target.value)} placeholder="Password" type="password" onKeyDown={e=>e.key==="Enter"&&doLogin()} style={{background:BG,border:"1px solid "+BRD,color:TXT,fontFamily:"'IBM Plex Mono',monospace",fontSize:11,padding:"7px 10px",borderRadius:2,outline:"none"}}/>
             {err&&<div style={{fontSize:9,color:RED}}>{err}</div>}
             <button onClick={doLogin} disabled={busy} style={{...btnA,fontSize:10}}>{busy?"Signing in…":"Sign in"}</button>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{flex:1,height:1,background:BRD}}/>
+              <span style={{fontSize:9,color:MUT}}>or</span>
+              <div style={{flex:1,height:1,background:BRD}}/>
+            </div>
+            <button onClick={()=>supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.href}})} style={{...btnG,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <span>G</span> Sign in with Google
+            </button>
           </div>
         </div>
       )}
