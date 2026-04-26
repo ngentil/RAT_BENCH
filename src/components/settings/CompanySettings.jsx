@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 import { getCompanyMembers, updateCompany, createCompany, joinCompanyByCode, leaveCompany, removeMember, regenerateInviteCode } from '../../lib/db';
