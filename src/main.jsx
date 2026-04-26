@@ -24,6 +24,7 @@ import ServiceModal from './components/ui/ServiceModal';
 import PdfExportModal from './components/pdf/PdfExportModal';
 import StatusBadge from './components/ui/StatusBadge';
 import PhotoAdder from './components/ui/PhotoAdder';
+import { uid, nowL, fmtDT, mIcon, resizeImg, toB64 } from './lib/helpers';
 
 
 class ErrorBoundary extends React.Component {
@@ -903,34 +904,6 @@ async function publishToWiki(machine, profile) {
 }
 
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-const uid  = () => crypto.randomUUID();
-const nowL = () => { const n = new Date(); return new Date(n - n.getTimezoneOffset()*60000).toISOString().slice(0,16); };
-const fmtDT = iso => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"})
-       + " " + d.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit",hour12:true});
-};
-const mIcon = t => MACHINE_TYPES.find(m => m.label === t)?.icon || "⚙️";
-
-const resizeImg = (b64, maxW=1800) => new Promise(res => {
-  const img = new Image();
-  img.onload = () => {
-    const r = Math.min(1, maxW/img.width);
-    const c = document.createElement("canvas");
-    c.width = img.width*r; c.height = img.height*r;
-    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-    res(c.toDataURL("image/jpeg",0.92));
-  };
-  img.src = b64;
-});
-const toB64 = f => new Promise((res,rej) => {
-  const r = new FileReader();
-  r.onload = () => res(r.result);
-  r.onerror = rej;
-  r.readAsDataURL(f);
-});
 
 
 function SL({t}){ return <div style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,marginBottom:8}}>{t}</div>; }
