@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi } from '../../lib/db';
 import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
-import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
+import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, DEFAULT_EXPAND, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 function MachineCard({machine,onUpdate,onDelete,company,profile}){
   const [open,setOpen]=useState(false);
   const [svcs,setSvcs]=useState([]);

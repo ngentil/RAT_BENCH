@@ -1,6 +1,6 @@
 import React from 'react';
 import { ACC, MUT, BRD, SURF, TXT } from '../../lib/styles';
-import { MACHINE_TYPES } from '../../lib/constants';
+import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 // ── Tracker ───────────────────────────────────────────────────────────────────
 function MachineTile({machine,onClick}){
   const m=machine;
