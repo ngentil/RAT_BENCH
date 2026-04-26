@@ -15,6 +15,7 @@ import WikiLoginBar from './components/wiki/WikiLoginBar';
 import WikiHomePage from './components/wiki/WikiHomePage';
 import WikiEntryPage from './components/wiki/WikiEntryPage';
 import WikiHistoryPage from './components/wiki/WikiHistoryPage';
+import WikiApp from './components/wiki/WikiApp';
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(e) { return { error: e }; }
@@ -5003,34 +5004,3 @@ function App(){
 
 
 
-function WikiApp(){
-  const [profile,setProfile]=React.useState(null);
-  const raw=window.location.pathname.replace(/^\/+/,"").replace(/\/+$/,"");
-  const parts=raw.split("/");
-  const slug=parts[0];
-  const sub=parts[1];
-
-  const loadProfile=async()=>{
-    const{data:{session}}=await supabase.auth.getSession();
-    if(!session){setProfile(null);return;}
-    const{data}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-    setProfile(data||null);
-  };
-
-  React.useEffect(()=>{
-    loadProfile();
-    const{data:{subscription}}=supabase.auth.onAuthStateChange(()=>loadProfile());
-    return()=>subscription.unsubscribe();
-  },[]);
-
-  const header=<WikiLoginBar profile={profile} onLogin={loadProfile} onLogout={async()=>{await supabase.auth.signOut();setProfile(null);}}/>;
-
-  if(slug&&sub==="history") return <>{header}<WikiHistoryPage slug={slug}/></>;
-  if(slug) return <>{header}<WikiEntryPage slug={slug} profile={profile}/></>;
-  return <>{header}<WikiHomePage/></>;
-}
-
-const isWiki=window.location.hostname==="wiki.ratbench.net";
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>{isWiki?<WikiApp/>:<App/>}</React.StrictMode>
-);
