@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, TXT, inp } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, BG, inp } from '../../lib/styles';
 function WikiHomePage(){
   const [query,setQuery]=React.useState("");
   const [results,setResults]=React.useState([]);

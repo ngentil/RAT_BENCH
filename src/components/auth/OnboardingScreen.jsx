@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, TXT, inp, btnA, btnG, col } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, BG, RED, inp, btnA, btnG, col } from '../../lib/styles';
 function OnboardingScreen({session, onComplete}){
   const [username,setUsername]=useState(session?.user?.user_metadata?.username||"");
   const [accountType,setAccountType]=useState("personal");

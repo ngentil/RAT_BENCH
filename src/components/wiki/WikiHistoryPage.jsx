@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, TXT, btnG } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, BG, btnG } from '../../lib/styles';
 function WikiHistoryPage({slug}){
   const [revs,setRevs]=React.useState([]);
   const [entry,setEntry]=React.useState(null);

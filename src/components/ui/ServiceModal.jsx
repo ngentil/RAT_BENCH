@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, TXT, inp, sel, txa, btnA, btnG, col, dvdr, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, inp, sel, txa, btnA, btnG, col, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SVC_CATEGORIES } from '../../lib/constants';
 // ── Service Modal ─────────────────────────────────────────────────────────────
 function ServiceModal({machine,existing,onSave,onClose}){
