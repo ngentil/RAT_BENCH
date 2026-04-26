@@ -2048,10 +2048,11 @@ function SpecSearch({machines}){
   );
 }
 
+const isWiki = window.location.hostname === "wiki.ratbench.net";
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      {isWiki ? <WikiApp /> : <App />}
     </ErrorBoundary>
   </React.StrictMode>
 );
