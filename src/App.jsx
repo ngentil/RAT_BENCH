@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { BG, TXT, MUT, ACC, BRD, SURF, RED, btnG, sm } from './lib/styles';
 import { getMachines, getMyCompany, upsertMachine, deleteMachineApi, upsertService, deleteServiceApi, updateProfile } from './lib/db';
+import { TABS } from './lib/constants';
 import AuthScreen from './components/auth/AuthScreen';
 import OnboardingScreen from './components/auth/OnboardingScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
