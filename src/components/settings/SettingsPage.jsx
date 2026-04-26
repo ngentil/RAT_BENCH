@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ACC, btnG, sm } from '../../lib/styles';
 import ProfileSettings from './ProfileSettings';
 import CompanySettings from './CompanySettings';
 

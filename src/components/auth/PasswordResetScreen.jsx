@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { inp, btnA, btnG } from '../../lib/styles';
+import { inp, btnA, btnG, MUT, ACC, TXT, SURF, BRD } from '../../lib/styles';
 // ── Password Reset Screen ─────────────────────────────────────────────────────
 function PasswordResetScreen({onComplete}){
   const [password,setPassword]=useState("");
