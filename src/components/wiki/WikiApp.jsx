@@ -32,8 +32,4 @@ function WikiApp(){
   return <>{header}<WikiHomePage/></>;
 }
 
-const isWiki=window.location.hostname==="wiki.ratbench.net";
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>{isWiki?<WikiApp/>:<App/>}</React.StrictMode>
-);
 export default WikiApp;
