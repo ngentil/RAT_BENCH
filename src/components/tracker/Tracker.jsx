@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES } from '../../lib/constants';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';

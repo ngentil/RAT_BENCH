@@ -1,5 +1,5 @@
 import React from 'react';
-import { ACC, MUT, BRD, TXT, btnG } from '../../lib/styles';
+import { ACC, MUT, BRD, TXT, btnG, col } from '../../lib/styles';
 function PhotoAdder({photos,setPhotos,label="Photos"}){
   const [busy,setBusy]=useState(false);
   const camRef=React.useRef();

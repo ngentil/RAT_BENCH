@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, TXT, inp, btnA, btnG, col, dvdr } from '../../lib/styles';
+import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 function CompanySettings({profile,setProfile,company,setCompany,session}){
   const isAdmin=company&&company.owner_id===session?.user?.id;
   const [mode,setMode]=useState("view"); // view|create|join

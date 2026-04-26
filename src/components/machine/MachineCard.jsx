@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr } from '../../lib/styles';
+import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 function MachineCard({machine,onUpdate,onDelete,company,profile}){
   const [open,setOpen]=useState(false);

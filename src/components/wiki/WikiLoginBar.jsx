@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, TXT, inp, btnA, btnG } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, BG, RED, inp, btnA, btnG } from '../../lib/styles';
 function WikiLoginBar({profile,onLogin,onLogout}){
   const [show,setShow]=React.useState(false);
   const [email,setEmail]=React.useState("");

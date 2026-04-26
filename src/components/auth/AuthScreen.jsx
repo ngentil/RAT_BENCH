@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, inp, btnA, btnG } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, BG, TXT, GRN, RED, inp, btnA, btnG } from '../../lib/styles';
 function AuthScreen(){
   const [mode,setMode]=useState("login"); // login | signup | forgot
   const [email,setEmail]=useState("");

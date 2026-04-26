@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, TXT, inp, btnA, btnG, btnD, col, dvdr } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, BG, RED, inp, btnA, btnG, btnD, col, dvdr, sm } from '../../lib/styles';
 import WikiLoginBar from './WikiLoginBar';
 function WikiEntryPage({slug,profile}){
   const [entry,setEntry]=React.useState(null);
