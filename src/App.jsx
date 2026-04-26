@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
-import { BG, TXT } from './lib/styles';
+import { BG, TXT, MUT, ACC, BRD, SURF } from './lib/styles';
 import AuthScreen from './components/auth/AuthScreen';
 import OnboardingScreen from './components/auth/OnboardingScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
