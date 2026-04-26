@@ -22,6 +22,7 @@ import MachineCard from './components/machine/MachineCard';
 import MachineForm from './components/machine/MachineForm';
 import ServiceModal from './components/ui/ServiceModal';
 import PdfExportModal from './components/pdf/PdfExportModal';
+import StatusBadge from './components/ui/StatusBadge';
 
 
 class ErrorBoundary extends React.Component {
@@ -935,9 +936,7 @@ function SL({t}){ return <div style={{fontSize:9,letterSpacing:"0.18em",textTran
 function FL({t}){ return <div style={{fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:4}}>{t}</div>; }
 function Divider(){ return <div style={dvdr} />; }
 function Empty({t}){ return <div style={empt}>{t}</div>; }
-function StatusBadge({status}){
-  return <span style={{fontSize:8,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",padding:"2px 7px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",background:SBG_[status]||"#222",color:SCOL[status]||MUT,border:"1px solid "+(SCOL[status]||MUT)+"55"}}>{status}</span>;
-}
+
 
 function SkullRating({value,onChange}){
   const [hov,setHov]=useState(0);
