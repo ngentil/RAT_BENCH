@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS } from '../../lib/constants';
-import { SL, FL, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm } from '../ui/shared';
+import { SL, FL, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm  } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import PhotoAdder from '../ui/PhotoAdder';
 function MachineForm({existing,onSave,onClose,company}){
@@ -93,6 +93,10 @@ function MachineForm({existing,onSave,onClose,company}){
   const [iacSensor,setIacSensor]=useState(e.iacSensor||"");
   // fasteners - dynamic array
   const [fasteners,setFasteners]=useState(e.fasteners||[]);
+  // Lighting - dynamic array
+  const [lighting, setLighting] = useState(e.lighting||[]);
+  const [lightEditIdx, setLightEditIdx] = useState(null);
+  const [lightAdding, setLightAdding] = useState(false);
   // pump
   const [pumpBrand,setPumpBrand]=useState(e.pumpBrand||"");
   const [pumpModel,setPumpModel]=useState(e.pumpModel||"");
@@ -439,7 +443,7 @@ function MachineForm({existing,onSave,onClose,company}){
       trackedBrand,trackedBrandOther,trackedHours:trackedHours.toString(),trackedSubtype,trackedSubtypeOther,operatingWeight,operatingWeightOther,
       trackType,trackWidth:trackWidth.toString(),trackPitch:trackPitch.toString(),trackLinks:trackLinks.toString(),sprocketTeeth:sprocketTeeth.toString(),undercarriageHours:undercarriageHours.toString(),
       hydPumpCount,hydPumpType,hydSystemPressure:hydSystemPressure.toString(),hydOilCapacity:hydOilCapacity.toString(),hydReliefValve:hydReliefValve.toString(),
-      hydRams,attachments});
+      hydRams,attachments,lighting});
   };
 
   return (
@@ -2011,6 +2015,15 @@ function MachineForm({existing,onSave,onClose,company}){
                 ))}
                 {attachAdding&&<AttachForm a={{}} onSave={sv=>{setAttachments(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setAttachAdding(false);}} onCancel={()=>setAttachAdding(false)} />}
                 {!attachAdding&&attachEditIdx===null&&<button onClick={()=>setAttachAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Attachment</button>}
+              {/* Lighting */}
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,marginTop:16}}>Lighting</div>
+                {lighting.map((l,idx)=>(
+                  lightEditIdx===idx
+                    ? <LightingForm key={l.id||idx} l={l} onSave={sv=>{setLighting(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||crypto.randomUUID()}:x));setLightEditIdx(null);}} onCancel={()=>setLightEditIdx(null)} />
+                    : <LightingCard key={l.id||idx} l={l} onEdit={()=>{setLightEditIdx(idx);setLightAdding(false);}} onRemove={()=>{if(confirm("Remove this entry?"))setLighting(prev=>prev.filter((_,i)=>i!==idx));}} />
+                ))}
+                {lightAdding&&<LightingForm l={{}} onSave={sv=>{setLighting(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setLightAdding(false);}} onCancel={()=>setLightAdding(false)} />}
+                {!lightAdding&&lightEditIdx===null&&<button onClick={()=>setLightAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Light</button>}
 
               </div>}
             </div>;

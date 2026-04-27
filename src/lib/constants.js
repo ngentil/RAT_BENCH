@@ -368,3 +368,28 @@ export const getExpandFields = (type, strokeType) => EXPAND_SECTIONS.filter(f=>{
 export const getTileFields = (type) => TILE_FIELDS.filter(f=>!f.types||f.types.includes(type));
 
 export const TABS        = [{id:"tracker",label:"📋 Tracker"},{id:"jobs",label:"🗂 Jobs"},{id:"search",label:"🔍 Search"}];
+export const LIGHT_LOCATIONS = [
+  "Headlights","Tail Lights","Indicators","Brake Lights",
+  "Reverse Lights","Trailer Lights","Auxiliary / Work Lights",
+  "Dash / Interior","Other"
+];
+
+export const LIGHT_TYPES = [
+  "Halogen","LED","HID / Xenon","Sealed Beam",
+  "Sealed LED Unit","Incandescent","Fluorescent","Other"
+];
+
+export const LIGHT_VOLTAGES = ["12V","24V"];
+
+export const LIGHT_PLUGS = [
+  "H1","H3","H4","H7","H8","H9","H11","H13",
+  "9005 / HB3","9006 / HB4","9012 / HIR2",
+  "T10 / 194 / W5W","T15 / 921","BA9s","BAU15s",
+  "BA15s","BAY15d / 1157","P21W / 1156","P21/5W",
+  "PY21W","W21W","W21/5W","WY5W",
+  "Deutsch DT 2-pin","Deutsch DT 4-pin",
+  "Weatherpack 2-pin","Weatherpack 4-pin",
+  "Superseal 1-pin","Superseal 2-pin",
+  "Molex Mini-Fit","Anderson SB50",
+  "Pigtail / Bare Wire","Other"
+];
