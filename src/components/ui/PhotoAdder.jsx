@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { ACC, MUT, BRD, TXT, btnG, col } from '../../lib/styles';
 import { FL } from './shared';
+import { resizeImg, toB64 } from '../../lib/helpers';
 function PhotoAdder({photos,setPhotos,label="Photos"}){
   const [busy,setBusy]=useState(false);
   const camRef=React.useRef();
