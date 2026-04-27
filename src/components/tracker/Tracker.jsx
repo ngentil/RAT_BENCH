@@ -5,6 +5,8 @@ import { MACHINE_TYPES } from '../../lib/constants';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
+import MachineForm from '../machine/MachineForm';
+import ErrorBoundary from '../ui/ErrorBoundary';
 function Tracker({machines,setMachines,company,profile}){
   const [showAdd,setShowAdd]=useState(false);
   const [saving,setSaving]=useState(false);

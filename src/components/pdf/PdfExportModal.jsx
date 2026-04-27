@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { jsPDF } from 'jspdf';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import { PDF_SCHEMA, exportMachinePDF } from '../../lib/pdfExport';
 function PdfExportModal({m,svcs,onClose}){
   const available=React.useMemo(()=>PDF_SCHEMA.map(sec=>{
     if(sec.svc) return svcs.length>0?sec:null;

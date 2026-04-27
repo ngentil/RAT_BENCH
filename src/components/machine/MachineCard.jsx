@@ -4,6 +4,12 @@ import { getServices, upsertService, deleteServiceApi } from '../../lib/db';
 import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, DEFAULT_EXPAND, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
+import { mIcon, fmtDT } from '../../lib/helpers';
+import { WikiTrackerModal } from '../wiki/WikiModals';
+import PdfExportModal from '../pdf/PdfExportModal';
+import ServiceModal from '../ui/ServiceModal';
+import StatusBadge from '../ui/StatusBadge';
+import MachineForm from './MachineForm';
 function MachineCard({machine,onUpdate,onDelete,company,profile}){
   const [open,setOpen]=useState(false);
   const [svcs,setSvcs]=useState([]);

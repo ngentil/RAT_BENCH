@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { BG, TXT, MUT, ACC, BRD, SURF, RED, btnG, sm } from './lib/styles';
-import { getMachines, getMyCompany, upsertMachine, deleteMachineApi, upsertService, deleteServiceApi, updateProfile } from './lib/db';
+import { getMachines, getMyCompany } from './lib/db';
 import { TABS } from './lib/constants';
 import AuthScreen from './components/auth/AuthScreen';
 import OnboardingScreen from './components/auth/OnboardingScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
 import SettingsPage from './components/settings/SettingsPage';
 import Tracker from './components/tracker/Tracker';
-import WikiApp from './components/wiki/WikiApp';
-import MachineForm from './components/machine/MachineForm';
-import ServiceModal from './components/ui/ServiceModal';
-import PdfExportModal from './components/pdf/PdfExportModal';
+import JobBoard from './components/tracker/JobBoard';
+import SpecSearch from './components/tracker/SpecSearch';
 function App(){
   const [tab,setTab]=useState("tracker");
   const [machines,setMachines]=useState([]);
