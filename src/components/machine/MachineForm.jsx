@@ -34,6 +34,7 @@ function MachineForm({existing,onSave,onClose,company}){
   const [rBoltSz,setRBoltSz]=useState(e.rBoltSz||"");
   const [rBoltLen,setRBoltLen]=useState(e.rBoltLen||"");
   const [compression,setCompression]=useState(e.compression||"");
+  const [compressionRatio,setCompressionRatio]=useState(e.compressionRatio||"");
   const [idleRpm,setIdleRpm]=useState(e.idleRpm||"");
   const [wotRpm,setWotRpm]=useState(e.wotRpm||"");
   const [ccSize,setCcSize]=useState(e.ccSize||"");
@@ -421,7 +422,7 @@ function MachineForm({existing,onSave,onClose,company}){
       springFreeLen:springFreeLen.toString().trim(),springOuterD:springOuterD.toString().trim(),springWireD:springWireD.toString().trim(),springWeight:springWeight.toString().trim(),starterType,ropeDiameter:ropeDiameter.toString().trim(),ropeLength:ropeLength.toString().trim(),fasteners,pumpBrand:pumpBrand.trim(),pumpModel:pumpModel.trim(),pumpPsi:pumpPsi.toString().trim(),pumpFlow:pumpFlow.toString().trim(),pumpInlet,pumpOutlet,pumpType,genWatts:genWatts.toString().trim(),genPeakWatts:genPeakWatts.toString().trim(),genVoltage,genFreq,genAvr,genOutlets:genOutlets.trim(),driveType,chainPitch,frontSprocket:frontSprocket.toString().trim(),rearSprocket:rearSprocket.toString().trim(),gearCount,transType,gearboxBrand:gearboxBrand.trim(),clutchType,clutchDiameter:clutchDiameter.toString(),torqueConverter,autoSpeeds,autoFluidType:autoFluidType.trim(),autoFluidCapacity:autoFluidCapacity.toString(),cvtBeltType,gearboxOilType:gearboxOilType.trim(),gearboxOilCapacity:gearboxOilCapacity.toString(),forkType,forkDiameter:forkDiameter.toString().trim(),forkTravel:forkTravel.toString().trim(),rearShockType,rearTravel:rearTravel.toString().trim(),frontBrake,frontDiscD:frontDiscD.toString().trim(),frontDiscW:frontDiscW.toString().trim(),rearBrake,rearDiscD:rearDiscD.toString().trim(),rearDiscW:rearDiscW.toString().trim(),tyreFront:tyreFront.trim(),tyreRear:tyreRear.trim(),rimFront:rimFront.toString().trim(),rimRear:rimRear.toString().trim(),battVoltage,batteryCCA:batteryCCA.toString(),batteryAh:batteryAh.toString(),batteryDimensions:batteryDimensions.trim(),starterMotorType,fuseBoxNotes:fuseBoxNotes.trim(),deckSize:deckSize.toString().trim(),bladeLength:bladeLength.toString().trim(),bladeType,bladeCount,plugGap:plugGap.toString().trim(),coilType,primaryOhms:primaryOhms.toString().trim(),secondaryOhms:secondaryOhms.toString().trim(),fuelSystem,fuelTankCapacity:fuelTankCapacity.toString(),mixRatio:mixRatio.trim(),ecuModel:ecuModel.trim(),tbDiameter:tbDiameter.toString().trim(),injectorCount,injectorFlow:injectorFlow.toString().trim(),fuelRailPressure:fuelRailPressure.toString().trim(),fuelPumpPressure:fuelPumpPressure.toString().trim(),tpsSensor,mapSensor,iatSensor,o2Sensor,iacSensor,
       iSpacing:iSpacing.trim(),iStuds,eSpacing:eSpacing.trim(),
       eStuds,eBoltSz,eBoltLen:eBoltLen.toString().trim(),iBoltSz,iBoltLen:iBoltLen.toString().trim(),rBoltN,rBoltSz,rBoltLen:rBoltLen.toString().trim(),
-      compression:compression.toString().trim(),idleRpm:idleRpm.toString().trim(),wotRpm:wotRpm.toString().trim(),ccSize:ccSize.toString().trim(),
+      compression:compression.toString().trim(),compressionRatio:compressionRatio.toString().trim(),idleRpm:idleRpm.toString().trim(),wotRpm:wotRpm.toString().trim(),ccSize:ccSize.toString().trim(),
       iPW:iPW.toString().trim(),iPH:iPH.toString().trim(),iPCond,iPNotes:iPNotes.trim(),iPPhotos,
       ePW:ePW.toString().trim(),ePH:ePH.toString().trim(),ePCond,ePNotes:ePNotes.trim(),ePPhotos,
       barLength:barLength.toString(),barGauge,barMount,barStudDiameter,barNutType,barNutSize,chainPitchCS,chainGauge,chainDriveLinks:chainDriveLinks.toString(),chainPartNo:chainPartNo.trim(),chainBrand:chainBrand.trim(),sprocketStyle,sprocketPitchCS,sprocketTeethCS:sprocketTeethCS.toString(),
@@ -610,10 +611,23 @@ function MachineForm({existing,onSave,onClose,company}){
                     <div style={{...col,flex:1}}><FL t="Compression (PSI)" /><input style={inp} type="number" placeholder="e.g. 120" step="1" min="0" value={compression} onChange={ev=>setCompression(ev.target.value)} /></div>
                   </div>
                   <div style={row}>
+                    <div style={{...col,flex:1}}><FL t="Compression ratio" /><input style={inp} type="number" placeholder="e.g. 9.5" step="0.1" min="0" value={compressionRatio} onChange={ev=>setCompressionRatio(ev.target.value)} /></div>
+                    {compressionRatio&&(()=>{
+                      const r=parseFloat(compressionRatio);
+                      const octane=r<8.5?"Regular (91 RON / 87 AKI)":r<10.5?"Premium (95 RON / 91 AKI)":r<12?"High octane (98 RON / 93 AKI)":"Race fuel required";
+                      return <div style={{...col,flex:1,justifyContent:"flex-end"}}><FL t="Min. fuel grade" /><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2}}>⚡ {octane}</div></div>;
+                    })()}
+                  </div>
+                  <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Idle RPM (approx)" /><input style={inp} type="number" placeholder="e.g. 2800" step="100" min="0" value={idleRpm} onChange={ev=>setIdleRpm(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}><FL t="WOT RPM (approx)" /><input style={inp} type="number" placeholder="e.g. 10500" step="100" min="0" value={wotRpm} onChange={ev=>setWotRpm(ev.target.value)} /></div>
                   </div>
                   <div style={{...col,maxWidth:180}}><FL t="Cylinder bore diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 38" step="0.01" min="0" value={boreDiameter} onChange={ev=>setBoreDiameter(ev.target.value)} /></div>
+                  {boreDiameter&&crankStroke&&(()=>{
+                    const r=parseFloat(boreDiameter)/parseFloat(crankStroke);
+                    const label=r>1.05?"Over-square — high-revving, power-biased":r<0.95?"Under-square — torque-biased, strong low-end":"Square — balanced character";
+                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {r.toFixed(2)}:1 — {label}</div>;
+                  })()}
                 </>}
 
                 {/* Electric / Hybrid motor fields */}
@@ -1183,6 +1197,10 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="AVR" /><select style={sel} value={genAvr} onChange={ev=>setGenAvr(ev.target.value)}><option value="">— not set —</option><option>Present</option><option>Not present</option></select></div>
                   <div style={{...col,flex:1}}><FL t="Outlets" /><input style={inp} placeholder="e.g. 2× 240V, 1× 12V DC" value={genOutlets} onChange={ev=>setGenOutlets(ev.target.value)} /></div>
                 </div>
+                {genWatts&&genVoltage&&genVoltage!=="Dual"&&(()=>{
+                  const amps=(parseFloat(genWatts)/parseFloat(genVoltage)).toFixed(1);
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {amps}A rated output at {genVoltage}</div>;
+                })()}
                 {editGenOutput&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditGenOutput(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
@@ -1413,6 +1431,10 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Capacity (Ah)" /><input style={inp} type="number" placeholder="e.g. 45" step="0.5" min="0" value={batteryAh} onChange={ev=>setBatteryAh(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Dimensions (mm)" /><input style={inp} placeholder="e.g. 230×175×225" value={batteryDimensions} onChange={ev=>setBatteryDimensions(ev.target.value)} /></div>
                 </div>
+                {(battVoltage&&batteryCCA)||(battVoltage&&batteryAh)?<div style={{display:"flex",gap:12,flexWrap:"wrap",padding:"8px 10px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4,marginBottom:4}}>
+                  {battVoltage&&batteryCCA&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>Cold cranking watts</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {(parseFloat(battVoltage)*parseFloat(batteryCCA)).toLocaleString()}W</div></div>}
+                  {battVoltage&&batteryAh&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>Energy</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {(parseFloat(battVoltage)*parseFloat(batteryAh)/1000).toFixed(2)}kWh</div></div>}
+                </div>:null}
                 <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
                 <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Starter Motor</div>
                 <div style={col}><FL t="Type" /><select style={sel} value={starterMotorType} onChange={ev=>setStarterMotorType(ev.target.value)}><option value="">— not set —</option>{["Gear reduction","Direct drive","Pre-engaged","Permanent magnet"].map(s=><option key={s}>{s}</option>)}</select></div>
