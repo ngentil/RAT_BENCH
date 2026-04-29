@@ -1390,10 +1390,26 @@ function MachineForm({existing,onSave,onClose,company}){
               {secTyres&&<div style={{paddingTop:12}}>
                 {hasData&&!editTyres&&<SummaryCard onEdit={()=>setEditTyres(true)} lines={tyresSum} />}
                 {(editTyres||!hasData)&&<>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Front tyre size" /><input style={inp} placeholder="e.g. 120/70-17" value={tyreFront} onChange={ev=>setTyreFront(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Rear tyre size" /><input style={inp} placeholder="e.g. 140/70-17" value={tyreRear} onChange={ev=>setTyreRear(ev.target.value)} /></div>
-                </div>
+                {(()=>{
+                  const parseTyre=s=>{const m=s&&s.trim().match(/^(\d+)\/(\d+)[Rr-](\d+(?:\.\d+)?)$/);if(!m)return null;const w=parseFloat(m[1]),a=parseFloat(m[2]),rim=parseFloat(m[3]);const sw=w*a/100;const od=rim*25.4+2*sw;return{w,a,rim,sw:sw.toFixed(1),od_mm:od.toFixed(1),od_in:(od/25.4).toFixed(2),circ:(Math.PI*od/1000).toFixed(3)};};
+                  const pf=parseTyre(tyreFront), pr=parseTyre(tyreRear);
+                  const chip=(label,t)=>t?<div style={{display:"flex",gap:12,flexWrap:"wrap",padding:"6px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4,marginBottom:4}}>
+                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>{label} width</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.w}mm</div></div>
+                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Aspect</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.a}%</div></div>
+                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rim</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.rim}"</div></div>
+                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Sidewall</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.sw}mm</div></div>
+                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Overall dia.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.od_mm}mm / {t.od_in}"</div></div>
+                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rolling circ.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.circ}m</div></div>
+                  </div>:null;
+                  return <>
+                    <div style={row}>
+                      <div style={{...col,flex:1}}><FL t="Front tyre size" /><input style={inp} placeholder="e.g. 120/70-17" value={tyreFront} onChange={ev=>setTyreFront(ev.target.value)} /></div>
+                      <div style={{...col,flex:1}}><FL t="Rear tyre size" /><input style={inp} placeholder="e.g. 140/70-17" value={tyreRear} onChange={ev=>setTyreRear(ev.target.value)} /></div>
+                    </div>
+                    {chip("Front",pf)}
+                    {chip("Rear",pr)}
+                  </>;
+                })()}
                 <div style={row}>
                   <div style={{...col,flex:1}}><FL t="Front rim diameter (in)" /><input style={inp} type="number" placeholder="e.g. 17" step="0.5" min="0" value={rimFront} onChange={ev=>setRimFront(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Rear rim diameter (in)" /><input style={inp} type="number" placeholder="e.g. 17" step="0.5" min="0" value={rimRear} onChange={ev=>setRimRear(ev.target.value)} /></div>
