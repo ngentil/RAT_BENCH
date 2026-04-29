@@ -66,6 +66,21 @@ All of these must:
   - Label the result: "Optimal (270–290 m/s)" / "Too slow — may tear grass" / "Above safe limit"
   - In imperial: ft/s
 
+### Engine — Compression & Fuel Octane (done ✅)
+- Compression ratio → minimum fuel octane recommendation
+
+### Engine — Bore/Stroke Ratio (done ✅)
+- Bore ÷ stroke → character label (over-square / square / under-square)
+
+### Electrical — Cold Cranking Watts (done ✅)
+- Battery voltage × CCA → cold cranking watts
+
+### Electrical — Battery Energy (done ✅)
+- Battery voltage × Ah → watt-hours
+
+### Generator — Amps Output (done ✅)
+- Generator watts ÷ generator voltage → amps output
+
 ### Engine — Mean Piston Speed
 - Bore + stroke + WOT RPM → **mean piston speed in m/s**
   - `MPS = 2 × stroke × RPM / 60`
@@ -77,18 +92,6 @@ All of these must:
   - Label it: "<1.5 = short rod — peaky, aggressive" / "1.5–1.75 = balanced" / ">1.75 = long rod — smooth, linear"
   - Feels like insider knowledge
 
-### Engine — Bore/Stroke Ratio
-- Bore ÷ stroke → **character label**
-  - `>1.0` = over-square → "High-revving, power-biased"
-  - `=1.0` = square
-  - `<1.0` = under-square → "Torque-biased, strong low-end"
-
-### Engine — Compression & Fuel Octane
-- Compression ratio → **minimum fuel octane recommendation**
-  - <8.5:1 → "Regular (91 RON / 87 AKI)"
-  - 8.5–10.5:1 → "Premium (95 RON / 91 AKI)"
-  - 10.5–12:1 → "High octane (98 RON / 93 AKI)"
-  - >12:1 → "Race fuel required"
 
 ### Electrical — Wire Voltage Drop
 - Wire gauge + run length + current draw → **voltage drop in V**
@@ -104,15 +107,8 @@ All of these must:
   - Output: "Surplus: 120W — battery charging while driving" / "Deficit: 80W — battery draining"
   - Show estimated time to drain battery at current deficit (needs battery Ah)
 
-### Electrical — Cold Cranking Watts
-- Battery voltage × CCA → **cold cranking watts**
-  - e.g. 12V × 600CCA = 7,200W
-  - "Your battery can deliver 7.2kW of cold cranking power"
-
-### Electrical — Battery Energy
-- Battery voltage × Ah → **watt-hours**
-  - e.g. 12V × 100Ah = 1.2kWh
-  - Useful context for EVs and large equipment
+### Generator — Amps Output (done ✅)
+- Generator watts ÷ voltage → amps output
 
 ### Generator — Largest Motor It Can Start
 - Generator kW rating → **max motor HP it can start**
@@ -120,10 +116,6 @@ All of these must:
   - `max_motor_hp = generator_kW / 6 × 1.341` (conservative, using 6× surge)
   - "This generator can reliably start a motor up to 0.8HP"
   - Very common question, no easy answer without this
-
-### Generator — Amps Output (like Lighting)
-- Generator watts ÷ generator voltage → **amps output**
-  - Same pattern as lighting amperage calc
 
 ### Fuel System — 2-Stroke Mix Oil Quantity
 - Tank capacity + mix ratio → **oil to add per full tank**
