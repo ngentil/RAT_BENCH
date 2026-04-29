@@ -428,6 +428,7 @@ export function ExpandConfig({machine, onSave, onClose}){
     </div>
   );
 }
+
 export function LightingCard({l, onEdit, onRemove}){
   const parts = [l.lightType, l.wattage ? l.wattage+"W" : null, l.voltage, l.amperage ? l.amperage+"A draw" : null, l.plug].filter(Boolean);
   return (
@@ -442,6 +443,7 @@ export function LightingCard({l, onEdit, onRemove}){
     </div>
   );
 }
+
 export function LightingForm({l, onSave, onCancel}){
   const [location, setLocation] = useState(l.location||"");
   const [locationOther, setLocationOther] = useState(l.locationOther||"");
