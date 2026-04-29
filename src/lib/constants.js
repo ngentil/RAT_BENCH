@@ -5,7 +5,7 @@ export const MACHINE_TYPES = [
   {icon:"⚡",label:"Generator"},{icon:"🏍️",label:"Motorcycle"},{icon:"🛵",label:"Scooter"},
   {icon:"🛵",label:"Moped"},{icon:"🏍️",label:"Quad Bike"},{icon:"🏎️",label:"Go-kart"},
   {icon:"🚗",label:"Vehicle"},{icon:"🚧",label:"Tracked Machine"},
-  {icon:"⚙️",label:"Custom"},
+  {icon:"⛵",label:"Outboard Motor"},{icon:"⚙️",label:"Custom"},
 ];
 
 // Context-aware placeholders
@@ -373,14 +373,11 @@ export const LIGHT_LOCATIONS = [
   "Reverse Lights","Trailer Lights","Auxiliary / Work Lights",
   "Dash / Interior","Other"
 ];
-
 export const LIGHT_TYPES = [
   "Halogen","LED","HID / Xenon","Sealed Beam",
   "Sealed LED Unit","Incandescent","Fluorescent","Other"
 ];
-
 export const LIGHT_VOLTAGES = ["12V","24V"];
-
 export const LIGHT_PLUGS = [
   "H1","H3","H4","H7","H8","H9","H11","H13",
   "9005 / HB3","9006 / HB4","9012 / HIR2",
