@@ -93,10 +93,6 @@ function MachineForm({existing,onSave,onClose,company}){
   const [iacSensor,setIacSensor]=useState(e.iacSensor||"");
   // fasteners - dynamic array
   const [fasteners,setFasteners]=useState(e.fasteners||[]);
-  // Lighting - dynamic array
-  const [lighting, setLighting] = useState(e.lighting||[]);
-  const [lightEditIdx, setLightEditIdx] = useState(null);
-  const [lightAdding, setLightAdding] = useState(false);
   // pump
   const [pumpBrand,setPumpBrand]=useState(e.pumpBrand||"");
   const [pumpModel,setPumpModel]=useState(e.pumpModel||"");
@@ -2019,16 +2015,6 @@ function MachineForm({existing,onSave,onClose,company}){
                 {attachAdding&&<AttachForm a={{}} onSave={sv=>{setAttachments(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setAttachAdding(false);}} onCancel={()=>setAttachAdding(false)} />}
                 {!attachAdding&&attachEditIdx===null&&<button onClick={()=>setAttachAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Attachment</button>}
               {/* Lighting */}
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,marginTop:16}}>Lighting</div>
-                {lighting.map((l,idx)=>(
-                  lightEditIdx===idx
-                    ? <LightingForm key={l.id||idx} l={l} onSave={sv=>{setLighting(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||crypto.randomUUID()}:x));setLightEditIdx(null);}} onCancel={()=>setLightEditIdx(null)} />
-                    : <LightingCard key={l.id||idx} l={l} onEdit={()=>{setLightEditIdx(idx);setLightAdding(false);}} onRemove={()=>{if(confirm("Remove this entry?"))setLighting(prev=>prev.filter((_,i)=>i!==idx));}} />
-                ))}
-                {lightAdding&&<LightingForm l={{}} onSave={sv=>{setLighting(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setLightAdding(false);}} onCancel={()=>setLightAdding(false)} />}
-                {!lightAdding&&lightEditIdx===null&&<button onClick={()=>setLightAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Light</button>}
-
-                {/* Lighting */}
                 <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,marginTop:16}}>Lighting</div>
                 {lighting.map((l,idx)=>(
                   lightEditIdx===idx
