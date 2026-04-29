@@ -107,9 +107,6 @@ All of these must:
   - Output: "Surplus: 120W — battery charging while driving" / "Deficit: 80W — battery draining"
   - Show estimated time to drain battery at current deficit (needs battery Ah)
 
-### Generator — Amps Output (done ✅)
-- Generator watts ÷ voltage → amps output
-
 ### Generator — Largest Motor It Can Start
 - Generator kW rating → **max motor HP it can start**
   - Motors draw 6–8× running current on startup
