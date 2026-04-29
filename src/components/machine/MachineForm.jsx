@@ -159,6 +159,7 @@ function MachineForm({existing,onSave,onClose,company}){
   const [secBrakes,setSecBrakes]=useState(false);
   const [secTyres,setSecTyres]=useState(false);
   const [secElectrics,setSecElectrics]=useState(false);
+  const [secLighting,setSecLighting]=useState(false);
   const [batteryCCA,setBatteryCCA]=useState(e.batteryCCA||"");
   const [batteryAh,setBatteryAh]=useState(e.batteryAh||"");
   const [batteryDimensions,setBatteryDimensions]=useState(e.batteryDimensions||"");
@@ -1424,6 +1425,29 @@ function MachineForm({existing,onSave,onClose,company}){
             </div>;
           })()}
 
+          {/* Lighting */}
+          {showElectrics(type,customSections)&&(()=>{
+            const hasData=lighting.length>0;
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecLighting(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Lighting</span>
+                  {hasData&&!secLighting&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secLighting?"▲":"▼"}</span>
+              </div>
+              {secLighting&&<div style={{paddingTop:12}}>
+                {lighting.map((l,idx)=>(
+                  lightEditIdx===idx
+                    ? <LightingForm key={l.id||idx} l={l} onSave={sv=>{setLighting(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||crypto.randomUUID()}:x));setLightEditIdx(null);}} onCancel={()=>setLightEditIdx(null)} />
+                    : <LightingCard key={l.id||idx} l={l} onEdit={()=>{setLightEditIdx(idx);setLightAdding(false);}} onRemove={()=>{if(confirm("Remove this entry?"))setLighting(prev=>prev.filter((_,i)=>i!==idx));}} />
+                ))}
+                {lightAdding&&<LightingForm l={{}} onSave={sv=>{setLighting(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setLightAdding(false);}} onCancel={()=>setLightAdding(false)} />}
+                {!lightAdding&&lightEditIdx===null&&<button onClick={()=>setLightAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Light</button>}
+              </div>}
+            </div>;
+          })()}
+
           {/* Cooling System */}
           {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
             const hasData=!!(coolingType||coolantType||coolantCapacity||thermostatTemp);
@@ -2014,15 +2038,6 @@ function MachineForm({existing,onSave,onClose,company}){
                 ))}
                 {attachAdding&&<AttachForm a={{}} onSave={sv=>{setAttachments(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setAttachAdding(false);}} onCancel={()=>setAttachAdding(false)} />}
                 {!attachAdding&&attachEditIdx===null&&<button onClick={()=>setAttachAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Attachment</button>}
-              {/* Lighting */}
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,marginTop:16}}>Lighting</div>
-                {lighting.map((l,idx)=>(
-                  lightEditIdx===idx
-                    ? <LightingForm key={l.id||idx} l={l} onSave={sv=>{setLighting(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||crypto.randomUUID()}:x));setLightEditIdx(null);}} onCancel={()=>setLightEditIdx(null)} />
-                    : <LightingCard key={l.id||idx} l={l} onEdit={()=>{setLightEditIdx(idx);setLightAdding(false);}} onRemove={()=>{if(confirm("Remove this entry?"))setLighting(prev=>prev.filter((_,i)=>i!==idx));}} />
-                ))}
-                {lightAdding&&<LightingForm l={{}} onSave={sv=>{setLighting(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setLightAdding(false);}} onCancel={()=>setLightAdding(false)} />}
-                {!lightAdding&&lightEditIdx===null&&<button onClick={()=>setLightAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Light</button>}
 
               </div>}
             </div>;
