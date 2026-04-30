@@ -88,19 +88,11 @@ All of these must:
 - Conrod length ÷ stroke → rod ratio with Short / Balanced / Long label
 
 
-### Electrical — Wire Voltage Drop
-- Wire gauge + run length + current draw → **voltage drop in V**
-  - Use resistivity table per gauge (stored as a constant, not user data)
-  - "Your 10m run of 6mm² cable drops 0.8V at 30A"
-  - Flag if drop >0.5V (problematic) or >1V (significant issue)
-  - In imperial: AWG gauge, feet
+### Electrical — Wire Voltage Drop (done ✅)
+- Wire gauge (mm²) + run length + current → V drop with Acceptable / Noticeable / Significant flag
 
-### Electrical — Net Charge Rate (Smart Mode)
-- Total accessory load (W) + alternator output (W) → **net charge rate**
-  - Smart Mode: pulls accessory load from `machine.lighting` amps + future auxiliary sections
-  - Manual mode: user enters total load manually
-  - Output: "Surplus: 120W — battery charging while driving" / "Deficit: 80W — battery draining"
-  - Show estimated time to drain battery at current deficit (needs battery Ah)
+### Electrical — Net Charge Rate (done ✅)
+- Alternator amps × voltage − total load W → surplus/deficit with drain time estimate
 
 ### Generator — Largest Motor It Can Start (done ✅)
 - Generator kW → max motor HP it can start (6× surge allowance)
@@ -123,15 +115,11 @@ All of these must:
 ### Drivetrain — Final Drive Ratio (done ✅)
 - Front + rear sprocket teeth → ratio:1 label with "rear wheel turns once per X engine revolutions"
 
-### Drivetrain — Total Reduction + Top Speed (queued)
-- Primary ratio × gearbox ratio × final drive → total reduction
-- Total reduction + wheel circumference + redline → theoretical top speed in km/h
+### Drivetrain — Total Reduction + Top Speed (done ✅)
+- Primary ratio × top gear × final drive → total reduction → top speed in km/h + mph
 
-### Suspension — Static Sag
-- Spring rate + rider/vehicle weight → **recommended static sag range**
-  - Motocross standard: sag = 95–105mm (varies by discipline)
-  - "At 80kg and a 95 N/mm spring, target sag is 28–32mm"
-  - Setup knowledge people pay suspension tuners for
+### Suspension — Spring Rate Check (done ✅)
+- Spring rate (N/mm) + rider weight → recommended rate range, flags too soft / too stiff
 
 ---
 
