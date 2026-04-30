@@ -210,11 +210,17 @@ These only become possible once the referenced sections exist:
 - **Setting label**: "No sync" — buried in user settings under Advanced, sounds like a storage preference
 - **Not global**: enabling "No sync" in settings does NOT automatically encrypt all machines
 - **Per-machine activation — hidden gesture**:
-  - Hold down the **+ Add** button for 2–3 seconds
+  - Hold down the **+ Add** button for 3 seconds
   - Button flashes green while held
   - On release: semi-transparent notification slides in — *"Encrypted notes and photos turned on"*
-  - That machine is now flagged `encrypted: true` — notes and photos encrypt from that point on
+  - That machine is flagged `encrypted: true` — notes and photos encrypt from that point on
   - No visual indicator on the machine card — intentionally invisible
+- **Per-machine unlock on login**:
+  - Encrypted machines show blank notes and photos — no lock icon, no hint, just empty
+  - To view: navigate to that machine, hold + Add for 3 seconds → flashes green → passphrase prompt
+  - Notes and photos appear for that machine only, for that session
+  - Other encrypted machines remain blank until unlocked the same way individually
+  - Each machine requires its own unlock — intentionally granular
 - **Setting gate**: "No sync" must be enabled in user settings first — hold gesture does nothing if it isn't
 - **On enable in settings**:
   - Settings UI shows: *"Check console for instructions"* — nothing more
