@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS } from '../../lib/constants';
+import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
 import { SL, FL, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
+import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
-function MachineForm({existing,onSave,onClose,company}){
+function MachineForm({existing,onSave,onClose,company,units="metric"}){
   const e=existing||{};
   const isNew=true;
+  const [smartMode,setSmartMode]=useState(e.smartMode||false);
   const [companyId,setCompanyId]=useState(e.companyId||null);
   const [type,setType]=useState(e.type||"");
   const [name,setName]=useState(e.name||"");
@@ -358,6 +360,22 @@ function MachineForm({existing,onSave,onClose,company}){
   const [lighting,setLighting]=useState(e.lighting||[]);
   const [lightEditIdx,setLightEditIdx]=useState(null);
   const [lightAdding,setLightAdding]=useState(false);
+  // outboard-specific
+  const [obShaftLength,setObShaftLength]=useState(e.obShaftLength||"");
+  const [obTransomHeight,setObTransomHeight]=useState(e.obTransomHeight||"");
+  const [obTiltTrim,setObTiltTrim]=useState(e.obTiltTrim||"");
+  const [obSteering,setObSteering]=useState(e.obSteering||"");
+  const [obPropPitch,setObPropPitch]=useState(e.obPropPitch||"");
+  const [obPropDiameter,setObPropDiameter]=useState(e.obPropDiameter||"");
+  const [obPropMaterial,setObPropMaterial]=useState(e.obPropMaterial||"");
+  const [obGearRatio,setObGearRatio]=useState(e.obGearRatio||"");
+  const [obLowerUnitOilType,setObLowerUnitOilType]=useState(e.obLowerUnitOilType||"");
+  const [obLowerUnitOilCapacity,setObLowerUnitOilCapacity]=useState(e.obLowerUnitOilCapacity||"");
+  const [obAnodeMaterial,setObAnodeMaterial]=useState(e.obAnodeMaterial||"");
+  const [obBreakInHours,setObBreakInHours]=useState(e.obBreakInHours||"");
+  const [obImpellerLastChanged,setObImpellerLastChanged]=useState(e.obImpellerLastChanged||"");
+  const [secOutboard,setSecOutboard]=useState(false);
+  const [editOutboard,setEditOutboard]=useState(isNew);
   const [secPto,setSecPto]=useState(false);
   const [secChainsaw,setSecChainsaw]=useState(false);
   const [editChainsaw,setEditChainsaw]=useState(isNew);
@@ -427,7 +445,7 @@ function MachineForm({existing,onSave,onClose,company}){
       setName(finalName);
     }
     if(!isTracked(type)&&!finalName){setNameErr(true);return;}
-    onSave({id:e.id||uid(),companyId:companyId||null,type,name:finalName,make:make.trim(),model:model.trim(),
+    onSave({id:e.id||uid(),companyId:companyId||null,smartMode,type,name:finalName,make:make.trim(),model:model.trim(),
       desc:desc.trim(),source,status,photos,year:year.trim(),colour:colour.trim(),bodyType,driveConfig,plugType:plugType.trim(),strokeType,motorType,motorPower:motorPower.toString(),motorTorque:motorTorque.toString(),controllerBrand:controllerBrand.trim(),packVoltage:packVoltage.toString(),packCapacity:packCapacity.toString(),battChemistry,cellCount:cellCount.toString(),chargePort,maxChargeRate:maxChargeRate.toString(),evRange:evRange.toString(),regenBraking,cylCount,firingOrder:firingOrder.trim(),valveTrain,locknutSize,camType,
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
       iValveFace:iValveFace.toString().trim(),iValveStem:iValveStem.toString().trim(),iValveLift:iValveLift.toString().trim(),iValveWeight:iValveWeight.toString().trim(),
@@ -457,7 +475,8 @@ function MachineForm({existing,onSave,onClose,company}){
       trackedBrand,trackedBrandOther,trackedHours:trackedHours.toString(),trackedSubtype,trackedSubtypeOther,operatingWeight,operatingWeightOther,
       trackType,trackWidth:trackWidth.toString(),trackPitch:trackPitch.toString(),trackLinks:trackLinks.toString(),sprocketTeeth:sprocketTeeth.toString(),undercarriageHours:undercarriageHours.toString(),groundContactLength:groundContactLength.toString(),
       hydPumpCount,hydPumpType,hydSystemPressure:hydSystemPressure.toString(),hydOilCapacity:hydOilCapacity.toString(),hydReliefValve:hydReliefValve.toString(),
-      hydRams,attachments,lighting});
+      hydRams,attachments,lighting,
+      obShaftLength,obTransomHeight,obTiltTrim,obSteering,obPropPitch:obPropPitch.toString().trim(),obPropDiameter:obPropDiameter.toString().trim(),obPropMaterial,obGearRatio,obLowerUnitOilType:obLowerUnitOilType.trim(),obLowerUnitOilCapacity:obLowerUnitOilCapacity.toString().trim(),obAnodeMaterial,obBreakInHours:obBreakInHours.toString().trim(),obImpellerLastChanged:obImpellerLastChanged.trim()});
   };
 
   return (
@@ -465,7 +484,10 @@ function MachineForm({existing,onSave,onClose,company}){
       <div style={mdl} onClick={ev=>ev.stopPropagation()}>
         <div style={mdlH}>
           <b style={{fontSize:14,textTransform:"uppercase"}}>{existing?"Edit Machine":"Add Machine"}</b>
-          <button style={{...btnG,...sm}} onClick={onClose}>✕</button>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={()=>setSmartMode(o=>!o)} style={{...btnG,...sm,fontSize:8,padding:"4px 8px",...(smartMode?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}} title={smartMode?"Smart Mode ON — auto-populates linked fields":"Smart Mode OFF — all fields manual"}>⚡ Smart</button>
+            <button style={{...btnG,...sm}} onClick={onClose}>✕</button>
+          </div>
         </div>
         {showSectionPicker&&<SectionPicker selected={customSections} onSave={secs=>{setCustomSections(secs);setShowSectionPicker(false);}} onClose={()=>setShowSectionPicker(false)} />}
         <div style={mdlB}>
@@ -638,7 +660,7 @@ function MachineForm({existing,onSave,onClose,company}){
                   {crankStroke&&wotRpm&&(()=>{
                     const mps=(2*parseFloat(crankStroke)/1000*parseFloat(wotRpm)/60);
                     const label=mps<15?"Normal (<15 m/s)":mps<=20?"Hot (15–20 m/s)":"Race limit (>20 m/s)";
-                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Mean piston speed: {mps.toFixed(1)} m/s — {label}</div>;
+                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Mean piston speed: {fmtSpeed(mps,units)} — {label}</div>;
                   })()}
                   <div style={{...col,maxWidth:180}}><FL t="Cylinder bore diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 38" step="0.01" min="0" value={boreDiameter} onChange={ev=>setBoreDiameter(ev.target.value)} /></div>
                   {boreDiameter&&crankStroke&&(()=>{
@@ -1065,7 +1087,7 @@ function MachineForm({existing,onSave,onClose,company}){
                     const m=mixRatio.match(/(\d+(?:\.\d+)?)/);
                     if(!m) return null;
                     const ml=(parseFloat(fuelTankCapacity)*1000/parseFloat(m[1])).toFixed(0);
-                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Add {ml}ml of 2-stroke oil per full {fuelTankCapacity}L tank</div>;
+                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Add {fmtSmallVolume(parseFloat(ml),units)} of 2-stroke oil per full {fuelTankCapacity}L tank</div>;
                   })()}
                 </>}
 
@@ -1401,7 +1423,7 @@ function MachineForm({existing,onSave,onClose,company}){
                     const k=parseFloat(springRate), w=parseFloat(riderWeight);
                     const recMin=w*0.60, recMax=w*0.70;
                     const label=k<recMin?"Too soft for this weight — consider stiffer spring":k>recMax?"Too stiff for this weight — consider softer spring":"Good match for rider weight";
-                    lines.push(`At ${w}kg rider: ${label} (recommended ${recMin.toFixed(0)}–${recMax.toFixed(0)} N/mm)`);
+                    lines.push(`At ${w}kg rider: ${label} (recommended ${fmtSpring(recMin,units)}–${fmtSpring(recMax,units)})`);
                   }
                   return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>{lines.map((l,i)=><div key={i}>⚡ {l}</div>)}</div>;
                 })()}
@@ -1682,10 +1704,21 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Output (amps)" /><input style={inp} type="number" placeholder="e.g. 40" step="0.5" min="0" value={chargeAmps} onChange={ev=>setChargeAmps(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Rectifier / Regulator fitted" /><select style={sel} value={rectRegFitted} onChange={ev=>setRectRegFitted(ev.target.value)}><option value="">— not set —</option>{RECT_REG.map(r=><option key={r}>{r}</option>)}</select></div>
                 </div>
-                <div style={{...col,maxWidth:200}}><FL t="Total accessory load (W)" /><input style={inp} type="number" placeholder="e.g. 120" step="5" min="0" value={totalLoadWatts} onChange={ev=>setTotalLoadWatts(ev.target.value)} /></div>
-                {chargeAmps&&chargeVoltage&&chargeVoltage!=="Dual"&&totalLoadWatts&&(()=>{
+                {(()=>{
+                  const smartLoad=smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0):null;
+                  const displayLoad=smartMode&&smartLoad>0?smartLoad.toString():totalLoadWatts;
+                  return <div style={{...col,maxWidth:200}}>
+                    <FL t={smartMode&&smartLoad>0?"Total accessory load (W) ⚡ auto":"Total accessory load (W)"} />
+                    <input style={{...inp,...(smartMode&&smartLoad>0?{opacity:0.6}:{})}} type="number" placeholder="e.g. 120" step="5" min="0"
+                      value={displayLoad} disabled={smartMode&&smartLoad>0}
+                      onChange={ev=>setTotalLoadWatts(ev.target.value)} />
+                    {smartMode&&smartLoad>0&&<div style={{fontSize:8,color:MUT,marginTop:3}}>From {lighting.length} lighting {lighting.length===1?"entry":"entries"} — edit in Lighting section to change</div>}
+                  </div>;
+                })()}
+                {chargeAmps&&chargeVoltage&&chargeVoltage!=="Dual"&&(smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0)>0:totalLoadWatts)&&(()=>{
+                  const loadW=smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0):parseFloat(totalLoadWatts);
                   const altW=parseFloat(chargeAmps)*parseFloat(chargeVoltage);
-                  const net=altW-parseFloat(totalLoadWatts);
+                  const net=altW-loadW;
                   const [label,clr]=net>=0?[`Surplus ${net.toFixed(0)}W — battery charging while running`,ACC]:[`Deficit ${Math.abs(net).toFixed(0)}W — battery draining`,"#e05252"];
                   const drainStr=(net<0&&batteryAh&&chargeVoltage)?` (${((parseFloat(batteryAh)*parseFloat(chargeVoltage))/Math.abs(net)).toFixed(1)}h to drain at this load)`:"";
                   return <div style={{fontSize:10,color:clr,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {label}{drainStr}</div>;
@@ -2108,7 +2141,7 @@ function MachineForm({existing,onSave,onClose,company}){
                 {bladeLength&&wotRpm&&(()=>{
                   const v=Math.PI*(parseFloat(bladeLength)/1000)*parseFloat(wotRpm)/60;
                   const label=v<270?"Too slow — may tear grass":v<=290?"Optimal (270–290 m/s)":"Above safe limit";
-                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Blade tip speed: {v.toFixed(0)} m/s — {label}</div>;
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Blade tip speed: {fmtSpeed(v,units)} — {label}</div>;
                 })()}
                 {editBlade&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditBlade(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
@@ -2144,7 +2177,7 @@ function MachineForm({existing,onSave,onClose,company}){
                 {trackPitch&&trackLinks&&(()=>{
                   const perSide=(parseFloat(trackPitch)/1000*parseFloat(trackLinks)).toFixed(2);
                   const total=(parseFloat(perSide)*2).toFixed(2);
-                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Track length: {perSide}m per side / {total}m total</div>;
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Track length: {fmtLength(parseFloat(perSide),units)} per side / {fmtLength(parseFloat(total),units)} total</div>;
                 })()}
                 {trackType&&undercarriageHours&&(()=>{
                   const h=parseFloat(undercarriageHours);
@@ -2158,8 +2191,9 @@ function MachineForm({existing,onSave,onClose,company}){
                   const m=operatingWeight.match(/^(\d+(?:\.\d+)?)/);
                   if(!m) return null;
                   const gp=(parseFloat(m[1])*9.81/(2*(parseFloat(trackWidth)/1000)*(parseFloat(groundContactLength)/1000))).toFixed(1);
-                  const label=parseFloat(gp)<60?"Less than a walking person (≈60 kPa)":parseFloat(gp)<200?"Comparable to a small car":parseFloat(gp)<400?"Comparable to a large truck":"High ground pressure — restricted terrain";
-                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Ground pressure: {gp} kPa — {label}</div>;
+                  const gpNum=parseFloat(gp);
+                  const label=gpNum<60?"Less than a walking person (≈60 kPa)":gpNum<200?"Comparable to a small car":gpNum<400?"Comparable to a large truck":"High ground pressure — restricted terrain";
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Ground pressure: {fmtPressure(gpNum,units)} — {label}</div>;
                 })()}
               </div>}
             </div>;
@@ -2294,6 +2328,104 @@ function MachineForm({existing,onSave,onClose,company}){
                 </div>
                 <div style={{...col,maxWidth:140}}><FL t="Tooth count" /><input style={inp} type="number" placeholder="e.g. 7" step="1" min="0" value={sprocketTeethCS} onChange={ev=>setSprocketTeethCS(ev.target.value)} /></div>
                 {editChainsaw&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditChainsaw(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Outboard Motor */}
+          {isOutboard(type)&&(()=>{
+            const hasData=!!(obShaftLength||obTiltTrim||obSteering||obPropPitch||obGearRatio||obAnodeMaterial);
+            const obSum=[
+              [obShaftLength,obTiltTrim,obSteering].filter(Boolean).join(" · "),
+              [obPropDiameter?obPropDiameter+'" dia':null,obPropPitch?obPropPitch+'" pitch':null,obPropMaterial].filter(Boolean).join(" · "),
+              [obGearRatio?"Gear ratio: "+obGearRatio:null,obAnodeMaterial].filter(Boolean).join(" · "),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecOutboard(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Outboard Specs</span>
+                  {hasData&&!secOutboard&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secOutboard?"▲":"▼"}</span>
+              </div>
+              {secOutboard&&<div style={{paddingTop:12}}>
+                {hasData&&!editOutboard&&<SummaryCard onEdit={()=>setEditOutboard(true)} lines={obSum} />}
+                {(editOutboard||!hasData)&&<>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Mounting</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Shaft length" />
+                    <select style={sel} value={obShaftLength} onChange={ev=>setObShaftLength(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {OUTBOARD_SHAFT_LENGTHS.map(o=><option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div style={{...col,flex:1}}><FL t="Transom height (mm)" /><input style={inp} type="number" placeholder="e.g. 508" step="1" min="0" value={obTransomHeight} onChange={ev=>setObTransomHeight(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Tilt / trim" />
+                    <select style={sel} value={obTiltTrim} onChange={ev=>setObTiltTrim(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {OUTBOARD_TILT_TRIM.map(o=><option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Steering" />
+                    <select style={sel} value={obSteering} onChange={ev=>setObSteering(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {OUTBOARD_STEERING.map(o=><option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Propeller</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Diameter (inches)" /><input style={inp} type="number" placeholder='e.g. 13' step="0.5" min="0" value={obPropDiameter} onChange={ev=>setObPropDiameter(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Pitch (inches)" /><input style={inp} type="number" placeholder='e.g. 17' step="0.5" min="0" value={obPropPitch} onChange={ev=>setObPropPitch(ev.target.value)} /></div>
+                </div>
+                <div style={{...col,maxWidth:220}}>
+                  <FL t="Material" />
+                  <select style={sel} value={obPropMaterial} onChange={ev=>setObPropMaterial(ev.target.value)}>
+                    <option value="">— not set —</option>
+                    {OUTBOARD_PROP_MAT.map(o=><option key={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Lower Unit</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Gear ratio" />
+                    <select style={sel} value={obGearRatio} onChange={ev=>setObGearRatio(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {OUTBOARD_GEAR_RATIOS.map(o=><option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div style={{...col,flex:1}}><FL t="Oil capacity (mL)" /><input style={inp} type="number" placeholder="e.g. 650" step="10" min="0" value={obLowerUnitOilCapacity} onChange={ev=>setObLowerUnitOilCapacity(ev.target.value)} /></div>
+                </div>
+                <div style={col}><FL t="Oil type" /><input style={inp} placeholder="e.g. Yamaha Gear Lube, SAE 90 GL-4" value={obLowerUnitOilType} onChange={ev=>setObLowerUnitOilType(ev.target.value)} /></div>
+                {obPropPitch&&obGearRatio&&wotRpm&&(()=>{
+                  const gr=parseFloat(obGearRatio.split(":")[0]||obGearRatio);
+                  const speedMph=(parseFloat(wotRpm)*parseFloat(obPropPitch))/(gr*1056);
+                  const speedKmh=speedMph*1.852;
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Theoretical hull speed at WOT: {speedKmh.toFixed(1)} km/h ({speedMph.toFixed(1)} knots)</div>;
+                })()}
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Maintenance</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Anode material" />
+                    <select style={sel} value={obAnodeMaterial} onChange={ev=>setObAnodeMaterial(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {OUTBOARD_ANODES.map(o=><option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div style={{...col,flex:1}}><FL t="Break-in hours remaining" /><input style={inp} type="number" placeholder="e.g. 10" step="1" min="0" value={obBreakInHours} onChange={ev=>setObBreakInHours(ev.target.value)} /></div>
+                </div>
+                <div style={col}><FL t="Water pump impeller last changed" /><input style={inp} placeholder="e.g. Jan 2024 / 120 hours" value={obImpellerLastChanged} onChange={ev=>setObImpellerLastChanged(ev.target.value)} /></div>
+                <div style={{fontSize:9,color:MUT,marginTop:6}}>Cooling: Raw water (self-cooling) — flush with fresh water after salt use</div>
+                {editOutboard&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditOutboard(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;

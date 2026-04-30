@@ -47,18 +47,19 @@ export const TRACKED     = ["Tracked Machine"];
 export const isCustom      = t => t==="Custom";
 export const isVehicle     = t => t==="Vehicle";
 export const isTracked     = t => t==="Tracked Machine";
+export const isOutboard    = t => t==="Outboard Motor";
 export const showForCustom = (sec, cs) => cs===null||cs===undefined||cs.includes(sec);
 export const ALL_SECTIONS  = ["Engine","Ignition System","Starter System","Port Dimensions","Output Shaft / PTO","Fuel System","Fastener Specs","Pump","Generator Output","Drivetrain","Suspension","Brakes","Tyres","Electrics","Blade / Deck","Notes"];
-export const ALL_TYPES   = [...HANDHELD,...WHEELED,"Pressure Washer","Generator",...MOTO,"Vehicle","Tracked Machine","Custom"];
+export const ALL_TYPES   = [...HANDHELD,...WHEELED,"Pressure Washer","Generator",...MOTO,"Vehicle","Tracked Machine","Outboard Motor","Custom"];
 
-export const showPTO        = (t,cs) => isCustom(t) ? showForCustom("Output Shaft / PTO",cs) : !MOTO.includes(t)&&!isVehicle(t)&&!isTracked(t);
+export const showPTO        = (t,cs) => isCustom(t) ? showForCustom("Output Shaft / PTO",cs) : !MOTO.includes(t)&&!isVehicle(t)&&!isTracked(t)&&!isOutboard(t);
 export const showPump       = (t,cs) => isCustom(t) ? showForCustom("Pump",cs) : t==="Pressure Washer";
 export const showGenOutput  = (t,cs) => isCustom(t) ? showForCustom("Generator Output",cs) : t==="Generator";
 export const showDrivetrain = (t,cs) => isCustom(t) ? showForCustom("Drivetrain",cs) : [...MOTO,"Ride-on Mower","Vehicle"].includes(t);
 export const showSuspension = (t,cs) => isCustom(t) ? showForCustom("Suspension",cs) : [...MOTO,"Vehicle"].includes(t);
 export const showBrakes     = (t,cs) => isCustom(t) ? showForCustom("Brakes",cs) : [...MOTO,"Ride-on Mower","Vehicle"].includes(t);
 export const showTyres      = (t,cs) => isCustom(t) ? showForCustom("Tyres",cs) : [...MOTO,"Ride-on Mower","Lawnmower","Vehicle"].includes(t);
-export const showElectrics  = (t,cs) => isCustom(t) ? showForCustom("Electrics",cs) : [...MOTO,"Generator","Vehicle","Tracked Machine"].includes(t);
+export const showElectrics  = (t,cs) => isCustom(t) ? showForCustom("Electrics",cs) : [...MOTO,"Generator","Vehicle","Tracked Machine","Outboard Motor"].includes(t);
 export const showBlade      = (t,cs) => isCustom(t) ? showForCustom("Blade / Deck",cs) : ["Lawnmower","Ride-on Mower"].includes(t);
 
 // Vehicle-specific export constants
@@ -378,6 +379,13 @@ export const LIGHT_TYPES = [
   "Sealed LED Unit","Incandescent","Fluorescent","Other"
 ];
 export const LIGHT_VOLTAGES = ["12V","24V"];
+export const OUTBOARD_SHAFT_LENGTHS = ["Short (381mm / 15\")", "Long (508mm / 20\")", "Extra Long (635mm / 25\")", "Ultra Long (762mm / 30\")"];
+export const OUTBOARD_TILT_TRIM    = ["Manual tilt", "Power tilt", "Power trim & tilt"];
+export const OUTBOARD_STEERING     = ["Tiller handle", "Remote (cable)", "Hydraulic remote"];
+export const OUTBOARD_PROP_MAT     = ["Aluminium", "Stainless steel", "Bronze", "Composite / plastic"];
+export const OUTBOARD_ANODES       = ["Zinc (saltwater / brackish)", "Aluminium (all water)", "Magnesium (freshwater only)"];
+export const OUTBOARD_GEAR_RATIOS  = ["1.83:1","1.92:1","2.00:1","2.08:1","2.15:1","2.27:1","2.33:1","2.50:1","Other"];
+
 export const LIGHT_PLUGS = [
   "H1","H3","H4","H7","H8","H9","H11","H13",
   "9005 / HB3","9006 / HB4","9012 / HIR2",
