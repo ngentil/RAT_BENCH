@@ -205,47 +205,14 @@ These only become possible once the referenced sections exist:
 
 ## App-Level Features
 
-### Client-Side Encryption (Notes & Photos)
-- **Scope**: notes field + photos only per machine — no other fields
-- **Setting label**: "No sync" — buried in user settings under Advanced, sounds like a storage preference
-- **Not global**: enabling "No sync" in settings does NOT automatically encrypt all machines
-- **Per-machine activation — hidden gesture**:
-  - Navigate to a machine, hold down the **Edit** button for 3 seconds
-  - Button flashes green while held
-  - On release: semi-transparent notification slides in — *"Encrypted notes and photos turned on"*
-  - That machine is flagged `encrypted: true` — notes and photos encrypt from that point on
-  - No visual indicator on the machine card — intentionally invisible
-- **Per-machine unlock on login**:
-  - Encrypted machines show blank notes and photos — no lock icon, no hint, just empty
-  - To view: navigate to that machine, hold Edit for 3 seconds → flashes green → passphrase prompt
-  - Notes and photos appear for that machine only, for that session
-  - Other encrypted machines remain blank until unlocked the same way individually
-  - Each machine requires its own unlock — intentionally granular
-- **Setting gate**: "No sync" must be enabled in user settings first — hold gesture does nothing if it isn't
-- **On enable in settings**:
-  - Settings UI shows: *"Check console for instructions"* — nothing more
-  - App logs to browser console:
-    ```
-    [RAT BENCH] No sync enabled.
-    To encrypt a machine: navigate to that machine, hold the Edit button for 3 seconds until it flashes green, then release.
-    A notification will confirm encryption is active for that machine.
-    Notes and photos on that machine will be stored locally only.
-    To disable: hold Edit again on an encrypted machine.
-    Keep your passphrase safe — there is no recovery.
-    ```
-- **How encryption works**:
-  - User enables "No sync" → prompted to set a vault passphrase once
-  - Browser derives AES-256-GCM key via PBKDF2 (Web Crypto API — no library needed)
-  - Random salt generated on setup, stored in user profile (safe — useless without passphrase)
-  - Notes + photos encrypted in browser before any save call — Supabase only ever stores ciphertext
-  - Key lives in session memory only, never touches the server
-  - On next login: silent passphrase prompt to unlock — can be skipped, encrypted content shows as blank
-  - Lose passphrase → data is gone, no recovery (true E2E, by design)
-- **New files needed**:
-  - `src/lib/crypto.js` — deriveKey, encryptText, decryptText, encryptPhoto helpers
-  - `src/contexts/CryptoContext.jsx` — holds derived key in memory for the session
-  - `VaultSetup` + `VaultUnlock` small modals
-  - DB: add `encryptionSalt` column to user profile, `encrypted` boolean to machine
+### Photos — Migrate to Supabase Storage
+- Currently photos are stored as base64 strings inside the database row — expensive and slow
+- Each photo ≈ 300KB in the DB, 10 photos per machine ≈ 3MB
+- Free tier burns through 500MB fast once users are photo-heavy
+- **Fix**: store photos in Supabase Storage (object storage), save URLs in the DB row instead
+- Storage free tier = 1GB, Pro = 100GB — far cheaper per MB, purpose-built for it
+- Will also make the app faster — images load from CDN not from a DB query
+- Needs: upload helper in `src/lib/storage.js`, update PhotoAdder to upload + return URL, update MachineCard/MachineForm to read URLs instead of base64
 
 ### Serial Numbers / VINs
 - Dedicated field with format validation per machine type
