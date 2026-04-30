@@ -319,6 +319,10 @@ function MachineForm({existing,onSave,onClose,company}){
   const [secNotes,setSecNotes]=useState(false);
   // tracked machine
   const [secTracked,setSecTracked]=useState(false);
+  const [secUndercarriage,setSecUndercarriage]=useState(false);
+  const [secHydSystem,setSecHydSystem]=useState(false);
+  const [secHydRams,setSecHydRams]=useState(false);
+  const [secAttachments,setSecAttachments]=useState(false);
   const [trackedBrand,setTrackedBrand]=useState(e.trackedBrand||"");
   const [trackedBrandOther,setTrackedBrandOther]=useState(e.trackedBrandOther||"");
   const [trackedSubtype,setTrackedSubtype]=useState(e.trackedSubtype||"");
@@ -2006,28 +2010,18 @@ function MachineForm({existing,onSave,onClose,company}){
             </div>;
           })()}
 
-          {/* Tracked Machine */}
+          {/* Undercarriage */}
           {isTracked(type)&&(()=>{
-            const hasData=!!(trackedBrand||trackedSubtype||operatingWeight||trackType||hydPumpCount||hydRams.length||attachments.length);
-            const trackedSum=[
-              [trackedBrand==="Other"?trackedBrandOther:trackedBrand, trackedSubtype==="Other"?trackedSubtypeOther:trackedSubtype, operatingWeight==="Other"?operatingWeightOther:operatingWeight].filter(Boolean).join(" · "),
-              [trackType?trackType+" tracks":null, trackWidth?trackWidth+"mm wide":null, undercarriageHours?undercarriageHours+"h undercarriage":null].filter(Boolean).join(" · "),
-              [hydPumpCount?hydPumpCount+" pump"+(hydPumpCount!=="1"?"s":""):null, hydPumpType, hydSystemPressure?hydSystemPressure+"bar":null].filter(Boolean).join(" · "),
-              [hydRams.length?hydRams.length+" ram"+(hydRams.length!==1?"s":"")+" logged":null].filter(Boolean).join(""),
-              [attachments.length?attachments.length+" attachment"+(attachments.length!==1?"s":"")+" logged":null].filter(Boolean).join(""),
-            ].filter(l=>l&&l.trim());
+            const hasData=!!(trackType||trackWidth||trackPitch||trackLinks||sprocketTeeth||undercarriageHours);
             return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecTracked(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+              <div onClick={()=>setSecUndercarriage(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Tracked Machine</span>
-                  {hasData&&!secTracked&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Undercarriage</span>
+                  {hasData&&!secUndercarriage&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
                 </div>
-                <span style={{color:MUT,fontSize:12}}>{secTracked?"▲":"▼"}</span>
+                <span style={{color:MUT,fontSize:12}}>{secUndercarriage?"▲":"▼"}</span>
               </div>
-              {secTracked&&<div style={{paddingTop:12}}>
-                {hasData&&!isNew&&<SummaryCard onEdit={()=>setSecTracked(true)} lines={trackedSum} />}
-
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Undercarriage</div>
+              {secUndercarriage&&<div style={{paddingTop:12}}>
                 <div style={row}>
                   <div style={{...col,flex:1}}><FL t="Track type" /><select style={sel} value={trackType} onChange={ev=>setTrackType(ev.target.value)}><option value="">— not set —</option>{TRACK_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
                   <div style={{...col,flex:1}}><FL t="Track width (mm)" /><input style={inp} type="number" placeholder="e.g. 400" step="1" min="0" value={trackWidth} onChange={ev=>setTrackWidth(ev.target.value)} /></div>
@@ -2040,9 +2034,22 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Sprocket teeth" /><input style={inp} type="number" placeholder="e.g. 25" step="1" min="0" value={sprocketTeeth} onChange={ev=>setSprocketTeeth(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Undercarriage hours" /><input style={inp} type="number" placeholder="e.g. 2400" step="1" min="0" value={undercarriageHours} onChange={ev=>setUndercarriageHours(ev.target.value)} /></div>
                 </div>
+              </div>}
+            </div>;
+          })()}
 
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Hydraulic System</div>
+          {/* Hydraulic System */}
+          {isTracked(type)&&(()=>{
+            const hasData=!!(hydPumpCount||hydPumpType||hydSystemPressure||hydOilCapacity||hydReliefValve);
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecHydSystem(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Hydraulic System</span>
+                  {hasData&&!secHydSystem&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secHydSystem?"▲":"▼"}</span>
+              </div>
+              {secHydSystem&&<div style={{paddingTop:12}}>
                 <div style={row}>
                   <div style={{...col,flex:1}}><FL t="Pump count" /><select style={sel} value={hydPumpCount} onChange={ev=>setHydPumpCount(ev.target.value)}><option value="">— not set —</option>{HYD_PUMP_COUNTS.map(n=><option key={n}>{n}</option>)}</select></div>
                   <div style={{...col,flex:1}}><FL t="Pump type" /><select style={sel} value={hydPumpType} onChange={ev=>setHydPumpType(ev.target.value)}><option value="">— not set —</option>{HYD_PUMP_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
@@ -2052,11 +2059,22 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Oil capacity (L)" /><input style={inp} type="number" placeholder="e.g. 120" step="0.5" min="0" value={hydOilCapacity} onChange={ev=>setHydOilCapacity(ev.target.value)} /></div>
                 </div>
                 <div style={col}><FL t="Relief valve setting (bar)" /><input style={inp} type="number" placeholder="e.g. 350" step="1" min="0" value={hydReliefValve} onChange={ev=>setHydReliefValve(ev.target.value)} /></div>
+              </div>}
+            </div>;
+          })()}
 
-                {/* Hydraulic Rams */}
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Hydraulic Rams</div>
-                <div style={{fontSize:9,color:MUT,marginBottom:10,lineHeight:1.5}}>Log each ram individually — bore, rod, stroke, seal kit.</div>
+          {/* Hydraulic Rams */}
+          {isTracked(type)&&(()=>{
+            const hasData=hydRams.length>0;
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecHydRams(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Hydraulic Rams</span>
+                  {hasData&&!secHydRams&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secHydRams?"▲":"▼"}</span>
+              </div>
+              {secHydRams&&<div style={{paddingTop:12}}>
                 {hydRams.map((r,idx)=>(
                   hydRamEditIdx===idx
                     ? <HydRamForm key={r.id||idx} r={r} onSave={sv=>{setHydRams(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||crypto.randomUUID()}:x));setHydRamEditIdx(null);}} onCancel={()=>setHydRamEditIdx(null)} />
@@ -2064,11 +2082,22 @@ function MachineForm({existing,onSave,onClose,company}){
                 ))}
                 {hydRamAdding&&<HydRamForm r={{}} onSave={sv=>{setHydRams(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setHydRamAdding(false);}} onCancel={()=>setHydRamAdding(false)} />}
                 {!hydRamAdding&&hydRamEditIdx===null&&<button onClick={()=>setHydRamAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Ram</button>}
+              </div>}
+            </div>;
+          })()}
 
-                {/* Attachments */}
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Attachments</div>
-                <div style={{fontSize:9,color:MUT,marginBottom:10,lineHeight:1.5}}>Log each attachment — bucket, blade, auger etc.</div>
+          {/* Attachments */}
+          {isTracked(type)&&(()=>{
+            const hasData=attachments.length>0;
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecAttachments(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Attachments</span>
+                  {hasData&&!secAttachments&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secAttachments?"▲":"▼"}</span>
+              </div>
+              {secAttachments&&<div style={{paddingTop:12}}>
                 {attachments.map((a,idx)=>(
                   attachEditIdx===idx
                     ? <AttachForm key={a.id||idx} a={a} onSave={sv=>{setAttachments(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||crypto.randomUUID()}:x));setAttachEditIdx(null);}} onCancel={()=>setAttachEditIdx(null)} />
@@ -2076,7 +2105,6 @@ function MachineForm({existing,onSave,onClose,company}){
                 ))}
                 {attachAdding&&<AttachForm a={{}} onSave={sv=>{setAttachments(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setAttachAdding(false);}} onCancel={()=>setAttachAdding(false)} />}
                 {!attachAdding&&attachEditIdx===null&&<button onClick={()=>setAttachAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Attachment</button>}
-
               </div>}
             </div>;
           })()}
