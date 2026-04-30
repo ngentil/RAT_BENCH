@@ -278,11 +278,20 @@ These only become possible once the referenced sections exist:
   - Disclaimer and instructions shown directly on the settings page — not in the console
 - [ Cancel ] [ I understand, continue ]
 
+**Provisioning flow:**
+- Owner creates machine → encrypts it → invisible to everyone by default
+- Owner clicks **Provision** → works through org member list, assigns visible/read/write per person
+- Can provision directly to a user, bypassing admin entirely — admin can't see that assignment
+- Can provision to admin to cascade down to their users
+- Admin provisions machines they can see to their users — can only grant up to what they themselves have
+- Owner can override admin — grant a user permissions the admin doesn't have or even doesn't know about
+- ACL is the single source of truth — everything flows from owner down
+
 **What needs building:**
 - `machine_permissions` table — `machine_id`, `user_id`, `can_view`, `can_read`, `can_write`
-- ACL management UI for org owners/admins — per machine, list of users with three toggles each
-- Query layer — only return machines the requesting user has permission to see
-- Encrypted tag on machine card (admins only, where permitted)
+- Provision UI — per machine, scrollable list of org members each with three toggles
+- Query layer — only return machines the requesting user has `can_view` permission for
+- Encrypted tag on machine card (visible to those with access, subtle)
 - Terms modal before encryption is enabled
 - General Terms of Service page for the app (needed before monetisation)
 
