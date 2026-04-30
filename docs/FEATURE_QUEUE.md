@@ -246,3 +246,43 @@ These only become possible once the referenced sections exist:
 - Auto-calc fields have a distinct visual treatment (slightly dimmed, "⚡ calculated" badge)
 - Cross-referenced fields show a small link icon indicating where the value came from
 - Override any auto-calc field by tapping it — it becomes manual and shows "✏️ overridden"
+
+---
+
+## Security & Access Control
+
+### Machine-Level Permissions (ACL)
+- Modelled on Linux read/write/execute — three independent toggles per user per machine:
+  - **Visible** — machine appears in their list at all
+  - **Read** — can open and see full specs, photos, notes
+  - **Write** — can edit the machine
+- A user can be visible+read+write, visible+read only, visible only (knows it exists, can't open it), or not visible at all
+
+**Role hierarchy:**
+- **Owner** — unrestricted, sees everything always, cannot be restricted by anyone
+- **Admin** — elevated defaults, but owner controls their ACL per machine exactly like any other user
+- **User** — ACL controlled by whoever manages them, limited to machines that person can themselves see
+- Rule: you cannot grant access you don't have — if a machine is hidden from an admin, that admin cannot see or manage the ACL for it either
+
+**Encrypted machines within an org:**
+- Admin sees encrypted machines by default (unless owner has hidden them via ACL)
+- Subtle tag on the machine card indicating it is encrypted — not a banner, just a small indicator
+- Per-user visibility still applies — if a user has no ACL entry they don't see the machine exists at all
+
+**Terms of service gate:**
+- Before enabling machine encryption, user must accept a terms modal (plain English):
+  - Legitimate personal and professional use only
+  - No unlawful content
+  - Full compliance with all lawful law enforcement requests
+  - No password recovery — data is permanently inaccessible if passphrase is lost
+  - Disclaimer and instructions shown directly on the settings page — not in the console
+- [ Cancel ] [ I understand, continue ]
+
+**What needs building:**
+- `machine_permissions` table — `machine_id`, `user_id`, `can_view`, `can_read`, `can_write`
+- ACL management UI for org owners/admins — per machine, list of users with three toggles each
+- Query layer — only return machines the requesting user has permission to see
+- Encrypted tag on machine card (admins only, where permitted)
+- Terms modal before encryption is enabled
+- General Terms of Service page for the app (needed before monetisation)
+
