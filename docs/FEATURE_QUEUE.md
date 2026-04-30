@@ -39,7 +39,7 @@ All of these must:
 ### Lighting (done ✅)
 - Watts ÷ volts → amperage draw per light
 
-### Hydraulic Rams 🔥
+### Hydraulic Rams (done ✅)
 - Bore + pressure → **extend force** in tonnes/kN
   - Formula: `F = P × A` where `A = π/4 × bore²`
   - e.g. 60mm bore, 200 bar → 5.65t extend
@@ -53,32 +53,18 @@ All of these must:
 - Pump flow (L/min) + system pressure → **hydraulic power in kW**
   - `P = Q × p / 600`
 
-### Tracked Machines / Ground Pressure
-- Track width + ground contact length + machine weight → **ground pressure in kPa**
-  - `GP = weight / (2 × width × contact_length)`
-  - Compare and label it: "Less than a walking person (≈60 kPa)" / "Equivalent to a small car"
-  - In imperial: PSI
-- Smart Mode: pulls operating weight from machine specs automatically
+### Tracked Machines / Ground Pressure (done ✅)
+- Track width + ground contact length + machine weight → ground pressure in kPa
 
-### Tracked Machines / Undercarriage
-- Track pitch × link count → **total track length per side** and both sides combined
-  - e.g. 154mm × 47 links = 7.24m per side / 14.5m total
-  - Useful when ordering replacement track
-- Undercarriage hours + track type → **wear indicator**
-  - Rubber tracks: 1,500–2,000h typical life / Steel tracks: 2,000–4,000h
-  - Show as %: "2,400h on steel — ~80% of typical service life, start planning replacement"
+### Tracked Machines / Undercarriage (done ✅)
+- Track pitch × link count → total track length per side + both sides combined
+- Undercarriage hours + track type → wear indicator as % of typical service life
 
-### Tracked Machines / Hydraulic System
-- System pressure vs relief valve setting → **safety margin**
-  - Relief should sit 10–15% above operating pressure
-  - Label: "40 bar margin — healthy" / "8 bar margin — tight, check setting" / "Relief at or below system pressure — fault"
-  - The last case is a real technician miss — safety critical
+### Tracked Machines / Hydraulic System (done ✅)
+- System pressure vs relief valve setting → safety margin with colour-coded fault label
 
-### Mowers — Blade Tip Speed
-- Blade length + engine RPM → **tip speed in m/s**
-  - `v = π × blade_length × RPM / 60`
-  - Label the result: "Optimal (270–290 m/s)" / "Too slow — may tear grass" / "Above safe limit"
-  - In imperial: ft/s
+### Mowers — Blade Tip Speed (done ✅)
+- Blade length + WOT RPM → tip speed in m/s with Optimal / Too slow / Above limit label
 
 ### Engine — Compression & Fuel Octane (done ✅)
 - Compression ratio → minimum fuel octane recommendation
@@ -95,16 +81,11 @@ All of these must:
 ### Generator — Amps Output (done ✅)
 - Generator watts ÷ generator voltage → amps output
 
-### Engine — Mean Piston Speed
-- Bore + stroke + WOT RPM → **mean piston speed in m/s**
-  - `MPS = 2 × stroke × RPM / 60`
-  - Label it: "Normal (<15 m/s)" / "Hot (15–20 m/s)" / "Race limit (>20 m/s)"
-  - This is a benchmark race engine builders use — unknown to most people
+### Engine — Mean Piston Speed (done ✅)
+- Stroke + WOT RPM → mean piston speed in m/s with Normal / Hot / Race limit label
 
-### Engine — Rod Ratio
-- Conrod length ÷ stroke → **rod ratio**
-  - Label it: "<1.5 = short rod — peaky, aggressive" / "1.5–1.75 = balanced" / ">1.75 = long rod — smooth, linear"
-  - Feels like insider knowledge
+### Engine — Rod Ratio (done ✅)
+- Conrod length ÷ stroke → rod ratio with Short / Balanced / Long label
 
 
 ### Electrical — Wire Voltage Drop
@@ -121,27 +102,16 @@ All of these must:
   - Output: "Surplus: 120W — battery charging while driving" / "Deficit: 80W — battery draining"
   - Show estimated time to drain battery at current deficit (needs battery Ah)
 
-### Generator — Largest Motor It Can Start
-- Generator kW rating → **max motor HP it can start**
-  - Motors draw 6–8× running current on startup
-  - `max_motor_hp = generator_kW / 6 × 1.341` (conservative, using 6× surge)
-  - "This generator can reliably start a motor up to 0.8HP"
-  - Very common question, no easy answer without this
+### Generator — Largest Motor It Can Start (done ✅)
+- Generator kW → max motor HP it can start (6× surge allowance)
 
-### Fuel System — 2-Stroke Mix Oil Quantity
-- Tank capacity + mix ratio → **oil to add per full tank**
-  - `oil_ml = tank_litres × 1000 / ratio`
-  - e.g. 5L tank at 50:1 = 100ml oil
-  - "Add 100ml of 2-stroke oil per full tank"
-  - In imperial: fl oz per gallon
+### Fuel System — 2-Stroke Mix Oil Quantity (done ✅)
+- Tank capacity + mix ratio → ml of oil to add per full tank
 
-### Pressure Washer — Cleaning Units
-- PSI × flow (GPM or L/min) → **cleaning units (CU)**
-  - CU = PSI × GPM
-  - Label: "<1,500 CU = Light domestic" / "1,500–3,000 = Medium" / ">3,000 = Heavy duty"
-  - Nobody knows this formula exists — total "aha" moment
+### Pressure Washer — Cleaning Units (done ✅)
+- PSI × flow (LPM) → cleaning units with Light / Medium / Heavy duty label
 
-### Tyres — Size Parser 🔥
+### Tyres — Size Parser (done ✅)
 - User types a tyre size string (e.g. `235/45R17`) → auto-parse into:
   - Section width (235mm)
   - Aspect ratio (45%)
@@ -150,14 +120,12 @@ All of these must:
   - In imperial: overall diameter in inches
   - "The magic field" — type one thing, five fields fill out
 
-### Drivetrain — Overall Ratio & Top Speed
-- Front sprocket + rear sprocket → **drive ratio**
-  - Already have `frontSprocket` and `rearSprocket` fields
-  - Smart Mode: chain pitch from chainsaw/drivetrain section
-- Primary ratio × gearbox ratio × final drive → **total reduction**
-  - "For every engine revolution, your wheel turns X times"
-- Total reduction + wheel circumference + engine redline → **theoretical top speed**
-  - In km/h or mph
+### Drivetrain — Final Drive Ratio (done ✅)
+- Front + rear sprocket teeth → ratio:1 label with "rear wheel turns once per X engine revolutions"
+
+### Drivetrain — Total Reduction + Top Speed (queued)
+- Primary ratio × gearbox ratio × final drive → total reduction
+- Total reduction + wheel circumference + redline → theoretical top speed in km/h
 
 ### Suspension — Static Sag
 - Spring rate + rider/vehicle weight → **recommended static sag range**
@@ -205,12 +173,13 @@ These only become possible once the referenced sections exist:
 
 ## App-Level Features
 
-### Photos — Migrate to Firebase Storage
-- Currently photos are stored as base64 strings inside the Firestore document — expensive and slow
-- Each photo ≈ 300KB in the doc, 10 photos per machine ≈ 3MB — Firestore free tier is 1GB total
-- **Fix**: upload photos to Firebase Storage, save download URLs in the Firestore document instead
-- Firebase Storage free tier = 5GB — far cheaper per MB, purpose-built for this
-- Will also make the app faster — images load from Firebase CDN not from a Firestore read
+### Photos — Migrate to Supabase Storage
+- Currently photos are stored as base64 strings inside the database row — expensive and slow
+- Each photo ≈ 300KB in the DB, 10 photos per machine ≈ 3MB
+- Free tier burns through 500MB fast once users are photo-heavy
+- **Fix**: store photos in Supabase Storage (object storage), save URLs in the DB row instead
+- Storage free tier = 1GB, Pro = 100GB — far cheaper per MB, purpose-built for it
+- Will also make the app faster — images load from CDN not from a DB query
 - Needs: upload helper in `src/lib/storage.js`, update PhotoAdder to upload + return URL, update MachineCard/MachineForm to read URLs instead of base64
 
 ### Serial Numbers / VINs
@@ -232,6 +201,11 @@ These only become possible once the referenced sections exist:
 ### Invoice / Quote PDF Export
 - Based on job board entries + parts + labour
 - Separate from the machine spec PDF export
+
+### Firebase Migration (planned)
+- Move from Supabase to Firebase/Firestore for real-time sync + single Google backend
+- Firebase gives: Firestore (DB), Firebase Storage (photos), Firebase Auth, Hosting, FCM (push notifications), Functions (Stripe webhooks), Analytics — all one console, one bill
+- Do this after core features are stable
 
 ---
 
@@ -262,7 +236,7 @@ These only become possible once the referenced sections exist:
 
 **What needs building for monetisation:**
 - Stripe integration (subscription billing)
-- Tier enforcement in Firestore security rules + app logic
+- Tier enforcement in Supabase RLS / app logic
 - Upgrade prompts at feature gates (wiki edit, PDF export, add team member)
 - General Terms of Service page (required before charging anyone)
 - Billing management page (view plan, cancel, upgrade/downgrade)
