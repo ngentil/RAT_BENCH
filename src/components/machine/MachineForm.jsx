@@ -114,6 +114,8 @@ function MachineForm({existing,onSave,onClose,company}){
   const [chainPitch,setChainPitch]=useState(e.chainPitch||"");
   const [frontSprocket,setFrontSprocket]=useState(e.frontSprocket||"");
   const [rearSprocket,setRearSprocket]=useState(e.rearSprocket||"");
+  const [primaryRatio,setPrimaryRatio]=useState(e.primaryRatio||"");
+  const [topGearRatio,setTopGearRatio]=useState(e.topGearRatio||"");
   const [gearCount,setGearCount]=useState(e.gearCount||"");
   const [gearboxBrand,setGearboxBrand]=useState(e.gearboxBrand||"");
   const [clutchType,setClutchType]=useState(e.clutchType||"");
@@ -132,6 +134,8 @@ function MachineForm({existing,onSave,onClose,company}){
   const [forkTravel,setForkTravel]=useState(e.forkTravel||"");
   const [rearShockType,setRearShockType]=useState(e.rearShockType||"");
   const [rearTravel,setRearTravel]=useState(e.rearTravel||"");
+  const [springRate,setSpringRate]=useState(e.springRate||"");
+  const [riderWeight,setRiderWeight]=useState(e.riderWeight||"");
   // brakes
   const [frontBrake,setFrontBrake]=useState(e.frontBrake||"");
   const [frontDiscD,setFrontDiscD]=useState(e.frontDiscD||"");
@@ -166,6 +170,9 @@ function MachineForm({existing,onSave,onClose,company}){
   const [batteryDimensions,setBatteryDimensions]=useState(e.batteryDimensions||"");
   const [starterMotorType,setStarterMotorType]=useState(e.starterMotorType||"");
   const [fuseBoxNotes,setFuseBoxNotes]=useState(e.fuseBoxNotes||"");
+  const [wireGauge,setWireGauge]=useState(e.wireGauge||"");
+  const [wireLength,setWireLength]=useState(e.wireLength||"");
+  const [wireAmps,setWireAmps]=useState(e.wireAmps||"");
   const [secBlade,setSecBlade]=useState(false);
   const [secCylinder,setSecCylinder]=useState(false);
   const [editCylinder,setEditCylinder]=useState(isNew);
@@ -262,6 +269,7 @@ function MachineForm({existing,onSave,onClose,company}){
   const [chargingType,setChargingType]=useState(e.chargingType||"");
   const [chargeVoltage,setChargeVoltage]=useState(e.chargeVoltage||"");
   const [chargeAmps,setChargeAmps]=useState(e.chargeAmps||"");
+  const [totalLoadWatts,setTotalLoadWatts]=useState(e.totalLoadWatts||"");
   const [rectRegFitted,setRectRegFitted]=useState(e.rectRegFitted||"");
   const [chargingNotes,setChargingNotes]=useState(e.chargingNotes||"");
   const [editBelt,setEditBelt]=useState(isNew);
@@ -424,7 +432,7 @@ function MachineForm({existing,onSave,onClose,company}){
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
       iValveFace:iValveFace.toString().trim(),iValveStem:iValveStem.toString().trim(),iValveLift:iValveLift.toString().trim(),iValveWeight:iValveWeight.toString().trim(),
       eValveFace:eValveFace.toString().trim(),eValveStem:eValveStem.toString().trim(),eValveLift:eValveLift.toString().trim(),eValveWeight:eValveWeight.toString().trim(),
-      springFreeLen:springFreeLen.toString().trim(),springOuterD:springOuterD.toString().trim(),springWireD:springWireD.toString().trim(),springWeight:springWeight.toString().trim(),starterType,ropeDiameter:ropeDiameter.toString().trim(),ropeLength:ropeLength.toString().trim(),fasteners,pumpBrand:pumpBrand.trim(),pumpModel:pumpModel.trim(),pumpPsi:pumpPsi.toString().trim(),pumpFlow:pumpFlow.toString().trim(),pumpInlet,pumpOutlet,pumpType,genWatts:genWatts.toString().trim(),genPeakWatts:genPeakWatts.toString().trim(),genVoltage,genFreq,genAvr,genOutlets:genOutlets.trim(),driveType,chainPitch,frontSprocket:frontSprocket.toString().trim(),rearSprocket:rearSprocket.toString().trim(),gearCount,transType,gearboxBrand:gearboxBrand.trim(),clutchType,clutchDiameter:clutchDiameter.toString(),torqueConverter,autoSpeeds,autoFluidType:autoFluidType.trim(),autoFluidCapacity:autoFluidCapacity.toString(),cvtBeltType,gearboxOilType:gearboxOilType.trim(),gearboxOilCapacity:gearboxOilCapacity.toString(),forkType,forkDiameter:forkDiameter.toString().trim(),forkTravel:forkTravel.toString().trim(),rearShockType,rearTravel:rearTravel.toString().trim(),frontBrake,frontDiscD:frontDiscD.toString().trim(),frontDiscW:frontDiscW.toString().trim(),rearBrake,rearDiscD:rearDiscD.toString().trim(),rearDiscW:rearDiscW.toString().trim(),tyreFront:tyreFront.trim(),tyreRear:tyreRear.trim(),rimFront:rimFront.toString().trim(),rimRear:rimRear.toString().trim(),battVoltage,batteryCCA:batteryCCA.toString(),batteryAh:batteryAh.toString(),batteryDimensions:batteryDimensions.trim(),starterMotorType,fuseBoxNotes:fuseBoxNotes.trim(),deckSize:deckSize.toString().trim(),bladeLength:bladeLength.toString().trim(),bladeType,bladeCount,plugGap:plugGap.toString().trim(),coilType,primaryOhms:primaryOhms.toString().trim(),secondaryOhms:secondaryOhms.toString().trim(),fuelSystem,fuelTankCapacity:fuelTankCapacity.toString(),mixRatio:mixRatio.trim(),ecuModel:ecuModel.trim(),tbDiameter:tbDiameter.toString().trim(),injectorCount,injectorFlow:injectorFlow.toString().trim(),fuelRailPressure:fuelRailPressure.toString().trim(),fuelPumpPressure:fuelPumpPressure.toString().trim(),tpsSensor,mapSensor,iatSensor,o2Sensor,iacSensor,
+      springFreeLen:springFreeLen.toString().trim(),springOuterD:springOuterD.toString().trim(),springWireD:springWireD.toString().trim(),springWeight:springWeight.toString().trim(),starterType,ropeDiameter:ropeDiameter.toString().trim(),ropeLength:ropeLength.toString().trim(),fasteners,pumpBrand:pumpBrand.trim(),pumpModel:pumpModel.trim(),pumpPsi:pumpPsi.toString().trim(),pumpFlow:pumpFlow.toString().trim(),pumpInlet,pumpOutlet,pumpType,genWatts:genWatts.toString().trim(),genPeakWatts:genPeakWatts.toString().trim(),genVoltage,genFreq,genAvr,genOutlets:genOutlets.trim(),driveType,chainPitch,frontSprocket:frontSprocket.toString().trim(),rearSprocket:rearSprocket.toString().trim(),primaryRatio:primaryRatio.toString().trim(),topGearRatio:topGearRatio.toString().trim(),gearCount,transType,gearboxBrand:gearboxBrand.trim(),clutchType,clutchDiameter:clutchDiameter.toString(),torqueConverter,autoSpeeds,autoFluidType:autoFluidType.trim(),autoFluidCapacity:autoFluidCapacity.toString(),cvtBeltType,gearboxOilType:gearboxOilType.trim(),gearboxOilCapacity:gearboxOilCapacity.toString(),forkType,forkDiameter:forkDiameter.toString().trim(),forkTravel:forkTravel.toString().trim(),rearShockType,rearTravel:rearTravel.toString().trim(),springRate:springRate.toString().trim(),riderWeight:riderWeight.toString().trim(),frontBrake,frontDiscD:frontDiscD.toString().trim(),frontDiscW:frontDiscW.toString().trim(),rearBrake,rearDiscD:rearDiscD.toString().trim(),rearDiscW:rearDiscW.toString().trim(),tyreFront:tyreFront.trim(),tyreRear:tyreRear.trim(),rimFront:rimFront.toString().trim(),rimRear:rimRear.toString().trim(),battVoltage,batteryCCA:batteryCCA.toString(),batteryAh:batteryAh.toString(),batteryDimensions:batteryDimensions.trim(),starterMotorType,fuseBoxNotes:fuseBoxNotes.trim(),wireGauge:wireGauge.trim(),wireLength:wireLength.toString().trim(),wireAmps:wireAmps.toString().trim(),deckSize:deckSize.toString().trim(),bladeLength:bladeLength.toString().trim(),bladeType,bladeCount,plugGap:plugGap.toString().trim(),coilType,primaryOhms:primaryOhms.toString().trim(),secondaryOhms:secondaryOhms.toString().trim(),fuelSystem,fuelTankCapacity:fuelTankCapacity.toString(),mixRatio:mixRatio.trim(),ecuModel:ecuModel.trim(),tbDiameter:tbDiameter.toString().trim(),injectorCount,injectorFlow:injectorFlow.toString().trim(),fuelRailPressure:fuelRailPressure.toString().trim(),fuelPumpPressure:fuelPumpPressure.toString().trim(),tpsSensor,mapSensor,iatSensor,o2Sensor,iacSensor,
       iSpacing:iSpacing.trim(),iStuds,eSpacing:eSpacing.trim(),
       eStuds,eBoltSz,eBoltLen:eBoltLen.toString().trim(),iBoltSz,iBoltLen:iBoltLen.toString().trim(),rBoltN,rBoltSz,rBoltLen:rBoltLen.toString().trim(),
       compression:compression.toString().trim(),compressionRatio:compressionRatio.toString().trim(),idleRpm:idleRpm.toString().trim(),wotRpm:wotRpm.toString().trim(),ccSize:ccSize.toString().trim(),
@@ -436,7 +444,7 @@ function MachineForm({existing,onSave,onClose,company}){
       studs,customSections,tileFields:e.tileFields||[],tileColors:e.tileColors||{},expandFields:e.expandFields||[],rage:e.rage||0,createdAt:e.createdAt||new Date().toISOString(),
       coolingType,coolantType:coolantType.trim(),coolantCapacity:coolantCapacity.toString(),thermostatTemp:thermostatTemp.toString(),coolingNotes:coolingNotes.trim(),
       turboFitted,turboType,turboBrand:turboBrand.trim(),turboBoost:turboBoost.toString(),intercooler,turboNotes:turboNotes.trim(),
-      chargingType,chargeVoltage,chargeAmps:chargeAmps.toString(),rectRegFitted,chargingNotes:chargingNotes.trim(),
+      chargingType,chargeVoltage,chargeAmps:chargeAmps.toString(),totalLoadWatts:totalLoadWatts.toString().trim(),rectRegFitted,chargingNotes:chargingNotes.trim(),
       cylMaxWear:cylMaxWear.toString(),cylTaperLimit:cylTaperLimit.toString(),cylOutOfRound:cylOutOfRound.toString(),honingAngle:honingAngle.trim(),nikasil,
       mainBearingType,mainBearingLeft:mainBearingLeft.trim(),mainBearingRight:mainBearingRight.trim(),mainBearingClear:mainBearingClear.toString(),mainBearingPreload:mainBearingPreload.toString(),
       crankPinDiameter:crankPinDiameter.toString(),crankPinLength:crankPinLength.toString(),mainJournalDiameter:mainJournalDiameter.toString(),crankEndFloat:crankEndFloat.toString(),crankRunout:crankRunout.toString(),crankStroke:crankStroke.toString(),crankSealLeft:crankSealLeft.trim(),crankSealRight:crankSealRight.trim(),
@@ -1316,6 +1324,21 @@ function MachineForm({existing,onSave,onClose,company}){
                     const ratio=(parseFloat(rearSprocket)/parseFloat(frontSprocket)).toFixed(2);
                     return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Final drive ratio: {ratio}:1 — rear wheel turns once per {ratio} engine revolutions</div>;
                   })()}
+                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Top Speed</div>
+                  <div style={row}>
+                    <div style={{...col,flex:1}}><FL t="Primary ratio" /><input style={inp} type="number" placeholder="e.g. 2.85" step="0.01" min="0" value={primaryRatio} onChange={ev=>setPrimaryRatio(ev.target.value)} /></div>
+                    <div style={{...col,flex:1}}><FL t="Top gear ratio" /><input style={inp} type="number" placeholder="e.g. 0.966" step="0.001" min="0" value={topGearRatio} onChange={ev=>setTopGearRatio(ev.target.value)} /></div>
+                  </div>
+                  {primaryRatio&&topGearRatio&&frontSprocket&&rearSprocket&&wotRpm&&(()=>{
+                    const finalDrive=parseFloat(rearSprocket)/parseFloat(frontSprocket);
+                    const total=parseFloat(primaryRatio)*parseFloat(topGearRatio)*finalDrive;
+                    const m=tyreFront&&tyreFront.trim().match(/^(\d+)\/(\d+)[Rr-](\d+(?:\.\d+)?)$/);
+                    if(!m) return <div style={{fontSize:10,color:MUT,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Total reduction: {total.toFixed(2)}:1 — enter front tyre size above to calculate top speed</div>;
+                    const od=(parseFloat(m[3])*25.4+2*(parseFloat(m[1])*parseFloat(m[2])/100))/1000;
+                    const topSpeedKmh=(parseFloat(wotRpm)/total)*Math.PI*od*60/1000;
+                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Total reduction: {total.toFixed(2)}:1 — theoretical top speed: {topSpeedKmh.toFixed(0)} km/h ({(topSpeedKmh*0.621371).toFixed(0)} mph)</div>;
+                  })()}
                 </>}
 
                 {/* Gearbox oil — all types */}
@@ -1361,6 +1384,27 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Rear type" /><select style={sel} value={rearShockType} onChange={ev=>setRearShockType(ev.target.value)}><option value="">— not set —</option>{SHOCK_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
                 </div>
                 <div style={col}><FL t="Rear travel (mm)" /><input style={inp} type="number" placeholder="e.g. 110" step="1" min="0" value={rearTravel} onChange={ev=>setRearTravel(ev.target.value)} /></div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Spring Setup</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Spring rate (N/mm)" /><input style={inp} type="number" placeholder="e.g. 46" step="0.5" min="0" value={springRate} onChange={ev=>setSpringRate(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Rider / load weight (kg)" /><input style={inp} type="number" placeholder="e.g. 80" step="1" min="0" value={riderWeight} onChange={ev=>setRiderWeight(ev.target.value)} /></div>
+                </div>
+                {(springRate||riderWeight)&&(()=>{
+                  const lines=[];
+                  if(springRate){
+                    const k=parseFloat(springRate);
+                    const minW=Math.round(k/0.70), maxW=Math.round(k/0.60);
+                    lines.push(`Spring suited to riders of ~${minW}–${maxW}kg`);
+                  }
+                  if(springRate&&riderWeight){
+                    const k=parseFloat(springRate), w=parseFloat(riderWeight);
+                    const recMin=w*0.60, recMax=w*0.70;
+                    const label=k<recMin?"Too soft for this weight — consider stiffer spring":k>recMax?"Too stiff for this weight — consider softer spring":"Good match for rider weight";
+                    lines.push(`At ${w}kg rider: ${label} (recommended ${recMin.toFixed(0)}–${recMax.toFixed(0)} N/mm)`);
+                  }
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>{lines.map((l,i)=><div key={i}>⚡ {l}</div>)}</div>;
+                })()}
                 {editSuspension&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditSuspension(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
@@ -1486,6 +1530,25 @@ function MachineForm({existing,onSave,onClose,company}){
                 <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
                 <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Fuse Box</div>
                 <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Main fuse 30A under seat, blade fuses in engine bay" value={fuseBoxNotes} onChange={ev=>setFuseBoxNotes(ev.target.value)} /></div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Wire Voltage Drop</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Wire gauge (mm²)" />
+                    <select style={sel} value={wireGauge} onChange={ev=>setWireGauge(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {["0.5","0.75","1.0","1.5","2.5","4.0","6.0","10","16","25","35","50"].map(g=><option key={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div style={{...col,flex:1}}><FL t="Run length (m)" /><input style={inp} type="number" placeholder="e.g. 10" step="0.5" min="0" value={wireLength} onChange={ev=>setWireLength(ev.target.value)} /></div>
+                </div>
+                <div style={{...col,maxWidth:160}}><FL t="Current draw (A)" /><input style={inp} type="number" placeholder="e.g. 30" step="0.5" min="0" value={wireAmps} onChange={ev=>setWireAmps(ev.target.value)} /></div>
+                {wireGauge&&wireLength&&wireAmps&&(()=>{
+                  const R={"0.5":39,"0.75":26,"1.0":19.5,"1.5":13,"2.5":7.98,"4.0":4.95,"6.0":3.30,"10":1.91,"16":1.21,"25":0.780,"35":0.554,"50":0.393};
+                  const drop=(2*parseFloat(wireLength)*parseFloat(wireAmps)*(R[wireGauge]||0)/1000);
+                  const [label,clr]=drop>1?["Significant — check wire sizing","#e05252"]:drop>0.5?["Noticeable — consider upsizing","#e09e52"]:["Acceptable",ACC];
+                  return <div style={{fontSize:10,color:clr,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {drop.toFixed(2)}V drop over {wireLength}m of {wireGauge}mm² at {wireAmps}A — {label}</div>;
+                })()}
                 {editElectrics&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditElectrics(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
@@ -1619,6 +1682,14 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Output (amps)" /><input style={inp} type="number" placeholder="e.g. 40" step="0.5" min="0" value={chargeAmps} onChange={ev=>setChargeAmps(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Rectifier / Regulator fitted" /><select style={sel} value={rectRegFitted} onChange={ev=>setRectRegFitted(ev.target.value)}><option value="">— not set —</option>{RECT_REG.map(r=><option key={r}>{r}</option>)}</select></div>
                 </div>
+                <div style={{...col,maxWidth:200}}><FL t="Total accessory load (W)" /><input style={inp} type="number" placeholder="e.g. 120" step="5" min="0" value={totalLoadWatts} onChange={ev=>setTotalLoadWatts(ev.target.value)} /></div>
+                {chargeAmps&&chargeVoltage&&chargeVoltage!=="Dual"&&totalLoadWatts&&(()=>{
+                  const altW=parseFloat(chargeAmps)*parseFloat(chargeVoltage);
+                  const net=altW-parseFloat(totalLoadWatts);
+                  const [label,clr]=net>=0?[`Surplus ${net.toFixed(0)}W — battery charging while running`,ACC]:[`Deficit ${Math.abs(net).toFixed(0)}W — battery draining`,"#e05252"];
+                  const drainStr=(net<0&&batteryAh&&chargeVoltage)?` (${((parseFloat(batteryAh)*parseFloat(chargeVoltage))/Math.abs(net)).toFixed(1)}h to drain at this load)`:"";
+                  return <div style={{fontSize:10,color:clr,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {label}{drainStr}</div>;
+                })()}
                 <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Internal regulator, replace at 80k km" value={chargingNotes} onChange={ev=>setChargingNotes(ev.target.value)} /></div>
                 {editCharging&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCharging(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
