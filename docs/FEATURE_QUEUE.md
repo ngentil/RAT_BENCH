@@ -205,6 +205,23 @@ These only become possible once the referenced sections exist:
 
 ## App-Level Features
 
+### Client-Side Encryption (Notes & Photos)
+- **Scope**: machine notes field + photos only — no other fields
+- **Opt-in**: buried in user settings as an advanced/obscure toggle — not advertised
+- **How it works**:
+  - User enables the toggle → prompted to set a vault passphrase once
+  - Browser derives AES-256-GCM key via PBKDF2 (Web Crypto API — no library needed)
+  - Random salt generated on setup, stored in user profile (safe — useless without passphrase)
+  - Notes + photos encrypted in browser before any save call — Supabase only ever stores ciphertext
+  - Key lives in session memory only, never touches the server
+  - On next login: passphrase prompt to unlock vault — can be skipped, notes show as 🔒 locked
+  - Lose passphrase → data is gone, no recovery (true E2E, by design)
+- **New files needed**:
+  - `src/lib/crypto.js` — deriveKey, encryptText, decryptText, encryptPhoto helpers
+  - `src/contexts/CryptoContext.jsx` — holds derived key in memory for the session
+  - `VaultSetup` + `VaultUnlock` small modals
+  - DB: add `encryptionSalt` column to user profile
+
 ### Serial Numbers / VINs
 - Dedicated field with format validation per machine type
 - VIN decoder for vehicles (17-char check)
