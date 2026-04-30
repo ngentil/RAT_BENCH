@@ -331,6 +331,7 @@ function MachineForm({existing,onSave,onClose,company}){
   const [operatingWeightOther,setOperatingWeightOther]=useState(e.operatingWeightOther||"");
   const [trackType,setTrackType]=useState(e.trackType||"");
   const [trackWidth,setTrackWidth]=useState(e.trackWidth||"");
+  const [groundContactLength,setGroundContactLength]=useState(e.groundContactLength||"");
   const [trackPitch,setTrackPitch]=useState(e.trackPitch||"");
   const [trackLinks,setTrackLinks]=useState(e.trackLinks||"");
   const [sprocketTeeth,setSprocketTeeth]=useState(e.sprocketTeeth||"");
@@ -446,7 +447,7 @@ function MachineForm({existing,onSave,onClose,company}){
       dryWeight:dryWeight.toString(),grossWeight:grossWeight.toString(),wheelbase:wheelbase.toString(),overallLength:overallLength.toString(),overallWidth:overallWidth.toString(),overallHeight:overallHeight.toString(),
       beltType,beltPartNo:beltPartNo.trim(),beltWidth:beltWidth.toString(),beltLength:beltLength.toString(),beltCount,beltNotes:beltNotes.trim(),
       trackedBrand,trackedBrandOther,trackedHours:trackedHours.toString(),trackedSubtype,trackedSubtypeOther,operatingWeight,operatingWeightOther,
-      trackType,trackWidth:trackWidth.toString(),trackPitch:trackPitch.toString(),trackLinks:trackLinks.toString(),sprocketTeeth:sprocketTeeth.toString(),undercarriageHours:undercarriageHours.toString(),
+      trackType,trackWidth:trackWidth.toString(),trackPitch:trackPitch.toString(),trackLinks:trackLinks.toString(),sprocketTeeth:sprocketTeeth.toString(),undercarriageHours:undercarriageHours.toString(),groundContactLength:groundContactLength.toString(),
       hydPumpCount,hydPumpType,hydSystemPressure:hydSystemPressure.toString(),hydOilCapacity:hydOilCapacity.toString(),hydReliefValve:hydReliefValve.toString(),
       hydRams,attachments,lighting});
   };
@@ -626,6 +627,11 @@ function MachineForm({existing,onSave,onClose,company}){
                     <div style={{...col,flex:1}}><FL t="Idle RPM (approx)" /><input style={inp} type="number" placeholder="e.g. 2800" step="100" min="0" value={idleRpm} onChange={ev=>setIdleRpm(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}><FL t="WOT RPM (approx)" /><input style={inp} type="number" placeholder="e.g. 10500" step="100" min="0" value={wotRpm} onChange={ev=>setWotRpm(ev.target.value)} /></div>
                   </div>
+                  {crankStroke&&wotRpm&&(()=>{
+                    const mps=(2*parseFloat(crankStroke)/1000*parseFloat(wotRpm)/60);
+                    const label=mps<15?"Normal (<15 m/s)":mps<=20?"Hot (15–20 m/s)":"Race limit (>20 m/s)";
+                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Mean piston speed: {mps.toFixed(1)} m/s — {label}</div>;
+                  })()}
                   <div style={{...col,maxWidth:180}}><FL t="Cylinder bore diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 38" step="0.01" min="0" value={boreDiameter} onChange={ev=>setBoreDiameter(ev.target.value)} /></div>
                   {boreDiameter&&crankStroke&&(()=>{
                     const r=parseFloat(boreDiameter)/parseFloat(crankStroke);
@@ -1047,6 +1053,12 @@ function MachineForm({existing,onSave,onClose,company}){
                   </div>
                   <div style={col}><FL t="Carb model (optional)" /><input style={inp} placeholder="e.g. WT-668" value={cModel} onChange={ev=>setCModel(ev.target.value)} /></div>
                   <div style={col}><FL t="Oil/fuel mix ratio" /><input style={inp} placeholder="e.g. 50:1 / 40:1 / 25:1" value={mixRatio} onChange={ev=>setMixRatio(ev.target.value)} /></div>
+                  {mixRatio&&fuelTankCapacity&&(()=>{
+                    const m=mixRatio.match(/(\d+(?:\.\d+)?)/);
+                    if(!m) return null;
+                    const ml=(parseFloat(fuelTankCapacity)*1000/parseFloat(m[1])).toFixed(0);
+                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Add {ml}ml of 2-stroke oil per full {fuelTankCapacity}L tank</div>;
+                  })()}
                 </>}
 
                 {/* 4-stroke — show fuel system toggle */}
@@ -1160,6 +1172,11 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Max PSI" /><input style={inp} type="number" placeholder="e.g. 3200" step="10" min="0" value={pumpPsi} onChange={ev=>setPumpPsi(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Flow rate (LPM)" /><input style={inp} type="number" placeholder="e.g. 8" step="0.1" min="0" value={pumpFlow} onChange={ev=>setPumpFlow(ev.target.value)} /></div>
                 </div>
+                {pumpPsi&&pumpFlow&&(()=>{
+                  const cu=Math.round(parseFloat(pumpPsi)*(parseFloat(pumpFlow)/3.785));
+                  const label=cu<1500?"Light domestic":cu<=3000?"Medium duty":"Heavy duty";
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {cu.toLocaleString()} cleaning units — {label}</div>;
+                })()}
                 <div style={row}>
                   <div style={{...col,flex:1}}><FL t="Pump type" /><select style={sel} value={pumpType} onChange={ev=>setPumpType(ev.target.value)}><option value="">— not set —</option>{PUMP_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
                   <div style={{...col,flex:1}}><FL t="Inlet size" /><select style={sel} value={pumpInlet} onChange={ev=>setPumpInlet(ev.target.value)}><option value="">— not set —</option>{INLET_SIZES.map(s=><option key={s}>{s}</option>)}</select></div>
@@ -1204,6 +1221,10 @@ function MachineForm({existing,onSave,onClose,company}){
                 {genWatts&&genVoltage&&genVoltage!=="Dual"&&(()=>{
                   const amps=(parseFloat(genWatts)/parseFloat(genVoltage)).toFixed(1);
                   return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {amps}A rated output at {genVoltage}</div>;
+                })()}
+                {genWatts&&(()=>{
+                  const maxHp=((parseFloat(genWatts)/1000)/6*1.341).toFixed(1);
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Can reliably start a motor up to {maxHp}hp (6× surge allowance)</div>;
                 })()}
                 {editGenOutput&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditGenOutput(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
@@ -1291,6 +1312,10 @@ function MachineForm({existing,onSave,onClose,company}){
                     <div style={{...col,flex:1}}><FL t="Front sprocket (teeth)" /><input style={inp} type="number" placeholder="e.g. 14" step="1" min="0" value={frontSprocket} onChange={ev=>setFrontSprocket(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}><FL t="Rear sprocket (teeth)" /><input style={inp} type="number" placeholder="e.g. 42" step="1" min="0" value={rearSprocket} onChange={ev=>setRearSprocket(ev.target.value)} /></div>
                   </div>
+                  {frontSprocket&&rearSprocket&&(()=>{
+                    const ratio=(parseFloat(rearSprocket)/parseFloat(frontSprocket)).toFixed(2);
+                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Final drive ratio: {ratio}:1 — rear wheel turns once per {ratio} engine revolutions</div>;
+                  })()}
                 </>}
 
                 {/* Gearbox oil — all types */}
@@ -1735,6 +1760,11 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Length C-C (mm)" /><input style={inp} type="number" placeholder="e.g. 110.00" step="0.01" min="0" value={conrodLength} onChange={ev=>setConrodLength(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Bearing type" /><select style={sel} value={conrodBearingType} onChange={ev=>setConrodBearingType(ev.target.value)}><option value="">— not set —</option><option>Needle roller</option><option>Shell / plain</option><option>Ball bearing</option></select></div>
                 </div>
+                {conrodLength&&crankStroke&&(()=>{
+                  const r=parseFloat(conrodLength)/parseFloat(crankStroke);
+                  const label=r<1.5?"Short rod — peaky, aggressive":r<=1.75?"Balanced rod ratio":"Long rod — smooth, linear";
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Rod ratio: {r.toFixed(2)} — {label}</div>;
+                })()}
                 <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
                 <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Small End</div>
                 <div style={row}>
@@ -2004,6 +2034,11 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Blade length (mm)" /><input style={inp} type="number" placeholder="e.g. 430" step="1" min="0" value={bladeLength} onChange={ev=>setBladeLength(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Blade type" /><select style={sel} value={bladeType} onChange={ev=>setBladeType(ev.target.value)}><option value="">— not set —</option>{BLADE_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
                 </div>
+                {bladeLength&&wotRpm&&(()=>{
+                  const v=Math.PI*(parseFloat(bladeLength)/1000)*parseFloat(wotRpm)/60;
+                  const label=v<270?"Too slow — may tear grass":v<=290?"Optimal (270–290 m/s)":"Above safe limit";
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Blade tip speed: {v.toFixed(0)} m/s — {label}</div>;
+                })()}
                 {editBlade&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditBlade(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
@@ -2034,6 +2069,27 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Sprocket teeth" /><input style={inp} type="number" placeholder="e.g. 25" step="1" min="0" value={sprocketTeeth} onChange={ev=>setSprocketTeeth(ev.target.value)} /></div>
                   <div style={{...col,flex:1}}><FL t="Undercarriage hours" /><input style={inp} type="number" placeholder="e.g. 2400" step="1" min="0" value={undercarriageHours} onChange={ev=>setUndercarriageHours(ev.target.value)} /></div>
                 </div>
+                <div style={{...col,maxWidth:220}}><FL t="Ground contact length (mm per side)" /><input style={inp} type="number" placeholder="e.g. 2000" step="10" min="0" value={groundContactLength} onChange={ev=>setGroundContactLength(ev.target.value)} /></div>
+                {trackPitch&&trackLinks&&(()=>{
+                  const perSide=(parseFloat(trackPitch)/1000*parseFloat(trackLinks)).toFixed(2);
+                  const total=(parseFloat(perSide)*2).toFixed(2);
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Track length: {perSide}m per side / {total}m total</div>;
+                })()}
+                {trackType&&undercarriageHours&&(()=>{
+                  const h=parseFloat(undercarriageHours);
+                  const isRubber=trackType==="Rubber";
+                  const midLife=isRubber?1750:3000;
+                  const pct=Math.min(Math.round(h/midLife*100),100);
+                  const label=pct<50?"Good — plenty of life remaining":pct<80?"Monitor — approaching mid-life":pct<100?"Start planning replacement":"At or beyond typical service life";
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {trackType} track wear: {pct}% of typical service life — {label}</div>;
+                })()}
+                {trackWidth&&groundContactLength&&operatingWeight&&operatingWeight!=="Other"&&operatingWeight!=="50T+"&&(()=>{
+                  const m=operatingWeight.match(/^(\d+(?:\.\d+)?)/);
+                  if(!m) return null;
+                  const gp=(parseFloat(m[1])*9.81/(2*(parseFloat(trackWidth)/1000)*(parseFloat(groundContactLength)/1000))).toFixed(1);
+                  const label=parseFloat(gp)<60?"Less than a walking person (≈60 kPa)":parseFloat(gp)<200?"Comparable to a small car":parseFloat(gp)<400?"Comparable to a large truck":"High ground pressure — restricted terrain";
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Ground pressure: {gp} kPa — {label}</div>;
+                })()}
               </div>}
             </div>;
           })()}
@@ -2059,6 +2115,11 @@ function MachineForm({existing,onSave,onClose,company}){
                   <div style={{...col,flex:1}}><FL t="Oil capacity (L)" /><input style={inp} type="number" placeholder="e.g. 120" step="0.5" min="0" value={hydOilCapacity} onChange={ev=>setHydOilCapacity(ev.target.value)} /></div>
                 </div>
                 <div style={col}><FL t="Relief valve setting (bar)" /><input style={inp} type="number" placeholder="e.g. 350" step="1" min="0" value={hydReliefValve} onChange={ev=>setHydReliefValve(ev.target.value)} /></div>
+                {hydSystemPressure&&hydReliefValve&&(()=>{
+                  const margin=parseFloat(hydReliefValve)-parseFloat(hydSystemPressure);
+                  const [label,clr]=margin<=0?["Relief at or below system pressure — FAULT","#e05252"]:margin<10?["Tight — check relief setting","#e09e52"]:[`Healthy — ${margin} bar margin`,ACC];
+                  return <div style={{fontSize:10,color:clr,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Relief margin: {margin>0?"+":""}{margin} bar — {label}</div>;
+                })()}
               </div>}
             </div>;
           })()}
