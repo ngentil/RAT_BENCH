@@ -206,21 +206,29 @@ These only become possible once the referenced sections exist:
 ## App-Level Features
 
 ### Client-Side Encryption (Notes & Photos)
-- **Scope**: machine notes field + photos only — no other fields
-- **Opt-in**: buried in user settings as an advanced/obscure toggle — not advertised
-- **How it works**:
-  - User enables the toggle → prompted to set a vault passphrase once
+- **Scope**: notes field + photos only per machine — no other fields
+- **Setting label**: "No sync" — buried in user settings under Advanced, sounds like a storage preference
+- **Not global**: enabling "No sync" in settings does NOT automatically encrypt all machines
+- **Per-machine activation — hidden gesture**:
+  - Hold down the **+ Add** button for 2–3 seconds
+  - Button flashes green while held
+  - On release: semi-transparent notification slides in — *"Encrypted notes and photos turned on"*
+  - That machine is now flagged `encrypted: true` — notes and photos encrypt from that point on
+  - No visual indicator on the machine card — intentionally invisible
+- **The setting gate**: "No sync" must be enabled in user settings first — holding + Add does nothing if it isn't
+- **How encryption works**:
+  - User enables "No sync" → prompted to set a vault passphrase once
   - Browser derives AES-256-GCM key via PBKDF2 (Web Crypto API — no library needed)
   - Random salt generated on setup, stored in user profile (safe — useless without passphrase)
   - Notes + photos encrypted in browser before any save call — Supabase only ever stores ciphertext
   - Key lives in session memory only, never touches the server
-  - On next login: passphrase prompt to unlock vault — can be skipped, notes show as 🔒 locked
+  - On next login: silent passphrase prompt to unlock — can be skipped, encrypted content shows as blank
   - Lose passphrase → data is gone, no recovery (true E2E, by design)
 - **New files needed**:
   - `src/lib/crypto.js` — deriveKey, encryptText, decryptText, encryptPhoto helpers
   - `src/contexts/CryptoContext.jsx` — holds derived key in memory for the session
   - `VaultSetup` + `VaultUnlock` small modals
-  - DB: add `encryptionSalt` column to user profile
+  - DB: add `encryptionSalt` column to user profile, `encrypted` boolean to machine
 
 ### Serial Numbers / VINs
 - Dedicated field with format validation per machine type
