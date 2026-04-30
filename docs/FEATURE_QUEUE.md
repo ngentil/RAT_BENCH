@@ -60,6 +60,20 @@ All of these must:
   - In imperial: PSI
 - Smart Mode: pulls operating weight from machine specs automatically
 
+### Tracked Machines / Undercarriage
+- Track pitch × link count → **total track length per side** and both sides combined
+  - e.g. 154mm × 47 links = 7.24m per side / 14.5m total
+  - Useful when ordering replacement track
+- Undercarriage hours + track type → **wear indicator**
+  - Rubber tracks: 1,500–2,000h typical life / Steel tracks: 2,000–4,000h
+  - Show as %: "2,400h on steel — ~80% of typical service life, start planning replacement"
+
+### Tracked Machines / Hydraulic System
+- System pressure vs relief valve setting → **safety margin**
+  - Relief should sit 10–15% above operating pressure
+  - Label: "40 bar margin — healthy" / "8 bar margin — tight, check setting" / "Relief at or below system pressure — fault"
+  - The last case is a real technician miss — safety critical
+
 ### Mowers — Blade Tip Speed
 - Blade length + engine RPM → **tip speed in m/s**
   - `v = π × blade_length × RPM / 60`
