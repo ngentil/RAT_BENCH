@@ -215,7 +215,18 @@ These only become possible once the referenced sections exist:
   - On release: semi-transparent notification slides in — *"Encrypted notes and photos turned on"*
   - That machine is now flagged `encrypted: true` — notes and photos encrypt from that point on
   - No visual indicator on the machine card — intentionally invisible
-- **The setting gate**: "No sync" must be enabled in user settings first — holding + Add does nothing if it isn't
+- **Setting gate**: "No sync" must be enabled in user settings first — hold gesture does nothing if it isn't
+- **On enable in settings**:
+  - Settings UI shows: *"Check console for instructions"* — nothing more
+  - App logs to browser console:
+    ```
+    [RAT BENCH] No sync enabled.
+    To encrypt a machine: open the tracker, hold the + Add button for 3 seconds until it flashes green, then release.
+    A notification will confirm encryption is active for that machine.
+    Notes and photos on that machine will be stored locally only.
+    To disable: hold + Add again on an encrypted machine.
+    Keep your passphrase safe — there is no recovery.
+    ```
 - **How encryption works**:
   - User enables "No sync" → prompted to set a vault passphrase once
   - Browser derives AES-256-GCM key via PBKDF2 (Web Crypto API — no library needed)
