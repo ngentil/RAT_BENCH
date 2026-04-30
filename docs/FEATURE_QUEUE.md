@@ -249,6 +249,30 @@ These only become possible once the referenced sections exist:
 
 ---
 
+## Monetisation Tiers (locked ✅)
+
+| Tier | Price | Users | Key features |
+|------|-------|-------|-------------|
+| **Free** | $0 | 1 | Unlimited machines, read-only wiki |
+| **Enthusiast** | $4.99/mo or **$12/yr** | 1 | Wiki editing, for-sale tags on machines, PDF export, private notes |
+| **Team** | **$29/mo flat** | up to 10 | ACL/provisioning, shared job board, all Enthusiast features |
+| **Business** | $99/mo flat | Unlimited | Everything, priority support |
+
+**Pricing rationale:**
+- Flat fee (not per-seat) for Team — eliminates decision friction at signup, incentivises inviting the whole team
+- Enthusiast annual ($12/yr) is the hook for hobbyists — cheaper than a coffee, feels like nothing
+- Wiki editing gated at Enthusiast — gives the feature real perceived value and a reason to upgrade
+- For-sale tags: contact info only, no marketplace, no transaction handling
+
+**What needs building for monetisation:**
+- Stripe integration (subscription billing)
+- Tier enforcement in Supabase RLS / app logic
+- Upgrade prompts at feature gates (wiki edit, PDF export, add team member)
+- General Terms of Service page (required before charging anyone)
+- Billing management page (view plan, cancel, upgrade/downgrade)
+
+---
+
 ## Security & Access Control
 
 ### Machine-Level Permissions (ACL)
