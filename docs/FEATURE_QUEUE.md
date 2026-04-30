@@ -210,14 +210,14 @@ These only become possible once the referenced sections exist:
 - **Setting label**: "No sync" — buried in user settings under Advanced, sounds like a storage preference
 - **Not global**: enabling "No sync" in settings does NOT automatically encrypt all machines
 - **Per-machine activation — hidden gesture**:
-  - Hold down the **+ Add** button for 3 seconds
+  - Navigate to a machine, hold down the **Edit** button for 3 seconds
   - Button flashes green while held
   - On release: semi-transparent notification slides in — *"Encrypted notes and photos turned on"*
   - That machine is flagged `encrypted: true` — notes and photos encrypt from that point on
   - No visual indicator on the machine card — intentionally invisible
 - **Per-machine unlock on login**:
   - Encrypted machines show blank notes and photos — no lock icon, no hint, just empty
-  - To view: navigate to that machine, hold + Add for 3 seconds → flashes green → passphrase prompt
+  - To view: navigate to that machine, hold Edit for 3 seconds → flashes green → passphrase prompt
   - Notes and photos appear for that machine only, for that session
   - Other encrypted machines remain blank until unlocked the same way individually
   - Each machine requires its own unlock — intentionally granular
@@ -227,10 +227,10 @@ These only become possible once the referenced sections exist:
   - App logs to browser console:
     ```
     [RAT BENCH] No sync enabled.
-    To encrypt a machine: open the tracker, hold the + Add button for 3 seconds until it flashes green, then release.
+    To encrypt a machine: navigate to that machine, hold the Edit button for 3 seconds until it flashes green, then release.
     A notification will confirm encryption is active for that machine.
     Notes and photos on that machine will be stored locally only.
-    To disable: hold + Add again on an encrypted machine.
+    To disable: hold Edit again on an encrypted machine.
     Keep your passphrase safe — there is no recovery.
     ```
 - **How encryption works**:
