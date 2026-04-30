@@ -205,13 +205,12 @@ These only become possible once the referenced sections exist:
 
 ## App-Level Features
 
-### Photos — Migrate to Supabase Storage
-- Currently photos are stored as base64 strings inside the database row — expensive and slow
-- Each photo ≈ 300KB in the DB, 10 photos per machine ≈ 3MB
-- Free tier burns through 500MB fast once users are photo-heavy
-- **Fix**: store photos in Supabase Storage (object storage), save URLs in the DB row instead
-- Storage free tier = 1GB, Pro = 100GB — far cheaper per MB, purpose-built for it
-- Will also make the app faster — images load from CDN not from a DB query
+### Photos — Migrate to Firebase Storage
+- Currently photos are stored as base64 strings inside the Firestore document — expensive and slow
+- Each photo ≈ 300KB in the doc, 10 photos per machine ≈ 3MB — Firestore free tier is 1GB total
+- **Fix**: upload photos to Firebase Storage, save download URLs in the Firestore document instead
+- Firebase Storage free tier = 5GB — far cheaper per MB, purpose-built for this
+- Will also make the app faster — images load from Firebase CDN not from a Firestore read
 - Needs: upload helper in `src/lib/storage.js`, update PhotoAdder to upload + return URL, update MachineCard/MachineForm to read URLs instead of base64
 
 ### Serial Numbers / VINs
@@ -233,9 +232,6 @@ These only become possible once the referenced sections exist:
 ### Invoice / Quote PDF Export
 - Based on job board entries + parts + labour
 - Separate from the machine spec PDF export
-
-### Firebase Migration
-- Move from current backend to Firebase for real-time sync
 
 ---
 
@@ -266,7 +262,7 @@ These only become possible once the referenced sections exist:
 
 **What needs building for monetisation:**
 - Stripe integration (subscription billing)
-- Tier enforcement in Supabase RLS / app logic
+- Tier enforcement in Firestore security rules + app logic
 - Upgrade prompts at feature gates (wiki edit, PDF export, add team member)
 - General Terms of Service page (required before charging anyone)
 - Billing management page (view plan, cancel, upgrade/downgrade)
