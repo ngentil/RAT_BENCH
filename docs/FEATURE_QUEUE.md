@@ -264,22 +264,8 @@ These only become possible once the referenced sections exist:
 - **User** — ACL controlled by whoever manages them, limited to machines that person can themselves see
 - Rule: you cannot grant access you don't have — if a machine is hidden from an admin, that admin cannot see or manage the ACL for it either
 
-**Encrypted machines within an org:**
-- Admin sees encrypted machines by default (unless owner has hidden them via ACL)
-- Subtle tag on the machine card indicating it is encrypted — not a banner, just a small indicator
-- Per-user visibility still applies — if a user has no ACL entry they don't see the machine exists at all
-
-**Terms of service gate:**
-- Before enabling machine encryption, user must accept a terms modal (plain English):
-  - Legitimate personal and professional use only
-  - No unlawful content
-  - Full compliance with all lawful law enforcement requests
-  - No password recovery — data is permanently inaccessible if passphrase is lost
-  - Disclaimer and instructions shown directly on the settings page — not in the console
-- [ Cancel ] [ I understand, continue ]
-
 **Provisioning flow:**
-- Owner creates machine → encrypts it → invisible to everyone by default
+- Owner creates machine → invisible to everyone by default
 - Owner clicks **Provision** → works through org member list, assigns visible/read/write per person
 - Can provision directly to a user, bypassing admin entirely — admin can't see that assignment
 - Can provision to admin to cascade down to their users
@@ -291,7 +277,5 @@ These only become possible once the referenced sections exist:
 - `machine_permissions` table — `machine_id`, `user_id`, `can_view`, `can_read`, `can_write`
 - Provision UI — per machine, scrollable list of org members each with three toggles
 - Query layer — only return machines the requesting user has `can_view` permission for
-- Encrypted tag on machine card (visible to those with access, subtle)
-- Terms modal before encryption is enabled
 - General Terms of Service page for the app (needed before monetisation)
 
