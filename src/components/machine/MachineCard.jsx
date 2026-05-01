@@ -189,6 +189,20 @@ function MachineCard({machine,onUpdate,onDelete,company,profile}){
                   })}
                 </div>
               </div>}
+              {show("lighting")&&m.lighting?.length>0&&<div style={{padding:"12px 14px 0"}}>
+                <SL t="Lighting" />
+                <div style={{marginTop:6}}>
+                  {m.lighting.map((l,idx)=>{
+                    const loc=l.location==="Other"?(l.locationOther||"Other"):(l.location||"—");
+                    const parts=[l.lightType,l.wattage?l.wattage+"W":null,l.voltage,l.amperage?l.amperage+"A":null,l.plug].filter(Boolean);
+                    return <div key={l.id||idx} style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"8px 10px",marginBottom:5}}>
+                      <div style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{loc}</div>
+                      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1.6}}>{parts.length?parts.join(" · "):"No specs"}</div>
+                      {l.notes&&<div style={{fontSize:10,color:MUT,marginTop:2}}>{l.notes}</div>}
+                    </div>;
+                  })}
+                </div>
+              </div>}
               {show("notes")&&m.notes&&<div style={{padding:"10px 14px 0"}}><FL t="Notes" /><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.notes}</div></div>}
               <div style={{height:1,background:BRD2,margin:"12px 0 0"}} />
             </>;

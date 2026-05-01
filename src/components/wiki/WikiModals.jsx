@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { BG, SURF, BRD, TXT, MUT, ACC, GRN, RED, inp, btnA, btnG, col, sm, ovly, mdl, mdlH, mdlB } from '../../lib/styles';
-import { makeSlug, getWikiEntryBySlug, getWikiRevisions, deleteWikiEntry, deleteWikiRevision, saveWikiRevision, publishToWiki } from '../../lib/wikiApi';
+import { makeSlug, getWikiEntryBySlug, getWikiRevisions, deleteWikiEntry, deleteWikiRevision, saveWikiRevision, publishToWiki } from '../../lib/wiki';
 
 export function WikiTrackerModal({machine,profile,onClose}){
   const [tab,setTab]=React.useState("publish");
