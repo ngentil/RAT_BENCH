@@ -972,76 +972,79 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
             </div>;
           })()}
 
-          {/* Engine Output Shaft */}
-          {showPTO(type,customSections)&&(()=>{
-            const hasData = !!(ptoDiameter||shaftType||threadDir||threadSize||sprocketType);
-            const ptoSum=[
-              [ptoDiameter?"PTO: "+ptoDiameter:null,shaftType].filter(Boolean).join(" · "),
-              [threadDir,threadSize,sprocketType].filter(Boolean).join(" · "),
+          {/* Cooling System */}
+          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
+            const hasData=!!(coolingType||coolantType||coolantCapacity||thermostatTemp);
+            const coolingSum=[
+              [coolingType,coolantType].filter(Boolean).join(" · "),
+              [coolantCapacity?coolantCapacity+"L capacity":null,thermostatTemp?thermostatTemp+"°C thermostat":null].filter(Boolean).join(" · "),
             ].filter(l=>l&&l.trim());
             return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecPto(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+              <div onClick={()=>setSecCooling(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Engine Output Shaft</span>
-                  {hasData&&!secPto&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Cooling System</span>
+                  {hasData&&!secCooling&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
                 </div>
-                <span style={{color:MUT,fontSize:12}}>{secPto?"▲":"▼"}</span>
+                <span style={{color:MUT,fontSize:12}}>{secCooling?"▲":"▼"}</span>
               </div>
-              {secPto&&<div style={{paddingTop:12}}>
-                {hasData&&!editPto&&<SummaryCard onEdit={()=>setEditPto(true)} lines={ptoSum} />}
-                {(editPto||!hasData)&&<>
-                <div style={{...col,maxWidth:240}}><FL t="PTO shaft diameter" /><select style={sel} value={ptoDiameter} onChange={ev=>setPtoDiameter(ev.target.value)}><option value="">— not set —</option>{PTO_DIAMETERS.map(d=><option key={d}>{d}</option>)}</select></div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Shaft type" /><select style={sel} value={shaftType} onChange={ev=>setShaftType(ev.target.value)}><option value="">— not set —</option>{SHAFT_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
-                  <div style={{...col,flex:1}}><FL t="Head thread direction" /><select style={sel} value={threadDir} onChange={ev=>setThreadDir(ev.target.value)}><option value="">— not set —</option>{THREAD_DIR.map(t=><option key={t}>{t}</option>)}</select></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Head thread size" /><select style={sel} value={threadSize} onChange={ev=>setThreadSize(ev.target.value)}><option value="">— not set —</option>{THREAD_SIZES.map(t=><option key={t}>{t}</option>)}</select></div>
-                  <div style={{...col,flex:1}}><FL t="Sprocket type" /><select style={sel} value={sprocketType} onChange={ev=>setSprocketType(ev.target.value)}><option value="">— not set —</option>{SPROCKET_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
-                </div>
-                {editPto&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditPto(false)} style={{...btnA,...sm}}>Done</button></div>}
+              {secCooling&&<div style={{paddingTop:12}}>
+                {hasData&&!editCooling&&<SummaryCard onEdit={()=>setEditCooling(true)} lines={coolingSum} />}
+                {(editCooling||!hasData)&&<>
+                <div style={col}><FL t="Cooling type" /><select style={sel} value={coolingType} onChange={ev=>setCoolingType(ev.target.value)}><option value="">— not set —</option>{COOLING_TYPES.map(c=><option key={c}>{c}</option>)}</select></div>
+                {coolingType==="Liquid cooled"&&<>
+                  <div style={row}>
+                    <div style={{...col,flex:1}}><FL t="Coolant type" /><input style={inp} placeholder="e.g. OAT Green, HOAT Red" value={coolantType} onChange={ev=>setCoolantType(ev.target.value)} /></div>
+                    <div style={{...col,flex:1}}><FL t="Coolant capacity (L)" /><input style={inp} type="number" placeholder="e.g. 4.5" step="0.1" min="0" value={coolantCapacity} onChange={ev=>setCoolantCapacity(ev.target.value)} /></div>
+                  </div>
+                  <div style={{...col,maxWidth:180}}><FL t="Thermostat opening temp (°C)" /><input style={inp} type="number" placeholder="e.g. 82" step="1" min="0" value={thermostatTemp} onChange={ev=>setThermostatTemp(ev.target.value)} /></div>
+                </>}
+                <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Mix 50/50 distilled water, flush every 2 years" value={coolingNotes} onChange={ev=>setCoolingNotes(ev.target.value)} /></div>
+                {editCooling&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCooling(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;
           })()}
 
-          {/* Gearbox Shafts — vehicles, motos, tracked */}
-          {(isVehicle(type)||MOTO.includes(type)||isTracked(type)||isCustom(type))&&(()=>{
-            const hasData=!!(inputShaftDiameter||outputShaftDiameter||propShaftDiameter);
-            const shaftSum=[
-              [inputShaftDiameter?"Input: "+inputShaftDiameter+"mm":null,inputShaftSplines?inputShaftSplines+" splines":null,inputShaftThread||null].filter(Boolean).join(" · "),
-              [outputShaftDiameter?"Output: "+outputShaftDiameter+"mm":null,outputShaftSplines?outputShaftSplines+" splines":null,outputShaftThread||null].filter(Boolean).join(" · "),
-              [propShaftDiameter?"Prop shaft: "+propShaftDiameter+"mm":null].filter(Boolean).join(""),
+          {/* Turbo / Supercharger */}
+          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
+            const hasData=!!(turboFitted||turboType||turboBrand||turboBoost);
+            const turboSum=[
+              [turboFitted==="Yes"?(turboType||"Forced induction fitted"):turboFitted==="No"?"Naturally aspirated":null].filter(Boolean).join(""),
+              [turboBrand,turboBoost?turboBoost+" PSI boost":null,intercooler?"Intercooler: "+intercooler:null].filter(Boolean).join(" · "),
             ].filter(l=>l&&l.trim());
             return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecGearboxShafts(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+              <div onClick={()=>setSecTurbo(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Gearbox Shafts</span>
-                  {hasData&&!secGearboxShafts&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Turbo / Supercharger</span>
+                  {hasData&&!secTurbo&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
                 </div>
-                <span style={{color:MUT,fontSize:12}}>{secGearboxShafts?"▲":"▼"}</span>
+                <span style={{color:MUT,fontSize:12}}>{secTurbo?"▲":"▼"}</span>
               </div>
-              {secGearboxShafts&&<div style={{paddingTop:12}}>
-                {hasData&&!editGearboxShafts&&<SummaryCard onEdit={()=>setEditGearboxShafts(true)} lines={shaftSum} />}
-                {(editGearboxShafts||!hasData)&&<>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Input Shaft (Engine → Gearbox)</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 25" step="0.1" min="0" value={inputShaftDiameter} onChange={ev=>setInputShaftDiameter(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Spline count" /><input style={inp} type="number" placeholder="e.g. 23" step="1" min="0" value={inputShaftSplines} onChange={ev=>setInputShaftSplines(ev.target.value)} /></div>
+              {secTurbo&&<div style={{paddingTop:12}}>
+                {hasData&&!editTurbo&&<SummaryCard onEdit={()=>setEditTurbo(true)} lines={turboSum} />}
+                {(editTurbo||!hasData)&&<>
+                <div style={col}>
+                  <FL t="Forced induction fitted?" />
+                  <div style={{display:"flex",gap:0,borderRadius:2,overflow:"hidden",border:"1px solid #252525"}}>
+                    {["Yes","No"].map(s=>(
+                      <button key={s} onClick={()=>setTurboFitted(s)} style={{flex:1,padding:"8px 0",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"none",background:turboFitted===s?ACC:"#111",color:turboFitted===s?"#fff":"#3a3a3a"}}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div style={{...col,maxWidth:200}}><FL t="Thread spec" /><input style={inp} placeholder="e.g. M22×1.5 RH" value={inputShaftThread} onChange={ev=>setInputShaftThread(ev.target.value)} /></div>
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Output Shaft (Gearbox → Drivetrain)</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28" step="0.1" min="0" value={outputShaftDiameter} onChange={ev=>setOutputShaftDiameter(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Spline count" /><input style={inp} type="number" placeholder="e.g. 26" step="1" min="0" value={outputShaftSplines} onChange={ev=>setOutputShaftSplines(ev.target.value)} /></div>
-                </div>
-                <div style={{...col,maxWidth:200}}><FL t="Thread spec" /><input style={inp} placeholder="e.g. M24×1.5 RH" value={outputShaftThread} onChange={ev=>setOutputShaftThread(ev.target.value)} /></div>
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Prop / Drive Shaft</div>
-                <div style={{...col,maxWidth:200}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 50" step="0.1" min="0" value={propShaftDiameter} onChange={ev=>setPropShaftDiameter(ev.target.value)} /></div>
-                <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Double cardan front, single rear" value={gearboxShaftNotes} onChange={ev=>setGearboxShaftNotes(ev.target.value)} /></div>
-                {editGearboxShafts&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditGearboxShafts(false)} style={{...btnA,...sm}}>Done</button></div>}
+                {turboFitted==="Yes"&&<>
+                  <div style={row}>
+                    <div style={{...col,flex:1}}><FL t="Type" /><select style={sel} value={turboType} onChange={ev=>setTurboType(ev.target.value)}><option value="">— not set —</option>{TURBO_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+                    <div style={{...col,flex:1}}><FL t="Brand / model" /><input style={inp} placeholder="e.g. Garrett GTX2867R" value={turboBrand} onChange={ev=>setTurboBrand(ev.target.value)} /></div>
+                  </div>
+                  <div style={row}>
+                    <div style={{...col,flex:1}}><FL t="Boost pressure (PSI)" /><input style={inp} type="number" placeholder="e.g. 15" step="0.5" min="0" value={turboBoost} onChange={ev=>setTurboBoost(ev.target.value)} /></div>
+                    <div style={{...col,flex:1}}><FL t="Intercooler fitted" /><select style={sel} value={intercooler} onChange={ev=>setIntercooler(ev.target.value)}><option value="">— not set —</option><option>Yes</option><option>No</option></select></div>
+                  </div>
+                  <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Front mount intercooler, external wastegate" value={turboNotes} onChange={ev=>setTurboNotes(ev.target.value)} /></div>
+                </>}
+                {editTurbo&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditTurbo(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;
@@ -1143,6 +1146,253 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
 
                 {editCarb&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCarb(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Cylinder Wear Limits */}
+          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
+            const hasData=!!(cylMaxWear||cylTaperLimit||cylOutOfRound||honingAngle||nikasil);
+            const cylSum=[
+              [cylMaxWear?"Max wear: "+cylMaxWear+"mm":null,cylTaperLimit?"Taper limit: "+cylTaperLimit+"mm":null,cylOutOfRound?"Out-of-round: "+cylOutOfRound+"mm":null].filter(Boolean).join(" · "),
+              [honingAngle?"Honing: "+honingAngle:null,nikasil?"Nikasil: "+nikasil:null].filter(Boolean).join(" · "),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecCylinder(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Cylinder Wear Limits</span>
+                  {hasData&&!secCylinder&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secCylinder?"▲":"▼"}</span>
+              </div>
+              {secCylinder&&<div style={{paddingTop:12}}>
+                {hasData&&!editCylinder&&<SummaryCard onEdit={()=>setEditCylinder(true)} lines={cylSum} />}
+                {(editCylinder||!hasData)&&<>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Max bore wear limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.001" min="0" value={cylMaxWear} onChange={ev=>setCylMaxWear(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Taper limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.001" min="0" value={cylTaperLimit} onChange={ev=>setCylTaperLimit(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Out-of-round limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.001" min="0" value={cylOutOfRound} onChange={ev=>setCylOutOfRound(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Honing angle" /><input style={inp} placeholder="e.g. 45°" value={honingAngle} onChange={ev=>setHoningAngle(ev.target.value)} /></div>
+                </div>
+                <div style={col}><FL t="Nikasil / plated bore" /><select style={sel} value={nikasil} onChange={ev=>setNikasil(ev.target.value)}><option value="">— not set —</option><option>Yes — plated bore (no rebore)</option><option>No — cast iron / steel liner</option></select></div>
+                {editCylinder&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCylinder(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Main Bearings */}
+          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
+            const hasData=!!(mainBearingType||mainBearingLeft||mainBearingRight||mainBearingClear);
+            const mbSum=[
+              [mainBearingType,mainBearingClear?mainBearingClear+"mm clearance":null,mainBearingPreload?mainBearingPreload+"Nm preload":null].filter(Boolean).join(" · "),
+              [mainBearingLeft?"L: "+mainBearingLeft:null,mainBearingRight?"R: "+mainBearingRight:null].filter(Boolean).join(" · "),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecMainBearings(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Main Bearings</span>
+                  {hasData&&!secMainBearings&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secMainBearings?"▲":"▼"}</span>
+              </div>
+              {secMainBearings&&<div style={{paddingTop:12}}>
+                {hasData&&!editMainBearings&&<SummaryCard onEdit={()=>setEditMainBearings(true)} lines={mbSum} />}
+                {(editMainBearings||!hasData)&&<>
+                <div style={col}><FL t="Bearing type" /><select style={sel} value={mainBearingType} onChange={ev=>setMainBearingType(ev.target.value)}><option value="">— not set —</option><option>Ball bearing</option><option>Roller bearing</option><option>Plain shell</option><option>Taper roller</option></select></div>
+                <div style={{fontSize:9,color:MUT,marginBottom:8,lineHeight:1.5}}>Part no. or dimensions ID×OD×Width mm</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Left bearing" /><input style={inp} placeholder="e.g. 6203 / 17×40×12" value={mainBearingLeft} onChange={ev=>setMainBearingLeft(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Right bearing" /><input style={inp} placeholder="e.g. 6203 / 17×40×12" value={mainBearingRight} onChange={ev=>setMainBearingRight(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.025" step="0.001" min="0" value={mainBearingClear} onChange={ev=>setMainBearingClear(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Preload (Nm)" /><input style={inp} type="number" placeholder="e.g. 15" step="0.5" min="0" value={mainBearingPreload} onChange={ev=>setMainBearingPreload(ev.target.value)} /></div>
+                </div>
+                {editMainBearings&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditMainBearings(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Crankshaft */}
+          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
+            const hasData=!!(crankPinDiameter||mainJournalDiameter||crankStroke||crankSealLeft);
+            const crankSum=[
+              [crankStroke?crankStroke+"mm stroke":null,crankPinDiameter?crankPinDiameter+"mm crank pin":null,mainJournalDiameter?mainJournalDiameter+"mm main journal":null].filter(Boolean).join(" · "),
+              [crankEndFloat?crankEndFloat+"mm end float":null,crankRunout?crankRunout+"mm runout limit":null].filter(Boolean).join(" · "),
+              [crankSealLeft?"L seal: "+crankSealLeft:null,crankSealRight?"R seal: "+crankSealRight:null].filter(Boolean).join(" · "),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecCrank(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Crankshaft</span>
+                  {hasData&&!secCrank&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secCrank?"▲":"▼"}</span>
+              </div>
+              {secCrank&&<div style={{paddingTop:12}}>
+                {hasData&&!editCrank&&<SummaryCard onEdit={()=>setEditCrank(true)} lines={crankSum} />}
+                {(editCrank||!hasData)&&<>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Stroke (mm)" /><input style={inp} type="number" placeholder="e.g. 34.00" step="0.01" min="0" value={crankStroke} onChange={ev=>setCrankStroke(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Main journal diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28.00" step="0.01" min="0" value={mainJournalDiameter} onChange={ev=>setMainJournalDiameter(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Crank pin diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22.00" step="0.01" min="0" value={crankPinDiameter} onChange={ev=>setCrankPinDiameter(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Crank pin length (mm)" /><input style={inp} type="number" placeholder="e.g. 18.00" step="0.01" min="0" value={crankPinLength} onChange={ev=>setCrankPinLength(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="End float (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.01" min="0" value={crankEndFloat} onChange={ev=>setCrankEndFloat(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Runout limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.03" step="0.01" min="0" value={crankRunout} onChange={ev=>setCrankRunout(ev.target.value)} /></div>
+                </div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Crank Seals</div>
+                <div style={{fontSize:9,color:MUT,marginBottom:8}}>Format: ID×OD×Width mm (e.g. 20×35×7)</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Left seal" /><input style={inp} placeholder="e.g. 20×35×7" value={crankSealLeft} onChange={ev=>setCrankSealLeft(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Right seal" /><input style={inp} placeholder="e.g. 20×35×7" value={crankSealRight} onChange={ev=>setCrankSealRight(ev.target.value)} /></div>
+                </div>
+                {editCrank&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCrank(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Conrod */}
+          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
+            const hasData=!!(conrodLength||conrodSmallEnd||conrodBigEnd||conrodBearingType);
+            const conrodSum=[
+              [conrodLength?conrodLength+"mm C-C length":null,conrodBearingType].filter(Boolean).join(" · "),
+              [conrodSmallEnd?conrodSmallEnd+"mm small end":null,conrodSmallClear?conrodSmallClear+"mm clearance":null].filter(Boolean).join(" · "),
+              [conrodBigEnd?conrodBigEnd+"mm big end":null,conrodBigClear?conrodBigClear+"mm clearance":null].filter(Boolean).join(" · "),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecConrod(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Connecting Rod</span>
+                  {hasData&&!secConrod&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secConrod?"▲":"▼"}</span>
+              </div>
+              {secConrod&&<div style={{paddingTop:12}}>
+                {hasData&&!editConrod&&<SummaryCard onEdit={()=>setEditConrod(true)} lines={conrodSum} />}
+                {(editConrod||!hasData)&&<>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Length C-C (mm)" /><input style={inp} type="number" placeholder="e.g. 110.00" step="0.01" min="0" value={conrodLength} onChange={ev=>setConrodLength(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Bearing type" /><select style={sel} value={conrodBearingType} onChange={ev=>setConrodBearingType(ev.target.value)}><option value="">— not set —</option><option>Needle roller</option><option>Shell / plain</option><option>Ball bearing</option></select></div>
+                </div>
+                {conrodLength&&crankStroke&&(()=>{
+                  const r=parseFloat(conrodLength)/parseFloat(crankStroke);
+                  const label=r<1.5?"Short rod — peaky, aggressive":r<=1.75?"Balanced rod ratio":"Long rod — smooth, linear";
+                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Rod ratio: {r.toFixed(2)} — {label}</div>;
+                })()}
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Small End</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 10.00" step="0.01" min="0" value={conrodSmallEnd} onChange={ev=>setConrodSmallEnd(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.012" step="0.001" min="0" value={conrodSmallClear} onChange={ev=>setConrodSmallClear(ev.target.value)} /></div>
+                </div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Big End</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28.00" step="0.01" min="0" value={conrodBigEnd} onChange={ev=>setConrodBigEnd(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.025" step="0.001" min="0" value={conrodBigClear} onChange={ev=>setConrodBigClear(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Side clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.15" step="0.01" min="0" value={conrodSideClear} onChange={ev=>setConrodSideClear(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Bearing part no." /><input style={inp} placeholder="e.g. STD / 0.25 OS" value={conrodBearingPartNo} onChange={ev=>setConrodBearingPartNo(ev.target.value)} /></div>
+                </div>
+                {editConrod&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditConrod(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Piston & Bore */}
+          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
+            const hasData=!!(pistonDiameter||pistonClearance||ringCount||gudgeonDiameter);
+            const pistonSum=[
+              [pistonDiameter?pistonDiameter+"mm piston":null,pistonClearance?pistonClearance+"mm clearance":null,ringCount?ringCount+" rings":null].filter(Boolean).join(" · "),
+              [ringGapTop?"Top gap: "+ringGapTop+"mm":null,ringGapSecond?"2nd: "+ringGapSecond+"mm":null,ringGapOil?"Oil: "+ringGapOil+"mm":null].filter(Boolean).join(" · "),
+              [gudgeonDiameter?gudgeonDiameter+"mm gudgeon":null,gudgeonFit].filter(Boolean).join(" · "),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecPiston(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Piston & Bore</span>
+                  {hasData&&!secPiston&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secPiston?"▲":"▼"}</span>
+              </div>
+              {secPiston&&<div style={{paddingTop:12}}>
+                {hasData&&!editPiston&&<SummaryCard onEdit={()=>setEditPiston(true)} lines={pistonSum} />}
+                {(editPiston||!hasData)&&<>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Piston</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Piston diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 38.00" step="0.01" min="0" value={pistonDiameter} onChange={ev=>setPistonDiameter(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Piston clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.045" step="0.001" min="0" value={pistonClearance} onChange={ev=>setPistonClearance(ev.target.value)} /></div>
+                </div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Piston Rings</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Ring count" /><select style={sel} value={ringCount} onChange={ev=>setRingCount(ev.target.value)}><option value="">— not set —</option>{["1","2","3","4"].map(n=><option key={n}>{n}</option>)}</select></div>
+                  <div style={{...col,flex:1}}><FL t="Ring width (mm)" /><input style={inp} type="number" placeholder="e.g. 1.5" step="0.01" min="0" value={ringWidth} onChange={ev=>setRingWidth(ev.target.value)} /></div>
+                </div>
+                <div style={{...col,maxWidth:180}}><FL t="Ring thickness (mm)" /><input style={inp} type="number" placeholder="e.g. 2.0" step="0.01" min="0" value={ringThickness} onChange={ev=>setRingThickness(ev.target.value)} /></div>
+                <div style={{fontSize:9,color:MUT,marginBottom:6,marginTop:2}}>End gaps (mm)</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Top ring" /><input style={inp} type="number" placeholder="e.g. 0.20" step="0.01" min="0" value={ringGapTop} onChange={ev=>setRingGapTop(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="2nd ring" /><input style={inp} type="number" placeholder="e.g. 0.35" step="0.01" min="0" value={ringGapSecond} onChange={ev=>setRingGapSecond(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Oil ring" /><input style={inp} type="number" placeholder="e.g. 0.50" step="0.01" min="0" value={ringGapOil} onChange={ev=>setRingGapOil(ev.target.value)} /></div>
+                </div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Gudgeon Pin</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 10.00" step="0.01" min="0" value={gudgeonDiameter} onChange={ev=>setGudgeonDiameter(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Length (mm)" /><input style={inp} type="number" placeholder="e.g. 34.00" step="0.01" min="0" value={gudgeonLength} onChange={ev=>setGudgeonLength(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Fit type" /><select style={sel} value={gudgeonFit} onChange={ev=>setGudgeonFit(ev.target.value)}><option value="">— not set —</option><option>Press fit</option><option>Floating</option></select></div>
+                  <div style={{...col,flex:1}}><FL t="Circlip diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 10.00" step="0.01" min="0" value={gudgeonCirclip} onChange={ev=>setGudgeonCirclip(ev.target.value)} /></div>
+                </div>
+                {editPiston&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditPiston(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Engine Output Shaft */}
+          {showPTO(type,customSections)&&(()=>{
+            const hasData = !!(ptoDiameter||shaftType||threadDir||threadSize||sprocketType);
+            const ptoSum=[
+              [ptoDiameter?"PTO: "+ptoDiameter:null,shaftType].filter(Boolean).join(" · "),
+              [threadDir,threadSize,sprocketType].filter(Boolean).join(" · "),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecPto(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Engine Output Shaft</span>
+                  {hasData&&!secPto&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secPto?"▲":"▼"}</span>
+              </div>
+              {secPto&&<div style={{paddingTop:12}}>
+                {hasData&&!editPto&&<SummaryCard onEdit={()=>setEditPto(true)} lines={ptoSum} />}
+                {(editPto||!hasData)&&<>
+                <div style={{...col,maxWidth:240}}><FL t="PTO shaft diameter" /><select style={sel} value={ptoDiameter} onChange={ev=>setPtoDiameter(ev.target.value)}><option value="">— not set —</option>{PTO_DIAMETERS.map(d=><option key={d}>{d}</option>)}</select></div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Shaft type" /><select style={sel} value={shaftType} onChange={ev=>setShaftType(ev.target.value)}><option value="">— not set —</option>{SHAFT_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
+                  <div style={{...col,flex:1}}><FL t="Head thread direction" /><select style={sel} value={threadDir} onChange={ev=>setThreadDir(ev.target.value)}><option value="">— not set —</option>{THREAD_DIR.map(t=><option key={t}>{t}</option>)}</select></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Head thread size" /><select style={sel} value={threadSize} onChange={ev=>setThreadSize(ev.target.value)}><option value="">— not set —</option>{THREAD_SIZES.map(t=><option key={t}>{t}</option>)}</select></div>
+                  <div style={{...col,flex:1}}><FL t="Sprocket type" /><select style={sel} value={sprocketType} onChange={ev=>setSprocketType(ev.target.value)}><option value="">— not set —</option>{SPROCKET_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
+                </div>
+                {editPto&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditPto(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;
@@ -1262,6 +1512,48 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
             </div>;
           })()}
 
+          {/* Gearbox Shafts — vehicles, motos, tracked */}
+          {(isVehicle(type)||MOTO.includes(type)||isTracked(type)||isCustom(type))&&(()=>{
+            const hasData=!!(inputShaftDiameter||outputShaftDiameter||propShaftDiameter);
+            const shaftSum=[
+              [inputShaftDiameter?"Input: "+inputShaftDiameter+"mm":null,inputShaftSplines?inputShaftSplines+" splines":null,inputShaftThread||null].filter(Boolean).join(" · "),
+              [outputShaftDiameter?"Output: "+outputShaftDiameter+"mm":null,outputShaftSplines?outputShaftSplines+" splines":null,outputShaftThread||null].filter(Boolean).join(" · "),
+              [propShaftDiameter?"Prop shaft: "+propShaftDiameter+"mm":null].filter(Boolean).join(""),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecGearboxShafts(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Gearbox Shafts</span>
+                  {hasData&&!secGearboxShafts&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secGearboxShafts?"▲":"▼"}</span>
+              </div>
+              {secGearboxShafts&&<div style={{paddingTop:12}}>
+                {hasData&&!editGearboxShafts&&<SummaryCard onEdit={()=>setEditGearboxShafts(true)} lines={shaftSum} />}
+                {(editGearboxShafts||!hasData)&&<>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Input Shaft (Engine → Gearbox)</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 25" step="0.1" min="0" value={inputShaftDiameter} onChange={ev=>setInputShaftDiameter(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Spline count" /><input style={inp} type="number" placeholder="e.g. 23" step="1" min="0" value={inputShaftSplines} onChange={ev=>setInputShaftSplines(ev.target.value)} /></div>
+                </div>
+                <div style={{...col,maxWidth:200}}><FL t="Thread spec" /><input style={inp} placeholder="e.g. M22×1.5 RH" value={inputShaftThread} onChange={ev=>setInputShaftThread(ev.target.value)} /></div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Output Shaft (Gearbox → Drivetrain)</div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28" step="0.1" min="0" value={outputShaftDiameter} onChange={ev=>setOutputShaftDiameter(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Spline count" /><input style={inp} type="number" placeholder="e.g. 26" step="1" min="0" value={outputShaftSplines} onChange={ev=>setOutputShaftSplines(ev.target.value)} /></div>
+                </div>
+                <div style={{...col,maxWidth:200}}><FL t="Thread spec" /><input style={inp} placeholder="e.g. M24×1.5 RH" value={outputShaftThread} onChange={ev=>setOutputShaftThread(ev.target.value)} /></div>
+                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Prop / Drive Shaft</div>
+                <div style={{...col,maxWidth:200}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 50" step="0.1" min="0" value={propShaftDiameter} onChange={ev=>setPropShaftDiameter(ev.target.value)} /></div>
+                <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Double cardan front, single rear" value={gearboxShaftNotes} onChange={ev=>setGearboxShaftNotes(ev.target.value)} /></div>
+                {editGearboxShafts&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditGearboxShafts(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
           {/* Drivetrain */}
           {showDrivetrain(type,customSections)&&(()=>{
             const hasData = !!(driveType||chainPitch||frontSprocket||rearSprocket||transType||gearboxBrand||clutchType||gearboxOilType);
@@ -1374,6 +1666,40 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
                 </>}
 
                 {editDrive&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditDrive(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Belt Specs — 4-stroke, Diesel, LPG only */}
+          {(strokeType==="4-stroke"||strokeType==="Diesel"||strokeType==="LPG")&&(()=>{
+            const hasData=!!(beltType||beltPartNo||beltWidth||beltLength||beltCount);
+            const beltSum=[
+              [beltType,beltCount?beltCount+" belt"+(beltCount!=="1"?"s":""):null].filter(Boolean).join(" · "),
+              [beltPartNo?beltPartNo:null,beltWidth?beltWidth+"mm wide":null,beltLength?beltLength+"mm long":null].filter(Boolean).join(" · "),
+            ].filter(l=>l&&l.trim());
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecBelt(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Belt Specs</span>
+                  {hasData&&!secBelt&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secBelt?"▲":"▼"}</span>
+              </div>
+              {secBelt&&<div style={{paddingTop:12}}>
+                {hasData&&!editBelt&&<SummaryCard onEdit={()=>setEditBelt(true)} lines={beltSum} />}
+                {(editBelt||!hasData)&&<>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Belt type" /><select style={sel} value={beltType} onChange={ev=>setBeltType(ev.target.value)}><option value="">— not set —</option>{BELT_TYPES.map(b=><option key={b}>{b}</option>)}</select></div>
+                  <div style={{...col,flex:1}}><FL t="Number of belts" /><input style={inp} type="number" placeholder="e.g. 2" step="1" min="1" value={beltCount} onChange={ev=>setBeltCount(ev.target.value)} /></div>
+                </div>
+                <div style={col}><FL t="Part number / size code" /><input style={inp} placeholder="e.g. A56 / 13×1422" value={beltPartNo} onChange={ev=>setBeltPartNo(ev.target.value)} /></div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Width (mm)" /><input style={inp} type="number" placeholder="e.g. 13" step="0.5" min="0" value={beltWidth} onChange={ev=>setBeltWidth(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Length (mm)" /><input style={inp} type="number" placeholder="e.g. 1422" step="1" min="0" value={beltLength} onChange={ev=>setBeltLength(ev.target.value)} /></div>
+                </div>
+                <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Fan belt, tensioner on idler pulley" value={beltNotes} onChange={ev=>setBeltNotes(ev.target.value)} /></div>
+                {editBelt&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditBelt(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;
@@ -1600,84 +1926,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
             </div>;
           })()}
 
-          {/* Cooling System */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(coolingType||coolantType||coolantCapacity||thermostatTemp);
-            const coolingSum=[
-              [coolingType,coolantType].filter(Boolean).join(" · "),
-              [coolantCapacity?coolantCapacity+"L capacity":null,thermostatTemp?thermostatTemp+"°C thermostat":null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecCooling(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Cooling System</span>
-                  {hasData&&!secCooling&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secCooling?"▲":"▼"}</span>
-              </div>
-              {secCooling&&<div style={{paddingTop:12}}>
-                {hasData&&!editCooling&&<SummaryCard onEdit={()=>setEditCooling(true)} lines={coolingSum} />}
-                {(editCooling||!hasData)&&<>
-                <div style={col}><FL t="Cooling type" /><select style={sel} value={coolingType} onChange={ev=>setCoolingType(ev.target.value)}><option value="">— not set —</option>{COOLING_TYPES.map(c=><option key={c}>{c}</option>)}</select></div>
-                {coolingType==="Liquid cooled"&&<>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Coolant type" /><input style={inp} placeholder="e.g. OAT Green, HOAT Red" value={coolantType} onChange={ev=>setCoolantType(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Coolant capacity (L)" /><input style={inp} type="number" placeholder="e.g. 4.5" step="0.1" min="0" value={coolantCapacity} onChange={ev=>setCoolantCapacity(ev.target.value)} /></div>
-                  </div>
-                  <div style={{...col,maxWidth:180}}><FL t="Thermostat opening temp (°C)" /><input style={inp} type="number" placeholder="e.g. 82" step="1" min="0" value={thermostatTemp} onChange={ev=>setThermostatTemp(ev.target.value)} /></div>
-                </>}
-                <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Mix 50/50 distilled water, flush every 2 years" value={coolingNotes} onChange={ev=>setCoolingNotes(ev.target.value)} /></div>
-                {editCooling&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCooling(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Turbo / Supercharger */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(turboFitted||turboType||turboBrand||turboBoost);
-            const turboSum=[
-              [turboFitted==="Yes"?(turboType||"Forced induction fitted"):turboFitted==="No"?"Naturally aspirated":null].filter(Boolean).join(""),
-              [turboBrand,turboBoost?turboBoost+" PSI boost":null,intercooler?"Intercooler: "+intercooler:null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecTurbo(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Turbo / Supercharger</span>
-                  {hasData&&!secTurbo&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secTurbo?"▲":"▼"}</span>
-              </div>
-              {secTurbo&&<div style={{paddingTop:12}}>
-                {hasData&&!editTurbo&&<SummaryCard onEdit={()=>setEditTurbo(true)} lines={turboSum} />}
-                {(editTurbo||!hasData)&&<>
-                <div style={col}>
-                  <FL t="Forced induction fitted?" />
-                  <div style={{display:"flex",gap:0,borderRadius:2,overflow:"hidden",border:"1px solid #252525"}}>
-                    {["Yes","No"].map(s=>(
-                      <button key={s} onClick={()=>setTurboFitted(s)} style={{flex:1,padding:"8px 0",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"none",background:turboFitted===s?ACC:"#111",color:turboFitted===s?"#fff":"#3a3a3a"}}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {turboFitted==="Yes"&&<>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Type" /><select style={sel} value={turboType} onChange={ev=>setTurboType(ev.target.value)}><option value="">— not set —</option>{TURBO_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
-                    <div style={{...col,flex:1}}><FL t="Brand / model" /><input style={inp} placeholder="e.g. Garrett GTX2867R" value={turboBrand} onChange={ev=>setTurboBrand(ev.target.value)} /></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Boost pressure (PSI)" /><input style={inp} type="number" placeholder="e.g. 15" step="0.5" min="0" value={turboBoost} onChange={ev=>setTurboBoost(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Intercooler fitted" /><select style={sel} value={intercooler} onChange={ev=>setIntercooler(ev.target.value)}><option value="">— not set —</option><option>Yes</option><option>No</option></select></div>
-                  </div>
-                  <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Front mount intercooler, external wastegate" value={turboNotes} onChange={ev=>setTurboNotes(ev.target.value)} /></div>
-                </>}
-                {editTurbo&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditTurbo(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
           {/* Charging System — 4-stroke, Diesel, LPG only */}
           {(strokeType==="4-stroke"||strokeType==="Diesel"||strokeType==="LPG")&&(()=>{
             const hasData=!!(chargingType||chargeVoltage||chargeAmps||rectRegFitted);
@@ -1725,220 +1973,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
                 })()}
                 <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Internal regulator, replace at 80k km" value={chargingNotes} onChange={ev=>setChargingNotes(ev.target.value)} /></div>
                 {editCharging&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCharging(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Cylinder Wear Limits */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(cylMaxWear||cylTaperLimit||cylOutOfRound||honingAngle||nikasil);
-            const cylSum=[
-              [cylMaxWear?"Max wear: "+cylMaxWear+"mm":null,cylTaperLimit?"Taper limit: "+cylTaperLimit+"mm":null,cylOutOfRound?"Out-of-round: "+cylOutOfRound+"mm":null].filter(Boolean).join(" · "),
-              [honingAngle?"Honing: "+honingAngle:null,nikasil?"Nikasil: "+nikasil:null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecCylinder(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Cylinder Wear Limits</span>
-                  {hasData&&!secCylinder&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secCylinder?"▲":"▼"}</span>
-              </div>
-              {secCylinder&&<div style={{paddingTop:12}}>
-                {hasData&&!editCylinder&&<SummaryCard onEdit={()=>setEditCylinder(true)} lines={cylSum} />}
-                {(editCylinder||!hasData)&&<>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Max bore wear limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.001" min="0" value={cylMaxWear} onChange={ev=>setCylMaxWear(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Taper limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.001" min="0" value={cylTaperLimit} onChange={ev=>setCylTaperLimit(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Out-of-round limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.001" min="0" value={cylOutOfRound} onChange={ev=>setCylOutOfRound(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Honing angle" /><input style={inp} placeholder="e.g. 45°" value={honingAngle} onChange={ev=>setHoningAngle(ev.target.value)} /></div>
-                </div>
-                <div style={col}><FL t="Nikasil / plated bore" /><select style={sel} value={nikasil} onChange={ev=>setNikasil(ev.target.value)}><option value="">— not set —</option><option>Yes — plated bore (no rebore)</option><option>No — cast iron / steel liner</option></select></div>
-                {editCylinder&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCylinder(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Main Bearings */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(mainBearingType||mainBearingLeft||mainBearingRight||mainBearingClear);
-            const mbSum=[
-              [mainBearingType,mainBearingClear?mainBearingClear+"mm clearance":null,mainBearingPreload?mainBearingPreload+"Nm preload":null].filter(Boolean).join(" · "),
-              [mainBearingLeft?"L: "+mainBearingLeft:null,mainBearingRight?"R: "+mainBearingRight:null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecMainBearings(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Main Bearings</span>
-                  {hasData&&!secMainBearings&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secMainBearings?"▲":"▼"}</span>
-              </div>
-              {secMainBearings&&<div style={{paddingTop:12}}>
-                {hasData&&!editMainBearings&&<SummaryCard onEdit={()=>setEditMainBearings(true)} lines={mbSum} />}
-                {(editMainBearings||!hasData)&&<>
-                <div style={col}><FL t="Bearing type" /><select style={sel} value={mainBearingType} onChange={ev=>setMainBearingType(ev.target.value)}><option value="">— not set —</option><option>Ball bearing</option><option>Roller bearing</option><option>Plain shell</option><option>Taper roller</option></select></div>
-                <div style={{fontSize:9,color:MUT,marginBottom:8,lineHeight:1.5}}>Part no. or dimensions ID×OD×Width mm</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Left bearing" /><input style={inp} placeholder="e.g. 6203 / 17×40×12" value={mainBearingLeft} onChange={ev=>setMainBearingLeft(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Right bearing" /><input style={inp} placeholder="e.g. 6203 / 17×40×12" value={mainBearingRight} onChange={ev=>setMainBearingRight(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.025" step="0.001" min="0" value={mainBearingClear} onChange={ev=>setMainBearingClear(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Preload (Nm)" /><input style={inp} type="number" placeholder="e.g. 15" step="0.5" min="0" value={mainBearingPreload} onChange={ev=>setMainBearingPreload(ev.target.value)} /></div>
-                </div>
-                {editMainBearings&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditMainBearings(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Crankshaft */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(crankPinDiameter||mainJournalDiameter||crankStroke||crankSealLeft);
-            const crankSum=[
-              [crankStroke?crankStroke+"mm stroke":null,crankPinDiameter?crankPinDiameter+"mm crank pin":null,mainJournalDiameter?mainJournalDiameter+"mm main journal":null].filter(Boolean).join(" · "),
-              [crankEndFloat?crankEndFloat+"mm end float":null,crankRunout?crankRunout+"mm runout limit":null].filter(Boolean).join(" · "),
-              [crankSealLeft?"L seal: "+crankSealLeft:null,crankSealRight?"R seal: "+crankSealRight:null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecCrank(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Crankshaft</span>
-                  {hasData&&!secCrank&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secCrank?"▲":"▼"}</span>
-              </div>
-              {secCrank&&<div style={{paddingTop:12}}>
-                {hasData&&!editCrank&&<SummaryCard onEdit={()=>setEditCrank(true)} lines={crankSum} />}
-                {(editCrank||!hasData)&&<>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Stroke (mm)" /><input style={inp} type="number" placeholder="e.g. 34.00" step="0.01" min="0" value={crankStroke} onChange={ev=>setCrankStroke(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Main journal diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28.00" step="0.01" min="0" value={mainJournalDiameter} onChange={ev=>setMainJournalDiameter(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Crank pin diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22.00" step="0.01" min="0" value={crankPinDiameter} onChange={ev=>setCrankPinDiameter(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Crank pin length (mm)" /><input style={inp} type="number" placeholder="e.g. 18.00" step="0.01" min="0" value={crankPinLength} onChange={ev=>setCrankPinLength(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="End float (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.01" min="0" value={crankEndFloat} onChange={ev=>setCrankEndFloat(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Runout limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.03" step="0.01" min="0" value={crankRunout} onChange={ev=>setCrankRunout(ev.target.value)} /></div>
-                </div>
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Crank Seals</div>
-                <div style={{fontSize:9,color:MUT,marginBottom:8}}>Format: ID×OD×Width mm (e.g. 20×35×7)</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Left seal" /><input style={inp} placeholder="e.g. 20×35×7" value={crankSealLeft} onChange={ev=>setCrankSealLeft(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Right seal" /><input style={inp} placeholder="e.g. 20×35×7" value={crankSealRight} onChange={ev=>setCrankSealRight(ev.target.value)} /></div>
-                </div>
-                {editCrank&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCrank(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Conrod */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(conrodLength||conrodSmallEnd||conrodBigEnd||conrodBearingType);
-            const conrodSum=[
-              [conrodLength?conrodLength+"mm C-C length":null,conrodBearingType].filter(Boolean).join(" · "),
-              [conrodSmallEnd?conrodSmallEnd+"mm small end":null,conrodSmallClear?conrodSmallClear+"mm clearance":null].filter(Boolean).join(" · "),
-              [conrodBigEnd?conrodBigEnd+"mm big end":null,conrodBigClear?conrodBigClear+"mm clearance":null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecConrod(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Connecting Rod</span>
-                  {hasData&&!secConrod&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secConrod?"▲":"▼"}</span>
-              </div>
-              {secConrod&&<div style={{paddingTop:12}}>
-                {hasData&&!editConrod&&<SummaryCard onEdit={()=>setEditConrod(true)} lines={conrodSum} />}
-                {(editConrod||!hasData)&&<>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Length C-C (mm)" /><input style={inp} type="number" placeholder="e.g. 110.00" step="0.01" min="0" value={conrodLength} onChange={ev=>setConrodLength(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Bearing type" /><select style={sel} value={conrodBearingType} onChange={ev=>setConrodBearingType(ev.target.value)}><option value="">— not set —</option><option>Needle roller</option><option>Shell / plain</option><option>Ball bearing</option></select></div>
-                </div>
-                {conrodLength&&crankStroke&&(()=>{
-                  const r=parseFloat(conrodLength)/parseFloat(crankStroke);
-                  const label=r<1.5?"Short rod — peaky, aggressive":r<=1.75?"Balanced rod ratio":"Long rod — smooth, linear";
-                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Rod ratio: {r.toFixed(2)} — {label}</div>;
-                })()}
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Small End</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 10.00" step="0.01" min="0" value={conrodSmallEnd} onChange={ev=>setConrodSmallEnd(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.012" step="0.001" min="0" value={conrodSmallClear} onChange={ev=>setConrodSmallClear(ev.target.value)} /></div>
-                </div>
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Big End</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28.00" step="0.01" min="0" value={conrodBigEnd} onChange={ev=>setConrodBigEnd(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.025" step="0.001" min="0" value={conrodBigClear} onChange={ev=>setConrodBigClear(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Side clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.15" step="0.01" min="0" value={conrodSideClear} onChange={ev=>setConrodSideClear(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Bearing part no." /><input style={inp} placeholder="e.g. STD / 0.25 OS" value={conrodBearingPartNo} onChange={ev=>setConrodBearingPartNo(ev.target.value)} /></div>
-                </div>
-                {editConrod&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditConrod(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Piston & Bore */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(pistonDiameter||pistonClearance||ringCount||gudgeonDiameter);
-            const pistonSum=[
-              [pistonDiameter?pistonDiameter+"mm piston":null,pistonClearance?pistonClearance+"mm clearance":null,ringCount?ringCount+" rings":null].filter(Boolean).join(" · "),
-              [ringGapTop?"Top gap: "+ringGapTop+"mm":null,ringGapSecond?"2nd: "+ringGapSecond+"mm":null,ringGapOil?"Oil: "+ringGapOil+"mm":null].filter(Boolean).join(" · "),
-              [gudgeonDiameter?gudgeonDiameter+"mm gudgeon":null,gudgeonFit].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecPiston(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Piston & Bore</span>
-                  {hasData&&!secPiston&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secPiston?"▲":"▼"}</span>
-              </div>
-              {secPiston&&<div style={{paddingTop:12}}>
-                {hasData&&!editPiston&&<SummaryCard onEdit={()=>setEditPiston(true)} lines={pistonSum} />}
-                {(editPiston||!hasData)&&<>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Piston</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Piston diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 38.00" step="0.01" min="0" value={pistonDiameter} onChange={ev=>setPistonDiameter(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Piston clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.045" step="0.001" min="0" value={pistonClearance} onChange={ev=>setPistonClearance(ev.target.value)} /></div>
-                </div>
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Piston Rings</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Ring count" /><select style={sel} value={ringCount} onChange={ev=>setRingCount(ev.target.value)}><option value="">— not set —</option>{["1","2","3","4"].map(n=><option key={n}>{n}</option>)}</select></div>
-                  <div style={{...col,flex:1}}><FL t="Ring width (mm)" /><input style={inp} type="number" placeholder="e.g. 1.5" step="0.01" min="0" value={ringWidth} onChange={ev=>setRingWidth(ev.target.value)} /></div>
-                </div>
-                <div style={{...col,maxWidth:180}}><FL t="Ring thickness (mm)" /><input style={inp} type="number" placeholder="e.g. 2.0" step="0.01" min="0" value={ringThickness} onChange={ev=>setRingThickness(ev.target.value)} /></div>
-                <div style={{fontSize:9,color:MUT,marginBottom:6,marginTop:2}}>End gaps (mm)</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Top ring" /><input style={inp} type="number" placeholder="e.g. 0.20" step="0.01" min="0" value={ringGapTop} onChange={ev=>setRingGapTop(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="2nd ring" /><input style={inp} type="number" placeholder="e.g. 0.35" step="0.01" min="0" value={ringGapSecond} onChange={ev=>setRingGapSecond(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Oil ring" /><input style={inp} type="number" placeholder="e.g. 0.50" step="0.01" min="0" value={ringGapOil} onChange={ev=>setRingGapOil(ev.target.value)} /></div>
-                </div>
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Gudgeon Pin</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 10.00" step="0.01" min="0" value={gudgeonDiameter} onChange={ev=>setGudgeonDiameter(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Length (mm)" /><input style={inp} type="number" placeholder="e.g. 34.00" step="0.01" min="0" value={gudgeonLength} onChange={ev=>setGudgeonLength(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Fit type" /><select style={sel} value={gudgeonFit} onChange={ev=>setGudgeonFit(ev.target.value)}><option value="">— not set —</option><option>Press fit</option><option>Floating</option></select></div>
-                  <div style={{...col,flex:1}}><FL t="Circlip diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 10.00" step="0.01" min="0" value={gudgeonCirclip} onChange={ev=>setGudgeonCirclip(ev.target.value)} /></div>
-                </div>
-                {editPiston&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditPiston(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;
@@ -2074,40 +2108,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
                   <div style={{...col,flex:1}}><FL t="Overall height (mm)" /><input style={inp} type="number" placeholder="e.g. 1150" step="1" min="0" value={overallHeight} onChange={ev=>setOverallHeight(ev.target.value)} /></div>
                 </div>
                 {editDimensions&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditDimensions(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Belt Specs — 4-stroke, Diesel, LPG only */}
-          {(strokeType==="4-stroke"||strokeType==="Diesel"||strokeType==="LPG")&&(()=>{
-            const hasData=!!(beltType||beltPartNo||beltWidth||beltLength||beltCount);
-            const beltSum=[
-              [beltType,beltCount?beltCount+" belt"+(beltCount!=="1"?"s":""):null].filter(Boolean).join(" · "),
-              [beltPartNo?beltPartNo:null,beltWidth?beltWidth+"mm wide":null,beltLength?beltLength+"mm long":null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecBelt(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Belt Specs</span>
-                  {hasData&&!secBelt&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secBelt?"▲":"▼"}</span>
-              </div>
-              {secBelt&&<div style={{paddingTop:12}}>
-                {hasData&&!editBelt&&<SummaryCard onEdit={()=>setEditBelt(true)} lines={beltSum} />}
-                {(editBelt||!hasData)&&<>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Belt type" /><select style={sel} value={beltType} onChange={ev=>setBeltType(ev.target.value)}><option value="">— not set —</option>{BELT_TYPES.map(b=><option key={b}>{b}</option>)}</select></div>
-                  <div style={{...col,flex:1}}><FL t="Number of belts" /><input style={inp} type="number" placeholder="e.g. 2" step="1" min="1" value={beltCount} onChange={ev=>setBeltCount(ev.target.value)} /></div>
-                </div>
-                <div style={col}><FL t="Part number / size code" /><input style={inp} placeholder="e.g. A56 / 13×1422" value={beltPartNo} onChange={ev=>setBeltPartNo(ev.target.value)} /></div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Width (mm)" /><input style={inp} type="number" placeholder="e.g. 13" step="0.5" min="0" value={beltWidth} onChange={ev=>setBeltWidth(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Length (mm)" /><input style={inp} type="number" placeholder="e.g. 1422" step="1" min="0" value={beltLength} onChange={ev=>setBeltLength(ev.target.value)} /></div>
-                </div>
-                <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Fan belt, tensioner on idler pulley" value={beltNotes} onChange={ev=>setBeltNotes(ev.target.value)} /></div>
-                {editBelt&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditBelt(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;

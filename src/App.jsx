@@ -10,6 +10,7 @@ import SettingsPage from './components/settings/SettingsPage';
 import Tracker from './components/tracker/Tracker';
 import JobBoard from './components/tracker/JobBoard';
 import SpecSearch from './components/tracker/SpecSearch';
+import WikiTab from './components/wiki/WikiTab';
 function App(){
   const [tab,setTab]=useState("tracker");
   const [machines,setMachines]=useState([]);
@@ -139,6 +140,7 @@ function App(){
       {tab==="tracker" &&<Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile}/>}
       {tab==="jobs"    &&<JobBoard    machines={machines} setMachines={setMachines} />}
       {tab==="search"  &&<SpecSearch  machines={machines} />}
+      {tab==="wiki"    &&<div style={{padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>}
       {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut}/>}
     </div>
   );
