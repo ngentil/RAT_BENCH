@@ -218,6 +218,22 @@ export async function saveWikiRevision(entryId, data, editSummary, profile) {
   return rev;
 }
 
+export async function deleteWikiRevision(revId, entryId) {
+  const { error } = await supabase.from("wiki_revisions").delete().eq("id", revId);
+  if (error) throw error;
+  const { data: remaining } = await supabase.from("wiki_revisions")
+    .select("id").eq("entry_id", entryId).order("created_at", { ascending: false }).limit(1);
+  await supabase.from("wiki_entries")
+    .update({ current_rev_id: remaining?.[0]?.id || null }).eq("id", entryId);
+}
+
+export async function deleteWikiEntry(entryId) {
+  await supabase.from("wiki_revisions").delete().eq("entry_id", entryId);
+  await supabase.from("wiki_contributions").delete().eq("entry_id", entryId);
+  const { error } = await supabase.from("wiki_entries").delete().eq("id", entryId);
+  if (error) throw error;
+}
+
 export async function revertToRevision(entryId, rev, profile) {
   return saveWikiRevision(
     entryId,
