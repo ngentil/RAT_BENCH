@@ -368,7 +368,7 @@ export const getExpandFields = (type, strokeType) => EXPAND_SECTIONS.filter(f=>{
 });
 export const getTileFields = (type) => TILE_FIELDS.filter(f=>!f.types||f.types.includes(type));
 
-export const TABS        = [{id:"tracker",label:"📋 Tracker"},{id:"jobs",label:"🗂 Jobs"},{id:"search",label:"🔍 Search"}];
+export const TABS        = [{id:"tracker",label:"📋 Tracker"},{id:"jobs",label:"🗂 Jobs"},{id:"search",label:"🔍 Search"},{id:"wiki",label:"📖 Wiki"}];
 export const LIGHT_LOCATIONS = [
   "Headlights","Tail Lights","Indicators","Brake Lights",
   "Reverse Lights","Trailer Lights","Auxiliary / Work Lights",
