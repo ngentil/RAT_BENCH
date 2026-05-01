@@ -208,6 +208,11 @@ export const TILE_FIELDS = [
   {k:"colour",       l:"Colour",              s:"",          types:["Vehicle","Motorcycle","Scooter","Moped","Quad Bike"]},
   {k:"bodyType",     l:"Body Type",           s:"",          types:["Vehicle","Motorcycle","Scooter","Moped"]},
   {k:"driveConfig",  l:"Drive Config",        s:"Drive:",    types:["Vehicle"]},
+  {k:"obShaftLength",    l:"Shaft length",        s:"Shaft:",    types:["Outboard Motor"]},
+  {k:"obPropPitch",     l:"Prop pitch",          s:"Pitch:",    types:["Outboard Motor"]},
+  {k:"obPropDiameter",  l:"Prop diameter",       s:"Prop:",     types:["Outboard Motor"]},
+  {k:"obGearRatio",     l:"Gear ratio",          s:"Ratio:",    types:["Outboard Motor"]},
+  {k:"obAnodeMaterial", l:"Anode material",      s:"Anode:",    types:["Outboard Motor"]},
   {k:"source",       l:"Source",              s:"",          types:null},
   {k:"rage",         l:"Rage rating ☠️",       s:"",          types:null},
 ];
