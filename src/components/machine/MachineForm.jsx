@@ -6,7 +6,8 @@ import { SL, FL, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotL
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
-function MachineForm({existing,onSave,onClose,company,units="metric"}){
+import { WikiTrackerModal } from '../wiki/WikiModals';
+function MachineForm({existing,onSave,onClose,company,units="metric",profile}){
   const e=existing||{};
   const isNew=true;
   const [smartMode,setSmartMode]=useState(e.smartMode||false);
@@ -360,6 +361,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
   const [lighting,setLighting]=useState(e.lighting||[]);
   const [lightEditIdx,setLightEditIdx]=useState(null);
   const [lightAdding,setLightAdding]=useState(false);
+  const [showWikiModal,setShowWikiModal]=useState(false);
   // outboard-specific
   const [obShaftLength,setObShaftLength]=useState(e.obShaftLength||"");
   const [obTransomHeight,setObTransomHeight]=useState(e.obTransomHeight||"");
@@ -2456,10 +2458,12 @@ function MachineForm({existing,onSave,onClose,company,units="metric"}){
         </div>
         <div style={mdlF}>
           <button style={btnG} onClick={onClose}>Cancel</button>
+          {existing&&profile&&make&&model&&<button style={{...btnG,...sm}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
           <button style={btnA} onClick={save}>{existing?"Save Changes":"Add Machine"}</button>
         </div>
       </div>
     </div>
+    {showWikiModal&&<WikiTrackerModal machine={{...existing,make,model}} profile={profile} onClose={()=>setShowWikiModal(false)}/>}
   );
 }
 export default MachineForm;
