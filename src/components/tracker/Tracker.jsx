@@ -81,6 +81,13 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest}){
 
   return (
     <div style={{padding:16,flex:1}}>
+      {isGuest&&<div style={{background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:"12px 14px",marginBottom:14}}>
+        <div style={{fontSize:9,color:"#4ade80",letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Guest Mode</div>
+        <div style={{fontSize:10,color:MUT,lineHeight:1.7,marginBottom:10}}>
+          Max 3 machines · No wiki publishing · Data may be lost if you clear your browser.
+        </div>
+        <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create account to save your data</button>
+      </div>}
       {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
