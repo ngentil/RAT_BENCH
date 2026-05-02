@@ -1,5 +1,3 @@
-import { supabase } from './supabase';
-
 export function toDb(m) {
   return {
     id:                   m.id,
@@ -224,6 +222,9 @@ export function toDb(m) {
     hyd_relief_valve:     m.hydReliefValve,
     hyd_rams:             m.hydRams || [],
     attachments:          m.attachments || [],
+    bearings:             m.bearings || [],
+    lighting:             m.lighting || [],
+    belts:                m.belts || [],
     cooling_type:         m.coolingType,
     coolant_type:         m.coolantType,
     coolant_capacity:     m.coolantCapacity,
@@ -298,12 +299,6 @@ export function toDb(m) {
     overall_length:       m.overallLength,
     overall_width:        m.overallWidth,
     overall_height:       m.overallHeight,
-    belt_type:            m.beltType,
-    belt_part_no:         m.beltPartNo,
-    belt_width:           m.beltWidth,
-    belt_length:          m.beltLength,
-    belt_count:           m.beltCount,
-    belt_notes:           m.beltNotes,
   };
 }
 
@@ -531,6 +526,9 @@ export function fromDb(r) {
     hydReliefValve:    r.hyd_relief_valve,
     hydRams:           r.hyd_rams || [],
     attachments:       r.attachments || [],
+    bearings:          r.bearings || [],
+    lighting:          r.lighting || [],
+    belts:             r.belts || [],
     coolingType:       r.cooling_type,
     coolantType:       r.coolant_type,
     coolantCapacity:   r.coolant_capacity,
@@ -605,12 +603,6 @@ export function fromDb(r) {
     overallLength:     r.overall_length,
     overallWidth:      r.overall_width,
     overallHeight:     r.overall_height,
-    beltType:          r.belt_type,
-    beltPartNo:        r.belt_part_no,
-    beltWidth:         r.belt_width,
-    beltLength:        r.belt_length,
-    beltCount:         r.belt_count,
-    beltNotes:         r.belt_notes,
     createdAt:         r.created_at,
   };
 }
@@ -639,101 +631,4 @@ export function svcFromDb(r) {
     createdAt:   r.created_at,
     updatedAt:   r.updated_at,
   };
-}
-
-export async function getMachines() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-  const { data, error } = await supabase.from("machines").select("*").order("created_at", { ascending: false });
-  if (error) { console.error("getMachines:", error); return []; }
-  return (data || []).map(fromDb);
-}
-
-export async function getServices(machineId) {
-  const { data, error } = await supabase.from("services").select("*").eq("machine_id", machineId).order("completed_at", { ascending: false });
-  if (error) { console.error("getServices:", error); return []; }
-  return (data || []).map(svcFromDb);
-}
-
-export async function upsertMachine(machine) {
-  const { data: { user } } = await supabase.auth.getUser();
-  const row = { ...toDb(machine), user_id: user?.id };
-  const { error } = await supabase.from("machines").upsert(row, { onConflict: "id" });
-  if (error) { console.error("upsertMachine:", error); throw error; }
-}
-
-export async function upsertService(machineId, s) {
-  const { data: { user } } = await supabase.auth.getUser();
-  const row = { ...svcToDb(machineId, s), user_id: user?.id };
-  const { error } = await supabase.from("services").upsert(row, { onConflict: "id" });
-  if (error) console.error("upsertService:", error);
-}
-
-export async function deleteMachineApi(id) {
-  const { error } = await supabase.from("machines").delete().eq("id", id);
-  if (error) console.error("deleteMachine:", error);
-}
-
-export async function deleteServiceApi(id) {
-  const { error } = await supabase.from("services").delete().eq("id", id);
-  if (error) console.error("deleteService:", error);
-}
-
-export async function getMyCompany(companyId) {
-  if (!companyId) return null;
-  const { data, error } = await supabase.from("companies").select("*").eq("id", companyId).single();
-  if (error) return null;
-  return data;
-}
-
-export async function createCompany(ownerId, fields) {
-  const { data: co, error } = await supabase.from("companies").insert({ ...fields, owner_id: ownerId }).select().single();
-  if (error) throw error;
-  await supabase.from("company_members").insert({ company_id: co.id, user_id: ownerId, role: "admin" });
-  await supabase.from("profiles").update({ company_id: co.id }).eq("id", ownerId);
-  return co;
-}
-
-export async function updateCompany(companyId, fields) {
-  const { data, error } = await supabase.from("companies").update(fields).eq("id", companyId).select().single();
-  if (error) throw error;
-  return data;
-}
-
-export async function joinCompanyByCode(code, userId) {
-  const { data, error } = await supabase.rpc("join_company_by_invite", { invite_code_input: code.trim() });
-  if (error) throw new Error("Invalid invite code — check and try again.");
-  return data;
-}
-
-export async function leaveCompany(companyId, userId) {
-  await supabase.from("company_members").delete().eq("company_id", companyId).eq("user_id", userId);
-  await supabase.from("profiles").update({ company_id: null }).eq("id", userId);
-}
-
-export async function getCompanyMembers(companyId) {
-  const { data: members } = await supabase.from("company_members").select("*").eq("company_id", companyId);
-  if (!members?.length) return [];
-  const { data: profiles } = await supabase.from("profiles").select("id, username, display_name").in("id", members.map(m => m.user_id));
-  const pm = {};
-  (profiles || []).forEach(p => { pm[p.id] = p; });
-  return members.map(m => ({ ...m, profile: pm[m.user_id] || {} }));
-}
-
-export async function removeMember(companyId, userId) {
-  await supabase.from("company_members").delete().eq("company_id", companyId).eq("user_id", userId);
-  await supabase.from("profiles").update({ company_id: null }).eq("id", userId);
-}
-
-export async function regenerateInviteCode(companyId) {
-  const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-  const { data, error } = await supabase.from("companies").update({ invite_code: code }).eq("id", companyId).select().single();
-  if (error) throw error;
-  return data;
-}
-
-export async function updateProfile(userId, fields) {
-  const { data, error } = await supabase.from("profiles").update(fields).eq("id", userId).select().single();
-  if (error) throw error;
-  return data;
 }
