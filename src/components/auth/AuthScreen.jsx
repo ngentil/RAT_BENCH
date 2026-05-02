@@ -156,7 +156,7 @@ function AuthScreen(){
 
           {mode==="login"&&<div style={{textAlign:"center",marginTop:20}}>
             <button onClick={handleGuest} disabled={loading}
-              style={{background:"none",border:"none",color:MUT,fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",opacity:loading?0.4:1}}>
+              style={{background:"#000",border:"1px solid #f97316",borderRadius:2,color:"#f97316",fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",padding:"6px 14px",opacity:loading?0.4:1}}>
               Continue as Guest
             </button>
           </div>}
