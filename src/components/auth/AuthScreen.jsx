@@ -161,9 +161,8 @@ function AuthScreen(){
             </button>
           </div>}
 
-          <div style={{fontSize:8,color:"#333",textAlign:"center",marginTop:32,lineHeight:1.8}}>
-            Your data stays yours<br/>
-            <span style={{color:"#2a2a2a"}}>ratbench.net</span>
+          <div style={{fontSize:8,color:"#2a2a2a",textAlign:"center",marginTop:32}}>
+            ratbench.net
           </div>
         </div>
       </div>
