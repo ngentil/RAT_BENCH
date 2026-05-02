@@ -200,6 +200,89 @@ export function BearingForm({b, onSave, onCancel}){
   );
 }
 
+const BATT_VOLTAGES = ["6V","12V","24V","48V"];
+const BATT_TYPES = ["Lead-acid","AGM","EFB","Gel","Lithium (LiFePO4)","Lithium (Li-ion)"];
+
+export function BatteryCard({b, onEdit, onRemove}){
+  const parts = [b.battType, b.voltage, b.cca?b.cca+" CCA":null, b.ah?b.ah+" Ah":null, b.dimensions].filter(Boolean);
+  const ccw = b.voltage&&b.cca ? (parseFloat(b.voltage)*parseFloat(b.cca)).toLocaleString()+"W" : null;
+  const energy = b.voltage&&b.ah ? (parseFloat(b.voltage)*parseFloat(b.ah)/1000).toFixed(2)+"kWh" : null;
+  return (
+    <div style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"10px 12px",marginBottom:6}}>
+      {b.label&&<div style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{b.label}</div>}
+      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",marginBottom:(ccw||energy)?4:8,lineHeight:1.5}}>{parts.length?parts.join(" · "):"No specs yet"}</div>
+      {(ccw||energy)&&<div style={{display:"flex",gap:12,padding:"5px 8px",background:"#060606",borderRadius:2,marginBottom:8}}>
+        {ccw&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Cold cranking watts</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {ccw}</div></div>}
+        {energy&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Energy</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {energy}</div></div>}
+      </div>}
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={onEdit} style={{...btnG,...sm}}>Edit</button>
+        <button onClick={onRemove} style={btnD}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+export function BatteryForm({b, onSave, onCancel}){
+  const [label,setLabel]=useState(b.label||"");
+  const [voltage,setVoltage]=useState(b.voltage||"");
+  const [battType,setBattType]=useState(b.battType||"");
+  const [cca,setCca]=useState(b.cca||"");
+  const [ah,setAh]=useState(b.ah||"");
+  const [dimensions,setDimensions]=useState(b.dimensions||"");
+  const ccw = voltage&&cca ? (parseFloat(voltage)*parseFloat(cca)).toLocaleString()+"W" : null;
+  const energy = voltage&&ah ? (parseFloat(voltage)*parseFloat(ah)/1000).toFixed(2)+"kWh" : null;
+  const save=()=>onSave({...b,label:label.trim(),voltage,battType,cca:cca.toString(),ah:ah.toString(),dimensions:dimensions.trim()});
+  return (
+    <div style={{background:"#0d0d0d",border:"1px solid "+ACC,borderRadius:2,padding:"12px",marginBottom:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <span style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase"}}>{b.id?"Edit Battery":"New Battery"}</span>
+        <button onClick={onCancel} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:12}}>✕</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={{...col,gridColumn:"1/-1"}}>
+          <FL t="Label (e.g. Main, Auxiliary)" />
+          <input style={inp} placeholder="e.g. Main" value={label} onChange={ev=>setLabel(ev.target.value)} />
+        </div>
+        <div style={col}>
+          <FL t="Voltage" />
+          <select style={sel} value={voltage} onChange={ev=>setVoltage(ev.target.value)}>
+            <option value="">— not set —</option>
+            {BATT_VOLTAGES.map(v=><option key={v}>{v}</option>)}
+          </select>
+        </div>
+        <div style={col}>
+          <FL t="Type" />
+          <select style={sel} value={battType} onChange={ev=>setBattType(ev.target.value)}>
+            <option value="">— not set —</option>
+            {BATT_TYPES.map(t=><option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <div style={col}>
+          <FL t="CCA" />
+          <input style={inp} type="number" placeholder="e.g. 550" step="1" min="0" value={cca} onChange={ev=>setCca(ev.target.value)} />
+        </div>
+        <div style={col}>
+          <FL t="Capacity (Ah)" />
+          <input style={inp} type="number" placeholder="e.g. 45" step="0.5" min="0" value={ah} onChange={ev=>setAh(ev.target.value)} />
+        </div>
+        <div style={{...col,gridColumn:"1/-1"}}>
+          <FL t="Dimensions (mm)" />
+          <input style={inp} placeholder="e.g. 230×175×225" value={dimensions} onChange={ev=>setDimensions(ev.target.value)} />
+        </div>
+      </div>
+      {(ccw||energy)&&<div style={{display:"flex",gap:12,padding:"6px 8px",background:"#060606",border:"1px solid #1a1a1a",borderRadius:2,marginTop:8}}>
+        {ccw&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Cold cranking watts</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {ccw}</div></div>}
+        {energy&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Energy</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {energy}</div></div>}
+      </div>}
+      <div style={{display:"flex",gap:8,marginTop:10,justifyContent:"flex-end"}}>
+        <button style={{...btnG,...sm}} onClick={onCancel}>Cancel</button>
+        <button style={{...btnA,...sm}} onClick={save}>Save</button>
+      </div>
+    </div>
+  );
+}
+
 export function BeltCard({b, onEdit, onRemove}){
   const parts = [
     b.beltType,
