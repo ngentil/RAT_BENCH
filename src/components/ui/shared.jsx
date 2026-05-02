@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ACC, MUT, BRD2, TXT, dvdr, empt, btnA, btnG, btnD, inp, sel, txa, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { RAGE_LBL, FASTENER_LOCS, FASTENER_TYPES, DRIVE_TYPES, BOLT_DIAMETERS, STUD_LOCS, RAM_LOCATIONS, ATTACH_TYPES, ALL_SECTIONS, ALL_BADGE_FIELDS, BADGE_PALETTE, DEFAULT_TILE, LIGHT_LOCATIONS, LIGHT_TYPES, LIGHT_VOLTAGES, LIGHT_PLUGS, BEARING_LOCATIONS, BEARING_TYPES } from '../../lib/constants';
+import { RAGE_LBL, FASTENER_LOCS, FASTENER_TYPES, DRIVE_TYPES, BOLT_DIAMETERS, STUD_LOCS, RAM_LOCATIONS, ATTACH_TYPES, ALL_SECTIONS, ALL_BADGE_FIELDS, BADGE_PALETTE, DEFAULT_TILE, LIGHT_LOCATIONS, LIGHT_TYPES, LIGHT_VOLTAGES, LIGHT_PLUGS, BEARING_LOCATIONS, BEARING_TYPES, BELT_TYPES } from '../../lib/constants';
 
 export function SL({t}){ return <div style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,marginBottom:8}}>{t}</div>; }
 export function FL({t}){ return <div style={{fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:4}}>{t}</div>; }
@@ -629,6 +629,76 @@ export function BearingForm({b, onSave, onCancel}){
         <div style={{...col,gridColumn:"1/-1"}}>
           <FL t="Notes" />
           <textarea style={{...txa,minHeight:40}} placeholder="e.g. Replace with sealed unit" value={notes} onChange={ev=>setNotes(ev.target.value)} />
+        </div>
+      </div>
+      <div style={{display:"flex",gap:8,marginTop:10,justifyContent:"flex-end"}}>
+        <button style={{...btnG,...sm}} onClick={onCancel}>Cancel</button>
+        <button style={{...btnA,...sm}} onClick={save}>Save</button>
+      </div>
+    </div>
+  );
+}
+
+export function BeltCard({b, onEdit, onRemove}){
+  const parts = [
+    b.beltType,
+    b.beltCount ? b.beltCount+" belt"+(b.beltCount!=="1"?"s":"") : null,
+    b.beltPartNo||null,
+    b.beltWidth&&b.beltLength ? b.beltWidth+"×"+b.beltLength+"mm" : b.beltWidth ? b.beltWidth+"mm wide" : b.beltLength ? b.beltLength+"mm long" : null,
+  ].filter(Boolean);
+  return (
+    <div style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"10px 12px",marginBottom:6}}>
+      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",marginBottom:b.beltNotes?6:8,lineHeight:1.5}}>{parts.length?parts.join(" · "):"No specs yet"}</div>
+      {b.beltNotes&&<div style={{fontSize:10,color:MUT,marginBottom:8,lineHeight:1.4}}>{b.beltNotes}</div>}
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={onEdit} style={{...btnG,...sm}}>Edit</button>
+        <button onClick={onRemove} style={btnD}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+export function BeltForm({b, onSave, onCancel}){
+  const [beltType, setBeltType] = useState(b.beltType||"");
+  const [beltCount, setBeltCount] = useState(b.beltCount||"");
+  const [beltPartNo, setBeltPartNo] = useState(b.beltPartNo||"");
+  const [beltWidth, setBeltWidth] = useState(b.beltWidth||"");
+  const [beltLength, setBeltLength] = useState(b.beltLength||"");
+  const [beltNotes, setBeltNotes] = useState(b.beltNotes||"");
+  const save = () => onSave({...b, beltType, beltCount, beltPartNo:beltPartNo.trim(), beltWidth:beltWidth.toString(), beltLength:beltLength.toString(), beltNotes:beltNotes.trim()});
+  return (
+    <div style={{background:"#0d0d0d",border:"1px solid "+ACC,borderRadius:2,padding:"12px",marginBottom:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <span style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase"}}>{b.id?"Edit Belt":"New Belt"}</span>
+        <button onClick={onCancel} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:12}}>✕</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={col}>
+          <FL t="Belt type" />
+          <select style={sel} value={beltType} onChange={ev=>setBeltType(ev.target.value)}>
+            <option value="">— not set —</option>
+            {BELT_TYPES.map(o=><option key={o}>{o}</option>)}
+          </select>
+        </div>
+        <div style={col}>
+          <FL t="Quantity" />
+          <input style={inp} type="number" placeholder="e.g. 1" step="1" min="1" value={beltCount} onChange={ev=>setBeltCount(ev.target.value)} />
+        </div>
+        <div style={{...col,gridColumn:"1/-1"}}>
+          <FL t="Part no. / size code" />
+          <input style={inp} placeholder="e.g. A56 / 13×1422" value={beltPartNo} onChange={ev=>setBeltPartNo(ev.target.value)} />
+        </div>
+        <div style={col}>
+          <FL t="Width (mm)" />
+          <input style={inp} type="number" placeholder="e.g. 13" step="0.5" min="0" value={beltWidth} onChange={ev=>setBeltWidth(ev.target.value)} />
+        </div>
+        <div style={col}>
+          <FL t="Length (mm)" />
+          <input style={inp} type="number" placeholder="e.g. 1422" step="1" min="0" value={beltLength} onChange={ev=>setBeltLength(ev.target.value)} />
+        </div>
+        <div style={{...col,gridColumn:"1/-1"}}>
+          <FL t="Notes" />
+          <textarea style={{...txa,minHeight:40}} placeholder="e.g. Fan belt, idler pulley tensioner" value={beltNotes} onChange={ev=>setBeltNotes(ev.target.value)} />
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginTop:10,justifyContent:"flex-end"}}>

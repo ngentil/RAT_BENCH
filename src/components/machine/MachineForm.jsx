@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
-import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm } from '../ui/shared';
+import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -278,13 +278,13 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [totalLoadWatts,setTotalLoadWatts]=useState(e.totalLoadWatts||"");
   const [rectRegFitted,setRectRegFitted]=useState(e.rectRegFitted||"");
   const [chargingNotes,setChargingNotes]=useState(e.chargingNotes||"");
-  const [editBelt,setEditBelt]=useState(isNew);
-  const [beltType,setBeltType]=useState(e.beltType||"");
-  const [beltPartNo,setBeltPartNo]=useState(e.beltPartNo||"");
-  const [beltWidth,setBeltWidth]=useState(e.beltWidth||"");
-  const [beltLength,setBeltLength]=useState(e.beltLength||"");
-  const [beltCount,setBeltCount]=useState(e.beltCount||"");
-  const [beltNotes,setBeltNotes]=useState(e.beltNotes||"");
+  const [belts,setBelts]=useState(()=>{
+    if(e.belts&&e.belts.length) return e.belts;
+    if(e.beltType||e.beltPartNo||e.beltWidth||e.beltLength) return [{id:uid(),beltType:e.beltType||"",beltCount:e.beltCount||"",beltPartNo:e.beltPartNo||"",beltWidth:e.beltWidth||"",beltLength:e.beltLength||"",beltNotes:e.beltNotes||""}];
+    return [];
+  });
+  const [beltEditIdx,setBeltEditIdx]=useState(null);
+  const [beltAdding,setBeltAdding]=useState(false);
   // starter system
   const [starterType,setStarterType]=useState(e.starterType||"");
   const [ropeDiameter,setRopeDiameter]=useState(e.ropeDiameter||"");
@@ -476,7 +476,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       oilChangeInterval:oilChangeInterval.toString(),oilChangeUnit,filterInterval:filterInterval.toString(),filterIntervalUnit,majorServiceInterval:majorServiceInterval.toString(),majorServiceUnit,lastServiceOdo:lastServiceOdo.toString(),
       engineOilGrade:engineOilGrade.trim(),engineOilCapacity:engineOilCapacity.toString(),hydraulicFluidType:hydraulicFluidType.trim(),brakeFluidType,diffOilType:diffOilType.trim(),diffOilCapacity:diffOilCapacity.toString(),transferCaseOil:transferCaseOil.trim(),
       dryWeight:dryWeight.toString(),grossWeight:grossWeight.toString(),wheelbase:wheelbase.toString(),overallLength:overallLength.toString(),overallWidth:overallWidth.toString(),overallHeight:overallHeight.toString(),
-      beltType,beltPartNo:beltPartNo.trim(),beltWidth:beltWidth.toString(),beltLength:beltLength.toString(),beltCount,beltNotes:beltNotes.trim(),
+      belts,
       trackedBrand,trackedBrandOther,trackedHours:trackedHours.toString(),trackedSubtype,trackedSubtypeOther,operatingWeight,operatingWeightOther,
       trackType,trackWidth:trackWidth.toString(),trackPitch:trackPitch.toString(),trackLinks:trackLinks.toString(),sprocketTeeth:sprocketTeeth.toString(),undercarriageHours:undercarriageHours.toString(),groundContactLength:groundContactLength.toString(),
       hydPumpCount,hydPumpType,hydSystemPressure:hydSystemPressure.toString(),hydOilCapacity:hydOilCapacity.toString(),hydReliefValve:hydReliefValve.toString(),
@@ -1587,39 +1587,25 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
             </div>;
           })()}
 
-          {/* Belt Specs — 4-stroke, Diesel, LPG only */}
-          {(strokeType==="4-stroke"||strokeType==="Diesel"||strokeType==="LPG")&&(()=>{
-            const hasData=!!(beltType||beltPartNo||beltWidth||beltLength||beltCount);
-            const beltSum=[
-              [beltType,beltCount?beltCount+" belt"+(beltCount!=="1"?"s":""):null].filter(Boolean).join(" · "),
-              [beltPartNo?beltPartNo:null,beltWidth?beltWidth+"mm wide":null,beltLength?beltLength+"mm long":null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecBelt(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Belt Specs</span>
-                  {hasData&&!secBelt&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secBelt?"▲":"▼"}</span>
+          {/* Belts */}
+          {(strokeType==="4-stroke"||strokeType==="Diesel"||strokeType==="LPG")&&<div style={{marginBottom:2}}>
+            <div onClick={()=>setSecBelt(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Belts ({belts.length})</span>
+                {belts.length>0&&!secBelt&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
               </div>
-              {secBelt&&<div style={{paddingTop:12}}>
-                {hasData&&!editBelt&&<SummaryCard onEdit={()=>setEditBelt(true)} lines={beltSum} />}
-                {(editBelt||!hasData)&&<>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Belt type" /><select style={sel} value={beltType} onChange={ev=>setBeltType(ev.target.value)}><option value="">— not set —</option>{BELT_TYPES.map(b=><option key={b}>{b}</option>)}</select></div>
-                  <div style={{...col,flex:1}}><FL t="Number of belts" /><input style={inp} type="number" placeholder="e.g. 2" step="1" min="1" value={beltCount} onChange={ev=>setBeltCount(ev.target.value)} /></div>
-                </div>
-                <div style={col}><FL t="Part number / size code" /><input style={inp} placeholder="e.g. A56 / 13×1422" value={beltPartNo} onChange={ev=>setBeltPartNo(ev.target.value)} /></div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Width (mm)" /><input style={inp} type="number" placeholder="e.g. 13" step="0.5" min="0" value={beltWidth} onChange={ev=>setBeltWidth(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Length (mm)" /><input style={inp} type="number" placeholder="e.g. 1422" step="1" min="0" value={beltLength} onChange={ev=>setBeltLength(ev.target.value)} /></div>
-                </div>
-                <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Fan belt, tensioner on idler pulley" value={beltNotes} onChange={ev=>setBeltNotes(ev.target.value)} /></div>
-                {editBelt&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditBelt(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
+              <span style={{color:MUT,fontSize:12}}>{secBelt?"▲":"▼"}</span>
+            </div>
+            {secBelt&&<div style={{paddingTop:12}}>
+              {belts.map((b,idx)=>(
+                beltEditIdx===idx
+                  ? <BeltForm key={b.id||idx} b={b} onSave={sv=>{setBelts(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||uid()}:x));setBeltEditIdx(null);}} onCancel={()=>setBeltEditIdx(null)} />
+                  : <BeltCard key={b.id||idx} b={b} onEdit={()=>{setBeltEditIdx(idx);setBeltAdding(false);}} onRemove={()=>{if(confirm("Remove this belt?"))setBelts(prev=>prev.filter((_,i)=>i!==idx));}} />
+              ))}
+              {beltAdding&&<BeltForm b={{}} onSave={sv=>{setBelts(prev=>[...prev,{...sv,id:uid()}]);setBeltAdding(false);}} onCancel={()=>setBeltAdding(false)} />}
+              {!beltAdding&&beltEditIdx===null&&<button onClick={()=>setBeltAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Belt</button>}
+            </div>}
+          </div>}
 
           {/* Suspension */}
           {showSuspension(type,customSections)&&(()=>{
