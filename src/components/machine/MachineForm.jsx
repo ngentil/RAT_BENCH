@@ -193,6 +193,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   });
   const [bearingEditIdx,setBearingEditIdx]=useState(null);
   const [bearingAdding,setBearingAdding]=useState(false);
+  const [secMainBearings,setSecMainBearings]=useState(false);
   const [secCrank,setSecCrank]=useState(false);
   const [editCrank,setEditCrank]=useState(isNew);
   const [crankPinDiameter,setCrankPinDiameter]=useState(e.crankPinDiameter||"");
