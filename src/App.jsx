@@ -79,6 +79,10 @@ function App(){
         setLoading(false);
         return;
       }
+      if(_event==="TOKEN_REFRESHED"){
+        setSession(session);
+        return;
+      }
       setPasswordReset(false);
       loadForSession(session);
     });
@@ -156,11 +160,11 @@ function App(){
           </button>
         ))}
       </div>
-      {tab==="tracker" &&<Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} isGuest={!!session?.user?.is_anonymous}/>}
-      {tab==="jobs"    &&<JobBoard    machines={machines} setMachines={setMachines} />}
-      {tab==="search"  &&<SpecSearch  machines={machines} />}
-      {tab==="wiki"    &&<div style={{padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>}
-      {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut}/>}
+      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} isGuest={!!session?.user?.is_anonymous}/></div>
+      <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} /></div>
+      <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
+      <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>
+      <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut}/></div>
     </div>
   );
 }
