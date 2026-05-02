@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ACC, MUT, BRD2, TXT, dvdr, empt, btnA, btnG, btnD, inp, sel, txa, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { RAGE_LBL, FASTENER_LOCS, FASTENER_TYPES, DRIVE_TYPES, BOLT_DIAMETERS, STUD_LOCS, RAM_LOCATIONS, ATTACH_TYPES, ALL_SECTIONS, ALL_BADGE_FIELDS, BADGE_PALETTE, DEFAULT_TILE, LIGHT_LOCATIONS, LIGHT_TYPES, LIGHT_VOLTAGES, LIGHT_PLUGS } from '../../lib/constants';
 
@@ -9,11 +9,22 @@ export function Empty({t}){ return <div style={empt}>{t}</div>; }
 
 export function Tooltip({text,children,pos="top"}){
   const [vis,setVis]=useState(false);
+  const ref=useRef(null);
+  useEffect(()=>{
+    if(!vis)return;
+    const close=(e)=>{if(ref.current&&!ref.current.contains(e.target))setVis(false);};
+    document.addEventListener("pointerdown",close);
+    return()=>document.removeEventListener("pointerdown",close);
+  },[vis]);
   const above=pos!=="bottom";
   return (
-    <div style={{position:"relative",display:"inline-block"}} onMouseEnter={()=>setVis(true)} onMouseLeave={()=>setVis(false)}>
+    <div ref={ref} style={{position:"relative",display:"inline-flex",alignItems:"center",gap:3}}>
       {children}
-      {vis&&<div style={{position:"absolute",[above?"bottom":"top"]:"calc(100% + 5px)",left:0,background:"#1c1c1c",border:"1px solid #333",borderRadius:2,padding:"5px 9px",fontSize:9,color:"#bbb",whiteSpace:"nowrap",zIndex:9999,letterSpacing:"0.05em",lineHeight:1.5,pointerEvents:"none",fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 2px 8px #0008"}}>{text}</div>}
+      <span
+        onMouseEnter={()=>setVis(true)} onMouseLeave={()=>setVis(false)}
+        onClick={e=>{e.stopPropagation();setVis(v=>!v)}}
+        style={{color:MUT,fontSize:9,cursor:"pointer",userSelect:"none",opacity:0.6,flexShrink:0,lineHeight:1}}>ⓘ</span>
+      {vis&&<div style={{position:"absolute",[above?"bottom":"top"]:"calc(100% + 5px)",left:0,maxWidth:"min(240px,calc(100vw - 32px))",background:"rgba(14,14,14,0.96)",border:"1px solid #2a2a2a",borderRadius:2,padding:"7px 10px",fontSize:9,color:"#ccc",whiteSpace:"normal",zIndex:9999,letterSpacing:"0.05em",lineHeight:1.6,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 4px 16px rgba(0,0,0,0.7)"}}>{text}</div>}
     </div>
   );
 }

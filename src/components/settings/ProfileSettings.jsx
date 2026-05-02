@@ -46,7 +46,7 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest}){
         <div style={{...col,marginBottom:10}}><div style={lbl}>Email</div><input style={{...inp,opacity:0.5}} value={session?.user?.email||""} disabled/></div>
         <div style={{...col,marginBottom:10}}>
           <Tooltip text="Sets how measurements display across the app — mm/L/Nm for metric, in/gal/ft-lb for imperial">
-            <div style={{...lbl,cursor:"default"}}>Units ⓘ</div>
+            <div style={lbl}>Units</div>
           </Tooltip>
           <div style={{display:"flex",gap:6}}>
             {["metric","imperial"].map(u=><button key={u} onClick={()=>setUnits(u)} style={{...btnG,...sm,...(units===u?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}}>{u.charAt(0).toUpperCase()+u.slice(1)}</button>)}
@@ -54,7 +54,7 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest}){
         </div>
         <div style={{...col,marginBottom:12}}>
           <Tooltip text="New machines are pre-set to this status when added — Active, Queued (waiting on parts) or Complete">
-            <div style={{...lbl,cursor:"default"}}>Default Machine Status ⓘ</div>
+            <div style={lbl}>Default Machine Status</div>
           </Tooltip>
           <select style={sel} value={defaultStatus} onChange={e=>setDefaultStatus(e.target.value)}>
             {["Active","Queued","Complete"].map(s=><option key={s}>{s}</option>)}
