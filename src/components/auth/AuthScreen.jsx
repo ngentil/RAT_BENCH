@@ -41,7 +41,7 @@ function AuthScreen(){
     <div style={{minHeight:"100vh",background:BG,display:"flex",fontFamily:"'IBM Plex Mono',monospace"}}>
 
       {/* Left — pitch panel */}
-      <div style={{flex:1,background:"#111",borderRight:"1px solid #1e1e1e",padding:"60px 48px",display:"flex",flexDirection:"column",justifyContent:"center",display:"none"}} className="auth-left">
+      <div style={{flex:1,background:"#111",borderRight:"1px solid #1e1e1e",padding:"60px 48px",flexDirection:"column",justifyContent:"center",display:"none"}} className="auth-left">
         <div style={{fontSize:28,marginBottom:16}}>🐀</div>
         <div style={{fontSize:22,fontWeight:700,color:ACC,letterSpacing:"0.04em",textTransform:"uppercase",marginBottom:6,lineHeight:1.3}}>Rat Bench</div>
         <div style={{fontSize:10,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginBottom:40}}>small engine & equipment repair</div>

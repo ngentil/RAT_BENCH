@@ -2462,8 +2462,8 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile}){
           <button style={btnA} onClick={save}>{existing?"Save Changes":"Add Machine"}</button>
         </div>
       </div>
+      {showWikiModal&&<WikiTrackerModal machine={{...existing,make,model}} profile={profile} onClose={()=>setShowWikiModal(false)}/>}
     </div>
-    {showWikiModal&&<WikiTrackerModal machine={{...existing,make,model}} profile={profile} onClose={()=>setShowWikiModal(false)}/>}
   );
 }
 export default MachineForm;
