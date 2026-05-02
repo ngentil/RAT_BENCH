@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
-import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES } from '../../lib/constants';
 import MachineTile from '../machine/MachineTile';
@@ -8,8 +7,10 @@ import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
-function Tracker({machines,setMachines,company,profile,isGuest}){
+import GuestUpgradeModal from '../auth/GuestUpgradeModal';
+function Tracker({machines,setMachines,company,profile,setProfile,isGuest}){
   const [showAdd,setShowAdd]=useState(false);
+  const [showUpgrade,setShowUpgrade]=useState(false);
   const [saving,setSaving]=useState(false);
   const [dragIdx,setDragIdx]=useState(null);
   const [dragOver,setDragOver]=useState(null);
@@ -118,7 +119,7 @@ function Tracker({machines,setMachines,company,profile,isGuest}){
           {isGuest&&machines.length>=3
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
-                <button style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}} onClick={()=>supabase.auth.signOut()}>Create account</button>
+                <button style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}} onClick={()=>setShowUpgrade(true)}>Create account</button>
               </div>
             : <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
@@ -155,6 +156,7 @@ function Tracker({machines,setMachines,company,profile,isGuest}){
         </div>
       ))}
     </div>
+    {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
   );
 }
 export default Tracker;
