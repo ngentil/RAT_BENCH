@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
-import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm } from '../ui/shared';
+import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -184,13 +184,15 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [cylOutOfRound,setCylOutOfRound]=useState(e.cylOutOfRound||"");
   const [honingAngle,setHoningAngle]=useState(e.honingAngle||"");
   const [nikasil,setNikasil]=useState(e.nikasil||"");
-  const [secMainBearings,setSecMainBearings]=useState(false);
-  const [editMainBearings,setEditMainBearings]=useState(isNew);
-  const [mainBearingType,setMainBearingType]=useState(e.mainBearingType||"");
-  const [mainBearingLeft,setMainBearingLeft]=useState(e.mainBearingLeft||"");
-  const [mainBearingRight,setMainBearingRight]=useState(e.mainBearingRight||"");
-  const [mainBearingClear,setMainBearingClear]=useState(e.mainBearingClear||"");
-  const [mainBearingPreload,setMainBearingPreload]=useState(e.mainBearingPreload||"");
+  const [bearings,setBearings]=useState(()=>{
+    if(e.bearings&&e.bearings.length) return e.bearings;
+    const init=[];
+    if(e.mainBearingLeft||e.mainBearingType) init.push({id:uid(),location:"Main Bearing — Left (Mag side)",type:e.mainBearingType||"",partNo:e.mainBearingLeft||"",clearance:e.mainBearingClear||"",preload:e.mainBearingPreload||"",notes:""});
+    if(e.mainBearingRight) init.push({id:uid(),location:"Main Bearing — Right (PTO side)",type:e.mainBearingType||"",partNo:e.mainBearingRight||"",clearance:"",preload:"",notes:""});
+    return init;
+  });
+  const [bearingEditIdx,setBearingEditIdx]=useState(null);
+  const [bearingAdding,setBearingAdding]=useState(false);
   const [secCrank,setSecCrank]=useState(false);
   const [editCrank,setEditCrank]=useState(isNew);
   const [crankPinDiameter,setCrankPinDiameter]=useState(e.crankPinDiameter||"");
@@ -466,7 +468,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       turboFitted,turboType,turboBrand:turboBrand.trim(),turboBoost:turboBoost.toString(),intercooler,turboNotes:turboNotes.trim(),
       chargingType,chargeVoltage,chargeAmps:chargeAmps.toString(),totalLoadWatts:totalLoadWatts.toString().trim(),rectRegFitted,chargingNotes:chargingNotes.trim(),
       cylMaxWear:cylMaxWear.toString(),cylTaperLimit:cylTaperLimit.toString(),cylOutOfRound:cylOutOfRound.toString(),honingAngle:honingAngle.trim(),nikasil,
-      mainBearingType,mainBearingLeft:mainBearingLeft.trim(),mainBearingRight:mainBearingRight.trim(),mainBearingClear:mainBearingClear.toString(),mainBearingPreload:mainBearingPreload.toString(),
+      bearings,
       crankPinDiameter:crankPinDiameter.toString(),crankPinLength:crankPinLength.toString(),mainJournalDiameter:mainJournalDiameter.toString(),crankEndFloat:crankEndFloat.toString(),crankRunout:crankRunout.toString(),crankStroke:crankStroke.toString(),crankSealLeft:crankSealLeft.trim(),crankSealRight:crankSealRight.trim(),
       conrodLength:conrodLength.toString(),conrodSmallEnd:conrodSmallEnd.toString(),conrodSmallClear:conrodSmallClear.toString(),conrodBigEnd:conrodBigEnd.toString(),conrodBigClear:conrodBigClear.toString(),conrodSideClear:conrodSideClear.toString(),conrodBearingType,conrodBearingPartNo:conrodBearingPartNo.trim(),
       pistonDiameter:pistonDiameter.toString(),pistonClearance:pistonClearance.toString(),ringCount,ringGapTop:ringGapTop.toString(),ringGapSecond:ringGapSecond.toString(),ringGapOil:ringGapOil.toString(),ringWidth:ringWidth.toString(),ringThickness:ringThickness.toString(),gudgeonDiameter:gudgeonDiameter.toString(),gudgeonLength:gudgeonLength.toString(),gudgeonFit,gudgeonCirclip:gudgeonCirclip.toString(),
@@ -661,12 +663,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     const label=mps<15?"Normal (<15 m/s)":mps<=20?"Hot (15–20 m/s)":"Race limit (>20 m/s)";
                     return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Mean piston speed: {fmtSpeed(mps,units)} — {label}</div>;
                   })()}
-                  <div style={{...col,maxWidth:180}}><FL t="Cylinder bore diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 38" step="0.01" min="0" value={boreDiameter} onChange={ev=>setBoreDiameter(ev.target.value)} /></div>
-                  {boreDiameter&&crankStroke&&(()=>{
-                    const r=parseFloat(boreDiameter)/parseFloat(crankStroke);
-                    const label=r>1.05?"Over-square — high-revving, power-biased":r<0.95?"Under-square — torque-biased, strong low-end":"Square — balanced character";
-                    return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {r.toFixed(2)}:1 — {label}</div>;
-                  })()}
                 </>}
 
                 {/* Electric / Hybrid motor fields */}
@@ -828,6 +824,14 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                       {hasData&&!editPiston&&<SummaryCard onEdit={()=>setEditPiston(true)} lines={pistonSum} />}
                       {(editPiston||!hasData)&&<>
                       <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Piston</div>
+                      <div style={col}><FL t="Cylinder bore diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 38" step="0.01" min="0" value={boreDiameter} onChange={ev=>setBoreDiameter(ev.target.value)} /></div>
+                      {boreDiameter&&crankStroke&&(()=>{
+                        const r=parseFloat(boreDiameter)/parseFloat(crankStroke);
+                        const label=r>1.05?"Over-square — high-revving":r<0.95?"Under-square — torque-biased":"Square — balanced";
+                        return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4,marginBottom:8}}>⚡ {r.toFixed(2)}:1 — {label}</div>;
+                      })()}
+                      <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                      <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Piston</div>
                       <div style={row}>
                         <div style={{...col,flex:1}}><FL t="Piston diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 38.00" step="0.01" min="0" value={pistonDiameter} onChange={ev=>setPistonDiameter(ev.target.value)} /></div>
                         <div style={{...col,flex:1}}><FL t="Piston clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.045" step="0.001" min="0" value={pistonClearance} onChange={ev=>setPistonClearance(ev.target.value)} /></div>
@@ -857,6 +861,113 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                       </div>
                       {editPiston&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditPiston(false)} style={{...btnA,...sm}}>Done</button></div>}
                       </>}
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Crankshaft — nested sub-section */}
+                {strokeType&&strokeType!=="Electric"&&(()=>{
+                  const hasData=!!(crankPinDiameter||mainJournalDiameter||crankStroke||crankSealLeft);
+                  const crankSum=[
+                    [crankStroke?crankStroke+"mm stroke":null,crankPinDiameter?crankPinDiameter+"mm crank pin":null,mainJournalDiameter?mainJournalDiameter+"mm main journal":null].filter(Boolean).join(" · "),
+                    [crankEndFloat?crankEndFloat+"mm end float":null,crankRunout?crankRunout+"mm runout limit":null].filter(Boolean).join(" · "),
+                    [crankSealLeft?"L seal: "+crankSealLeft:null,crankSealRight?"R seal: "+crankSealRight:null].filter(Boolean).join(" · "),
+                  ].filter(l=>l&&l.trim());
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecCrank(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Crankshaft {hasData&&!secCrank&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secCrank?"▲":"▼"}</span>
+                    </div>
+                    {secCrank&&<div style={{paddingTop:8}}>
+                      {hasData&&!editCrank&&<SummaryCard onEdit={()=>setEditCrank(true)} lines={crankSum} />}
+                      {(editCrank||!hasData)&&<>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Stroke (mm)" /><input style={inp} type="number" placeholder="e.g. 34.00" step="0.01" min="0" value={crankStroke} onChange={ev=>setCrankStroke(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Main journal diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28.00" step="0.01" min="0" value={mainJournalDiameter} onChange={ev=>setMainJournalDiameter(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Crank pin diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22.00" step="0.01" min="0" value={crankPinDiameter} onChange={ev=>setCrankPinDiameter(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Crank pin length (mm)" /><input style={inp} type="number" placeholder="e.g. 18.00" step="0.01" min="0" value={crankPinLength} onChange={ev=>setCrankPinLength(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="End float (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.01" min="0" value={crankEndFloat} onChange={ev=>setCrankEndFloat(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Runout limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.03" step="0.01" min="0" value={crankRunout} onChange={ev=>setCrankRunout(ev.target.value)} /></div>
+                      </div>
+                      <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                      <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Crank Seals</div>
+                      <div style={{fontSize:9,color:MUT,marginBottom:8}}>ID×OD×Width mm (e.g. 20×35×7)</div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Left seal" /><input style={inp} placeholder="e.g. 20×35×7" value={crankSealLeft} onChange={ev=>setCrankSealLeft(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Right seal" /><input style={inp} placeholder="e.g. 20×35×7" value={crankSealRight} onChange={ev=>setCrankSealRight(ev.target.value)} /></div>
+                      </div>
+                      {editCrank&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCrank(false)} style={{...btnA,...sm}}>Done</button></div>}
+                      </>}
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Connecting Rod — nested sub-section */}
+                {strokeType&&strokeType!=="Electric"&&(()=>{
+                  const hasData=!!(conrodLength||conrodSmallEnd||conrodBigEnd||conrodBearingType);
+                  const conrodSum=[
+                    [conrodLength?conrodLength+"mm C-C":null,conrodBearingType].filter(Boolean).join(" · "),
+                    [conrodSmallEnd?conrodSmallEnd+"mm small end":null,conrodSmallClear?conrodSmallClear+"mm clearance":null].filter(Boolean).join(" · "),
+                    [conrodBigEnd?conrodBigEnd+"mm big end":null,conrodBigClear?conrodBigClear+"mm clearance":null].filter(Boolean).join(" · "),
+                  ].filter(l=>l&&l.trim());
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecConrod(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Connecting Rod {hasData&&!secConrod&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secConrod?"▲":"▼"}</span>
+                    </div>
+                    {secConrod&&<div style={{paddingTop:8}}>
+                      {hasData&&!editConrod&&<SummaryCard onEdit={()=>setEditConrod(true)} lines={conrodSum} />}
+                      {(editConrod||!hasData)&&<>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Length C-C (mm)" /><input style={inp} type="number" placeholder="e.g. 110.00" step="0.01" min="0" value={conrodLength} onChange={ev=>setConrodLength(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Bearing type" /><select style={sel} value={conrodBearingType} onChange={ev=>setConrodBearingType(ev.target.value)}><option value="">— not set —</option><option>Needle roller</option><option>Shell / plain</option><option>Ball bearing</option></select></div>
+                      </div>
+                      {conrodLength&&crankStroke&&(()=>{
+                        const r=parseFloat(conrodLength)/parseFloat(crankStroke);
+                        const label=r<1.5?"Short rod — peaky, aggressive":r<=1.75?"Balanced rod ratio":"Long rod — smooth, linear";
+                        return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Rod ratio: {r.toFixed(2)} — {label}</div>;
+                      })()}
+                      <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                      <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Small End</div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 10.00" step="0.01" min="0" value={conrodSmallEnd} onChange={ev=>setConrodSmallEnd(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.012" step="0.001" min="0" value={conrodSmallClear} onChange={ev=>setConrodSmallClear(ev.target.value)} /></div>
+                      </div>
+                      <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                      <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Big End</div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28.00" step="0.01" min="0" value={conrodBigEnd} onChange={ev=>setConrodBigEnd(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.025" step="0.001" min="0" value={conrodBigClear} onChange={ev=>setConrodBigClear(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Side clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.15" step="0.01" min="0" value={conrodSideClear} onChange={ev=>setConrodSideClear(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Bearing part no." /><input style={inp} placeholder="e.g. STD / 0.25 OS" value={conrodBearingPartNo} onChange={ev=>setConrodBearingPartNo(ev.target.value)} /></div>
+                      </div>
+                      {editConrod&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditConrod(false)} style={{...btnA,...sm}}>Done</button></div>}
+                      </>}
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Bearings — nested sub-section (dynamic list) */}
+                {strokeType&&strokeType!=="Electric"&&(()=>{
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecMainBearings(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Bearings ({bearings.length}) {bearings.length>0&&!secMainBearings&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secMainBearings?"▲":"▼"}</span>
+                    </div>
+                    {secMainBearings&&<div style={{paddingTop:8}}>
+                      {bearings.map((b,idx)=>(
+                        bearingEditIdx===idx
+                          ? <BearingForm key={b.id||idx} b={b} onSave={sv=>{setBearings(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||uid()}:x));setBearingEditIdx(null);}} onCancel={()=>setBearingEditIdx(null)} />
+                          : <BearingCard key={b.id||idx} b={b} onEdit={()=>{setBearingEditIdx(idx);setBearingAdding(false);}} onRemove={()=>{if(confirm("Remove this bearing?"))setBearings(prev=>prev.filter((_,i)=>i!==idx));}} />
+                      ))}
+                      {bearingAdding&&<BearingForm b={{}} onSave={sv=>{setBearings(prev=>[...prev,{...sv,id:uid()}]);setBearingAdding(false);}} onCancel={()=>setBearingAdding(false)} />}
+                      {!bearingAdding&&bearingEditIdx===null&&<button onClick={()=>setBearingAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Bearing</button>}
                     </div>}
                   </div>;
                 })()}
@@ -1163,135 +1274,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
                 {editCarb&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCarb(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-
-          {/* Main Bearings */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(mainBearingType||mainBearingLeft||mainBearingRight||mainBearingClear);
-            const mbSum=[
-              [mainBearingType,mainBearingClear?mainBearingClear+"mm clearance":null,mainBearingPreload?mainBearingPreload+"Nm preload":null].filter(Boolean).join(" · "),
-              [mainBearingLeft?"L: "+mainBearingLeft:null,mainBearingRight?"R: "+mainBearingRight:null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecMainBearings(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Main Bearings</span>
-                  {hasData&&!secMainBearings&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secMainBearings?"▲":"▼"}</span>
-              </div>
-              {secMainBearings&&<div style={{paddingTop:12}}>
-                {hasData&&!editMainBearings&&<SummaryCard onEdit={()=>setEditMainBearings(true)} lines={mbSum} />}
-                {(editMainBearings||!hasData)&&<>
-                <div style={col}><FL t="Bearing type" /><select style={sel} value={mainBearingType} onChange={ev=>setMainBearingType(ev.target.value)}><option value="">— not set —</option><option>Ball bearing</option><option>Roller bearing</option><option>Plain shell</option><option>Taper roller</option></select></div>
-                <div style={{fontSize:9,color:MUT,marginBottom:8,lineHeight:1.5}}>Part no. or dimensions ID×OD×Width mm</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Left bearing" /><input style={inp} placeholder="e.g. 6203 / 17×40×12" value={mainBearingLeft} onChange={ev=>setMainBearingLeft(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Right bearing" /><input style={inp} placeholder="e.g. 6203 / 17×40×12" value={mainBearingRight} onChange={ev=>setMainBearingRight(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.025" step="0.001" min="0" value={mainBearingClear} onChange={ev=>setMainBearingClear(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Preload (Nm)" /><input style={inp} type="number" placeholder="e.g. 15" step="0.5" min="0" value={mainBearingPreload} onChange={ev=>setMainBearingPreload(ev.target.value)} /></div>
-                </div>
-                {editMainBearings&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditMainBearings(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Crankshaft */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(crankPinDiameter||mainJournalDiameter||crankStroke||crankSealLeft);
-            const crankSum=[
-              [crankStroke?crankStroke+"mm stroke":null,crankPinDiameter?crankPinDiameter+"mm crank pin":null,mainJournalDiameter?mainJournalDiameter+"mm main journal":null].filter(Boolean).join(" · "),
-              [crankEndFloat?crankEndFloat+"mm end float":null,crankRunout?crankRunout+"mm runout limit":null].filter(Boolean).join(" · "),
-              [crankSealLeft?"L seal: "+crankSealLeft:null,crankSealRight?"R seal: "+crankSealRight:null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecCrank(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Crankshaft</span>
-                  {hasData&&!secCrank&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secCrank?"▲":"▼"}</span>
-              </div>
-              {secCrank&&<div style={{paddingTop:12}}>
-                {hasData&&!editCrank&&<SummaryCard onEdit={()=>setEditCrank(true)} lines={crankSum} />}
-                {(editCrank||!hasData)&&<>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Stroke (mm)" /><input style={inp} type="number" placeholder="e.g. 34.00" step="0.01" min="0" value={crankStroke} onChange={ev=>setCrankStroke(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Main journal diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28.00" step="0.01" min="0" value={mainJournalDiameter} onChange={ev=>setMainJournalDiameter(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Crank pin diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22.00" step="0.01" min="0" value={crankPinDiameter} onChange={ev=>setCrankPinDiameter(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Crank pin length (mm)" /><input style={inp} type="number" placeholder="e.g. 18.00" step="0.01" min="0" value={crankPinLength} onChange={ev=>setCrankPinLength(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="End float (mm)" /><input style={inp} type="number" placeholder="e.g. 0.05" step="0.01" min="0" value={crankEndFloat} onChange={ev=>setCrankEndFloat(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Runout limit (mm)" /><input style={inp} type="number" placeholder="e.g. 0.03" step="0.01" min="0" value={crankRunout} onChange={ev=>setCrankRunout(ev.target.value)} /></div>
-                </div>
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Crank Seals</div>
-                <div style={{fontSize:9,color:MUT,marginBottom:8}}>Format: ID×OD×Width mm (e.g. 20×35×7)</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Left seal" /><input style={inp} placeholder="e.g. 20×35×7" value={crankSealLeft} onChange={ev=>setCrankSealLeft(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Right seal" /><input style={inp} placeholder="e.g. 20×35×7" value={crankSealRight} onChange={ev=>setCrankSealRight(ev.target.value)} /></div>
-                </div>
-                {editCrank&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCrank(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Conrod */}
-          {(!isCustom(type)||showForCustom("Engine",customSections))&&strokeType&&strokeType!=="Electric"&&(()=>{
-            const hasData=!!(conrodLength||conrodSmallEnd||conrodBigEnd||conrodBearingType);
-            const conrodSum=[
-              [conrodLength?conrodLength+"mm C-C length":null,conrodBearingType].filter(Boolean).join(" · "),
-              [conrodSmallEnd?conrodSmallEnd+"mm small end":null,conrodSmallClear?conrodSmallClear+"mm clearance":null].filter(Boolean).join(" · "),
-              [conrodBigEnd?conrodBigEnd+"mm big end":null,conrodBigClear?conrodBigClear+"mm clearance":null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecConrod(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Connecting Rod</span>
-                  {hasData&&!secConrod&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secConrod?"▲":"▼"}</span>
-              </div>
-              {secConrod&&<div style={{paddingTop:12}}>
-                {hasData&&!editConrod&&<SummaryCard onEdit={()=>setEditConrod(true)} lines={conrodSum} />}
-                {(editConrod||!hasData)&&<>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Length C-C (mm)" /><input style={inp} type="number" placeholder="e.g. 110.00" step="0.01" min="0" value={conrodLength} onChange={ev=>setConrodLength(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Bearing type" /><select style={sel} value={conrodBearingType} onChange={ev=>setConrodBearingType(ev.target.value)}><option value="">— not set —</option><option>Needle roller</option><option>Shell / plain</option><option>Ball bearing</option></select></div>
-                </div>
-                {conrodLength&&crankStroke&&(()=>{
-                  const r=parseFloat(conrodLength)/parseFloat(crankStroke);
-                  const label=r<1.5?"Short rod — peaky, aggressive":r<=1.75?"Balanced rod ratio":"Long rod — smooth, linear";
-                  return <div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ Rod ratio: {r.toFixed(2)} — {label}</div>;
-                })()}
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Small End</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 10.00" step="0.01" min="0" value={conrodSmallEnd} onChange={ev=>setConrodSmallEnd(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.012" step="0.001" min="0" value={conrodSmallClear} onChange={ev=>setConrodSmallClear(ev.target.value)} /></div>
-                </div>
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Big End</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28.00" step="0.01" min="0" value={conrodBigEnd} onChange={ev=>setConrodBigEnd(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.025" step="0.001" min="0" value={conrodBigClear} onChange={ev=>setConrodBigClear(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Side clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.15" step="0.01" min="0" value={conrodSideClear} onChange={ev=>setConrodSideClear(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Bearing part no." /><input style={inp} placeholder="e.g. STD / 0.25 OS" value={conrodBearingPartNo} onChange={ev=>setConrodBearingPartNo(ev.target.value)} /></div>
-                </div>
-                {editConrod&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditConrod(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;

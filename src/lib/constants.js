@@ -420,3 +420,31 @@ export const RESERVED_USERNAMES = new Set([
   "null","undefined","anonymous","guest","user","username",
   "owner","master","webmaster","postmaster","hostmaster",
 ]);
+
+export const BEARING_LOCATIONS = [
+  "Main Bearing — Left (Mag side)",
+  "Main Bearing — Right (PTO side)",
+  "Main Bearing — Centre",
+  "Big End (Conrod)",
+  "Small End (Gudgeon Pin)",
+  "Camshaft",
+  "Balance Shaft",
+  "Layshaft / Countershaft",
+  "Output Shaft",
+  "Transmission Input Shaft",
+  "Transmission Output Shaft",
+  "Wheel — Front",
+  "Wheel — Rear",
+  "Steering Head",
+  "Swingarm Pivot",
+  "Other",
+];
+export const BEARING_TYPES = [
+  "Ball bearing",
+  "Roller bearing",
+  "Needle roller",
+  "Plain shell / big-end",
+  "Taper roller",
+  "Thrust bearing",
+  "Bronze bush",
+];
