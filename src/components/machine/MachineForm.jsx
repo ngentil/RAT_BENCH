@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
-import { SL, FL, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm } from '../ui/shared';
+import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -487,7 +487,9 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
         <div style={mdlH}>
           <b style={{fontSize:14,textTransform:"uppercase"}}>{existing?"Edit Machine":"Add Machine"}</b>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>setSmartMode(o=>!o)} style={{...btnG,...sm,fontSize:8,padding:"4px 8px",...(smartMode?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}} title={smartMode?"Smart Mode ON — auto-populates linked fields":"Smart Mode OFF — all fields manual"}>⚡ Smart</button>
+            <Tooltip text={smartMode?"Smart Mode ON — linked fields auto-update from your inputs":"Enable Smart Mode to auto-calculate compression ratio, piston speed, fuel grade and other derived specs"} pos="bottom">
+              <button onClick={()=>setSmartMode(o=>!o)} style={{...btnG,...sm,fontSize:8,padding:"4px 8px",...(smartMode?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}}>⚡ Smart</button>
+            </Tooltip>
             <button style={{...btnG,...sm}} onClick={onClose}>✕</button>
           </div>
         </div>
