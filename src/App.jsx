@@ -12,7 +12,7 @@ import JobBoard from './components/tracker/JobBoard';
 import SpecSearch from './components/tracker/SpecSearch';
 import WikiTab from './components/wiki/WikiTab';
 function App(){
-  const [tab,setTab]=useState("tracker");
+  const [tab,setTab]=useState(()=>localStorage.getItem("rat_tab")||"tracker");
   const [machines,setMachines]=useState([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState(null);
@@ -63,6 +63,8 @@ function App(){
     } catch(e){ setError("Could not load machines."); }
     setLoading(false);
   };
+
+  useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
 
   useEffect(()=>{
     // Bootstrap from existing session

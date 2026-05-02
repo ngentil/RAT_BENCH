@@ -867,7 +867,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {/* Ignition System */}
           {(!isCustom(type)||showForCustom("Ignition System",customSections))&&(()=>{
-            const hasData = !!(plugType||plugGap||coilType||primaryOhms||secondaryOhms||starterType);
+            const hasData = !!(plugType||plugGap||coilType||primaryOhms||secondaryOhms||starterType||ropeDiameter||rBoltN);
             const ignitionSum=[
               [plugType,plugGap?plugGap+"mm gap":null,starterType].filter(Boolean).join(" · "),
               [coilType,primaryOhms?primaryOhms+"Ω primary":null,secondaryOhms?secondaryOhms+"Ω secondary":null].filter(Boolean).join(" · "),
@@ -909,33 +909,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}><FL t="Primary coil resistance (ohms)" /><input style={inp} type="number" placeholder="e.g. 0.5" step="0.1" min="0" value={primaryOhms} onChange={ev=>setPrimaryOhms(ev.target.value)} /></div>
                   {coilType==="Primary + Secondary"&&<div style={{...col,flex:1}}><FL t="Secondary coil resistance (ohms)" /><input style={inp} type="number" placeholder="e.g. 8000" step="1" min="0" value={secondaryOhms} onChange={ev=>setSecondaryOhms(ev.target.value)} /></div>}
                 </div>}
-                {editIgnition&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditIgnition(false)} style={{...btnA,...sm}}>Done</button></div>}
-                </>}
-              </div>}
-            </div>;
-          })()}
-
-          {/* Starter System */}
-          {(!isCustom(type)||showForCustom("Starter System",customSections))&&(()=>{
-            const hasData = !!(starterType||ropeDiameter||ropeLength||rBoltN||rBoltSz||rBoltLen);
-            const hasRecoil = starterType==="Recoil only"||starterType==="Recoil + electric";
-            const starterSum=[
-              [starterType].filter(Boolean).join(" · "),
-              [ropeDiameter?ropeDiameter+"mm rope dia":null,ropeLength?ropeLength+"mm rope length":null].filter(Boolean).join(" · "),
-              [rBoltN?rBoltN+"x recoil bolts":null,rBoltSz,rBoltLen?rBoltLen+"mm":null].filter(Boolean).join(" · "),
-            ].filter(l=>l&&l.trim());
-            return <div style={{marginBottom:2}}>
-              <div onClick={()=>setSecStarter(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Starter System</span>
-                  {hasData&&!secStarter&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
-                </div>
-                <span style={{color:MUT,fontSize:12}}>{secStarter?"▲":"▼"}</span>
-              </div>
-              {secStarter&&<div style={{paddingTop:12}}>
-                {hasData&&!editStarter&&<SummaryCard onEdit={()=>setEditStarter(true)} lines={starterSum} />}
-                {(editStarter||!hasData)&&<>
-                {hasRecoil&&<>
+                {(starterType==="Recoil only"||starterType==="Recoil + electric")&&<>
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
                   <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Recoil Housing Bolts</div>
                   <div style={row}>
@@ -950,7 +924,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <div style={{...col,flex:1}}><FL t="Rope length (mm)" /><input style={inp} type="number" placeholder="e.g. 900" step="1" min="0" value={ropeLength} onChange={ev=>setRopeLength(ev.target.value)} /></div>
                   </div>
                 </>}
-                {editStarter&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditStarter(false)} style={{...btnA,...sm}}>Done</button></div>}
+                {editIgnition&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditIgnition(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
             </div>;
