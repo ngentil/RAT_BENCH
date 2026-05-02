@@ -209,6 +209,7 @@ export function BeltCard({b, onEdit, onRemove}){
   ].filter(Boolean);
   return (
     <div style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"10px 12px",marginBottom:6}}>
+      {b.beltFunction&&<div style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{b.beltFunction}</div>}
       <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",marginBottom:b.beltNotes?6:8,lineHeight:1.5}}>{parts.length?parts.join(" · "):"No specs yet"}</div>
       {b.beltNotes&&<div style={{fontSize:10,color:MUT,marginBottom:8,lineHeight:1.4}}>{b.beltNotes}</div>}
       <div style={{display:"flex",gap:6}}>
@@ -225,8 +226,9 @@ export function BeltForm({b, onSave, onCancel}){
   const [beltPartNo, setBeltPartNo] = useState(b.beltPartNo||"");
   const [beltWidth, setBeltWidth] = useState(b.beltWidth||"");
   const [beltLength, setBeltLength] = useState(b.beltLength||"");
+  const [beltFunction, setBeltFunction] = useState(b.beltFunction||"");
   const [beltNotes, setBeltNotes] = useState(b.beltNotes||"");
-  const save = () => onSave({...b, beltType, beltCount, beltPartNo:beltPartNo.trim(), beltWidth:beltWidth.toString(), beltLength:beltLength.toString(), beltNotes:beltNotes.trim()});
+  const save = () => onSave({...b, beltType, beltCount, beltFunction:beltFunction.trim(), beltPartNo:beltPartNo.trim(), beltWidth:beltWidth.toString(), beltLength:beltLength.toString(), beltNotes:beltNotes.trim()});
   return (
     <div style={{background:"#0d0d0d",border:"1px solid "+ACC,borderRadius:2,padding:"12px",marginBottom:8}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -244,6 +246,10 @@ export function BeltForm({b, onSave, onCancel}){
         <div style={col}>
           <FL t="Quantity" />
           <input style={inp} type="number" placeholder="e.g. 1" step="1" min="1" value={beltCount} onChange={ev=>setBeltCount(ev.target.value)} />
+        </div>
+        <div style={{...col,gridColumn:"1/-1"}}>
+          <FL t="Belt function" />
+          <input style={inp} placeholder="e.g. Fan belt, deck drive, alternator" value={beltFunction} onChange={ev=>setBeltFunction(ev.target.value)} />
         </div>
         <div style={{...col,gridColumn:"1/-1"}}>
           <FL t="Part no. / size code" />
