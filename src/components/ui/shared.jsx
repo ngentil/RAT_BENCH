@@ -7,6 +7,17 @@ export function FL({t}){ return <div style={{fontSize:9,letterSpacing:"0.12em",t
 export function Divider(){ return <div style={dvdr} />; }
 export function Empty({t}){ return <div style={empt}>{t}</div>; }
 
+export function Tooltip({text,children,pos="top"}){
+  const [vis,setVis]=useState(false);
+  const above=pos!=="bottom";
+  return (
+    <div style={{position:"relative",display:"inline-block"}} onMouseEnter={()=>setVis(true)} onMouseLeave={()=>setVis(false)}>
+      {children}
+      {vis&&<div style={{position:"absolute",[above?"bottom":"top"]:"calc(100% + 5px)",left:0,background:"#1c1c1c",border:"1px solid #333",borderRadius:2,padding:"5px 9px",fontSize:9,color:"#bbb",whiteSpace:"nowrap",zIndex:9999,letterSpacing:"0.05em",lineHeight:1.5,pointerEvents:"none",fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 2px 8px #0008"}}>{text}</div>}
+    </div>
+  );
+}
+
 export function SkullRating({value,onChange}){
   const [hov,setHov]=useState(0);
   const d=hov||value||0;
