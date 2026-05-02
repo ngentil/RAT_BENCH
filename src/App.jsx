@@ -143,6 +143,7 @@ function App(){
         </a>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>{profile?.display_name||profile?.username}</span>
+          {session?.user?.is_anonymous&&<button onClick={signOut} style={{...btnG,...sm,fontSize:8}}>Sign Out</button>}
           {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:8}}>⚙️</button>}
         </div>
       </div>
