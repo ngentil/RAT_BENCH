@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { BG, TXT, MUT, ACC, BRD, SURF, RED, btnG, sm } from './lib/styles';
 import { getMachines, getMyCompany } from './lib/db';
@@ -14,8 +14,9 @@ import WikiTab from './components/wiki/WikiTab';
 function App(){
   const [tab,setTab]=useState(()=>localStorage.getItem("rat_tab")||"tracker");
   const [machines,setMachines]=useState([]);
-  const [loading,setLoading]=useState(true);
+  const [initializing,setInitializing]=useState(true);
   const [error,setError]=useState(null);
+  const initializedRef=useRef(false);
   const [session,setSession]=useState(null);
   const [authChecked,setAuthChecked]=useState(false);
   const [profile,setProfile]=useState(null);
@@ -23,15 +24,18 @@ function App(){
   const [passwordReset,setPasswordReset]=useState(false);
   const [company,setCompany]=useState(null);
 
-  // Load data for a given session
+  // Load data for a given session.
+  // First call blocks the UI (initializing screen); subsequent calls refresh silently.
   const loadForSession = async(session) => {
+    const first = !initializedRef.current;
     if(!session){
       setSession(null);setProfile(null);setMachines([]);setCompany(null);
-      setAuthChecked(true);setProfileChecked(true);setLoading(false);
+      setAuthChecked(true);setProfileChecked(true);setInitializing(false);
+      initializedRef.current=true;
       return;
     }
     setSession(session);
-    setLoading(true);setProfileChecked(false);
+    if(first) setProfileChecked(false);
     try {
       const {data:profileData} = await supabase
         .from("profiles").select("*").eq("id",session.user.id).single();
@@ -42,7 +46,6 @@ function App(){
           setCompany(co);
         }
       } else if(session.user.is_anonymous){
-        // Auto-create a guest profile so onboarding is skipped
         const guestSuffix=session.user.id.replace(/-/g,"").slice(0,6);
         const {data:guest}=await supabase.from("profiles").upsert({
           id:session.user.id,
@@ -52,16 +55,16 @@ function App(){
         },{onConflict:"id"}).select().single();
         setProfile(guest||null);
       } else {
-        setProfile(null);
+        if(first) setProfile(null);
       }
-    } catch(e){ setProfile(null); }
+    } catch(e){ if(first) setProfile(null); }
     setProfileChecked(true);
     setAuthChecked(true);
     try {
-      const machines = await getMachines();
-      setMachines(Array.isArray(machines)?machines:[]);
-    } catch(e){ setError("Could not load machines."); }
-    setLoading(false);
+      const ms = await getMachines();
+      setMachines(Array.isArray(ms)?ms:[]);
+    } catch(e){ if(first) setError("Could not load machines."); }
+    if(first){ setInitializing(false); initializedRef.current=true; }
   };
 
   useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
@@ -76,7 +79,8 @@ function App(){
         setSession(session);
         setAuthChecked(true);
         setProfileChecked(true);
-        setLoading(false);
+        setInitializing(false);
+        initializedRef.current=true;
         return;
       }
       if(_event==="TOKEN_REFRESHED"){
@@ -95,8 +99,8 @@ function App(){
     // which resets all state correctly — don't touch state here
   };
 
-  // Auth not yet checked
-  if(!authChecked||!profileChecked){
+  // Initial load — block the UI until auth + data are ready
+  if(initializing||!authChecked||!profileChecked){
     return (
       <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
         <div style={{fontSize:32}}>🐀</div>
@@ -113,16 +117,6 @@ function App(){
 
   // Logged in but no profile — show onboarding
   if(!profile) return <OnboardingScreen session={session} onComplete={p=>setProfile(p)} />;
-
-  // Loading machines
-  if(loading){
-    return (
-      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
-        <div style={{fontSize:32}}>🐀</div>
-        <div style={{fontSize:11,color:MUT,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.1em"}}>Loading...</div>
-      </div>
-    );
-  }
 
   if(error){
     return (
