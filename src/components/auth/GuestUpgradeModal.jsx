@@ -72,9 +72,9 @@ function GuestUpgradeModal({profile,setProfile,onClose}){
   };
 
   const availIcon = availability==="available"
-    ? <span style={{fontSize:13,color:GRN,lineHeight:1}}>✓</span>
+    ? <span style={{fontSize:16,color:GRN,fontWeight:900,lineHeight:1,textShadow:"0 0 8px "+GRN}}>✓</span>
     : availability==="taken"
-    ? <span style={{fontSize:13,color:RED,lineHeight:1}}>✗</span>
+    ? <span style={{fontSize:16,color:RED,fontWeight:900,lineHeight:1}}>✗</span>
     : availability==="checking"
     ? <span style={{fontSize:10,color:MUT}}>…</span>
     : null;
