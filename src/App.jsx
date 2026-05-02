@@ -151,7 +151,7 @@ function App(){
           </button>
         ))}
       </div>
-      {tab==="tracker" &&<Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile}/>}
+      {tab==="tracker" &&<Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} isGuest={!!session?.user?.is_anonymous}/>}
       {tab==="jobs"    &&<JobBoard    machines={machines} setMachines={setMachines} />}
       {tab==="search"  &&<SpecSearch  machines={machines} />}
       {tab==="wiki"    &&<div style={{padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>}

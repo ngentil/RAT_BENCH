@@ -10,7 +10,7 @@ import PdfExportModal from '../pdf/PdfExportModal';
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile}){
+function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
   const [open,setOpen]=useState(false);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -100,7 +100,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile}){
   return (
     <div style={{background:SURF,border:"1px solid "+BRD,borderRadius:3,marginBottom:8,overflow:"hidden"}}>
       {fullImg&&<div onClick={()=>setFullImg(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}><img src={fullImg} alt="" style={{maxWidth:"95vw",maxHeight:"95vh",objectFit:"contain"}} /></div>}
-      {showEdit&&<MachineForm existing={m} onSave={u=>{onUpdate(u);setShowEdit(false);}} onClose={()=>setShowEdit(false)} company={company} units={profile?.units||"metric"} profile={profile}/>}
+      {showEdit&&<MachineForm existing={m} onSave={u=>{onUpdate(u);setShowEdit(false);}} onClose={()=>setShowEdit(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/>}
       {showWiki&&<WikiTrackerModal machine={m} profile={profile} onClose={()=>setShowWiki(false)}/>}
       {showConfig&&<TileConfig machine={m} onSave={u=>{onUpdate(u);setShowConfig(false);}} onClose={()=>setShowConfig(false)} />
       }
@@ -243,7 +243,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile}){
               <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>
               <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>
               {showPdfOpts&&<PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/>}
-              {m.make&&m.model&&<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
+              {!isGuest&&m.make&&m.model&&<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
               <button style={btnD} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
             </div>
           </div>
