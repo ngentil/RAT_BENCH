@@ -141,7 +141,7 @@ function App(){
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>{profile?.display_name||profile?.username}</span>
-          <button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:8}}>⚙️</button>
+          {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:8}}>⚙️</button>}
         </div>
       </div>
       <div style={{display:"flex",background:SURF,borderBottom:"1px solid "+BRD}}>
