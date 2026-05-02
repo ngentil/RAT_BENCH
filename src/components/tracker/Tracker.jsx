@@ -155,8 +155,8 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest}){
           <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} isGuest={isGuest}/>
         </div>
       ))}
+      {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
     </div>
-    {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
   );
 }
 export default Tracker;
