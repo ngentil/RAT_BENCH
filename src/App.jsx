@@ -130,7 +130,7 @@ function App(){
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column"}}>
       <div style={{background:SURF,borderBottom:"2px solid "+ACC,padding:"12px 18px",display:"flex",alignItems:"center",gap:10}}>
-        <a href="https://ratbench.net" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none"}}>
+        <a href="https://ratbench.net" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
           {company?.logo
             ? <img src={company.logo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD}}/>
             : <span style={{fontSize:20}}>🐀</span>}
