@@ -35,10 +35,24 @@ function App(){
     try {
       const {data:profileData} = await supabase
         .from("profiles").select("*").eq("id",session.user.id).single();
-      setProfile(profileData||null);
-      if(profileData?.company_id){
-        const co=await getMyCompany(profileData.company_id);
-        setCompany(co);
+      if(profileData){
+        setProfile(profileData);
+        if(profileData.company_id){
+          const co=await getMyCompany(profileData.company_id);
+          setCompany(co);
+        }
+      } else if(session.user.is_anonymous){
+        // Auto-create a guest profile so onboarding is skipped
+        const guestSuffix=session.user.id.replace(/-/g,"").slice(0,6);
+        const {data:guest}=await supabase.from("profiles").upsert({
+          id:session.user.id,
+          username:`guest_${guestSuffix}`,
+          display_name:"Guest",
+          account_type:"personal",
+        },{onConflict:"id"}).select().single();
+        setProfile(guest||null);
+      } else {
+        setProfile(null);
       }
     } catch(e){ setProfile(null); }
     setProfileChecked(true);
