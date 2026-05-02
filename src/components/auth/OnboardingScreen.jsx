@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, BG, RED, inp, btnA, btnG, col } from '../../lib/styles';
+import { RESERVED_USERNAMES } from '../../lib/constants';
 function OnboardingScreen({session, onComplete}){
   const [username,setUsername]=useState(session?.user?.user_metadata?.username||"");
   const [accountType,setAccountType]=useState("personal");
@@ -14,6 +15,7 @@ function OnboardingScreen({session, onComplete}){
   const save=async()=>{
     if(!username.trim()){setError("Username is required.");return;}
     if(!/^[a-zA-Z0-9_]{3,20}$/.test(username.trim())){setError("Username must be 3-20 characters, letters/numbers/underscores only.");return;}
+    if(RESERVED_USERNAMES.has(username.trim().toLowerCase())){setError("That username is reserved — please choose another.");return;}
     setLoading(true);setError("");
     const{error}=await supabase.from("profiles").upsert({
       id:session.user.id,

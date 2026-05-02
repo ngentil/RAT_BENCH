@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { BG, SURF, BRD, TXT, MUT, ACC, GRN, RED, inp, btnA, btnG, col, sm, ovly, mdl, mdlH, mdlB } from '../../lib/styles';
-import { makeSlug, getWikiEntryBySlug, getWikiRevisions, deleteWikiEntry, deleteWikiRevision, saveWikiRevision, publishToWiki } from '../../lib/wiki';
+import { makeSlug, getWikiEntryBySlug, getWikiRevisions, deleteWikiEntry, deleteWikiRevision, saveWikiRevision, prepareWikiPublish } from '../../lib/wiki';
 
 export function WikiTrackerModal({machine,profile,onClose}){
   const [tab,setTab]=React.useState("publish");
@@ -101,7 +101,7 @@ export function PublishWikiModal({machine,profile,onClose,onPublished,inline}){
   const [publishedSlug,setPublishedSlug]=useState("");
 
   useEffect(()=>{
-    publishToWiki(machine,profile).then(res=>{
+    prepareWikiPublish(machine,profile).then(res=>{
       setResult(res);
       if(res.isNew){
         setSummary("Initial publish");
@@ -135,7 +135,12 @@ export function PublishWikiModal({machine,profile,onClose,onPublished,inline}){
       const finalData={...mergedData};
       conflicts.forEach(c=>{finalData[c.key]=picks[c.key]==="mine"?c.mine:c.wiki;});
       if(result.isNew){
-        await supabase.from("wiki_contributions").insert({entry_id:result.entry.id,machine_id:machine.id,user_id:profile.id});
+        const{data:entry,error}=await supabase.from("wiki_entries").insert({
+          slug:result.slug,make:machine.make,model:machine.model,type:machine.type,created_by:profile.id,
+        }).select().single();
+        if(error)throw error;
+        await saveWikiRevision(entry.id,result.specData,summary||"Initial publish",profile);
+        await supabase.from("wiki_contributions").insert({entry_id:entry.id,machine_id:machine.id,user_id:profile.id});
       } else {
         await saveWikiRevision(result.entry.id,{...result.currentRevision?.data,...finalData},summary,profile);
         await supabase.from("wiki_contributions").insert({entry_id:result.entry.id,machine_id:machine.id,user_id:profile.id});
