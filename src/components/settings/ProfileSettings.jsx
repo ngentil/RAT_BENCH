@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 import { updateProfile } from '../../lib/db';
-function ProfileSettings({profile,setProfile,session,onSignOut}){
+import GuestUpgradeModal from '../auth/GuestUpgradeModal';
+function ProfileSettings({profile,setProfile,session,onSignOut,isGuest}){
   const [displayName,setDisplayName]=useState(profile?.display_name||"");
   const [units,setUnits]=useState(profile?.units||"metric");
   const [defaultStatus,setDefaultStatus]=useState(profile?.default_status||"Active");
@@ -10,6 +11,7 @@ function ProfileSettings({profile,setProfile,session,onSignOut}){
   const [saved,setSaved]=useState(false);
   const [err,setErr]=useState("");
   const [pwSection,setPwSection]=useState(false);
+  const [showUpgrade,setShowUpgrade]=useState(false);
   const [curPw,setCurPw]=useState(""),   [newPw,setNewPw]=useState(""),   [confPw,setConfPw]=useState("");
   const [pwErr,setPwErr]=useState(""),   [pwSaved,setPwSaved]=useState(false),   [pwBusy,setPwBusy]=useState(false);
 
@@ -72,10 +74,17 @@ function ProfileSettings({profile,setProfile,session,onSignOut}){
         </>}
       </div>
 
+      {isGuest&&<div style={{...sec,background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:16,marginBottom:20}}>
+        <div style={{fontSize:9,color:GRN,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Save Your Data</div>
+        <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Create an account to keep your machines and sign back in any time.</div>
+        <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create Account</button>
+      </div>}
+
       <div>
         <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Account</div>
         <button onClick={onSignOut} style={{...btnG,...sm,color:RED,border:"1px solid "+RED}}>Sign Out</button>
       </div>
+      {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
     </div>
   );
 }

@@ -12,7 +12,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut})
           <button key={id} onClick={()=>setTab(id)} style={{...btnG,...sm,...(tab===id?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}}>{label}</button>
         ))}
       </div>
-      {tab==="profile"&&<ProfileSettings profile={profile} setProfile={setProfile} session={session} onSignOut={onSignOut}/>}
+      {tab==="profile"&&<ProfileSettings profile={profile} setProfile={setProfile} session={session} onSignOut={onSignOut} isGuest={!!session?.user?.is_anonymous}/>}
       {tab==="company"&&<CompanySettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany} session={session}/>}
     </div>
   );
