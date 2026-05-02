@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
+import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES } from '../../lib/constants';
 import MachineTile from '../machine/MachineTile';
@@ -115,7 +116,10 @@ function Tracker({machines,setMachines,company,profile,isGuest}){
           <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
           <button onClick={()=>{if(view==="list"){setColsP(2);}else if(cols<4){setColsP(cols+1);}else{setViewP("list");}}} style={{...btnG,...sm,fontSize:9,minWidth:36}}>{view==="list"?"☰":`⊞${cols}`}</button>
           {isGuest&&machines.length>=3
-            ? <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
+            ? <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
+                <button style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}} onClick={()=>supabase.auth.signOut()}>Create account</button>
+              </div>
             : <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
       </div>
