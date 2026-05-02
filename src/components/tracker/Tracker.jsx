@@ -7,8 +7,10 @@ import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
-function Tracker({machines,setMachines,company,profile}){
+import GuestUpgradeModal from '../auth/GuestUpgradeModal';
+function Tracker({machines,setMachines,company,profile,setProfile,isGuest}){
   const [showAdd,setShowAdd]=useState(false);
+  const [showUpgrade,setShowUpgrade]=useState(false);
   const [saving,setSaving]=useState(false);
   const [dragIdx,setDragIdx]=useState(null);
   const [dragOver,setDragOver]=useState(null);
@@ -79,7 +81,14 @@ function Tracker({machines,setMachines,company,profile}){
 
   return (
     <div style={{padding:16,flex:1}}>
-      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company} units={profile?.units||"metric"} profile={profile}/></ErrorBoundary>}
+      {isGuest&&<div style={{background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:"12px 14px",marginBottom:14}}>
+        <div style={{fontSize:9,color:"#4ade80",letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Guest Mode</div>
+        <div style={{fontSize:10,color:MUT,lineHeight:1.7,marginBottom:10}}>
+          Max 3 machines · No wiki publishing · Data may be lost if you clear your browser.
+        </div>
+        <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create account to save your data</button>
+      </div>}
+      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
           <div style={{...mdl,maxHeight:"70vh"}} onClick={ev=>ev.stopPropagation()}>
@@ -114,7 +123,12 @@ function Tracker({machines,setMachines,company,profile}){
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
           <button onClick={()=>{if(view==="list"){setColsP(2);}else if(cols<4){setColsP(cols+1);}else{setViewP("list");}}} style={{...btnG,...sm,fontSize:9,minWidth:36}}>{view==="list"?"☰":`⊞${cols}`}</button>
-          <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>
+          {isGuest&&machines.length>=3
+            ? <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
+                <button style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}} onClick={()=>setShowUpgrade(true)}>Create account</button>
+              </div>
+            : <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
       </div>
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
@@ -129,7 +143,7 @@ function Tracker({machines,setMachines,company,profile}){
           {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
             <div style={{position:"fixed",inset:0,background:"#000a",zIndex:200,overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setTileOpen(null);}}>
               <div style={{maxWidth:640,margin:"24px auto",padding:"0 8px"}}>
-                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile}/>
+                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} isGuest={isGuest}/>
                 <button onClick={()=>setTileOpen(null)} style={{...btnG,width:"100%",marginTop:8,fontSize:10}}>Close</button>
               </div>
             </div>
@@ -145,9 +159,10 @@ function Tracker({machines,setMachines,company,profile}){
           onDragEnd={onDragEnd}
           style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
         >
-          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile}/>
+          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} isGuest={isGuest}/>
         </div>
       ))}
+      {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
     </div>
   );
 }
