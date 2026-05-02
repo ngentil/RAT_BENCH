@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ACC, MUT, BRD2, TXT, dvdr, empt, btnA, btnG, btnD, inp, sel, txa, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { RAGE_LBL, FASTENER_LOCS, FASTENER_TYPES, DRIVE_TYPES, BOLT_DIAMETERS, STUD_LOCS, RAM_LOCATIONS, ATTACH_TYPES, ALL_SECTIONS, ALL_BADGE_FIELDS, BADGE_PALETTE, DEFAULT_TILE, LIGHT_LOCATIONS, LIGHT_TYPES, LIGHT_VOLTAGES, LIGHT_PLUGS } from '../../lib/constants';
+import { RAGE_LBL, FASTENER_LOCS, FASTENER_TYPES, DRIVE_TYPES, BOLT_DIAMETERS, STUD_LOCS, RAM_LOCATIONS, ATTACH_TYPES, ALL_SECTIONS, ALL_BADGE_FIELDS, BADGE_PALETTE, DEFAULT_TILE, LIGHT_LOCATIONS, LIGHT_TYPES, LIGHT_VOLTAGES, LIGHT_PLUGS, BEARING_LOCATIONS, BEARING_TYPES } from '../../lib/constants';
 
 export function SL({t}){ return <div style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,marginBottom:8}}>{t}</div>; }
 export function FL({t}){ return <div style={{fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:4}}>{t}</div>; }
@@ -558,6 +558,77 @@ export function LightingForm({l, onSave, onCancel}){
         <div style={{...col,gridColumn:"1/-1"}}>
           <FL t="Notes" />
           <textarea style={{...txa,minHeight:40}} placeholder="e.g. Aftermarket LED bar, 120W total" value={notes} onChange={ev=>setNotes(ev.target.value)} />
+        </div>
+      </div>
+      <div style={{display:"flex",gap:8,marginTop:10,justifyContent:"flex-end"}}>
+        <button style={{...btnG,...sm}} onClick={onCancel}>Cancel</button>
+        <button style={{...btnA,...sm}} onClick={save}>Save</button>
+      </div>
+    </div>
+  );
+}
+
+export function BearingCard({b, onEdit, onRemove}){
+  const parts=[b.type,b.partNo,b.clearance?b.clearance+"mm clearance":null,b.preload?b.preload+"Nm preload":null].filter(Boolean);
+  return (
+    <div style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"10px 12px",marginBottom:6}}>
+      <div style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{b.location==="Other"?(b.locationOther||"Other"):b.location||"—"}</div>
+      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",marginBottom:8,lineHeight:1.5}}>{parts.length?parts.join(" · "):"No specs yet"}</div>
+      {b.notes&&<div style={{fontSize:10,color:MUT,marginBottom:6,lineHeight:1.4}}>{b.notes}</div>}
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={onEdit} style={{...btnG,...sm}}>Edit</button>
+        <button onClick={onRemove} style={btnD}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+export function BearingForm({b, onSave, onCancel}){
+  const [location,setLocation]=useState(b.location||"");
+  const [locationOther,setLocationOther]=useState(b.locationOther||"");
+  const [type,setType]=useState(b.type||"");
+  const [partNo,setPartNo]=useState(b.partNo||"");
+  const [clearance,setClearance]=useState(b.clearance||"");
+  const [preload,setPreload]=useState(b.preload||"");
+  const [notes,setNotes]=useState(b.notes||"");
+  const save=()=>onSave({...b,location,locationOther,type,partNo,clearance:clearance.toString(),preload:preload.toString(),notes});
+  return (
+    <div style={{background:"#0d0d0d",border:"1px solid "+ACC,borderRadius:2,padding:"12px",marginBottom:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <span style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase"}}>{b.id?"Edit Bearing":"New Bearing"}</span>
+        <button onClick={onCancel} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:12}}>✕</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={{...col,gridColumn:"1/-1"}}>
+          <FL t="Location" />
+          <select style={sel} value={location} onChange={ev=>setLocation(ev.target.value)}>
+            <option value="">— not set —</option>
+            {BEARING_LOCATIONS.map(o=><option key={o}>{o}</option>)}
+          </select>
+        </div>
+        {location==="Other"&&<div style={{...col,gridColumn:"1/-1"}}><FL t="Describe location" /><input style={inp} placeholder="e.g. Idler shaft" value={locationOther} onChange={ev=>setLocationOther(ev.target.value)} /></div>}
+        <div style={col}>
+          <FL t="Bearing type" />
+          <select style={sel} value={type} onChange={ev=>setType(ev.target.value)}>
+            <option value="">— not set —</option>
+            {BEARING_TYPES.map(o=><option key={o}>{o}</option>)}
+          </select>
+        </div>
+        <div style={col}>
+          <FL t="Part no. / dimensions" />
+          <input style={inp} placeholder="e.g. 6203 / 17×40×12" value={partNo} onChange={ev=>setPartNo(ev.target.value)} />
+        </div>
+        <div style={col}>
+          <FL t="Clearance (mm)" />
+          <input style={inp} type="number" placeholder="e.g. 0.025" step="0.001" min="0" value={clearance} onChange={ev=>setClearance(ev.target.value)} />
+        </div>
+        <div style={col}>
+          <FL t="Preload (Nm)" />
+          <input style={inp} type="number" placeholder="e.g. 15" step="0.5" min="0" value={preload} onChange={ev=>setPreload(ev.target.value)} />
+        </div>
+        <div style={{...col,gridColumn:"1/-1"}}>
+          <FL t="Notes" />
+          <textarea style={{...txa,minHeight:40}} placeholder="e.g. Replace with sealed unit" value={notes} onChange={ev=>setNotes(ev.target.value)} />
         </div>
       </div>
       <div style={{display:"flex",gap:8,marginTop:10,justifyContent:"flex-end"}}>
