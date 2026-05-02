@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, BG, TXT, GRN, RED, inp, btnA, btnG } from '../../lib/styles';
 function AuthScreen(){
@@ -10,12 +10,25 @@ function AuthScreen(){
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
 
+  // Reset loading if browser restores page from bfcache after OAuth redirect
+  useEffect(()=>{
+    const reset=(e)=>{if(e.persisted)setLoading(false);};
+    window.addEventListener("pageshow",reset);
+    return()=>window.removeEventListener("pageshow",reset);
+  },[]);
+
   const handleGoogle=async()=>{
     setLoading(true);setError("");
     const{error}=await supabase.auth.signInWithOAuth({
       provider:"google",
       options:{redirectTo:window.location.origin}
     });
+    if(error){setError(error.message);setLoading(false);}
+  };
+
+  const handleGuest=async()=>{
+    setLoading(true);setError("");
+    const{error}=await supabase.auth.signInAnonymously();
     if(error){setError(error.message);setLoading(false);}
   };
 
@@ -138,6 +151,13 @@ function AuthScreen(){
             <button onClick={()=>setMode("login")}
               style={{background:"none",border:"none",color:MUT,fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace"}}>
               ← Back to sign in
+            </button>
+          </div>}
+
+          {mode==="login"&&<div style={{textAlign:"center",marginTop:20}}>
+            <button onClick={handleGuest} disabled={loading}
+              style={{background:"none",border:"none",color:MUT,fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",opacity:loading?0.4:1}}>
+              Continue as Guest
             </button>
           </div>}
 

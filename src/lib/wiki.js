@@ -234,6 +234,25 @@ export async function deleteWikiEntry(entryId) {
   if (error) throw error;
 }
 
+// Read-only check — no writes. Used by the modal useEffect so opening the
+// modal never creates a DB entry before the user clicks Publish.
+export async function prepareWikiPublish(machine, profile) {
+  const slug = makeSlug(machine.make || "", machine.model || "");
+  if (!slug || slug === "-")
+    throw new Error("Machine must have a make and model to publish.");
+  const specData = Object.fromEntries(
+    Object.entries(machine).filter(([k]) => !STRIP_FIELDS.has(k))
+  );
+  const { data: existing } = await supabase.from("wiki_entries")
+    .select("*").eq("slug", slug).single();
+  if (existing) {
+    const { data: currentRev } = await supabase.from("wiki_revisions")
+      .select("*").eq("id", existing.current_rev_id).single();
+    return { entry: existing, currentRevision: currentRev || null, isNew: false, slug, specData };
+  }
+  return { entry: null, currentRevision: null, isNew: true, slug, specData };
+}
+
 export async function revertToRevision(entryId, rev, profile) {
   return saveWikiRevision(
     entryId,
