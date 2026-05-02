@@ -410,3 +410,13 @@ export const LIGHT_PLUGS = [
   "Molex Mini-Fit","Anderson SB50",
   "Pigtail / Bare Wire","Other"
 ];
+
+export const RESERVED_USERNAMES = new Set([
+  "admin","administrator","admins","administration",
+  "moderator","mod","mods","staff","support","help",
+  "ratbench","rat_bench","ratbench_admin","ratbench_support",
+  "root","superuser","sysadmin","system","bot","robot",
+  "official","team","info","contact","security","abuse",
+  "null","undefined","anonymous","guest","user","username",
+  "owner","master","webmaster","postmaster","hostmaster",
+]);
