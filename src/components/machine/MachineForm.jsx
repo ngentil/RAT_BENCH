@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
-import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm } from '../ui/shared';
+import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -151,8 +151,15 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [tyreRear,setTyreRear]=useState(e.tyreRear||"");
   const [rimFront,setRimFront]=useState(e.rimFront||"");
   const [rimRear,setRimRear]=useState(e.rimRear||"");
-  // electrics
-  const [battVoltage,setBattVoltage]=useState(e.battVoltage||"");
+  // electrics — batteries dynamic list (migrates old scalar fields)
+  const [batteries,setBatteries]=useState(()=>{
+    if(e.batteries&&e.batteries.length) return e.batteries;
+    if(e.battVoltage||e.batteryCCA||e.batteryAh||e.batteryDimensions)
+      return [{id:uid(),label:"Main",voltage:e.battVoltage||"",battType:"",cca:e.batteryCCA||"",ah:e.batteryAh||"",dimensions:e.batteryDimensions||""}];
+    return [];
+  });
+  const [battEditIdx,setBattEditIdx]=useState(null);
+  const [battAdding,setBattAdding]=useState(false);
   // blade / deck
   const [deckSize,setDeckSize]=useState(e.deckSize||"");
   const [bladeLength,setBladeLength]=useState(e.bladeLength||"");
@@ -168,9 +175,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [secTyres,setSecTyres]=useState(false);
   const [secElectrics,setSecElectrics]=useState(false);
   const [secLighting,setSecLighting]=useState(false);
-  const [batteryCCA,setBatteryCCA]=useState(e.batteryCCA||"");
-  const [batteryAh,setBatteryAh]=useState(e.batteryAh||"");
-  const [batteryDimensions,setBatteryDimensions]=useState(e.batteryDimensions||"");
   const [starterMotorType,setStarterMotorType]=useState(e.starterMotorType||"");
   const [fuseBoxNotes,setFuseBoxNotes]=useState(e.fuseBoxNotes||"");
   const [wireGauge,setWireGauge]=useState(e.wireGauge||"");
@@ -455,7 +459,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
       iValveFace:iValveFace.toString().trim(),iValveStem:iValveStem.toString().trim(),iValveLift:iValveLift.toString().trim(),iValveWeight:iValveWeight.toString().trim(),
       eValveFace:eValveFace.toString().trim(),eValveStem:eValveStem.toString().trim(),eValveLift:eValveLift.toString().trim(),eValveWeight:eValveWeight.toString().trim(),
-      springFreeLen:springFreeLen.toString().trim(),springOuterD:springOuterD.toString().trim(),springWireD:springWireD.toString().trim(),springWeight:springWeight.toString().trim(),starterType,ropeDiameter:ropeDiameter.toString().trim(),ropeLength:ropeLength.toString().trim(),fasteners,pumpBrand:pumpBrand.trim(),pumpModel:pumpModel.trim(),pumpPsi:pumpPsi.toString().trim(),pumpFlow:pumpFlow.toString().trim(),pumpInlet,pumpOutlet,pumpType,genWatts:genWatts.toString().trim(),genPeakWatts:genPeakWatts.toString().trim(),genVoltage,genFreq,genAvr,genOutlets:genOutlets.trim(),driveType,chainPitch,frontSprocket:frontSprocket.toString().trim(),rearSprocket:rearSprocket.toString().trim(),primaryRatio:primaryRatio.toString().trim(),topGearRatio:topGearRatio.toString().trim(),gearCount,transType,gearboxBrand:gearboxBrand.trim(),clutchType,clutchDiameter:clutchDiameter.toString(),torqueConverter,autoSpeeds,autoFluidType:autoFluidType.trim(),autoFluidCapacity:autoFluidCapacity.toString(),cvtBeltType,gearboxOilType:gearboxOilType.trim(),gearboxOilCapacity:gearboxOilCapacity.toString(),forkType,forkDiameter:forkDiameter.toString().trim(),forkTravel:forkTravel.toString().trim(),rearShockType,rearTravel:rearTravel.toString().trim(),springRate:springRate.toString().trim(),riderWeight:riderWeight.toString().trim(),frontBrake,frontDiscD:frontDiscD.toString().trim(),frontDiscW:frontDiscW.toString().trim(),rearBrake,rearDiscD:rearDiscD.toString().trim(),rearDiscW:rearDiscW.toString().trim(),tyreFront:tyreFront.trim(),tyreRear:tyreRear.trim(),rimFront:rimFront.toString().trim(),rimRear:rimRear.toString().trim(),battVoltage,batteryCCA:batteryCCA.toString(),batteryAh:batteryAh.toString(),batteryDimensions:batteryDimensions.trim(),starterMotorType,fuseBoxNotes:fuseBoxNotes.trim(),wireGauge:wireGauge.trim(),wireLength:wireLength.toString().trim(),wireAmps:wireAmps.toString().trim(),deckSize:deckSize.toString().trim(),bladeLength:bladeLength.toString().trim(),bladeType,bladeCount,plugGap:plugGap.toString().trim(),coilType,primaryOhms:primaryOhms.toString().trim(),secondaryOhms:secondaryOhms.toString().trim(),fuelSystem,fuelTankCapacity:fuelTankCapacity.toString(),mixRatio:mixRatio.trim(),ecuModel:ecuModel.trim(),tbDiameter:tbDiameter.toString().trim(),injectorCount,injectorFlow:injectorFlow.toString().trim(),fuelRailPressure:fuelRailPressure.toString().trim(),fuelPumpPressure:fuelPumpPressure.toString().trim(),tpsSensor,mapSensor,iatSensor,o2Sensor,iacSensor,
+      springFreeLen:springFreeLen.toString().trim(),springOuterD:springOuterD.toString().trim(),springWireD:springWireD.toString().trim(),springWeight:springWeight.toString().trim(),starterType,ropeDiameter:ropeDiameter.toString().trim(),ropeLength:ropeLength.toString().trim(),fasteners,pumpBrand:pumpBrand.trim(),pumpModel:pumpModel.trim(),pumpPsi:pumpPsi.toString().trim(),pumpFlow:pumpFlow.toString().trim(),pumpInlet,pumpOutlet,pumpType,genWatts:genWatts.toString().trim(),genPeakWatts:genPeakWatts.toString().trim(),genVoltage,genFreq,genAvr,genOutlets:genOutlets.trim(),driveType,chainPitch,frontSprocket:frontSprocket.toString().trim(),rearSprocket:rearSprocket.toString().trim(),primaryRatio:primaryRatio.toString().trim(),topGearRatio:topGearRatio.toString().trim(),gearCount,transType,gearboxBrand:gearboxBrand.trim(),clutchType,clutchDiameter:clutchDiameter.toString(),torqueConverter,autoSpeeds,autoFluidType:autoFluidType.trim(),autoFluidCapacity:autoFluidCapacity.toString(),cvtBeltType,gearboxOilType:gearboxOilType.trim(),gearboxOilCapacity:gearboxOilCapacity.toString(),forkType,forkDiameter:forkDiameter.toString().trim(),forkTravel:forkTravel.toString().trim(),rearShockType,rearTravel:rearTravel.toString().trim(),springRate:springRate.toString().trim(),riderWeight:riderWeight.toString().trim(),frontBrake,frontDiscD:frontDiscD.toString().trim(),frontDiscW:frontDiscW.toString().trim(),rearBrake,rearDiscD:rearDiscD.toString().trim(),rearDiscW:rearDiscW.toString().trim(),tyreFront:tyreFront.trim(),tyreRear:tyreRear.trim(),rimFront:rimFront.toString().trim(),rimRear:rimRear.toString().trim(),batteries,battVoltage:batteries[0]?.voltage||"",batteryCCA:batteries[0]?.cca||"",batteryAh:batteries[0]?.ah||"",batteryDimensions:batteries[0]?.dimensions||"",starterMotorType,fuseBoxNotes:fuseBoxNotes.trim(),wireGauge:wireGauge.trim(),wireLength:wireLength.toString().trim(),wireAmps:wireAmps.toString().trim(),deckSize:deckSize.toString().trim(),bladeLength:bladeLength.toString().trim(),bladeType,bladeCount,plugGap:plugGap.toString().trim(),coilType,primaryOhms:primaryOhms.toString().trim(),secondaryOhms:secondaryOhms.toString().trim(),fuelSystem,fuelTankCapacity:fuelTankCapacity.toString(),mixRatio:mixRatio.trim(),ecuModel:ecuModel.trim(),tbDiameter:tbDiameter.toString().trim(),injectorCount,injectorFlow:injectorFlow.toString().trim(),fuelRailPressure:fuelRailPressure.toString().trim(),fuelPumpPressure:fuelPumpPressure.toString().trim(),tpsSensor,mapSensor,iatSensor,o2Sensor,iacSensor,
       iSpacing:iSpacing.trim(),iStuds,eSpacing:eSpacing.trim(),
       eStuds,eBoltSz,eBoltLen:eBoltLen.toString().trim(),iBoltSz,iBoltLen:iBoltLen.toString().trim(),rBoltN,rBoltSz,rBoltLen:rBoltLen.toString().trim(),
       compression:compression.toString().trim(),compressionRatio:compressionRatio.toString().trim(),idleRpm:idleRpm.toString().trim(),wotRpm:wotRpm.toString().trim(),ccSize:ccSize.toString().trim(),
@@ -1745,10 +1749,11 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {/* Electrics */}
           {showElectrics(type,customSections)&&(()=>{
-            const hasData = !!(battVoltage||batteryCCA||batteryAh||starterMotorType||fuseBoxNotes);
+            const hasData = !!(batteries.length||starterMotorType||fuseBoxNotes);
+            const b0=batteries[0];
             const electricsSum=[
-              [battVoltage?"Battery: "+battVoltage:null,batteryCCA?batteryCCA+"CCA":null,batteryAh?batteryAh+"Ah":null].filter(Boolean).join(" · "),
-              [starterMotorType?"Starter: "+starterMotorType:null].filter(Boolean).join(""),
+              batteries.length ? [(b0?.label||"Battery")+":",(b0?.voltage||null),(b0?.cca?b0.cca+"CCA":null),(b0?.ah?b0.ah+"Ah":null)].filter(Boolean).join(" ")+(batteries.length>1?` +${batteries.length-1} more`:"") : null,
+              starterMotorType?"Starter: "+starterMotorType:null,
             ].filter(l=>l&&l.trim());
             return <div style={{marginBottom:2}}>
               <div onClick={()=>setSecElectrics(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
@@ -1761,19 +1766,14 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
               {secElectrics&&<div style={{paddingTop:12}}>
                 {hasData&&!editElectrics&&<SummaryCard onEdit={()=>setEditElectrics(true)} lines={electricsSum} />}
                 {(editElectrics||!hasData)&&<>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Battery</div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Voltage" /><select style={sel} value={battVoltage} onChange={ev=>setBattVoltage(ev.target.value)}><option value="">— not set —</option>{["6V","12V","24V","48V"].map(v=><option key={v}>{v}</option>)}</select></div>
-                  <div style={{...col,flex:1}}><FL t="CCA" /><input style={inp} type="number" placeholder="e.g. 550" step="1" min="0" value={batteryCCA} onChange={ev=>setBatteryCCA(ev.target.value)} /></div>
-                </div>
-                <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Capacity (Ah)" /><input style={inp} type="number" placeholder="e.g. 45" step="0.5" min="0" value={batteryAh} onChange={ev=>setBatteryAh(ev.target.value)} /></div>
-                  <div style={{...col,flex:1}}><FL t="Dimensions (mm)" /><input style={inp} placeholder="e.g. 230×175×225" value={batteryDimensions} onChange={ev=>setBatteryDimensions(ev.target.value)} /></div>
-                </div>
-                {(battVoltage&&batteryCCA)||(battVoltage&&batteryAh)?<div style={{display:"flex",gap:12,flexWrap:"wrap",padding:"8px 10px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4,marginBottom:4}}>
-                  {battVoltage&&batteryCCA&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>Cold cranking watts</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {(parseFloat(battVoltage)*parseFloat(batteryCCA)).toLocaleString()}W</div></div>}
-                  {battVoltage&&batteryAh&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>Energy</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {(parseFloat(battVoltage)*parseFloat(batteryAh)/1000).toFixed(2)}kWh</div></div>}
-                </div>:null}
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Batteries ({batteries.length})</div>
+                {batteries.map((b,idx)=>(
+                  battEditIdx===idx
+                    ? <BatteryForm key={b.id||idx} b={b} onSave={sv=>{setBatteries(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||uid()}:x));setBattEditIdx(null);}} onCancel={()=>setBattEditIdx(null)} />
+                    : <BatteryCard key={b.id||idx} b={b} onEdit={()=>{setBattEditIdx(idx);setBattAdding(false);}} onRemove={()=>{if(confirm("Remove this battery?"))setBatteries(prev=>prev.filter((_,i)=>i!==idx));}} />
+                ))}
+                {battAdding&&<BatteryForm b={{}} onSave={sv=>{setBatteries(prev=>[...prev,{...sv,id:uid()}]);setBattAdding(false);}} onCancel={()=>setBattAdding(false)} />}
+                {!battAdding&&battEditIdx===null&&<button onClick={()=>setBattAdding(true)} style={{...btnG,width:"100%",marginTop:4,marginBottom:4}}>+ Add Battery</button>}
                 <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
                 <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Starter Motor</div>
                 <div style={col}><FL t="Type" /><select style={sel} value={starterMotorType} onChange={ev=>setStarterMotorType(ev.target.value)}><option value="">— not set —</option>{["Gear reduction","Direct drive","Pre-engaged","Permanent magnet"].map(s=><option key={s}>{s}</option>)}</select></div>
@@ -1870,7 +1870,8 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   const altW=parseFloat(chargeAmps)*parseFloat(chargeVoltage);
                   const net=altW-loadW;
                   const [label,clr]=net>=0?[`Surplus ${net.toFixed(0)}W — battery charging while running`,ACC]:[`Deficit ${Math.abs(net).toFixed(0)}W — battery draining`,"#e05252"];
-                  const drainStr=(net<0&&batteryAh&&chargeVoltage)?` (${((parseFloat(batteryAh)*parseFloat(chargeVoltage))/Math.abs(net)).toFixed(1)}h to drain at this load)`:"";
+                  const _bAh=batteries[0]?.ah;
+                  const drainStr=(net<0&&_bAh&&chargeVoltage)?` (${((parseFloat(_bAh)*parseFloat(chargeVoltage))/Math.abs(net)).toFixed(1)}h to drain at this load)`:"";
                   return <div style={{fontSize:10,color:clr,fontFamily:"'IBM Plex Mono',monospace",padding:"5px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4}}>⚡ {label}{drainStr}</div>;
                 })()}
                 <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Internal regulator, replace at 80k km" value={chargingNotes} onChange={ev=>setChargingNotes(ev.target.value)} /></div>
