@@ -7,7 +7,7 @@ import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
-function Tracker({machines,setMachines,company,profile}){
+function Tracker({machines,setMachines,company,profile,isGuest}){
   const [showAdd,setShowAdd]=useState(false);
   const [saving,setSaving]=useState(false);
   const [dragIdx,setDragIdx]=useState(null);
@@ -79,7 +79,7 @@ function Tracker({machines,setMachines,company,profile}){
 
   return (
     <div style={{padding:16,flex:1}}>
-      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company} units={profile?.units||"metric"} profile={profile}/></ErrorBoundary>}
+      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
           <div style={{...mdl,maxHeight:"70vh"}} onClick={ev=>ev.stopPropagation()}>
@@ -129,7 +129,7 @@ function Tracker({machines,setMachines,company,profile}){
           {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
             <div style={{position:"fixed",inset:0,background:"#000a",zIndex:200,overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setTileOpen(null);}}>
               <div style={{maxWidth:640,margin:"24px auto",padding:"0 8px"}}>
-                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile}/>
+                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} isGuest={isGuest}/>
                 <button onClick={()=>setTileOpen(null)} style={{...btnG,width:"100%",marginTop:8,fontSize:10}}>Close</button>
               </div>
             </div>
@@ -145,7 +145,7 @@ function Tracker({machines,setMachines,company,profile}){
           onDragEnd={onDragEnd}
           style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
         >
-          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile}/>
+          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} isGuest={isGuest}/>
         </div>
       ))}
     </div>
