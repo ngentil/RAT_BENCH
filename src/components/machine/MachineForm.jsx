@@ -679,7 +679,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 {/* Electric / Hybrid motor fields */}
                 {(strokeType==="Electric"||strokeType==="Hybrid")&&<>
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Electric Motor</div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Electric Motor</div>
                   <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Motor type" /><select style={sel} value={motorType} onChange={ev=>setMotorType(ev.target.value)}><option value="">— not set —</option><option>AC induction</option><option>DC brushed</option><option>DC brushless (BLDC)</option><option>Permanent magnet AC</option><option>Switched reluctance</option></select></div>
                     <div style={{...col,flex:1}}><FL t="Controller brand / model" /><input style={inp} placeholder="e.g. Bosch EMR3" value={controllerBrand} onChange={ev=>setControllerBrand(ev.target.value)} /></div>
@@ -689,7 +689,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <div style={{...col,flex:1}}><FL t="Peak torque (Nm)" /><input style={inp} type="number" placeholder="e.g. 310" step="1" min="0" value={motorTorque} onChange={ev=>setMotorTorque(ev.target.value)} /></div>
                   </div>
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Battery Pack</div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Battery Pack</div>
                   <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Pack voltage (V)" /><input style={inp} type="number" placeholder="e.g. 400" step="1" min="0" value={packVoltage} onChange={ev=>setPackVoltage(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}><FL t="Capacity (kWh)" /><input style={inp} type="number" placeholder="e.g. 75" step="0.1" min="0" value={packCapacity} onChange={ev=>setPackCapacity(ev.target.value)} /></div>
@@ -699,7 +699,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <div style={{...col,flex:1}}><FL t="Cell count" /><input style={inp} type="number" placeholder="e.g. 96" step="1" min="0" value={cellCount} onChange={ev=>setCellCount(ev.target.value)} /></div>
                   </div>
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Charging</div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Charging</div>
                   <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Charge port type" /><select style={sel} value={chargePort} onChange={ev=>setChargePort(ev.target.value)}><option value="">— not set —</option><option>Type 1 (J1772)</option><option>Type 2 (Mennekes)</option><option>CCS Combo 1</option><option>CCS Combo 2</option><option>CHAdeMO</option><option>Tesla/NACS</option><option>GB/T</option><option>Proprietary</option></select></div>
                     <div style={{...col,flex:1}}><FL t="Max charge rate (kW)" /><input style={inp} type="number" placeholder="e.g. 150" step="0.5" min="0" value={maxChargeRate} onChange={ev=>setMaxChargeRate(ev.target.value)} /></div>
@@ -713,7 +713,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
 
                   {/* Valve train */}
-                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Train</div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Train</div>
                   <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Valve train type" /><select style={sel} value={valveTrain} onChange={ev=>setValveTrain(ev.target.value)}><option value="">— not set —</option>{VALVE_TRAIN.map(v=><option key={v}>{v}</option>)}</select></div>
                     <div style={{...col,flex:1}}><FL t="Cam type" /><select style={sel} value={camType} onChange={ev=>setCamType(ev.target.value)}><option value="">— not set —</option>{CAM_TYPES.map(v=><option key={v}>{v}</option>)}</select></div>
@@ -726,7 +726,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
 
                   {/* Valve clearances */}
-                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Clearances (cold, mm)</div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Clearances (cold, mm)</div>
                   <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Intake valve clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.10" step="0.01" min="0" value={intakeValveClear} onChange={ev=>setIntakeValveClear(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}><FL t="Exhaust valve clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.15" step="0.01" min="0" value={exhaustValveClear} onChange={ev=>setExhaustValveClear(ev.target.value)} /></div>
@@ -749,7 +749,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   </>}
 
                   {/* Intake valve dims */}
-                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Intake Valve</div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Intake Valve</div>
                   <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Face diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28" step="0.1" min="0" value={iValveFace} onChange={ev=>setIValveFace(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}><FL t="Stem diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 6" step="0.1" min="0" value={iValveStem} onChange={ev=>setIValveStem(ev.target.value)} /></div>
@@ -762,7 +762,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
 
                   {/* Exhaust valve dims */}
-                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Exhaust Valve</div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Exhaust Valve</div>
                   <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Face diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 24" step="0.1" min="0" value={eValveFace} onChange={ev=>setEValveFace(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}><FL t="Stem diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 6" step="0.1" min="0" value={eValveStem} onChange={ev=>setEValveStem(ev.target.value)} /></div>
@@ -775,7 +775,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
 
                   {/* Valve springs */}
-                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Springs</div>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Springs</div>
                   <div style={row}>
                     <div style={{...col,flex:1}}><FL t="Free length (mm)" /><input style={inp} type="number" placeholder="e.g. 35" step="0.1" min="0" value={springFreeLen} onChange={ev=>setSpringFreeLen(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}><FL t="Outer diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22" step="0.1" min="0" value={springOuterD} onChange={ev=>setSpringOuterD(ev.target.value)} /></div>
