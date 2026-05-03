@@ -358,3 +358,113 @@ export function BeltForm({b, onSave, onCancel}){
     </div>
   );
 }
+
+const BOX_COLORS = [
+  ["Red","#c0392b"],["Blue","#2980b9"],["Green","#27ae60"],
+  ["Yellow","#f1c40f"],["Orange","#e67e22"],["Purple","#8e44ad"],
+  ["Teal","#16a085"],["White","#ecf0f1"],["Grey","#7f8c8d"],
+];
+
+function fuseColor(amp){
+  const a = parseFloat(amp);
+  if(!a) return "#444";
+  if(a<=1) return "#222";
+  if(a<=2) return "#7f8c8d";
+  if(a<=3) return "#8e44ad";
+  if(a<=4) return "#e91e8c";
+  if(a<=5) return "#c8a96e";
+  if(a<=7.5) return "#795548";
+  if(a<=10) return "#c0392b";
+  if(a<=15) return "#2980b9";
+  if(a<=20) return "#f1c40f";
+  if(a<=25) return "#ddd";
+  if(a<=30) return "#27ae60";
+  if(a<=35) return "#9b59b6";
+  if(a<=40) return "#e67e22";
+  if(a<=60) return "#f1c40f";
+  if(a<=70) return "#795548";
+  return "#222";
+}
+
+export function FuseBoxCard({box, onEdit, onRemove}){
+  const boxColor = BOX_COLORS.find(([l])=>l===box.color)?.[1] || "#444";
+  return (
+    <div style={{background:"#0d0d0d",border:"1px solid #252525",borderLeft:"3px solid "+boxColor,borderRadius:2,padding:"10px 12px",marginBottom:6}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+        <div>
+          <div style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:2}}>{box.label||"Fuse Box"}</div>
+          {box.location&&<div style={{fontSize:10,color:MUT}}>{box.location}</div>}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <div style={{width:10,height:10,borderRadius:"50%",background:boxColor,border:"1px solid #333"}} title={box.color||"No colour"} />
+          <span style={{fontSize:9,color:MUT}}>{(box.fuses||[]).length} fuses</span>
+        </div>
+      </div>
+      {(box.fuses||[]).length>0&&(
+        <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
+          {(box.fuses||[]).map((f,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:3,background:"#111",border:"1px solid #1e1e1e",borderRadius:2,padding:"2px 6px"}}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:fuseColor(f.amperage),flexShrink:0}} />
+              <span style={{fontSize:9,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{f.amperage||"?"}A</span>
+              {f.circuit&&<span style={{fontSize:9,color:MUT,marginLeft:2}}>{f.circuit}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={onEdit} style={{...btnG,...sm}}>Edit</button>
+        <button onClick={onRemove} style={btnD}>Delete</button>
+      </div>
+    </div>
+  );
+}
+
+export function FuseBoxForm({box, onSave, onCancel}){
+  const [label,setLabel]=useState(box.label||"");
+  const [location,setLocation]=useState(box.location||"");
+  const [color,setColor]=useState(box.color||"");
+  const [fuses,setFuses]=useState(box.fuses||[]);
+  const addFuse=()=>setFuses(prev=>[...prev,{amperage:"",circuit:""}]);
+  const removeFuse=i=>setFuses(prev=>prev.filter((_,j)=>j!==i));
+  const updateFuse=(i,k,v)=>setFuses(prev=>prev.map((f,j)=>j===i?{...f,[k]:v}:f));
+  const save=()=>onSave({...box,label:label.trim(),location:location.trim(),color,fuses});
+  return (
+    <div style={{background:"#0d0d0d",border:"1px solid "+ACC,borderRadius:2,padding:"12px",marginBottom:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <span style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase"}}>{box.id?"Edit Fuse Box":"New Fuse Box"}</span>
+        <button onClick={onCancel} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:12}}>✕</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        <div style={col}><FL t="Label" /><input style={inp} placeholder="e.g. Main, Engine bay" value={label} onChange={ev=>setLabel(ev.target.value)} /></div>
+        <div style={col}><FL t="Location" /><input style={inp} placeholder="e.g. Under seat" value={location} onChange={ev=>setLocation(ev.target.value)} /></div>
+      </div>
+      <div style={{marginTop:8,marginBottom:12}}>
+        <FL t="Box colour" />
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
+          {BOX_COLORS.map(([l,hex])=>(
+            <button key={l} onClick={()=>setColor(l)} title={l}
+              style={{width:20,height:20,borderRadius:"50%",background:hex,border:color===l?"2px solid #fff":"1px solid #333",cursor:"pointer",padding:0}}
+            />
+          ))}
+          <button onClick={()=>setColor("")} title="Clear colour"
+            style={{width:20,height:20,borderRadius:"50%",background:"#111",border:color===""?"2px solid "+ACC:"1px solid #333",cursor:"pointer",padding:0,fontSize:8,color:MUT}}
+          >✕</button>
+        </div>
+      </div>
+      <div style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Fuses ({fuses.length})</div>
+      {fuses.map((f,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:fuseColor(f.amperage),flexShrink:0}} />
+          <input style={{...inp,width:56,flex:"none"}} type="number" placeholder="A" step="1" min="0" value={f.amperage} onChange={ev=>updateFuse(i,"amperage",ev.target.value)} />
+          <input style={{...inp,flex:1}} placeholder="Circuit (e.g. Headlights)" value={f.circuit} onChange={ev=>updateFuse(i,"circuit",ev.target.value)} />
+          <button onClick={()=>removeFuse(i)} style={{...btnD,...sm,flexShrink:0}}>✕</button>
+        </div>
+      ))}
+      <button onClick={addFuse} style={{...btnG,width:"100%",marginBottom:10}}>+ Add Fuse</button>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button style={{...btnG,...sm}} onClick={onCancel}>Cancel</button>
+        <button style={{...btnA,...sm}} onClick={save}>Save</button>
+      </div>
+    </div>
+  );
+}
