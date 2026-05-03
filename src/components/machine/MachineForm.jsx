@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
-import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm } from '../ui/shared';
+import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm, FuseBoxCard, FuseBoxForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -160,6 +160,13 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   });
   const [battEditIdx,setBattEditIdx]=useState(null);
   const [battAdding,setBattAdding]=useState(false);
+  const [fuseBoxes,setFuseBoxes]=useState(()=>{
+    if(e.fuseBoxes&&e.fuseBoxes.length) return e.fuseBoxes;
+    if(e.fuseBoxNotes) return [{id:uid(),label:"Main",location:"",color:"",fuses:[]}];
+    return [];
+  });
+  const [fuseEditIdx,setFuseEditIdx]=useState(null);
+  const [fuseAdding,setFuseAdding]=useState(false);
   // blade / deck
   const [deckSize,setDeckSize]=useState(e.deckSize||"");
   const [bladeLength,setBladeLength]=useState(e.bladeLength||"");
@@ -176,7 +183,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [secElectrics,setSecElectrics]=useState(false);
   const [secLighting,setSecLighting]=useState(false);
   const [starterMotorType,setStarterMotorType]=useState(e.starterMotorType||"");
-  const [fuseBoxNotes,setFuseBoxNotes]=useState(e.fuseBoxNotes||"");
   const [wireGauge,setWireGauge]=useState(e.wireGauge||"");
   const [wireLength,setWireLength]=useState(e.wireLength||"");
   const [wireAmps,setWireAmps]=useState(e.wireAmps||"");
@@ -459,7 +465,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
       iValveFace:iValveFace.toString().trim(),iValveStem:iValveStem.toString().trim(),iValveLift:iValveLift.toString().trim(),iValveWeight:iValveWeight.toString().trim(),
       eValveFace:eValveFace.toString().trim(),eValveStem:eValveStem.toString().trim(),eValveLift:eValveLift.toString().trim(),eValveWeight:eValveWeight.toString().trim(),
-      springFreeLen:springFreeLen.toString().trim(),springOuterD:springOuterD.toString().trim(),springWireD:springWireD.toString().trim(),springWeight:springWeight.toString().trim(),starterType,ropeDiameter:ropeDiameter.toString().trim(),ropeLength:ropeLength.toString().trim(),fasteners,pumpBrand:pumpBrand.trim(),pumpModel:pumpModel.trim(),pumpPsi:pumpPsi.toString().trim(),pumpFlow:pumpFlow.toString().trim(),pumpInlet,pumpOutlet,pumpType,genWatts:genWatts.toString().trim(),genPeakWatts:genPeakWatts.toString().trim(),genVoltage,genFreq,genAvr,genOutlets:genOutlets.trim(),driveType,chainPitch,frontSprocket:frontSprocket.toString().trim(),rearSprocket:rearSprocket.toString().trim(),primaryRatio:primaryRatio.toString().trim(),topGearRatio:topGearRatio.toString().trim(),gearCount,transType,gearboxBrand:gearboxBrand.trim(),clutchType,clutchDiameter:clutchDiameter.toString(),torqueConverter,autoSpeeds,autoFluidType:autoFluidType.trim(),autoFluidCapacity:autoFluidCapacity.toString(),cvtBeltType,gearboxOilType:gearboxOilType.trim(),gearboxOilCapacity:gearboxOilCapacity.toString(),forkType,forkDiameter:forkDiameter.toString().trim(),forkTravel:forkTravel.toString().trim(),rearShockType,rearTravel:rearTravel.toString().trim(),springRate:springRate.toString().trim(),riderWeight:riderWeight.toString().trim(),frontBrake,frontDiscD:frontDiscD.toString().trim(),frontDiscW:frontDiscW.toString().trim(),rearBrake,rearDiscD:rearDiscD.toString().trim(),rearDiscW:rearDiscW.toString().trim(),tyreFront:tyreFront.trim(),tyreRear:tyreRear.trim(),rimFront:rimFront.toString().trim(),rimRear:rimRear.toString().trim(),batteries,battVoltage:batteries[0]?.voltage||"",batteryCCA:batteries[0]?.cca||"",batteryAh:batteries[0]?.ah||"",batteryDimensions:batteries[0]?.dimensions||"",starterMotorType,fuseBoxNotes:fuseBoxNotes.trim(),wireGauge:wireGauge.trim(),wireLength:wireLength.toString().trim(),wireAmps:wireAmps.toString().trim(),deckSize:deckSize.toString().trim(),bladeLength:bladeLength.toString().trim(),bladeType,bladeCount,plugGap:plugGap.toString().trim(),coilType,primaryOhms:primaryOhms.toString().trim(),secondaryOhms:secondaryOhms.toString().trim(),fuelSystem,fuelTankCapacity:fuelTankCapacity.toString(),mixRatio:mixRatio.trim(),ecuModel:ecuModel.trim(),tbDiameter:tbDiameter.toString().trim(),injectorCount,injectorFlow:injectorFlow.toString().trim(),fuelRailPressure:fuelRailPressure.toString().trim(),fuelPumpPressure:fuelPumpPressure.toString().trim(),tpsSensor,mapSensor,iatSensor,o2Sensor,iacSensor,
+      springFreeLen:springFreeLen.toString().trim(),springOuterD:springOuterD.toString().trim(),springWireD:springWireD.toString().trim(),springWeight:springWeight.toString().trim(),starterType,ropeDiameter:ropeDiameter.toString().trim(),ropeLength:ropeLength.toString().trim(),fasteners,pumpBrand:pumpBrand.trim(),pumpModel:pumpModel.trim(),pumpPsi:pumpPsi.toString().trim(),pumpFlow:pumpFlow.toString().trim(),pumpInlet,pumpOutlet,pumpType,genWatts:genWatts.toString().trim(),genPeakWatts:genPeakWatts.toString().trim(),genVoltage,genFreq,genAvr,genOutlets:genOutlets.trim(),driveType,chainPitch,frontSprocket:frontSprocket.toString().trim(),rearSprocket:rearSprocket.toString().trim(),primaryRatio:primaryRatio.toString().trim(),topGearRatio:topGearRatio.toString().trim(),gearCount,transType,gearboxBrand:gearboxBrand.trim(),clutchType,clutchDiameter:clutchDiameter.toString(),torqueConverter,autoSpeeds,autoFluidType:autoFluidType.trim(),autoFluidCapacity:autoFluidCapacity.toString(),cvtBeltType,gearboxOilType:gearboxOilType.trim(),gearboxOilCapacity:gearboxOilCapacity.toString(),forkType,forkDiameter:forkDiameter.toString().trim(),forkTravel:forkTravel.toString().trim(),rearShockType,rearTravel:rearTravel.toString().trim(),springRate:springRate.toString().trim(),riderWeight:riderWeight.toString().trim(),frontBrake,frontDiscD:frontDiscD.toString().trim(),frontDiscW:frontDiscW.toString().trim(),rearBrake,rearDiscD:rearDiscD.toString().trim(),rearDiscW:rearDiscW.toString().trim(),tyreFront:tyreFront.trim(),tyreRear:tyreRear.trim(),rimFront:rimFront.toString().trim(),rimRear:rimRear.toString().trim(),batteries,battVoltage:batteries[0]?.voltage||"",batteryCCA:batteries[0]?.cca||"",batteryAh:batteries[0]?.ah||"",batteryDimensions:batteries[0]?.dimensions||"",starterMotorType,fuseBoxes,wireGauge:wireGauge.trim(),wireLength:wireLength.toString().trim(),wireAmps:wireAmps.toString().trim(),deckSize:deckSize.toString().trim(),bladeLength:bladeLength.toString().trim(),bladeType,bladeCount,plugGap:plugGap.toString().trim(),coilType,primaryOhms:primaryOhms.toString().trim(),secondaryOhms:secondaryOhms.toString().trim(),fuelSystem,fuelTankCapacity:fuelTankCapacity.toString(),mixRatio:mixRatio.trim(),ecuModel:ecuModel.trim(),tbDiameter:tbDiameter.toString().trim(),injectorCount,injectorFlow:injectorFlow.toString().trim(),fuelRailPressure:fuelRailPressure.toString().trim(),fuelPumpPressure:fuelPumpPressure.toString().trim(),tpsSensor,mapSensor,iatSensor,o2Sensor,iacSensor,
       iSpacing:iSpacing.trim(),iStuds,eSpacing:eSpacing.trim(),
       eStuds,eBoltSz,eBoltLen:eBoltLen.toString().trim(),iBoltSz,iBoltLen:iBoltLen.toString().trim(),rBoltN,rBoltSz,rBoltLen:rBoltLen.toString().trim(),
       compression:compression.toString().trim(),compressionRatio:compressionRatio.toString().trim(),idleRpm:idleRpm.toString().trim(),wotRpm:wotRpm.toString().trim(),ccSize:ccSize.toString().trim(),
@@ -1749,7 +1755,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {/* Electrics */}
           {showElectrics(type,customSections)&&(()=>{
-            const hasData = !!(batteries.length||starterMotorType||fuseBoxNotes);
+            const hasData = !!(batteries.length||starterMotorType||fuseBoxes.length);
             const b0=batteries[0];
             const electricsSum=[
               batteries.length ? [(b0?.label||"Battery")+":",(b0?.voltage||null),(b0?.cca?b0.cca+"CCA":null),(b0?.ah?b0.ah+"Ah":null)].filter(Boolean).join(" ")+(batteries.length>1?` +${batteries.length-1} more`:"") : null,
@@ -1778,8 +1784,14 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Starter Motor</div>
                 <div style={col}><FL t="Type" /><select style={sel} value={starterMotorType} onChange={ev=>setStarterMotorType(ev.target.value)}><option value="">— not set —</option>{["Gear reduction","Direct drive","Pre-engaged","Permanent magnet"].map(s=><option key={s}>{s}</option>)}</select></div>
                 <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Fuse Box</div>
-                <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Main fuse 30A under seat, blade fuses in engine bay" value={fuseBoxNotes} onChange={ev=>setFuseBoxNotes(ev.target.value)} /></div>
+                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Fuse Boxes ({fuseBoxes.length})</div>
+                {fuseBoxes.map((box,idx)=>(
+                  fuseEditIdx===idx
+                    ? <FuseBoxForm key={box.id||idx} box={box} onSave={sv=>{setFuseBoxes(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||uid()}:x));setFuseEditIdx(null);}} onCancel={()=>setFuseEditIdx(null)} />
+                    : <FuseBoxCard key={box.id||idx} box={box} onEdit={()=>{setFuseEditIdx(idx);setFuseAdding(false);}} onRemove={()=>{if(confirm("Remove this fuse box?"))setFuseBoxes(prev=>prev.filter((_,i)=>i!==idx));}} />
+                ))}
+                {fuseAdding&&<FuseBoxForm box={{}} onSave={sv=>{setFuseBoxes(prev=>[...prev,{...sv,id:uid()}]);setFuseAdding(false);}} onCancel={()=>setFuseAdding(false)} />}
+                {!fuseAdding&&fuseEditIdx===null&&<button onClick={()=>setFuseAdding(true)} style={{...btnG,width:"100%",marginTop:4,marginBottom:4}}>+ Add Fuse Box</button>}
                 <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
                 <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Wire Voltage Drop</div>
                 <div style={row}>
