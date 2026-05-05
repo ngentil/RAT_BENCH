@@ -300,6 +300,7 @@ export function toDb(m) {
     overall_length:       m.overallLength,
     overall_width:        m.overallWidth,
     overall_height:       m.overallHeight,
+    carb_spec:            m.carbSpec || null,
   };
 }
 
@@ -606,6 +607,7 @@ export function fromDb(r) {
     overallWidth:      r.overall_width,
     overallHeight:     r.overall_height,
     createdAt:         r.created_at,
+    carbSpec:          r.carb_spec || null,
   };
 }
 

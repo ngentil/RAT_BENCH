@@ -69,7 +69,8 @@ export const SVC_CATEGORIES = [
     items:["General service","Inspection","Clean & detail","Other"],
     show:(t,s)=>true},
 ];
-export const CARB_BRANDS = ["Walbro","Zama","Briggs & Stratton","Keihin","Mikuni","Tillotson","Other"];
+export const CARB_BRANDS = ["Walbro","Zama","Mikuni","Keihin","Tillotson","Briggs & Stratton","Nikki","Aisan","Teikei","Clone","Other"];
+export const CARB_CLONE_BRANDS = ["Ruixing","Farmertec","Sanmin","Generic (unbranded)","Other"];
 export const CARB_TYPES  = ["Diaphragm","Float Bowl"];
 export const CARB_BOLTS  = ["M4 – 4mm ⌀","M5 – 5mm ⌀","M6 – 6mm ⌀","M8 – 8mm ⌀","M10 – 10mm ⌀"];
 export const EXH_BOLTS   = ["M4","M5","M6","M7","M8","M10","M12"];
@@ -113,7 +114,7 @@ export const ENG_BOLTS   = ["M4","M5","M6","M8","M10"];
 export const ENG_COUNTS  = ["1","2","3","4","5","6"];
 export const STUD_N      = ["0","1","2","3","4","5","6","7","8","9","10"];
 export const RAGE_LBL    = ["","barely","annoying","proper pain","nearly quit","absolute nightmare"];
-export const STUD_LOCS      = ["Intake","Exhaust","Head","Cylinder base","Crankcase","Side cover","Other"];
+export const STUD_LOCS      = ["Intake","Exhaust","Head","Cylinder base","Crankcase","Side cover","Carburetor","Other"];
 
 export const LIGHT_LOCATIONS = [
   "Headlights","Tail Lights","Indicators","Brake Lights",
