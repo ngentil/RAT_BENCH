@@ -1299,7 +1299,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
           })()}
 
           {/* Fuel System — carb/EFI hardware (fluids like tank capacity are in Fluids section) */}
-          {(!isCustom(type)||showForCustom("Fuel System",customSections))&&(()=>{
+          {strokeType!=="2-stroke"&&(!isCustom(type)||showForCustom("Fuel System",customSections))&&(()=>{
             const hasData = !!(fuelSystem||cBrand||cType||cModel||ecuModel||tbDiameter||injectorCount);
             const carbSum=[
               [strokeType==="2-stroke"?"Carburetted":strokeType==="Diesel"?"Diesel injection":fuelSystem,cBrand,cType,cModel].filter(Boolean).join(" · "),
