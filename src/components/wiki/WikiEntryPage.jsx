@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
-import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiRevision, incrementViewCount } from '../../lib/wiki';
+import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount } from '../../lib/wiki';
 
-// Shared header used by standalone wiki pages (wiki.ratbench.net)
 export function WikiHeader({ title, subtitle, backHref, backLabel }) {
   return (
     <div style={{ background: SURF, borderBottom: "2px solid " + ACC, padding: "12px 18px", display: "flex", alignItems: "center", gap: 10 }}>
@@ -16,14 +15,13 @@ export function WikiHeader({ title, subtitle, backHref, backLabel }) {
   );
 }
 
-// Entry display used both standalone and embedded in the app's Wiki tab
 function WikiEntryPage({ slug, profile, onBack, embedded = false }) {
   const [entry, setEntry] = useState(null);
+  const [revData, setRevData] = useState({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({});
-  const [summary, setSummary] = useState("");
+  const [editingField, setEditingField] = useState(null);
+  const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState("");
 
@@ -31,29 +29,36 @@ function WikiEntryPage({ slug, profile, onBack, embedded = false }) {
     (async () => {
       const e = await getWikiEntryBySlug(slug);
       if (!e) { setNotFound(true); }
-      else { setEntry(e); incrementViewCount(e.id); }
+      else {
+        setEntry(e);
+        setRevData(e.currentRevision?.data || {});
+        incrementViewCount(e.id);
+      }
       setLoading(false);
     })();
   }, [slug]);
 
-  const startEdit = () => {
-    const d = entry.currentRevision?.data || {};
-    setForm(Object.fromEntries(Object.keys(WIKI_FIELD_LABELS).map(k => [k, d[k] ?? entry[k] ?? ""])));
-    setSummary(""); setSaveErr(""); setEditing(true);
+  const startEdit = (key) => {
+    setEditingField(key);
+    setEditValue(String(revData[key] ?? entry?.[key] ?? ""));
+    setSaveErr("");
   };
 
+  const cancelEdit = () => { setEditingField(null); setEditValue(""); setSaveErr(""); };
+
   const doSave = async () => {
-    if (!summary.trim()) { setSaveErr("Edit summary required."); return; }
+    if (!profile || !editingField) return;
     setSaving(true); setSaveErr("");
     try {
-      const rev = await saveWikiRevision(entry.id, form, summary, profile);
-      setEntry(e => ({ ...e, currentRevision: rev }));
-      setEditing(false);
+      const oldValue = revData[editingField] ?? entry?.[editingField] ?? "";
+      await saveWikiFieldEdit(entry.id, revData, editingField, oldValue, editValue, profile);
+      setRevData(d => ({ ...d, [editingField]: editValue }));
+      setEditingField(null);
     } catch (e) { setSaveErr(e.message); }
     setSaving(false);
   };
 
-  const fieldInp = { width: "100%", boxSizing: "border-box", background: BG, border: "1px solid " + BRD, color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: "5px 8px", borderRadius: 2, outline: "none" };
+  const fieldInp = { ...inp, width: "100%", boxSizing: "border-box" };
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
@@ -70,11 +75,12 @@ function WikiEntryPage({ slug, profile, onBack, embedded = false }) {
     </div>
   );
 
-  const revData = entry.currentRevision?.data || {};
   const fields = Object.entries(WIKI_FIELD_LABELS).filter(([k]) => {
-    const v = revData[k] ?? entry[k];
+    const v = revData[k] ?? entry?.[k];
     return v != null && v !== "" && v !== false;
   });
+
+  const allFields = Object.entries(WIKI_FIELD_LABELS);
 
   return (
     <div style={embedded ? {} : { minHeight: "100vh", background: BG, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>
@@ -92,54 +98,68 @@ function WikiEntryPage({ slug, profile, onBack, embedded = false }) {
             {embedded && <button onClick={onBack} style={{ ...btnG, ...sm, fontSize: 9 }}>← Wiki</button>}
             <span style={{ fontSize: 10, color: MUT }}>{entry.view_count || 0} views</span>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {embedded
               ? <a href={`https://wiki.ratbench.net/${slug}/history`} target="_blank" rel="noreferrer" style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History ↗</a>
               : <a href={"/" + slug + "/history"} style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History</a>
             }
-            {profile
-              ? editing
-                ? <button onClick={() => setEditing(false)} style={{ ...btnG, ...sm, fontSize: 9 }}>Cancel</button>
-                : <button onClick={startEdit} style={{ ...btnG, ...sm, fontSize: 9, borderColor: ACC, color: ACC }}>Edit</button>
-              : <span style={{ fontSize: 9, color: MUT }}>Log in to edit</span>
-            }
+            {!profile && <span style={{ fontSize: 9, color: MUT }}>Log in to edit</span>}
           </div>
         </div>
 
-        {editing ? (
-          <div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-              {Object.entries(WIKI_FIELD_LABELS).map(([k, label]) => (
-                <div key={k}>
-                  <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>{label}</div>
-                  <input value={form[k] || ""} onChange={ev => setForm(f => ({ ...f, [k]: ev.target.value }))} style={fieldInp} />
+        {fields.length === 0
+          ? <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>No spec data yet.{profile ? " Click any field below to add it." : " Log in to contribute."}</div>
+          : null
+        }
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {(fields.length > 0 ? fields : allFields).map(([k, label]) => {
+            const value = revData[k] ?? entry?.[k];
+            const isEditing = editingField === k;
+            const hasValue = value != null && value !== "" && value !== false;
+
+            return (
+              <div key={k} style={{ background: SURF, border: "1px solid " + (isEditing ? ACC : BRD), borderRadius: 2, padding: "8px 12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: isEditing ? 6 : 2 }}>
+                  <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase" }}>{label}</div>
+                  {profile && !isEditing && (
+                    <button
+                      onClick={() => startEdit(k)}
+                      style={{ background: "none", border: "none", color: MUT, cursor: "pointer", fontSize: 10, padding: 0, lineHeight: 1, opacity: 0.5 }}
+                      title="Edit this field"
+                    >✏</button>
+                  )}
                 </div>
-              ))}
-            </div>
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>Edit Summary *</div>
-              <input value={summary} onChange={e => setSummary(e.target.value)} placeholder="What did you change?" style={{ ...fieldInp, width: "100%" }} />
-            </div>
-            {saveErr && <div style={{ fontSize: 10, color: RED, marginBottom: 8 }}>{saveErr}</div>}
-            <button onClick={doSave} disabled={saving} style={{ ...btnA, fontSize: 10, padding: "8px 20px", opacity: saving ? 0.6 : 1 }}>
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </div>
-        ) : (
-          <>
-            {fields.length === 0
-              ? <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>No spec data yet. Be the first to add it.</div>
-              : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {fields.map(([k, label]) => (
-                  <div key={k} style={{ background: SURF, border: "1px solid " + BRD, padding: "8px 12px", borderRadius: 2 }}>
-                    <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 2 }}>{label}</div>
-                    <div style={{ fontSize: 12, color: TXT }}>{String(revData[k] ?? entry[k])}</div>
+
+                {isEditing ? (
+                  <>
+                    <input
+                      autoFocus
+                      value={editValue}
+                      onChange={ev => setEditValue(ev.target.value)}
+                      onKeyDown={ev => { if (ev.key === "Enter") doSave(); if (ev.key === "Escape") cancelEdit(); }}
+                      style={fieldInp}
+                    />
+                    <div style={{ fontSize: 8, color: MUT, marginTop: 5, marginBottom: 6, lineHeight: 1.4, opacity: 0.7 }}>
+                      Your username will be tied to this edit and visible to all users.
+                    </div>
+                    {saveErr && <div style={{ fontSize: 9, color: RED, marginBottom: 6 }}>{saveErr}</div>}
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={doSave} disabled={saving} style={{ ...btnA, ...sm, fontSize: 9, opacity: saving ? 0.6 : 1 }}>
+                        {saving ? "Saving…" : "Save"}
+                      </button>
+                      <button onClick={cancelEdit} style={{ ...btnG, ...sm, fontSize: 9 }}>Cancel</button>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 12, color: hasValue ? TXT : MUT, fontStyle: hasValue ? "normal" : "italic" }}>
+                    {hasValue ? String(value) : "—"}
                   </div>
-                ))}
+                )}
               </div>
-            }
-          </>
-        )}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
