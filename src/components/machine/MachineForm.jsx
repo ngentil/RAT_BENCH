@@ -2081,13 +2081,19 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {/* Service Intervals */}
           {(!isCustom(type)||showForCustom("Engine",customSections))&&(()=>{
-            const hasData=!!(oilChangeInterval||filterInterval||majorServiceInterval||lastServiceOdo);
+            const is2T=strokeType==="2-stroke";
+            const hasData=!!((is2T?false:oilChangeInterval)||filterInterval||majorServiceInterval||lastServiceOdo);
             const svcIntSum=[
-              [oilChangeInterval?"Oil change: every "+oilChangeInterval+" "+oilChangeUnit:null].filter(Boolean).join(""),
-              [filterInterval?"Filter: every "+filterInterval+" "+filterIntervalUnit:null].filter(Boolean).join(""),
-              [majorServiceInterval?"Major service: every "+majorServiceInterval+" "+majorServiceUnit:null].filter(Boolean).join(""),
-              [lastServiceOdo?"Last service at: "+lastServiceOdo:null].filter(Boolean).join(""),
-            ].filter(l=>l&&l.trim());
+              (!is2T&&oilChangeInterval)?"Oil change: every "+oilChangeInterval+" "+oilChangeUnit:null,
+              filterInterval?(is2T?"Air filter: every ":"Filter: every ")+filterInterval+" "+filterIntervalUnit:null,
+              majorServiceInterval?"Major service: every "+majorServiceInterval+" "+majorServiceUnit:null,
+              lastServiceOdo?"Last service at: "+lastServiceOdo:null,
+            ].filter(Boolean);
+            const intervalRows=[
+              ...(!is2T?[{label:"Oil change interval",val:oilChangeInterval,setVal:setOilChangeInterval,unit:oilChangeUnit,setUnit:setOilChangeUnit}]:[]),
+              {label:is2T?"Air filter change interval":"Filter change interval",val:filterInterval,setVal:setFilterInterval,unit:filterIntervalUnit,setUnit:setFilterIntervalUnit},
+              {label:"Major service interval",val:majorServiceInterval,setVal:setMajorServiceInterval,unit:majorServiceUnit,setUnit:setMajorServiceUnit},
+            ];
             return <div style={{marginBottom:2}}>
               <div onClick={()=>setSecServiceIntervals(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -2099,11 +2105,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
               {secServiceIntervals&&<div style={{paddingTop:12}}>
                 {hasData&&!editServiceIntervals&&<SummaryCard onEdit={()=>setEditServiceIntervals(true)} lines={svcIntSum} />}
                 {(editServiceIntervals||!hasData)&&<>
-                {[
-                  {label:"Oil change interval",val:oilChangeInterval,setVal:setOilChangeInterval,unit:oilChangeUnit,setUnit:setOilChangeUnit},
-                  {label:"Filter change interval",val:filterInterval,setVal:setFilterInterval,unit:filterIntervalUnit,setUnit:setFilterIntervalUnit},
-                  {label:"Major service interval",val:majorServiceInterval,setVal:setMajorServiceInterval,unit:majorServiceUnit,setUnit:setMajorServiceUnit},
-                ].map(({label,val,setVal,unit,setUnit})=>(
+                {intervalRows.map(({label,val,setVal,unit,setUnit})=>(
                   <div key={label} style={row}>
                     <div style={{...col,flex:2}}><FL t={label} /><input style={inp} type="number" placeholder="e.g. 250" step="1" min="0" value={val} onChange={ev=>setVal(ev.target.value)} /></div>
                     <div style={{...col,flex:1}}>
