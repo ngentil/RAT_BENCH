@@ -109,7 +109,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
   const lbl={fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4};
   const sec={marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+BRD};
 
-  const Fields=()=>(
+  const fieldsJsx=(
     <>
       <div style={{marginBottom:12}}>
         <div style={lbl}>Logo</div>
@@ -166,7 +166,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
   if(mode==="create"||(!company&&mode!=="join")) return(
     <div>
       <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:16}}>Create Organisation</div>
-      <Fields/>
+      {fieldsJsx}
       {err&&<div style={{fontSize:10,color:RED,marginBottom:10}}>{err}</div>}
       <div style={{display:"flex",gap:8}}>
         <button onClick={saveCompany} disabled={saving} style={{...btnA,...sm}}>{saving?"Creating…":"Create"}</button>
@@ -191,7 +191,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
       {/* Edit form */}
       {mode==="edit"&&isAdmin&&(
         <div style={sec}>
-          <Fields/>
+          {fieldsJsx}
           {err&&<div style={{fontSize:10,color:RED,marginBottom:10}}>{err}</div>}
           {saved&&<div style={{fontSize:10,color:GRN,marginBottom:10}}>✓ Saved</div>}
           <div style={{display:"flex",gap:8}}>
