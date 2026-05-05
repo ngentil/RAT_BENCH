@@ -8,11 +8,9 @@ export async function getMyCompany(companyId) {
 }
 
 export async function createCompany(ownerId, fields) {
-  const { data: co, error } = await supabase.from("companies").insert({ ...fields, owner_id: ownerId }).select().single();
+  const { data, error } = await supabase.rpc("rpc_create_company", { payload: fields });
   if (error) throw error;
-  await supabase.from("company_members").insert({ company_id: co.id, user_id: ownerId, role: "admin" });
-  await supabase.from("profiles").update({ company_id: co.id }).eq("id", ownerId);
-  return co;
+  return data;
 }
 
 export async function updateCompany(companyId, fields) {
