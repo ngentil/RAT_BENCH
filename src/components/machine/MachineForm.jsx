@@ -247,6 +247,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [majorServiceInterval,setMajorServiceInterval]=useState(e.majorServiceInterval||"");
   const [majorServiceUnit,setMajorServiceUnit]=useState(e.majorServiceUnit||"hours");
   const [lastServiceOdo,setLastServiceOdo]=useState(e.lastServiceOdo||"");
+  const [lastServiceDate,setLastServiceDate]=useState(e.lastServiceDate||"");
   const [secFluids,setSecFluids]=useState(false);
   const [editFluids,setEditFluids]=useState(isNew);
   const [engineOilGrade,setEngineOilGrade]=useState(e.engineOilGrade||"");
@@ -519,7 +520,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       crankPinDiameter:crankPinDiameter.toString(),crankPinLength:crankPinLength.toString(),mainJournalDiameter:mainJournalDiameter.toString(),crankEndFloat:crankEndFloat.toString(),crankRunout:crankRunout.toString(),crankStroke:crankStroke.toString(),crankSealLeft:crankSealLeft.trim(),crankSealRight:crankSealRight.trim(),
       conrodLength:conrodLength.toString(),conrodSmallEnd:conrodSmallEnd.toString(),conrodSmallClear:conrodSmallClear.toString(),conrodBigEnd:conrodBigEnd.toString(),conrodBigClear:conrodBigClear.toString(),conrodSideClear:conrodSideClear.toString(),conrodBearingType,conrodBearingPartNo:conrodBearingPartNo.trim(),
       pistonDiameter:pistonDiameter.toString(),pistonClearance:pistonClearance.toString(),ringCount,ringGapTop:ringGapTop.toString(),ringGapSecond:ringGapSecond.toString(),ringGapOil:ringGapOil.toString(),ringWidth:ringWidth.toString(),ringThickness:ringThickness.toString(),gudgeonDiameter:gudgeonDiameter.toString(),gudgeonLength:gudgeonLength.toString(),gudgeonFit,gudgeonCirclip:gudgeonCirclip.toString(),
-      oilChangeInterval:oilChangeInterval.toString(),oilChangeUnit,filterInterval:filterInterval.toString(),filterIntervalUnit,majorServiceInterval:majorServiceInterval.toString(),majorServiceUnit,lastServiceOdo:lastServiceOdo.toString(),
+      oilChangeInterval:oilChangeInterval.toString(),oilChangeUnit,filterInterval:filterInterval.toString(),filterIntervalUnit,majorServiceInterval:majorServiceInterval.toString(),majorServiceUnit,lastServiceOdo:lastServiceOdo.toString(),lastServiceDate:lastServiceDate.trim(),
       engineOilGrade:engineOilGrade.trim(),engineOilCapacity:engineOilCapacity.toString(),hydraulicFluidType:hydraulicFluidType.trim(),brakeFluidType,diffOilType:diffOilType.trim(),diffOilCapacity:diffOilCapacity.toString(),transferCaseOil:transferCaseOil.trim(),
       dryWeight:dryWeight.toString(),grossWeight:grossWeight.toString(),wheelbase:wheelbase.toString(),overallLength:overallLength.toString(),overallWidth:overallWidth.toString(),overallHeight:overallHeight.toString(),
       belts,
@@ -2082,12 +2083,12 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
           {/* Service Intervals */}
           {(!isCustom(type)||showForCustom("Engine",customSections))&&(()=>{
             const is2T=strokeType==="2-stroke";
-            const hasData=!!((is2T?false:oilChangeInterval)||filterInterval||majorServiceInterval||lastServiceOdo);
+            const hasData=!!((is2T?false:oilChangeInterval)||filterInterval||majorServiceInterval||(is2T?lastServiceDate:lastServiceOdo));
             const svcIntSum=[
               (!is2T&&oilChangeInterval)?"Oil change: every "+oilChangeInterval+" "+oilChangeUnit:null,
               filterInterval?(is2T?"Air filter: every ":"Filter: every ")+filterInterval+" "+filterIntervalUnit:null,
               majorServiceInterval?"Major service: every "+majorServiceInterval+" "+majorServiceUnit:null,
-              lastServiceOdo?"Last service at: "+lastServiceOdo:null,
+              is2T?(lastServiceDate?"Last service: "+lastServiceDate:null):(lastServiceOdo?"Last service at: "+lastServiceOdo:null),
             ].filter(Boolean);
             const intervalRows=[
               ...(!is2T?[{label:"Oil change interval",val:oilChangeInterval,setVal:setOilChangeInterval,unit:oilChangeUnit,setUnit:setOilChangeUnit}]:[]),
@@ -2112,14 +2113,19 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                       <FL t="Unit" />
                       <select style={sel} value={unit} onChange={ev=>setUnit(ev.target.value)}>
                         <option value="hours">Hours</option>
-                        <option value="km">km</option>
-                        <option value="miles">Miles</option>
+                        {!is2T&&<option value="km">km</option>}
+                        {!is2T&&<option value="miles">Miles</option>}
+                        <option value="days">Days</option>
+                        <option value="weeks">Weeks</option>
                         <option value="months">Months</option>
                       </select>
                     </div>
                   </div>
                 ))}
-                <div style={col}><FL t="Last service odometer / hours" /><input style={inp} placeholder="e.g. 1250 hrs / 45,000 km" value={lastServiceOdo} onChange={ev=>setLastServiceOdo(ev.target.value)} /></div>
+                {is2T
+                  ? <div style={col}><FL t="Last service date" /><input style={inp} type="date" value={lastServiceDate} onChange={ev=>setLastServiceDate(ev.target.value)} /></div>
+                  : <div style={col}><FL t="Last service odometer / hours" /><input style={inp} placeholder="e.g. 1250 hrs / 45,000 km" value={lastServiceOdo} onChange={ev=>setLastServiceOdo(ev.target.value)} /></div>
+                }
                 {editServiceIntervals&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditServiceIntervals(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
               </div>}
