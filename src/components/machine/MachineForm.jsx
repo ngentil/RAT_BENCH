@@ -2213,7 +2213,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                         {(strokeType==="2-stroke"?JASO_2T:JASO_4T).map(j=><option key={j}>{j}</option>)}
                       </select>
                     </div>
-                    <div style={col}><FL t="Capacity (L)" /><input style={inp} type="number" placeholder="e.g. 1.2" step="0.1" min="0" value={engineOilCapacity} onChange={ev=>setEngineOilCapacity(ev.target.value)} /></div>
+                    {strokeType!=="2-stroke"&&<div style={col}><FL t="Capacity (L)" /><input style={inp} type="number" placeholder="e.g. 1.2" step="0.1" min="0" value={engineOilCapacity} onChange={ev=>setEngineOilCapacity(ev.target.value)} /></div>}
                   </div>
                 </>}
 
