@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, BG, btnG, btnA, sm } from '../../lib/styles';
-import { getWikiEntryBySlug, getWikiRevisions, revertToRevision } from '../../lib/wiki';
+import { getWikiEntryBySlug, getWikiRevisions, revertToRevision, WIKI_FIELD_LABELS } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 
 function WikiHistoryPage({ slug, profile }) {
@@ -61,11 +61,23 @@ function WikiHistoryPage({ slug, profile }) {
         {revs.length === 0 && <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>No revisions yet.</div>}
         {revs.map((r, i) => {
           const isCurrent = r.id === entry?.current_rev_id || i === 0;
+          const fieldLabel = r.field_key ? (WIKI_FIELD_LABELS[r.field_key] || r.field_key) : null;
           return (
             <div key={r.id} style={{ background: SURF, border: "1px solid " + (isCurrent ? ACC + "44" : BRD), padding: "12px 16px", borderRadius: 2, marginBottom: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 11, color: TXT, marginBottom: 3 }}>{r.edit_summary || "No summary"}</div>
+                  {fieldLabel && (
+                    <div style={{ fontSize: 9, color: MUT, marginBottom: 4, fontFamily: "'IBM Plex Mono',monospace" }}>
+                      <span style={{ color: ACC }}>{fieldLabel}</span>
+                      {r.old_value != null && r.old_value !== "" && (
+                        <> &nbsp;<span style={{ color: RED, textDecoration: "line-through" }}>{r.old_value}</span></>
+                      )}
+                      {r.new_value != null && r.new_value !== "" && (
+                        <> → <span style={{ color: GRN }}>{r.new_value}</span></>
+                      )}
+                    </div>
+                  )}
                   <div style={{ fontSize: 9, color: MUT }}>{r.username || "unknown"}</div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>

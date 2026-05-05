@@ -218,6 +218,25 @@ export async function saveWikiRevision(entryId, data, editSummary, profile) {
   return rev;
 }
 
+export async function saveWikiFieldEdit(entryId, currentData, fieldKey, oldValue, newValue, profile) {
+  const updatedData = { ...currentData, [fieldKey]: newValue };
+  const label = WIKI_FIELD_LABELS[fieldKey] || fieldKey;
+  const { data: rev, error } = await supabase.from("wiki_revisions").insert({
+    entry_id:     entryId,
+    edited_by:    profile.id,
+    username:     profile.username || profile.display_name || "Anonymous",
+    edit_summary: `Updated ${label}`,
+    data:         updatedData,
+    field_key:    fieldKey,
+    old_value:    oldValue != null ? String(oldValue) : "",
+    new_value:    newValue != null ? String(newValue) : "",
+  }).select().single();
+  if (error) throw error;
+  await supabase.from("wiki_entries")
+    .update({ current_rev_id: rev.id }).eq("id", entryId);
+  return rev;
+}
+
 export async function deleteWikiRevision(revId, entryId) {
   const { error } = await supabase.from("wiki_revisions").delete().eq("id", revId);
   if (error) throw error;
