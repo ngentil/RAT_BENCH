@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
+import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_CLONE_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
 import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm, FuseBoxCard, FuseBoxForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
@@ -382,6 +382,34 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [lighting,setLighting]=useState(e.lighting||[]);
   const [lightEditIdx,setLightEditIdx]=useState(null);
   const [lightAdding,setLightAdding]=useState(false);
+  // carb spec
+  const _cs = e.carbSpec||{};
+  const [carbBrandSpec,setCarbBrandSpec]=useState(_cs.brand||"");
+  const [carbCloneBrand,setCarbCloneBrand]=useState(_cs.cloneBrand||"");
+  const [carbCloneDerivative,setCarbCloneDerivative]=useState(_cs.cloneDerivative||"");
+  const [carbOemPartNo,setCarbOemPartNo]=useState(_cs.oemPartNo||"");
+  const [carbClonePartNo,setCarbClonePartNo]=useState(_cs.clonePartNo||"");
+  const [carbRepairKitPartNo,setCarbRepairKitPartNo]=useState(_cs.repairKitPartNo||"");
+  const [carbGasketPhotos,setCarbGasketPhotos]=useState(_cs.gasketPhotos||[]);
+  const [carbPurchaseLinks,setCarbPurchaseLinks]=useState(_cs.purchaseLinks||[]);
+  const [carbThickness,setCarbThickness]=useState(_cs.thickness||"");
+  const [carbBoltSpacing,setCarbBoltSpacing]=useState(_cs.boltSpacing||"");
+  const [carbThroatDiameter,setCarbThroatDiameter]=useState(_cs.throatDiameter||"");
+  const [carbEngravings,setCarbEngravings]=useState(_cs.engravings||"");
+  const [carbNeedlePumpValveDiameter,setCarbNeedlePumpValveDiameter]=useState(_cs.needlePumpValveDiameter||"");
+  const [carbNeedleValveLength,setCarbNeedleValveLength]=useState(_cs.needleValveLength||"");
+  const [carbFuelInletBarbDiameter,setCarbFuelInletBarbDiameter]=useState(_cs.fuelInletBarbDiameter||"");
+  const [carbFuelOutletBarbDiameter,setCarbFuelOutletBarbDiameter]=useState(_cs.fuelOutletBarbDiameter||"");
+  const [carbFuelBulbDiameter,setCarbFuelBulbDiameter]=useState(_cs.fuelBulbDiameter||"");
+  const [secCarbSpec,setSecCarbSpec]=useState(false);
+  const [editCarbSpec,setEditCarbSpec]=useState(isNew);
+  const handleCarbBoltSpacing=v=>{
+    setCarbBoltSpacing(v);
+    setFasteners(prev=>{
+      const i=prev.findIndex(f=>f.location==="Carburetor");
+      return i>=0 ? prev.map((f,j)=>j===i?{...f,spacing:v}:f) : prev;
+    });
+  };
   const [showWikiModal,setShowWikiModal]=useState(false);
   // outboard-specific
   const [obShaftLength,setObShaftLength]=useState(e.obShaftLength||"");
@@ -499,6 +527,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       trackType,trackWidth:trackWidth.toString(),trackPitch:trackPitch.toString(),trackLinks:trackLinks.toString(),sprocketTeeth:sprocketTeeth.toString(),undercarriageHours:undercarriageHours.toString(),groundContactLength:groundContactLength.toString(),
       hydPumpCount,hydPumpType,hydSystemPressure:hydSystemPressure.toString(),hydOilCapacity:hydOilCapacity.toString(),hydReliefValve:hydReliefValve.toString(),
       hydRams,attachments,lighting,
+      carbSpec:{brand:carbBrandSpec,cloneBrand:carbCloneBrand,cloneDerivative:carbCloneDerivative,oemPartNo:carbOemPartNo.trim(),clonePartNo:carbClonePartNo.trim(),repairKitPartNo:carbRepairKitPartNo.trim(),gasketPhotos:carbGasketPhotos,purchaseLinks:carbPurchaseLinks,thickness:carbThickness.toString().trim(),boltSpacing:carbBoltSpacing.toString().trim(),throatDiameter:carbThroatDiameter.toString().trim(),engravings:carbEngravings.trim(),needlePumpValveDiameter:carbNeedlePumpValveDiameter.toString().trim(),needleValveLength:carbNeedleValveLength.toString().trim(),fuelInletBarbDiameter:carbFuelInletBarbDiameter.toString().trim(),fuelOutletBarbDiameter:carbFuelOutletBarbDiameter.toString().trim(),fuelBulbDiameter:carbFuelBulbDiameter.toString().trim()},
       obShaftLength,obTransomHeight,obTiltTrim,obSteering,obPropPitch:obPropPitch.toString().trim(),obPropDiameter:obPropDiameter.toString().trim(),obPropMaterial,obGearRatio,obLowerUnitOilType:obLowerUnitOilType.trim(),obLowerUnitOilCapacity:obLowerUnitOilCapacity.toString().trim(),obAnodeMaterial,obBreakInHours:obBreakInHours.toString().trim(),obImpellerLastChanged:obImpellerLastChanged.trim()});
   };
 
@@ -1359,6 +1388,103 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
             </div>;
           })()}
 
+          {/* Carburettor Spec */}
+          {(strokeType==="2-stroke"||fuelSystem==="Carburetted")&&(()=>{
+            const hasData=!!(carbBrandSpec||carbOemPartNo||carbClonePartNo||carbRepairKitPartNo||carbThickness||carbBoltSpacing||carbThroatDiameter||carbGasketPhotos.length||carbPurchaseLinks.length);
+            const carbSpecSum=[
+              carbBrandSpec==="Clone"?`Clone (${carbCloneBrand||"?"} → ${carbCloneDerivative||"?"})`:carbBrandSpec,
+              carbOemPartNo?"OEM: "+carbOemPartNo:null,
+              carbRepairKitPartNo?"Kit: "+carbRepairKitPartNo:null,
+              carbThickness?carbThickness+"mm thick":null,
+              carbBoltSpacing?carbBoltSpacing+"mm bolt ctr":null,
+              carbThroatDiameter?"Throat ⌀"+carbThroatDiameter+"mm":null,
+            ].filter(Boolean);
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecCarbSpec(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Carburettor Spec</span>
+                  {hasData&&!secCarbSpec&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secCarbSpec?"▲":"▼"}</span>
+              </div>
+              {secCarbSpec&&<div style={{paddingTop:12}}>
+                {hasData&&!editCarbSpec&&<SummaryCard onEdit={()=>setEditCarbSpec(true)} lines={carbSpecSum} />}
+                {(editCarbSpec||!hasData)&&<>
+                  {/* Brand / Clone */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                    <div style={col}>
+                      <FL t="Brand" />
+                      <select style={sel} value={carbBrandSpec} onChange={ev=>setCarbBrandSpec(ev.target.value)}>
+                        <option value="">— not set —</option>
+                        {CARB_BRANDS.map(b=><option key={b}>{b}</option>)}
+                      </select>
+                    </div>
+                    {carbBrandSpec==="Clone"&&<>
+                      <div style={col}>
+                        <FL t="Clone manufacturer" />
+                        <select style={sel} value={carbCloneBrand} onChange={ev=>setCarbCloneBrand(ev.target.value)}>
+                          <option value="">— not set —</option>
+                          {CARB_CLONE_BRANDS.map(b=><option key={b}>{b}</option>)}
+                        </select>
+                      </div>
+                      <div style={{...col,gridColumn:"1/-1"}}>
+                        <FL t="Clone is derivative of" />
+                        <select style={sel} value={carbCloneDerivative} onChange={ev=>setCarbCloneDerivative(ev.target.value)}>
+                          <option value="">— not set —</option>
+                          {CARB_BRANDS.filter(b=>b!=="Clone"&&b!=="Other").map(b=><option key={b}>{b}</option>)}
+                        </select>
+                      </div>
+                    </>}
+                  </div>
+                  {/* Part numbers */}
+                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Part Numbers</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+                    <div style={col}><FL t="Known genuine OEM part no." /><input style={inp} placeholder="e.g. WT-668" value={carbOemPartNo} onChange={ev=>setCarbOemPartNo(ev.target.value)} /></div>
+                    <div style={col}><FL t="Known OEM clone part no." /><input style={inp} placeholder="e.g. RB-K70A" value={carbClonePartNo} onChange={ev=>setCarbClonePartNo(ev.target.value)} /></div>
+                    <div style={col}><FL t="Known compatible repair kit no." /><input style={inp} placeholder="e.g. WT-973" value={carbRepairKitPartNo} onChange={ev=>setCarbRepairKitPartNo(ev.target.value)} /></div>
+                  </div>
+                  {/* Dimensions */}
+                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Dimensions</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                    <div style={col}><FL t="Carb thickness (mm)" /><input style={inp} type="number" placeholder="e.g. 31" step="0.5" min="0" value={carbThickness} onChange={ev=>setCarbThickness(ev.target.value)} /></div>
+                    <div style={col}><FL t="Bolt centre spacing (mm)" /><input style={inp} type="number" placeholder="e.g. 38" step="0.5" min="0" value={carbBoltSpacing} onChange={ev=>handleCarbBoltSpacing(ev.target.value)} /></div>
+                    <div style={col}><FL t="Throat diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22" step="0.5" min="0" value={carbThroatDiameter} onChange={ev=>setCarbThroatDiameter(ev.target.value)} /></div>
+                    <div style={col}><FL t="Fuel bulb diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 35" step="0.5" min="0" value={carbFuelBulbDiameter} onChange={ev=>setCarbFuelBulbDiameter(ev.target.value)} /></div>
+                    <div style={col}><FL t="Fuel inlet barb ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 4" step="0.25" min="0" value={carbFuelInletBarbDiameter} onChange={ev=>setCarbFuelInletBarbDiameter(ev.target.value)} /></div>
+                    <div style={col}><FL t="Fuel outlet barb ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 4" step="0.25" min="0" value={carbFuelOutletBarbDiameter} onChange={ev=>setCarbFuelOutletBarbDiameter(ev.target.value)} /></div>
+                  </div>
+                  {/* Internal measurements */}
+                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Internal</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                    <div style={col}><FL t="Needle pump valve ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 1.2" step="0.1" min="0" value={carbNeedlePumpValveDiameter} onChange={ev=>setCarbNeedlePumpValveDiameter(ev.target.value)} /></div>
+                    <div style={col}><FL t="Needle valve length (mm)" /><input style={inp} type="number" placeholder="e.g. 18" step="0.5" min="0" value={carbNeedleValveLength} onChange={ev=>setCarbNeedleValveLength(ev.target.value)} /></div>
+                  </div>
+                  {/* Engravings */}
+                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                  <div style={col}><FL t="Engravings / markings" /><input style={inp} placeholder="e.g. WT 668 J" value={carbEngravings} onChange={ev=>setCarbEngravings(ev.target.value)} /></div>
+                  {/* Purchase links */}
+                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:6}}>Purchase Links</div>
+                  <div style={{fontSize:9,color:"#3a3a3a",marginBottom:8,lineHeight:1.5}}>Links to genuine parts, repair kits, or aftermarket options. Community members can add more via the wiki.</div>
+                  {carbPurchaseLinks.map((lnk,i)=>(
+                    <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:6,marginBottom:6,alignItems:"center"}}>
+                      <input style={inp} placeholder="Label (e.g. OEM repair kit)" value={lnk.label} onChange={ev=>setCarbPurchaseLinks(prev=>prev.map((x,j)=>j===i?{...x,label:ev.target.value}:x))} />
+                      <input style={inp} placeholder="https://..." value={lnk.url} onChange={ev=>setCarbPurchaseLinks(prev=>prev.map((x,j)=>j===i?{...x,url:ev.target.value}:x))} />
+                      <button onClick={()=>setCarbPurchaseLinks(prev=>prev.filter((_,j)=>j!==i))} style={{...btnD,...sm}}>✕</button>
+                    </div>
+                  ))}
+                  <button onClick={()=>setCarbPurchaseLinks(prev=>[...prev,{label:"",url:""}])} style={{...btnG,width:"100%",marginBottom:8}}>+ Add Link</button>
+                  {/* Gasket photos */}
+                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                  <PhotoAdder photos={carbGasketPhotos} setPhotos={setCarbGasketPhotos} label="Gasket photos" />
+                  {editCarbSpec&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditCarbSpec(false)} style={{...btnA,...sm}}>Done</button></div>}
+                </>}
+              </div>}
+            </div>;
+          })()}
 
           {/* Engine Output Shaft */}
           {showPTO(type,customSections)&&(()=>{
@@ -1397,6 +1523,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
           {(!isCustom(type)||showForCustom("Fastener Specs",customSections))&&(()=>{
             const hasData = fasteners.length>0;
             const saveFastener = sv => {
+              if(sv.location==="Carburetor"&&sv.spacing) setCarbBoltSpacing(sv.spacing);
               if(fastEditIdx!==null){setFasteners(prev=>prev.map((x,i)=>i===fastEditIdx?{...sv,id:x.id||uid()}:x));setFastEditIdx(null);}
               else{setFasteners(prev=>[...prev,{...sv,id:uid()}]);setFastAdding(false);}
             };
