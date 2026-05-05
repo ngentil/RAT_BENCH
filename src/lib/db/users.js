@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 export async function getMyCompany(companyId) {
   if (!companyId) return null;
   const { data, error } = await supabase.from("companies").select("*").eq("id", companyId).single();
-  if (error) return null;
+  if (error) { console.error("[getMyCompany]", error); return null; }
   return data;
 }
 
