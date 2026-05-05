@@ -1344,17 +1344,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     </div>
                   </div>
 
-                  {/* Carburetted fields */}
-                  {fuelSystem==="Carburetted"&&<>
-                    <div style={row}>
-                      <div style={{...col,flex:1}}><FL t="Carb brand" /><select style={sel} value={cBrand} onChange={ev=>setCBrand(ev.target.value)}><option value="">— not set —</option>{CARB_BRANDS.map(b=><option key={b}>{b}</option>)}</select></div>
-                      <div style={{...col,flex:1}}><FL t="Carb type" /><select style={sel} value={cType} onChange={ev=>setCType(ev.target.value)}><option value="">— not set —</option>{CARB_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
-                    </div>
-                    <div style={row}>
-                      <div style={{...col,flex:2}}><FL t="Carb model (optional)" /><input style={inp} placeholder="e.g. WT-668" value={cModel} onChange={ev=>setCModel(ev.target.value)} /></div>
-                      <div style={{...col,flex:1}}><FL t="Count" /><select style={sel} value={carbCount} onChange={ev=>setCarbCount(ev.target.value)}><option value="">—</option>{["1","2","3","4","6","8"].map(n=><option key={n}>{n}</option>)}</select></div>
-                    </div>
-                  </>}
+                  {fuelSystem==="Carburetted"&&<div style={{fontSize:9,color:MUT,marginTop:4,lineHeight:1.5}}>Log carb details in the Carburettor Spec section below.</div>}
 
                   {/* EFI fields */}
                   {fuelSystem==="Fuel Injected"&&<>
