@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_CLONE_BRANDS, CARB_TYPES, CARB_BOLTS, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
+import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_CLONE_BRANDS, CARB_TYPES, CARB_BOLTS, OIL_BRANDS, OIL_SYNTH, JASO_2T, JASO_4T, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
 import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm, FuseBoxCard, FuseBoxForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
@@ -252,6 +252,9 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [editFluids,setEditFluids]=useState(isNew);
   const [engineOilGrade,setEngineOilGrade]=useState(e.engineOilGrade||"");
   const [engineOilCapacity,setEngineOilCapacity]=useState(e.engineOilCapacity||"");
+  const [engineOilBrand,setEngineOilBrand]=useState(e.engineOilBrand||"");
+  const [engineOilJaso,setEngineOilJaso]=useState(e.engineOilJaso||"");
+  const [engineOilSynth,setEngineOilSynth]=useState(e.engineOilSynth||"");
   const [hydraulicFluidType,setHydraulicFluidType]=useState(e.hydraulicFluidType||"");
   const [brakeFluidType,setBrakeFluidType]=useState(e.brakeFluidType||"");
   const [diffOilType,setDiffOilType]=useState(e.diffOilType||"");
@@ -521,7 +524,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       conrodLength:conrodLength.toString(),conrodSmallEnd:conrodSmallEnd.toString(),conrodSmallClear:conrodSmallClear.toString(),conrodBigEnd:conrodBigEnd.toString(),conrodBigClear:conrodBigClear.toString(),conrodSideClear:conrodSideClear.toString(),conrodBearingType,conrodBearingPartNo:conrodBearingPartNo.trim(),
       pistonDiameter:pistonDiameter.toString(),pistonClearance:pistonClearance.toString(),ringCount,ringGapTop:ringGapTop.toString(),ringGapSecond:ringGapSecond.toString(),ringGapOil:ringGapOil.toString(),ringWidth:ringWidth.toString(),ringThickness:ringThickness.toString(),gudgeonDiameter:gudgeonDiameter.toString(),gudgeonLength:gudgeonLength.toString(),gudgeonFit,gudgeonCirclip:gudgeonCirclip.toString(),
       oilChangeInterval:oilChangeInterval.toString(),oilChangeUnit,filterInterval:filterInterval.toString(),filterIntervalUnit,majorServiceInterval:majorServiceInterval.toString(),majorServiceUnit,lastServiceOdo:lastServiceOdo.toString(),lastServiceDate:lastServiceDate.trim(),
-      engineOilGrade:engineOilGrade.trim(),engineOilCapacity:engineOilCapacity.toString(),hydraulicFluidType:hydraulicFluidType.trim(),brakeFluidType,diffOilType:diffOilType.trim(),diffOilCapacity:diffOilCapacity.toString(),transferCaseOil:transferCaseOil.trim(),
+      engineOilGrade:engineOilGrade.trim(),engineOilBrand:engineOilBrand.trim(),engineOilJaso:engineOilJaso.trim(),engineOilSynth:engineOilSynth.trim(),engineOilCapacity:engineOilCapacity.toString(),hydraulicFluidType:hydraulicFluidType.trim(),brakeFluidType,diffOilType:diffOilType.trim(),diffOilCapacity:diffOilCapacity.toString(),transferCaseOil:transferCaseOil.trim(),
       dryWeight:dryWeight.toString(),grossWeight:grossWeight.toString(),wheelbase:wheelbase.toString(),overallLength:overallLength.toString(),overallWidth:overallWidth.toString(),overallHeight:overallHeight.toString(),
       belts,
       trackedBrand,trackedBrandOther,trackedHours:trackedHours.toString(),trackedSubtype,trackedSubtypeOther,operatingWeight,operatingWeightOther,
@@ -2134,11 +2137,11 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {/* Fluids */}
           {(!isCustom(type)||showForCustom("Engine",customSections)||showForCustom("Fuel System",customSections))&&(()=>{
-            const hasData=!!(coolingType||coolantType||fuelTankCapacity||mixRatio||engineOilGrade||engineOilCapacity||brakeFluidType||diffOilType||hydraulicFluidType);
+            const hasData=!!(coolingType||coolantType||fuelTankCapacity||mixRatio||engineOilBrand||engineOilJaso||engineOilSynth||engineOilCapacity||brakeFluidType||diffOilType||(strokeType!=="2-stroke"&&hydraulicFluidType));
             const fluidsSum=[
               [coolingType,coolantType,coolantCapacity?coolantCapacity+"L coolant":null].filter(Boolean).join(" · "),
               [fuelTankCapacity?fuelTankCapacity+"L tank":null,mixRatio?"Mix: "+mixRatio:null].filter(Boolean).join(" · "),
-              [engineOilGrade,engineOilCapacity?engineOilCapacity+"L engine oil":null].filter(Boolean).join(" · "),
+              [[engineOilBrand,engineOilSynth,engineOilJaso,engineOilCapacity?engineOilCapacity+"L":null].filter(Boolean).join(" · ")||null].filter(Boolean).join(""),
               [brakeFluidType?"Brake: "+brakeFluidType:null,diffOilType?diffOilType+(diffOilCapacity?" "+diffOilCapacity+"L diff":"")+" diff":null].filter(Boolean).join(" · "),
               [hydraulicFluidType?"Hyd: "+hydraulicFluidType:null,transferCaseOil?"T/case: "+transferCaseOil:null].filter(Boolean).join(" · "),
             ].filter(l=>l&&l.trim());
@@ -2188,16 +2191,38 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 {/* Engine Oil */}
                 {strokeType&&strokeType!=="Electric"&&<>
                   <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Engine Oil</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Grade" /><input style={inp} placeholder="e.g. 10W-40, 5W-30" value={engineOilGrade} onChange={ev=>setEngineOilGrade(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Capacity (L)" /><input style={inp} type="number" placeholder="e.g. 1.2" step="0.1" min="0" value={engineOilCapacity} onChange={ev=>setEngineOilCapacity(ev.target.value)} /></div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                    <div style={col}>
+                      <FL t="Brand" />
+                      <select style={sel} value={engineOilBrand} onChange={ev=>setEngineOilBrand(ev.target.value)}>
+                        <option value="">— not set —</option>
+                        {OIL_BRANDS.map(b=><option key={b}>{b}</option>)}
+                      </select>
+                    </div>
+                    <div style={col}>
+                      <FL t="Type" />
+                      <select style={sel} value={engineOilSynth} onChange={ev=>setEngineOilSynth(ev.target.value)}>
+                        <option value="">— not set —</option>
+                        {OIL_SYNTH.map(s=><option key={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div style={col}>
+                      <FL t="JASO spec" />
+                      <select style={sel} value={engineOilJaso} onChange={ev=>setEngineOilJaso(ev.target.value)}>
+                        <option value="">— not set —</option>
+                        {(strokeType==="2-stroke"?JASO_2T:JASO_4T).map(j=><option key={j}>{j}</option>)}
+                      </select>
+                    </div>
+                    <div style={col}><FL t="Capacity (L)" /><input style={inp} type="number" placeholder="e.g. 1.2" step="0.1" min="0" value={engineOilCapacity} onChange={ev=>setEngineOilCapacity(ev.target.value)} /></div>
                   </div>
                 </>}
 
-                {/* Hydraulic — shown for any machine type */}
-                <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Hydraulic Oil</div>
-                <div style={col}><FL t="Fluid type / grade" /><input style={inp} placeholder="e.g. ISO VG 46, Mobil DTE 25" value={hydraulicFluidType} onChange={ev=>setHydraulicFluidType(ev.target.value)} /></div>
+                {/* Hydraulic — hidden for 2-stroke */}
+                {strokeType!=="2-stroke"&&<>
+                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
+                  <div style={{fontSize:9,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Hydraulic Oil</div>
+                  <div style={col}><FL t="Fluid type / grade" /><input style={inp} placeholder="e.g. ISO VG 46, Mobil DTE 25" value={hydraulicFluidType} onChange={ev=>setHydraulicFluidType(ev.target.value)} /></div>
+                </>}
 
                 {/* Differential & Transfer Case */}
                 {showDrivetrain(type,customSections)&&<>

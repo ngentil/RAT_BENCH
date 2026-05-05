@@ -116,6 +116,11 @@ export const STUD_N      = ["0","1","2","3","4","5","6","7","8","9","10"];
 export const RAGE_LBL    = ["","barely","annoying","proper pain","nearly quit","absolute nightmare"];
 export const STUD_LOCS      = ["Intake","Exhaust","Head","Cylinder base","Crankcase","Side cover","Carburetor","Other"];
 
+export const OIL_BRANDS     = ["Castrol","Motul","Shell","Penrite","Valvoline","Nulon","Gulf","Mobil","Stihl","Husqvarna","Ipone","Silkolene","Amsoil","Ryco","Other"];
+export const OIL_SYNTH      = ["Mineral","Semi-synthetic","Full synthetic"];
+export const JASO_2T        = ["JASO FA","JASO FB","JASO FC","JASO FD"];
+export const JASO_4T        = ["JASO MA","JASO MA1","JASO MA2","JASO MB"];
+
 export const LIGHT_LOCATIONS = [
   "Headlights","Tail Lights","Indicators","Brake Lights",
   "Reverse Lights","Trailer Lights","Auxiliary / Work Lights",
