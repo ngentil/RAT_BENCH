@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 import { getCompanyMembers, updateCompany, createCompany, joinCompanyByCode, leaveCompany, removeMember, regenerateInviteCode } from '../../lib/db';
+import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
-const COUNTRIES = ["Australia","New Zealand","United States","United Kingdom","Canada","Ireland","South Africa","Other"];
 function CompanySettings({profile,setProfile,company,setCompany,session}){
   const isAdmin=company&&company.owner_id===session?.user?.id;
   const [mode,setMode]=useState("view"); // view|create|join
@@ -109,6 +109,8 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
   const lbl={fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4};
   const sec={marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+BRD};
 
+  const cfg = COUNTRY_CONFIG[country] || DEFAULT_COUNTRY_CONFIG;
+
   const fieldsJsx=(
     <>
       <div style={{marginBottom:12}}>
@@ -125,19 +127,23 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
         <div style={col}><div style={lbl}>Company Name *</div><input style={inp} value={name} onChange={e=>setName(e.target.value)} placeholder="Legal name"/></div>
         <div style={col}><div style={lbl}>Trading Name</div><input style={inp} value={tradingName} onChange={e=>setTradingName(e.target.value)} placeholder="If different"/></div>
-        <div style={col}><div style={lbl}>ABN</div><input style={inp} value={abn} onChange={e=>setAbn(e.target.value)} placeholder="12 345 678 901"/></div>
+        <div style={col}><div style={lbl}>{cfg.biz}</div><input style={inp} value={abn} onChange={e=>setAbn(e.target.value)}/></div>
         <div style={col}><div style={lbl}>Industry</div><select style={sel} value={industry} onChange={e=>setIndustry(e.target.value)}><option value="">— select —</option>{INDUSTRIES.map(i=><option key={i}>{i}</option>)}</select></div>
-        <div style={col}><div style={lbl}>Phone</div><input style={inp} value={phone} onChange={e=>setPhone(e.target.value)} placeholder="04xx xxx xxx"/></div>
-        <div style={col}><div style={lbl}>Email</div><input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="info@company.com"/></div>
+        <div style={col}><div style={lbl}>Phone</div><input style={inp} value={phone} onChange={e=>setPhone(e.target.value)}/></div>
+        <div style={col}><div style={lbl}>Email</div><input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)}/></div>
       </div>
       <div style={{...col,marginBottom:8}}><div style={lbl}>Website</div><input style={inp} value={website} onChange={e=>setWebsite(e.target.value)} placeholder="https://"/></div>
-      <div style={{...col,marginBottom:8}}><div style={lbl}>Street Address</div><input style={inp} value={address} onChange={e=>setAddress(e.target.value)}/></div>
-      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr",gap:8,marginBottom:8}}>
-        <div style={col}><div style={lbl}>City / Suburb</div><input style={inp} value={city} onChange={e=>setCity(e.target.value)}/></div>
-        <div style={col}><div style={lbl}>State</div><input style={inp} value={state} onChange={e=>setState(e.target.value)} placeholder="VIC"/></div>
-        <div style={col}><div style={lbl}>Postcode</div><input style={inp} value={postcode} onChange={e=>setPostcode(e.target.value)}/></div>
+      <div style={{...col,marginBottom:8}}><div style={lbl}>Country</div>
+        <select style={sel} value={country} onChange={e=>{setCountry(e.target.value);setState("");}}>
+          {COUNTRIES.map(c=><option key={c}>{c}</option>)}
+        </select>
       </div>
-      <div style={{...col,marginBottom:12}}><div style={lbl}>Country</div><select style={sel} value={country} onChange={e=>setCountry(e.target.value)}>{COUNTRIES.map(c=><option key={c}>{c}</option>)}</select></div>
+      <div style={{...col,marginBottom:8}}><div style={lbl}>Street Address</div><input style={inp} value={address} onChange={e=>setAddress(e.target.value)}/></div>
+      <div style={{display:"grid",gridTemplateColumns:cfg.state?"2fr 1fr 1fr":"2fr 1fr",gap:8,marginBottom:12}}>
+        <div style={col}><div style={lbl}>City / Town</div><input style={inp} value={city} onChange={e=>setCity(e.target.value)}/></div>
+        {cfg.state&&<div style={col}><div style={lbl}>{cfg.state}</div><input style={inp} value={state} onChange={e=>setState(e.target.value)}/></div>}
+        <div style={col}><div style={lbl}>{cfg.postcode}</div><input style={inp} value={postcode} onChange={e=>setPostcode(e.target.value)}/></div>
+      </div>
     </>
   );
 
