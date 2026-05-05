@@ -40,8 +40,13 @@ export async function getCompanyMembers(companyId) {
 }
 
 export async function removeMember(companyId, userId) {
-  await supabase.from("company_members").delete().eq("company_id", companyId).eq("user_id", userId);
-  await supabase.from("profiles").update({ company_id: null }).eq("id", userId);
+  const { error } = await supabase.rpc("rpc_remove_member", { p_company_id: companyId, p_user_id: userId });
+  if (error) throw error;
+}
+
+export async function deleteCompany(companyId) {
+  const { error } = await supabase.rpc("rpc_delete_company", { p_company_id: companyId });
+  if (error) throw error;
 }
 
 export async function regenerateInviteCode(companyId) {

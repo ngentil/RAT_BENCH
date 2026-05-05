@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
-import { getCompanyMembers, updateCompany, createCompany, joinCompanyByCode, leaveCompany, removeMember, regenerateInviteCode } from '../../lib/db';
+import { getCompanyMembers, updateCompany, createCompany, joinCompanyByCode, leaveCompany, removeMember, regenerateInviteCode, deleteCompany } from '../../lib/db';
 import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
 function CompanySettings({profile,setProfile,company,setCompany,session}){
@@ -238,7 +238,14 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
       <div>
         <div style={{fontSize:9,color:RED,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Danger Zone</div>
         {!isAdmin&&<button onClick={handleLeave} style={{...btnG,...sm,color:RED,border:"1px solid "+RED}}>Leave Organisation</button>}
-        {isAdmin&&<div style={{fontSize:9,color:MUT}}>To delete the organisation, remove all members first then contact support.</div>}
+        {isAdmin&&<button onClick={async()=>{
+          if(!confirm(`Permanently delete "${company.name}"? This cannot be undone. All members will be removed.`))return;
+          try{
+            await deleteCompany(company.id);
+            setCompany(null);
+            setProfile(prev=>({...prev,company_id:null}));
+          }catch(e){setErr(e.message);}
+        }} style={{...btnG,...sm,color:RED,border:"1px solid "+RED}}>Delete Organisation</button>}
       </div>
     </div>
   );
