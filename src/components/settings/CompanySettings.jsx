@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 import { getCompanyMembers, updateCompany, createCompany, joinCompanyByCode, leaveCompany, removeMember, regenerateInviteCode } from '../../lib/db';
+const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
 function CompanySettings({profile,setProfile,company,setCompany,session}){
   const isAdmin=company&&company.owner_id===session?.user?.id;
   const [mode,setMode]=useState("view"); // view|create|join
