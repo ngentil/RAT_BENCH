@@ -2254,10 +2254,11 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {/* Dimensions & Weight */}
           {(!isCustom(type)||showForCustom("Engine",customSections))&&(()=>{
-            const hasData=!!(dryWeight||grossWeight||wheelbase||overallLength||overallWidth||overallHeight);
+            const hasWheels=[...WHEELED,...MOTO,"Vehicle"].includes(type);
+            const hasData=!!(dryWeight||grossWeight||(hasWheels&&wheelbase)||overallLength||overallWidth||overallHeight);
             const dimSum=[
               [dryWeight?dryWeight+"kg dry":null,grossWeight?grossWeight+"kg gross":null].filter(Boolean).join(" · "),
-              [wheelbase?wheelbase+"mm wheelbase":null,overallLength?overallLength+"mm long":null].filter(Boolean).join(" · "),
+              [(hasWheels&&wheelbase)?wheelbase+"mm wheelbase":null,overallLength?overallLength+"mm long":null].filter(Boolean).join(" · "),
               [overallWidth?overallWidth+"mm wide":null,overallHeight?overallHeight+"mm tall":null].filter(Boolean).join(" · "),
             ].filter(l=>l&&l.trim());
             return <div style={{marginBottom:2}}>
@@ -2276,7 +2277,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}><FL t="Gross weight (kg)" /><input style={inp} type="number" placeholder="e.g. 210" step="0.1" min="0" value={grossWeight} onChange={ev=>setGrossWeight(ev.target.value)} /></div>
                 </div>
                 <div style={row}>
-                  <div style={{...col,flex:1}}><FL t="Wheelbase (mm)" /><input style={inp} type="number" placeholder="e.g. 1410" step="1" min="0" value={wheelbase} onChange={ev=>setWheelbase(ev.target.value)} /></div>
+                  {hasWheels&&<div style={{...col,flex:1}}><FL t="Wheelbase (mm)" /><input style={inp} type="number" placeholder="e.g. 1410" step="1" min="0" value={wheelbase} onChange={ev=>setWheelbase(ev.target.value)} /></div>}
                   <div style={{...col,flex:1}}><FL t="Overall length (mm)" /><input style={inp} type="number" placeholder="e.g. 2100" step="1" min="0" value={overallLength} onChange={ev=>setOverallLength(ev.target.value)} /></div>
                 </div>
                 <div style={row}>
