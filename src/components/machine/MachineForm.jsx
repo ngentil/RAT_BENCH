@@ -1387,7 +1387,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
               carbRepairKitPartNo?"Kit: "+carbRepairKitPartNo:null,
               carbThickness?carbThickness+"mm thick":null,
               carbBoltSpacing?carbBoltSpacing+"mm bolt ctr":null,
-              carbThroatDiameter?"Throat ⌀"+carbThroatDiameter+"mm":null,
+              carbThroatDiameter?"Venturi ⌀"+carbThroatDiameter+"mm":null,
             ].filter(Boolean);
             return <div style={{marginBottom:2}}>
               <div onClick={()=>setSecCarbSpec(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
@@ -1440,7 +1440,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                     <div style={col}><FL t="Carb thickness (mm)" /><input style={inp} type="number" placeholder="e.g. 31" step="0.5" min="0" value={carbThickness} onChange={ev=>setCarbThickness(ev.target.value)} /></div>
                     <div style={col}><FL t="Bolt centre spacing (mm)" /><input style={inp} type="number" placeholder="e.g. 38" step="0.5" min="0" value={carbBoltSpacing} onChange={ev=>handleCarbBoltSpacing(ev.target.value)} /></div>
-                    <div style={col}><FL t="Throat diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22" step="0.5" min="0" value={carbThroatDiameter} onChange={ev=>setCarbThroatDiameter(ev.target.value)} /></div>
+                    <div style={col}><FL t="Venturi diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22" step="0.5" min="0" value={carbThroatDiameter} onChange={ev=>setCarbThroatDiameter(ev.target.value)} /></div>
                     <div style={col}><FL t="Fuel bulb diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 35" step="0.5" min="0" value={carbFuelBulbDiameter} onChange={ev=>setCarbFuelBulbDiameter(ev.target.value)} /></div>
                     <div style={col}><FL t="Fuel inlet barb ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 4" step="0.25" min="0" value={carbFuelInletBarbDiameter} onChange={ev=>setCarbFuelInletBarbDiameter(ev.target.value)} /></div>
                     <div style={col}><FL t="Fuel outlet barb ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 4" step="0.25" min="0" value={carbFuelOutletBarbDiameter} onChange={ev=>setCarbFuelOutletBarbDiameter(ev.target.value)} /></div>
