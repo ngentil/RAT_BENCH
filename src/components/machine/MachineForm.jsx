@@ -337,6 +337,14 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   // section open state
   const [secBasic,setSecBasic]=useState(true);
   const [secEngine,setSecEngine]=useState(false);
+  const [secEngElectricMotor,setSecEngElectricMotor]=useState(false);
+  const [secEngBattPack,setSecEngBattPack]=useState(false);
+  const [secEngEVCharge,setSecEngEVCharge]=useState(false);
+  const [secEngValveTrain,setSecEngValveTrain]=useState(false);
+  const [secEngValveClear,setSecEngValveClear]=useState(false);
+  const [secEngIntakeValve,setSecEngIntakeValve]=useState(false);
+  const [secEngExhaustValve,setSecEngExhaustValve]=useState(false);
+  const [secEngValveSprings,setSecEngValveSprings]=useState(false);
   const [secStuds,setSecStuds]=useState(false);
   const [secPorts,setSecPorts]=useState(false);
   const [secCarb,setSecCarb]=useState(false);
@@ -676,117 +684,178 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   })()}
                 </>}
 
-                {/* Electric / Hybrid motor fields */}
-                {(strokeType==="Electric"||strokeType==="Hybrid")&&<>
-                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Electric Motor</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Motor type" /><select style={sel} value={motorType} onChange={ev=>setMotorType(ev.target.value)}><option value="">— not set —</option><option>AC induction</option><option>DC brushed</option><option>DC brushless (BLDC)</option><option>Permanent magnet AC</option><option>Switched reluctance</option></select></div>
-                    <div style={{...col,flex:1}}><FL t="Controller brand / model" /><input style={inp} placeholder="e.g. Bosch EMR3" value={controllerBrand} onChange={ev=>setControllerBrand(ev.target.value)} /></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Peak power (kW)" /><input style={inp} type="number" placeholder="e.g. 150" step="0.1" min="0" value={motorPower} onChange={ev=>setMotorPower(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Peak torque (Nm)" /><input style={inp} type="number" placeholder="e.g. 310" step="1" min="0" value={motorTorque} onChange={ev=>setMotorTorque(ev.target.value)} /></div>
-                  </div>
-                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Battery Pack</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Pack voltage (V)" /><input style={inp} type="number" placeholder="e.g. 400" step="1" min="0" value={packVoltage} onChange={ev=>setPackVoltage(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Capacity (kWh)" /><input style={inp} type="number" placeholder="e.g. 75" step="0.1" min="0" value={packCapacity} onChange={ev=>setPackCapacity(ev.target.value)} /></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Chemistry" /><select style={sel} value={battChemistry} onChange={ev=>setBattChemistry(ev.target.value)}><option value="">— not set —</option><option>Li-ion NMC</option><option>Li-ion NCA</option><option>LiFePO4</option><option>NiMH</option><option>Lead acid</option><option>Solid state</option></select></div>
-                    <div style={{...col,flex:1}}><FL t="Cell count" /><input style={inp} type="number" placeholder="e.g. 96" step="1" min="0" value={cellCount} onChange={ev=>setCellCount(ev.target.value)} /></div>
-                  </div>
-                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Charging</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Charge port type" /><select style={sel} value={chargePort} onChange={ev=>setChargePort(ev.target.value)}><option value="">— not set —</option><option>Type 1 (J1772)</option><option>Type 2 (Mennekes)</option><option>CCS Combo 1</option><option>CCS Combo 2</option><option>CHAdeMO</option><option>Tesla/NACS</option><option>GB/T</option><option>Proprietary</option></select></div>
-                    <div style={{...col,flex:1}}><FL t="Max charge rate (kW)" /><input style={inp} type="number" placeholder="e.g. 150" step="0.5" min="0" value={maxChargeRate} onChange={ev=>setMaxChargeRate(ev.target.value)} /></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Range (km)" /><input style={inp} type="number" placeholder="e.g. 450" step="1" min="0" value={evRange} onChange={ev=>setEvRange(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Regenerative braking" /><select style={sel} value={regenBraking} onChange={ev=>setRegenBraking(ev.target.value)}><option value="">— not set —</option><option>Yes</option><option>No</option></select></div>
-                  </div>
-                </>}
-                {strokeType==="4-stroke"&&<>
-                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-
-                  {/* Valve train */}
-                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Train</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Valve train type" /><select style={sel} value={valveTrain} onChange={ev=>setValveTrain(ev.target.value)}><option value="">— not set —</option>{VALVE_TRAIN.map(v=><option key={v}>{v}</option>)}</select></div>
-                    <div style={{...col,flex:1}}><FL t="Cam type" /><select style={sel} value={camType} onChange={ev=>setCamType(ev.target.value)}><option value="">— not set —</option>{CAM_TYPES.map(v=><option key={v}>{v}</option>)}</select></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Rocker arm locknut size" /><select style={sel} value={locknutSize} onChange={ev=>setLocknutSize(ev.target.value)}><option value="">— not set —</option>{LOCKNUT_SIZES.map(v=><option key={v}>{v}</option>)}</select></div>
-                    <div style={{...col,flex:1}}></div>
-                  </div>
-
-                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-
-                  {/* Valve clearances */}
-                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Clearances (cold, mm)</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Intake valve clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.10" step="0.01" min="0" value={intakeValveClear} onChange={ev=>setIntakeValveClear(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Exhaust valve clearance (mm)" /><input style={inp} type="number" placeholder="e.g. 0.15" step="0.01" min="0" value={exhaustValveClear} onChange={ev=>setExhaustValveClear(ev.target.value)} /></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Valves per intake" /><select style={sel} value={intakeValveN} onChange={ev=>setIntakeValveN(ev.target.value)}><option value="">— not set —</option>{VALVE_COUNTS.map(n=><option key={n}>{n}</option>)}</select></div>
-                    <div style={{...col,flex:1}}><FL t="Valves per exhaust" /><select style={sel} value={exhaustValveN} onChange={ev=>setExhaustValveN(ev.target.value)}><option value="">— not set —</option>{VALVE_COUNTS.map(n=><option key={n}>{n}</option>)}</select></div>
-                  </div>
-
-                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-
-                  {/* Auto-calculated */}
-                  {(intakeValveN&&exhaustValveN&&cylCount)&&<>
-                    <div style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"8px 10px",marginBottom:10}}>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                        <div><div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Total Valve Count</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseInt(intakeValveN)+parseInt(exhaustValveN))*parseInt(cylCount)}</div></div>
-                        <div><div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Valves per Cylinder</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{parseInt(intakeValveN)+parseInt(exhaustValveN)}</div></div>
-                      </div>
-                    </div>
-                  </>}
-
-                  {/* Intake valve dims */}
-                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Intake Valve</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Face diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28" step="0.1" min="0" value={iValveFace} onChange={ev=>setIValveFace(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Stem diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 6" step="0.1" min="0" value={iValveStem} onChange={ev=>setIValveStem(ev.target.value)} /></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Lift (mm)" /><input style={inp} type="number" placeholder="e.g. 6.5" step="0.01" min="0" value={iValveLift} onChange={ev=>setIValveLift(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Weight (g)" /><input style={inp} type="number" placeholder="e.g. 18" step="0.1" min="0" value={iValveWeight} onChange={ev=>setIValveWeight(ev.target.value)} /></div>
-                  </div>
-
-                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-
-                  {/* Exhaust valve dims */}
-                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Exhaust Valve</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Face diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 24" step="0.1" min="0" value={eValveFace} onChange={ev=>setEValveFace(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Stem diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 6" step="0.1" min="0" value={eValveStem} onChange={ev=>setEValveStem(ev.target.value)} /></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Lift (mm)" /><input style={inp} type="number" placeholder="e.g. 5.8" step="0.01" min="0" value={eValveLift} onChange={ev=>setEValveLift(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Weight (g)" /><input style={inp} type="number" placeholder="e.g. 16" step="0.1" min="0" value={eValveWeight} onChange={ev=>setEValveWeight(ev.target.value)} /></div>
-                  </div>
-
-                  <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
-
-                  {/* Valve springs */}
-                  <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Valve Springs</div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Free length (mm)" /><input style={inp} type="number" placeholder="e.g. 35" step="0.1" min="0" value={springFreeLen} onChange={ev=>setSpringFreeLen(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Outer diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22" step="0.1" min="0" value={springOuterD} onChange={ev=>setSpringOuterD(ev.target.value)} /></div>
-                  </div>
-                  <div style={row}>
-                    <div style={{...col,flex:1}}><FL t="Wire diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 2.5" step="0.1" min="0" value={springWireD} onChange={ev=>setSpringWireD(ev.target.value)} /></div>
-                    <div style={{...col,flex:1}}><FL t="Weight (g)" /><input style={inp} type="number" placeholder="e.g. 12" step="0.1" min="0" value={springWeight} onChange={ev=>setSpringWeight(ev.target.value)} /></div>
-                  </div>
-                </>}
                 {editEngine&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditEngine(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
+
+                {/* Electric Motor — grey accordion */}
+                {(strokeType==="Electric"||strokeType==="Hybrid")&&(()=>{
+                  const hasData=!!(motorType||controllerBrand||motorPower||motorTorque);
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecEngElectricMotor(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Electric Motor {hasData&&!secEngElectricMotor&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secEngElectricMotor?"▲":"▼"}</span>
+                    </div>
+                    {secEngElectricMotor&&<div style={{paddingTop:8}}>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Motor type" /><select style={sel} value={motorType} onChange={ev=>setMotorType(ev.target.value)}><option value="">— not set —</option><option>AC induction</option><option>DC brushed</option><option>DC brushless (BLDC)</option><option>Permanent magnet AC</option><option>Switched reluctance</option></select></div>
+                        <div style={{...col,flex:1}}><FL t="Controller brand / model" /><input style={inp} placeholder="e.g. Bosch EMR3" value={controllerBrand} onChange={ev=>setControllerBrand(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Peak power (kW)" /><input style={inp} type="number" placeholder="e.g. 150" step="0.1" min="0" value={motorPower} onChange={ev=>setMotorPower(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Peak torque (Nm)" /><input style={inp} type="number" placeholder="e.g. 310" step="1" min="0" value={motorTorque} onChange={ev=>setMotorTorque(ev.target.value)} /></div>
+                      </div>
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Battery Pack — grey accordion */}
+                {(strokeType==="Electric"||strokeType==="Hybrid")&&(()=>{
+                  const hasData=!!(packVoltage||packCapacity||battChemistry||cellCount);
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecEngBattPack(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Battery Pack {hasData&&!secEngBattPack&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secEngBattPack?"▲":"▼"}</span>
+                    </div>
+                    {secEngBattPack&&<div style={{paddingTop:8}}>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Pack voltage (V)" /><input style={inp} type="number" placeholder="e.g. 400" step="1" min="0" value={packVoltage} onChange={ev=>setPackVoltage(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Capacity (kWh)" /><input style={inp} type="number" placeholder="e.g. 75" step="0.1" min="0" value={packCapacity} onChange={ev=>setPackCapacity(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Chemistry" /><select style={sel} value={battChemistry} onChange={ev=>setBattChemistry(ev.target.value)}><option value="">— not set —</option><option>Li-ion NMC</option><option>Li-ion NCA</option><option>LiFePO4</option><option>NiMH</option><option>Lead acid</option><option>Solid state</option></select></div>
+                        <div style={{...col,flex:1}}><FL t="Cell count" /><input style={inp} type="number" placeholder="e.g. 96" step="1" min="0" value={cellCount} onChange={ev=>setCellCount(ev.target.value)} /></div>
+                      </div>
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* EV Charging — grey accordion */}
+                {(strokeType==="Electric"||strokeType==="Hybrid")&&(()=>{
+                  const hasData=!!(chargePort||maxChargeRate||evRange||regenBraking);
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecEngEVCharge(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>EV Charging {hasData&&!secEngEVCharge&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secEngEVCharge?"▲":"▼"}</span>
+                    </div>
+                    {secEngEVCharge&&<div style={{paddingTop:8}}>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Charge port type" /><select style={sel} value={chargePort} onChange={ev=>setChargePort(ev.target.value)}><option value="">— not set —</option><option>Type 1 (J1772)</option><option>Type 2 (Mennekes)</option><option>CCS Combo 1</option><option>CCS Combo 2</option><option>CHAdeMO</option><option>Tesla/NACS</option><option>GB/T</option><option>Proprietary</option></select></div>
+                        <div style={{...col,flex:1}}><FL t="Max charge rate (kW)" /><input style={inp} type="number" placeholder="e.g. 150" step="0.5" min="0" value={maxChargeRate} onChange={ev=>setMaxChargeRate(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Range (km)" /><input style={inp} type="number" placeholder="e.g. 450" step="1" min="0" value={evRange} onChange={ev=>setEvRange(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Regenerative braking" /><select style={sel} value={regenBraking} onChange={ev=>setRegenBraking(ev.target.value)}><option value="">— not set —</option><option>Yes</option><option>No</option></select></div>
+                      </div>
+                    </div>}
+                  </div>;
+                })()}
+                {/* Valve Train — grey accordion */}
+                {strokeType==="4-stroke"&&(()=>{
+                  const hasData=!!(valveTrain||camType||locknutSize);
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecEngValveTrain(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Valve Train {hasData&&!secEngValveTrain&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secEngValveTrain?"▲":"▼"}</span>
+                    </div>
+                    {secEngValveTrain&&<div style={{paddingTop:8}}>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Valve train type" /><select style={sel} value={valveTrain} onChange={ev=>setValveTrain(ev.target.value)}><option value="">— not set —</option>{VALVE_TRAIN.map(v=><option key={v}>{v}</option>)}</select></div>
+                        <div style={{...col,flex:1}}><FL t="Cam type" /><select style={sel} value={camType} onChange={ev=>setCamType(ev.target.value)}><option value="">— not set —</option>{CAM_TYPES.map(v=><option key={v}>{v}</option>)}</select></div>
+                      </div>
+                      <div style={{...col,maxWidth:200}}><FL t="Rocker arm locknut size" /><select style={sel} value={locknutSize} onChange={ev=>setLocknutSize(ev.target.value)}><option value="">— not set —</option>{LOCKNUT_SIZES.map(v=><option key={v}>{v}</option>)}</select></div>
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Valve Clearances — grey accordion */}
+                {strokeType==="4-stroke"&&(()=>{
+                  const hasData=!!(intakeValveClear||exhaustValveClear||intakeValveN||exhaustValveN);
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecEngValveClear(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Valve Clearances {hasData&&!secEngValveClear&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secEngValveClear?"▲":"▼"}</span>
+                    </div>
+                    {secEngValveClear&&<div style={{paddingTop:8}}>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Intake clearance (mm, cold)" /><input style={inp} type="number" placeholder="e.g. 0.10" step="0.01" min="0" value={intakeValveClear} onChange={ev=>setIntakeValveClear(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Exhaust clearance (mm, cold)" /><input style={inp} type="number" placeholder="e.g. 0.15" step="0.01" min="0" value={exhaustValveClear} onChange={ev=>setExhaustValveClear(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Valves per intake" /><select style={sel} value={intakeValveN} onChange={ev=>setIntakeValveN(ev.target.value)}><option value="">— not set —</option>{VALVE_COUNTS.map(n=><option key={n}>{n}</option>)}</select></div>
+                        <div style={{...col,flex:1}}><FL t="Valves per exhaust" /><select style={sel} value={exhaustValveN} onChange={ev=>setExhaustValveN(ev.target.value)}><option value="">— not set —</option>{VALVE_COUNTS.map(n=><option key={n}>{n}</option>)}</select></div>
+                      </div>
+                      {(intakeValveN&&exhaustValveN&&cylCount)&&<div style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"8px 10px",marginTop:6}}>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                          <div><div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Total Valve Count</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseInt(intakeValveN)+parseInt(exhaustValveN))*parseInt(cylCount)}</div></div>
+                          <div><div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Valves per Cylinder</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{parseInt(intakeValveN)+parseInt(exhaustValveN)}</div></div>
+                        </div>
+                      </div>}
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Intake Valve — grey accordion */}
+                {strokeType==="4-stroke"&&(()=>{
+                  const hasData=!!(iValveFace||iValveStem||iValveLift||iValveWeight);
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecEngIntakeValve(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Intake Valve {hasData&&!secEngIntakeValve&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secEngIntakeValve?"▲":"▼"}</span>
+                    </div>
+                    {secEngIntakeValve&&<div style={{paddingTop:8}}>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Face diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 28" step="0.1" min="0" value={iValveFace} onChange={ev=>setIValveFace(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Stem diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 6" step="0.1" min="0" value={iValveStem} onChange={ev=>setIValveStem(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Lift (mm)" /><input style={inp} type="number" placeholder="e.g. 6.5" step="0.01" min="0" value={iValveLift} onChange={ev=>setIValveLift(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Weight (g)" /><input style={inp} type="number" placeholder="e.g. 18" step="0.1" min="0" value={iValveWeight} onChange={ev=>setIValveWeight(ev.target.value)} /></div>
+                      </div>
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Exhaust Valve — grey accordion */}
+                {strokeType==="4-stroke"&&(()=>{
+                  const hasData=!!(eValveFace||eValveStem||eValveLift||eValveWeight);
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecEngExhaustValve(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Exhaust Valve {hasData&&!secEngExhaustValve&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secEngExhaustValve?"▲":"▼"}</span>
+                    </div>
+                    {secEngExhaustValve&&<div style={{paddingTop:8}}>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Face diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 24" step="0.1" min="0" value={eValveFace} onChange={ev=>setEValveFace(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Stem diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 6" step="0.1" min="0" value={eValveStem} onChange={ev=>setEValveStem(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Lift (mm)" /><input style={inp} type="number" placeholder="e.g. 5.8" step="0.01" min="0" value={eValveLift} onChange={ev=>setEValveLift(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Weight (g)" /><input style={inp} type="number" placeholder="e.g. 16" step="0.1" min="0" value={eValveWeight} onChange={ev=>setEValveWeight(ev.target.value)} /></div>
+                      </div>
+                    </div>}
+                  </div>;
+                })()}
+
+                {/* Valve Springs — grey accordion */}
+                {strokeType==="4-stroke"&&(()=>{
+                  const hasData=!!(springFreeLen||springOuterD||springWireD||springWeight);
+                  return <div style={{marginTop:8,borderTop:"1px solid #1e1e1e",paddingTop:4}}>
+                    <div onClick={()=>setSecEngValveSprings(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",cursor:"pointer",userSelect:"none"}}>
+                      <span style={{fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:MUT,fontWeight:700}}>Valve Springs {hasData&&!secEngValveSprings&&<span style={{width:5,height:5,borderRadius:"50%",background:ACC,display:"inline-block",marginLeft:4}}/>}</span>
+                      <span style={{color:MUT,fontSize:11}}>{secEngValveSprings?"▲":"▼"}</span>
+                    </div>
+                    {secEngValveSprings&&<div style={{paddingTop:8}}>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Free length (mm)" /><input style={inp} type="number" placeholder="e.g. 35" step="0.1" min="0" value={springFreeLen} onChange={ev=>setSpringFreeLen(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Outer diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 22" step="0.1" min="0" value={springOuterD} onChange={ev=>setSpringOuterD(ev.target.value)} /></div>
+                      </div>
+                      <div style={row}>
+                        <div style={{...col,flex:1}}><FL t="Wire diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 2.5" step="0.1" min="0" value={springWireD} onChange={ev=>setSpringWireD(ev.target.value)} /></div>
+                        <div style={{...col,flex:1}}><FL t="Weight (g)" /><input style={inp} type="number" placeholder="e.g. 12" step="0.1" min="0" value={springWeight} onChange={ev=>setSpringWeight(ev.target.value)} /></div>
+                      </div>
+                    </div>}
+                  </div>;
+                })()}
 
                 {/* Cylinder Wear Limits — nested sub-section */}
                 {strokeType&&strokeType!=="Electric"&&(()=>{
