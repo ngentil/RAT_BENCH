@@ -118,8 +118,6 @@ function BillingPage({ profile, company, session }) {
       const price_id = PRICE_IDS[priceKey];
       const isOrgPlan = ["team","business"].includes(planId);
 
-      console.log("[checkout] priceKey:", priceKey, "price_id:", price_id, "user_id:", session?.user?.id, "PRICE_IDS:", PRICE_IDS);
-
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           price_id,
