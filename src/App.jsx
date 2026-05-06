@@ -102,18 +102,21 @@ function App(){
       const url=new URL(window.location.href);
       url.searchParams.delete("billing");
       window.history.replaceState({},"",url.toString());
-      if(billingBanner==="success"){
-        // Webhook may take a moment — poll until tier changes, then stop
-        let attempts=0;
-        const poll=setInterval(async()=>{
-          attempts++;
-          const {data:p}=await supabase.from("profiles").select("*").eq("id",session?.user?.id).single();
-          if(p){ setProfile(p); }
-          if(attempts>=6) clearInterval(poll);
-        },2000);
-      }
     }
   },[billingBanner]);
+
+  // Poll for tier update after billing success — only once session is loaded
+  useEffect(()=>{
+    if(billingBanner!=="success"||!session?.user?.id) return;
+    let attempts=0;
+    const poll=setInterval(async()=>{
+      attempts++;
+      const {data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+      if(p) setProfile(p);
+      if(attempts>=8) clearInterval(poll);
+    },2000);
+    return ()=>clearInterval(poll);
+  },[billingBanner,session?.user?.id]);
 
   const signOut=async()=>{
     await supabase.auth.signOut();
