@@ -97,6 +97,14 @@ function App(){
     return ()=>subscription.unsubscribe();
   },[]);
 
+  useEffect(()=>{
+    if(billingBanner){
+      const url=new URL(window.location.href);
+      url.searchParams.delete("billing");
+      window.history.replaceState({},"",url.toString());
+    }
+  },[billingBanner]);
+
   const signOut=async()=>{
     await supabase.auth.signOut();
     // onAuthStateChange will fire with null session and call loadForSession(null)
@@ -130,14 +138,6 @@ function App(){
       </div>
     );
   }
-
-  useEffect(()=>{
-    if(billingBanner){
-      const url=new URL(window.location.href);
-      url.searchParams.delete("billing");
-      window.history.replaceState({},"",url.toString());
-    }
-  },[billingBanner]);
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column"}}>
