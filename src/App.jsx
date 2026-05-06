@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
-import { BG, TXT, MUT, ACC, BRD, SURF, RED, btnG, sm } from './lib/styles';
+import { BG, TXT, MUT, ACC, BRD, SURF, RED, GRN, btnG, sm } from './lib/styles';
 import { getMachines, getMyCompany } from './lib/db';
 import { TABS } from './lib/constants';
 import AuthScreen from './components/auth/AuthScreen';
@@ -23,6 +23,10 @@ function App(){
   const [profileChecked,setProfileChecked]=useState(false);
   const [passwordReset,setPasswordReset]=useState(false);
   const [company,setCompany]=useState(null);
+  const [billingBanner,setBillingBanner]=useState(()=>{
+    const p=new URLSearchParams(window.location.search);
+    return p.get("billing")||null;
+  });
 
   // Load data for a given session.
   // First call blocks the UI (initializing screen); subsequent calls refresh silently.
@@ -127,8 +131,28 @@ function App(){
     );
   }
 
+  useEffect(()=>{
+    if(billingBanner){
+      const url=new URL(window.location.href);
+      url.searchParams.delete("billing");
+      window.history.replaceState({},"",url.toString());
+    }
+  },[billingBanner]);
+
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column"}}>
+      {billingBanner==="success"&&(
+        <div style={{background:GRN,color:"#000",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textAlign:"center",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+          <span>✓ SUBSCRIPTION ACTIVE — WELCOME TO YOUR NEW PLAN</span>
+          <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#000",fontSize:12,lineHeight:1}}>✕</button>
+        </div>
+      )}
+      {billingBanner==="cancelled"&&(
+        <div style={{background:"#333",color:MUT,fontSize:10,letterSpacing:"0.08em",textAlign:"center",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+          <span>Checkout cancelled — no charge was made.</span>
+          <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:12,lineHeight:1}}>✕</button>
+        </div>
+      )}
       <div style={{background:SURF,borderBottom:"2px solid "+ACC,padding:"12px 18px",display:"flex",alignItems:"center",gap:10}}>
         <a href="https://ratbench.net" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
           {company?.logo

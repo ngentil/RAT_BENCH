@@ -118,11 +118,14 @@ function BillingPage({ profile, company, session }) {
       const price_id = PRICE_IDS[priceKey];
       const isOrgPlan = ["team","business"].includes(planId);
 
+      const base = window.location.origin;
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           price_id,
           user_id: session.user.id,
           company_id: isOrgPlan && company ? company.id : null,
+          success_url: base + "/?billing=success",
+          cancel_url: base + "/?billing=cancelled",
         },
       });
       if (error || !data?.url) throw new Error(error?.message || "Failed to create checkout session");
