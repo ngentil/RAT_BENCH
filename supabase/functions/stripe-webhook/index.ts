@@ -15,8 +15,7 @@ const PRICE_TO_TIER: Record<string, string> = {
   [Deno.env.get("PRICE_BUSINESS")           || ""]: "business",
 };
 
-async function setTier(customerId: string, tier: string, subscriptionId: string) {
-  // Try profile first, then company
+async function setTierByCustomer(customerId: string, tier: string, subscriptionId: string) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("id")
@@ -64,16 +63,24 @@ serve(async (req) => {
         const sub = await stripe.subscriptions.retrieve(session.subscription as string);
         const priceId = sub.items.data[0].price.id;
         const tier = PRICE_TO_TIER[priceId] || "free";
-        // Store customer id on profile/company
+        const customerId = session.customer as string;
         const userId = session.metadata?.user_id;
         const companyId = session.metadata?.company_id;
+
+        // Update directly by userId/companyId from metadata — most reliable path
         if (userId) {
-          await supabase.from("profiles").update({ stripe_customer_id: session.customer as string }).eq("id", userId);
+          await supabase.from("profiles").update({
+            stripe_customer_id: customerId,
+            tier,
+            stripe_subscription_id: sub.id,
+          }).eq("id", userId);
+        } else if (companyId) {
+          await supabase.from("companies").update({
+            stripe_customer_id: customerId,
+            tier,
+            stripe_subscription_id: sub.id,
+          }).eq("id", companyId);
         }
-        if (companyId) {
-          await supabase.from("companies").update({ stripe_customer_id: session.customer as string }).eq("id", companyId);
-        }
-        await setTier(session.customer as string, tier, sub.id);
       }
       break;
     }
@@ -81,7 +88,7 @@ serve(async (req) => {
       const sub = obj as Stripe.Subscription;
       const priceId = sub.items.data[0].price.id;
       const tier = PRICE_TO_TIER[priceId] || "free";
-      await setTier(sub.customer as string, tier, sub.id);
+      await setTierByCustomer(sub.customer as string, tier, sub.id);
       break;
     }
     case "customer.subscription.deleted": {
@@ -89,7 +96,6 @@ serve(async (req) => {
       break;
     }
     case "invoice.payment_failed": {
-      // Optionally downgrade to free on payment failure
       await clearTier(obj.customer as string);
       break;
     }
