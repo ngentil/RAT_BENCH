@@ -102,6 +102,16 @@ function App(){
       const url=new URL(window.location.href);
       url.searchParams.delete("billing");
       window.history.replaceState({},"",url.toString());
+      if(billingBanner==="success"){
+        // Webhook may take a moment — poll until tier changes, then stop
+        let attempts=0;
+        const poll=setInterval(async()=>{
+          attempts++;
+          const {data:p}=await supabase.from("profiles").select("*").eq("id",session?.user?.id).single();
+          if(p){ setProfile(p); }
+          if(attempts>=6) clearInterval(poll);
+        },2000);
+      }
     }
   },[billingBanner]);
 
