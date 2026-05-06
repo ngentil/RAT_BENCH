@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
-import { ACC, MUT, BRD, SURF, TXT, GRN, BG, btnA, btnG, sm } from '../../lib/styles';
+import { supabase } from '../../lib/supabase';
+import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { TIERS, effectiveTier } from '../../lib/gates';
+
+const PRICE_IDS = {
+  enthusiast_monthly: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_MONTHLY,
+  enthusiast_yearly:  import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_YEARLY,
+  team:               import.meta.env.VITE_STRIPE_PRICE_TEAM,
+  business:           import.meta.env.VITE_STRIPE_PRICE_BUSINESS,
+};
 
 const PLANS = [
   {
@@ -35,16 +43,17 @@ const PLANS = [
     label: "Business",
     price: "$99",
     period: "/mo",
-    features: ["Everything in Team","Priority support","Custom branding (coming soon)","API access (coming soon)"],
+    features: ["Everything in Team","Parts tracker","Priority support","API access (coming soon)"],
     personal: false,
   },
 ];
 
-function PlanCard({ plan, current, billing, onUpgrade }) {
+function PlanCard({ plan, current, billing, onUpgrade, loading }) {
   const isCurrent = plan.id === current;
   const price = plan.id === "enthusiast" && billing === "yearly"
     ? plan.priceYearly + plan.periodYearly
     : (plan.price || plan.priceMonthly) + (plan.period || "");
+  const isLoading = loading === plan.id;
 
   return (
     <div style={{
@@ -76,22 +85,17 @@ function PlanCard({ plan, current, billing, onUpgrade }) {
           </li>
         ))}
       </ul>
-      {!isCurrent && (
+      {!isCurrent && plan.id !== "free" && (
         <button
           onClick={() => onUpgrade(plan.id)}
-          style={{ ...btnA, ...sm, width: "100%", opacity: 0.7, cursor: "not-allowed" }}
-          disabled
-          title="Stripe integration coming soon"
+          disabled={isLoading}
+          style={{ ...btnA, ...sm, width: "100%", opacity: isLoading ? 0.6 : 1 }}
         >
-          {current === "free" || plan.id === "free" ? "Upgrade" : "Switch"} — Coming Soon
+          {isLoading ? "Redirecting…" : "Upgrade"}
         </button>
       )}
       {isCurrent && plan.id !== "free" && (
-        <button
-          style={{ ...btnG, ...sm, width: "100%", opacity: 0.5, cursor: "not-allowed" }}
-          disabled
-          title="Billing portal coming soon"
-        >
+        <button style={{ ...btnG, ...sm, width: "100%", opacity: 0.5, cursor: "not-allowed" }} disabled>
           Manage / Cancel — Coming Soon
         </button>
       )}
@@ -99,25 +103,51 @@ function PlanCard({ plan, current, billing, onUpgrade }) {
   );
 }
 
-function BillingPage({ profile, company }) {
+function BillingPage({ profile, company, session }) {
   const [billing, setBilling] = useState("monthly");
+  const [loading, setLoading] = useState(null);
+  const [err, setErr] = useState("");
   const tier = effectiveTier(profile, company);
-  const isOrgPlan = ["team", "business"].includes(tier);
+
+  const handleUpgrade = async (planId) => {
+    setLoading(planId); setErr("");
+    try {
+      const priceKey = planId === "enthusiast"
+        ? (billing === "yearly" ? "enthusiast_yearly" : "enthusiast_monthly")
+        : planId;
+      const price_id = PRICE_IDS[priceKey];
+      const isOrgPlan = ["team","business"].includes(planId);
+
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          price_id,
+          user_id: session.user.id,
+          company_id: isOrgPlan && company ? company.id : null,
+        },
+      });
+      if (error || !data?.url) throw new Error(error?.message || "Failed to create checkout session");
+      window.location.href = data.url;
+    } catch (e) {
+      setErr(e.message);
+      setLoading(null);
+    }
+  };
 
   return (
     <div>
       <div style={{ fontSize: 9, color: MUT, marginBottom: 16, lineHeight: 1.7 }}>
-        {isOrgPlan
+        {["team","business"].includes(tier)
           ? `Your organisation is on the ${TIERS[tier]?.label} plan.`
           : `Your account is on the ${TIERS[tier]?.label} plan.`}
       </div>
 
-      {/* Monthly / Yearly toggle */}
       <div style={{ display: "flex", gap: 4, marginBottom: 20, alignItems: "center" }}>
         <button onClick={() => setBilling("monthly")} style={{ ...btnG, ...sm, ...(billing === "monthly" ? { background: ACC, color: "#000", border: "1px solid " + ACC } : {}) }}>Monthly</button>
         <button onClick={() => setBilling("yearly")} style={{ ...btnG, ...sm, ...(billing === "yearly" ? { background: ACC, color: "#000", border: "1px solid " + ACC } : {}) }}>Yearly</button>
         {billing === "yearly" && <span style={{ fontSize: 9, color: GRN, marginLeft: 4 }}>Enthusiast saves ~80% vs monthly</span>}
       </div>
+
+      {err && <div style={{ fontSize: 10, color: RED, marginBottom: 12 }}>{err}</div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
         {PLANS.map(plan => (
@@ -126,13 +156,14 @@ function BillingPage({ profile, company }) {
             plan={plan}
             current={tier}
             billing={billing}
-            onUpgrade={(id) => console.log("upgrade to", id)}
+            onUpgrade={handleUpgrade}
+            loading={loading}
           />
         ))}
       </div>
 
       <div style={{ fontSize: 9, color: MUT, textAlign: "center", lineHeight: 1.7, borderTop: "1px solid " + BRD, paddingTop: 16 }}>
-        Stripe payment integration coming soon. Plans and pricing are locked in — billing will go live shortly.
+        Payments secured by Stripe. Cancel anytime.
       </div>
     </div>
   );
