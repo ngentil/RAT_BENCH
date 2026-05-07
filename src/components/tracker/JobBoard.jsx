@@ -91,7 +91,10 @@ function exportInvoice(machine, company) {
 
   const totalSecs = log.reduce((s, e) => s + (e.seconds || 0), 0);
   const totalHrs = totalSecs / 3600;
-  const subtotal = rate !== null ? totalHrs * rate : null;
+  const labourSubtotal = rate !== null ? totalHrs * rate : null;
+  const parts = machine.parts || [];
+  const partsTotal = parts.reduce((s, p) => s + (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1), 0);
+  const subtotal = labourSubtotal !== null ? labourSubtotal + partsTotal : (partsTotal > 0 ? partsTotal : null);
   const tax = (subtotal !== null && taxRate) ? subtotal * taxRate / 100 : null;
   const total = subtotal !== null ? subtotal + (tax || 0) : null;
   const fmt$ = n => n !== null ? `$${n.toFixed(2)}` : '—';
@@ -106,6 +109,26 @@ function exportInvoice(machine, company) {
       <td class="amount">${fmt$(amount)}</td>
     </tr>`;
   }).join('');
+
+  const partsHtml = parts.length > 0 ? `
+<h3 style="font-size:13px;font-weight:700;margin:28px 0 10px">Parts &amp; Materials</h3>
+<table>
+  <thead><tr><th>Part</th><th>Part No.</th><th>Qty</th><th>Unit Price</th><th class="amount">Amount</th></tr></thead>
+  <tbody>
+    ${parts.map(p => {
+      const unitCost = parseFloat(p.unitCost) || 0;
+      const qty = parseInt(p.qty) || 1;
+      const line = unitCost * qty;
+      return `<tr>
+        <td>${escHtml(p.name)}${p.brand ? `<span style="color:#888;font-size:11px;margin-left:6px">${escHtml(p.brand)}</span>` : ''}</td>
+        <td style="color:#888;font-size:11px">${escHtml(p.partNumber || '—')}</td>
+        <td>${qty}</td>
+        <td class="amount">${unitCost > 0 ? fmt$(unitCost) : '—'}</td>
+        <td class="amount">${line > 0 ? fmt$(line) : '—'}</td>
+      </tr>`;
+    }).join('')}
+  </tbody>
+</table>` : '';
 
   const coAddress = [co.address, co.city, co.state, co.postcode, co.country].filter(Boolean).join(', ');
   const coDetail = [co.abn ? `ABN: ${co.abn}` : null, co.phone, co.email].filter(Boolean).join('  ·  ');
@@ -194,10 +217,12 @@ td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top}
     ${lineItemsHtml}
   </tbody>
 </table>
+${partsHtml}
 <div class="totals-wrap">
   <table class="totals">
     <tbody>
-      ${subtotal !== null ? `<tr class="subtotal"><td>Subtotal</td><td class="amount">${fmt$(subtotal)}</td></tr>` : ''}
+      ${labourSubtotal !== null ? `<tr class="subtotal"><td>Labour</td><td class="amount">${fmt$(labourSubtotal)}</td></tr>` : ''}
+      ${partsTotal > 0 ? `<tr class="subtotal"><td>Parts</td><td class="amount">${fmt$(partsTotal)}</td></tr>` : ''}
       ${tax !== null ? `<tr class="tax-row"><td>${escHtml(taxLabel)} ${taxRate}%</td><td class="amount">${fmt$(tax)}</td></tr>` : ''}
       <tr class="grand">
         <td>${total !== null ? 'Total' : 'Total Hours'}</td>
@@ -324,6 +349,157 @@ function TimeLogSection({ machine, company, onUpdate }) {
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PART_STATUS = {
+  needed:  { label: "Needed",  color: "#e8870a" },
+  ordered: { label: "Ordered", color: "#4a9eff" },
+  fitted:  { label: "Fitted",  color: "#3d9e50" },
+};
+const PART_STATUS_ORDER = ["needed","ordered","fitted"];
+
+function PartsSection({ machine, onUpdate }) {
+  const [adding, setAdding] = useState(false);
+  const [editIdx, setEditIdx] = useState(null);
+  const [form, setForm] = useState({});
+  const parts = machine.parts || [];
+
+  const totalCost = parts.reduce((s, p) => s + (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1), 0);
+
+  const openAdd = () => { setForm({ name:"", partNumber:"", brand:"", qty:"1", unitCost:"", supplier:"", status:"needed", notes:"" }); setAdding(true); setEditIdx(null); };
+  const openEdit = (idx) => { setForm({ ...parts[idx] }); setEditIdx(idx); setAdding(false); };
+
+  const save = async () => {
+    if (!form.name?.trim()) return;
+    let updated;
+    if (adding) {
+      updated = { ...machine, parts: [...parts, { ...form, id: crypto.randomUUID(), addedAt: new Date().toISOString() }] };
+    } else {
+      updated = { ...machine, parts: parts.map((p, i) => i === editIdx ? { ...p, ...form } : p) };
+    }
+    onUpdate(updated);
+    await upsertMachine(updated);
+    setAdding(false); setEditIdx(null);
+  };
+
+  const remove = async (idx) => {
+    if (!confirm("Remove this part?")) return;
+    const updated = { ...machine, parts: parts.filter((_, i) => i !== idx) };
+    onUpdate(updated);
+    await upsertMachine(updated);
+  };
+
+  const cycleStatus = async (idx) => {
+    const cur = parts[idx].status || "needed";
+    const next = PART_STATUS_ORDER[(PART_STATUS_ORDER.indexOf(cur) + 1) % PART_STATUS_ORDER.length];
+    const updated = { ...machine, parts: parts.map((p, i) => i === idx ? { ...p, status: next } : p) };
+    onUpdate(updated);
+    await upsertMachine(updated);
+  };
+
+  const F = ({ label, k, type="text", placeholder="" }) => (
+    <div style={{ display:"flex", flexDirection:"column", marginBottom:6 }}>
+      <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{label}</div>
+      <input
+        style={{ background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, outline:"none", boxSizing:"border-box", width:"100%" }}
+        type={type} placeholder={placeholder}
+        value={form[k] || ""}
+        onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
+      />
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop:8 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
+        <div style={{ fontSize:9, color:ACC, letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
+          Parts {parts.length > 0 && `(${parts.length})`}
+          {totalCost > 0 && <span style={{ color:GRN, marginLeft:8 }}>${totalCost.toFixed(2)}</span>}
+        </div>
+        {!adding && editIdx === null && (
+          <button onClick={openAdd} style={{ ...btnG, ...sm, fontSize:8 }}>+ Add Part</button>
+        )}
+      </div>
+
+      {parts.map((p, idx) => {
+        const st = PART_STATUS[p.status || "needed"];
+        const cost = (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1);
+        if (editIdx === idx) {
+          return (
+            <div key={p.id||idx} style={{ background:"#0a0a0a", border:"1px solid "+ACC, borderRadius:2, padding:"10px 12px", marginBottom:6 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+                <div style={{ gridColumn:"1/-1" }}><F label="Part Name *" k="name" placeholder="e.g. Air filter"/></div>
+                <F label="Part Number" k="partNumber" placeholder="e.g. 17211-Z0T"/>
+                <F label="Brand" k="brand" placeholder="e.g. Honda"/>
+                <F label="Qty" k="qty" type="number" placeholder="1"/>
+                <F label="Unit Cost ($)" k="unitCost" type="number" placeholder="0.00"/>
+                <F label="Supplier" k="supplier" placeholder="e.g. Repco"/>
+                <div>
+                  <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>Status</div>
+                  <select value={form.status||"needed"} onChange={e=>setForm(f=>({...f,status:e.target.value}))} style={{ background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, width:"100%" }}>
+                    {PART_STATUS_ORDER.map(s=><option key={s} value={s}>{PART_STATUS[s].label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ gridColumn:"1/-1" }}><F label="Notes" k="notes" placeholder="Optional notes"/></div>
+              <div style={{ display:"flex", gap:6, marginTop:6, justifyContent:"flex-end" }}>
+                <button onClick={() => setEditIdx(null)} style={{ ...btnG, ...sm }}>Cancel</button>
+                <button onClick={save} style={{ ...btnA, ...sm }}>Save</button>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div key={p.id||idx} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:"1px solid #181818" }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ fontSize:10, color:TXT, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0 }}>{p.partNumber}</span>}
+              </div>
+              <div style={{ fontSize:8, color:MUT }}>
+                {[p.brand, p.supplier, p.qty > 1 ? `×${p.qty}` : null].filter(Boolean).join(" · ")}
+              </div>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+              {cost > 0 && <span style={{ fontSize:9, color:GRN, fontFamily:"'IBM Plex Mono',monospace" }}>${cost.toFixed(2)}</span>}
+              <button
+                onClick={() => cycleStatus(idx)}
+                style={{ background:"none", border:"1px solid "+st.color+"55", color:st.color, fontSize:7, padding:"2px 5px", borderRadius:2, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" }}
+              >
+                {st.label}
+              </button>
+              <button onClick={() => openEdit(idx)} style={{ background:"none", border:"none", color:MUT, cursor:"pointer", fontSize:10, padding:"0 2px" }}>✎</button>
+              <button onClick={() => remove(idx)} style={{ background:"none", border:"none", color:MUT, cursor:"pointer", fontSize:10, padding:"0 2px" }}>✕</button>
+            </div>
+          </div>
+        );
+      })}
+
+      {adding && (
+        <div style={{ background:"#0a0a0a", border:"1px solid "+ACC, borderRadius:2, padding:"10px 12px", marginTop:6 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+            <div style={{ gridColumn:"1/-1" }}><F label="Part Name *" k="name" placeholder="e.g. Air filter"/></div>
+            <F label="Part Number" k="partNumber" placeholder="e.g. 17211-Z0T"/>
+            <F label="Brand" k="brand" placeholder="e.g. Honda"/>
+            <F label="Qty" k="qty" type="number" placeholder="1"/>
+            <F label="Unit Cost ($)" k="unitCost" type="number" placeholder="0.00"/>
+            <F label="Supplier" k="supplier" placeholder="e.g. Repco"/>
+            <div>
+              <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>Status</div>
+              <select value={form.status||"needed"} onChange={e=>setForm(f=>({...f,status:e.target.value}))} style={{ background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, width:"100%" }}>
+                {PART_STATUS_ORDER.map(s=><option key={s} value={s}>{PART_STATUS[s].label}</option>)}
+              </select>
+            </div>
+          </div>
+          <F label="Notes" k="notes" placeholder="Optional notes"/>
+          <div style={{ display:"flex", gap:6, marginTop:4, justifyContent:"flex-end" }}>
+            <button onClick={() => setAdding(false)} style={{ ...btnG, ...sm }}>Cancel</button>
+            <button onClick={save} style={{ ...btnA, ...sm }}>Save</button>
+          </div>
         </div>
       )}
     </div>
@@ -604,6 +780,7 @@ function JobBoard({ machines, setMachines, profile, company, onGoToBilling }) {
                   {m.notes && <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, marginBottom: 8 }}>{m.notes}</div>}
                   <JobTimer machine={m} onUpdate={updateM} locked={timerLocked} onGoToBilling={onGoToBilling} />
                   <TimeLogSection machine={m} company={company} onUpdate={updateM} />
+                  <PartsSection machine={m} onUpdate={updateM} />
                   <Divider />
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {STATUSES.filter(s => s !== status).map(s => (
