@@ -532,7 +532,18 @@ function JobBoard({ machines, setMachines, profile, company, onGoToBilling }) {
               <div style={{ display: "flex", gap: 10 }}>
                 <span style={{ fontSize: 17 }}>{mIcon(m.type)}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: TXT, marginBottom: 2 }}>{m.name}</div>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 2 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{m.name}</div>
+                    {(m.timeLog?.length > 0) && (() => {
+                      const totalSecs = m.timeLog.reduce((s, e) => s + (e.seconds || 0), 0);
+                      return (
+                        <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>{fmtDuration(totalSecs)}</div>
+                          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.06em", marginTop: 2 }}>TIME LOGGED</div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                   <div style={{ fontSize: 9, color: MUT, marginBottom: 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
                   {m.notes && <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, marginBottom: 8 }}>{m.notes}</div>}
                   <SkullRating value={m.rage || 0} onChange={r => updateRage(m, r)} />
