@@ -306,6 +306,7 @@ export function toDb(m) {
     overall_height:       m.overallHeight,
     carb_spec:            m.carbSpec || null,
     job_timer:            m.jobTimer || null,
+    time_log:             m.timeLog || [],
   };
 }
 
@@ -618,6 +619,7 @@ export function fromDb(r) {
     createdAt:         r.created_at,
     carbSpec:          r.carb_spec || null,
     jobTimer:          r.job_timer || null,
+    timeLog:           r.time_log || [],
   };
 }
 

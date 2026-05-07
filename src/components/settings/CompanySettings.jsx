@@ -31,6 +31,9 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
   const [country,setCountry]=useState("Australia");
   const [industry,setIndustry]=useState("");
   const [logo,setLogo]=useState("");
+  const [hourlyRate,setHourlyRate]=useState("");
+  const [taxRate,setTaxRate]=useState("");
+  const [taxLabel,setTaxLabel]=useState("");
 
   // Populate fields when editing existing company
   useEffect(()=>{
@@ -40,6 +43,9 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
       setAddress(company.address||"");setCity(company.city||"");setState(company.state||"");
       setPostcode(company.postcode||"");setCountry(company.country||"Australia");
       setIndustry(company.industry||"");setLogo(company.logo||"");
+      setHourlyRate(company.hourly_rate!=null?String(company.hourly_rate):"");
+      setTaxRate(company.tax_rate!=null?String(company.tax_rate):"");
+      setTaxLabel(company.tax_label||"");
     }
   },[company?.id]);
 
@@ -59,7 +65,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
   const saveCompany=async()=>{
     if(!name.trim()){setErr("Company name is required.");return;}
     setSaving(true);setErr("");setSaved(false);
-    const fields={name:name.trim(),trading_name:tradingName.trim()||null,abn:abn.trim()||null,phone:phone.trim()||null,email:email.trim()||null,website:website.trim()||null,address:address.trim()||null,city:city.trim()||null,state:state.trim()||null,postcode:postcode.trim()||null,country:country||null,industry:industry||null,logo:logo||null};
+    const fields={name:name.trim(),trading_name:tradingName.trim()||null,abn:abn.trim()||null,phone:phone.trim()||null,email:email.trim()||null,website:website.trim()||null,address:address.trim()||null,city:city.trim()||null,state:state.trim()||null,postcode:postcode.trim()||null,country:country||null,industry:industry||null,logo:logo||null,hourly_rate:hourlyRate!==""?parseFloat(hourlyRate):null,tax_rate:taxRate!==""?parseFloat(taxRate):null,tax_label:taxLabel.trim()||null};
     try{
       if(company){
         const updated=await updateCompany(company.id,fields);
@@ -145,6 +151,14 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
         <div style={col}><div style={lbl}>City / Town</div><input style={inp} value={city} onChange={e=>setCity(e.target.value)}/></div>
         {cfg.state&&<div style={col}><div style={lbl}>{cfg.state}</div><input style={inp} value={state} onChange={e=>setState(e.target.value)}/></div>}
         <div style={col}><div style={lbl}>{cfg.postcode}</div><input style={inp} value={postcode} onChange={e=>setPostcode(e.target.value)}/></div>
+      </div>
+      <div style={{marginTop:4,paddingTop:14,borderTop:"1px solid #1a1a1a"}}>
+        <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,fontWeight:700}}>Billing Rates</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          <div style={col}><div style={lbl}>Labour Rate ($/hr)</div><input style={inp} type="number" min="0" step="0.5" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="e.g. 85"/></div>
+          <div style={col}><div style={lbl}>Tax Rate (%)</div><input style={inp} type="number" min="0" max="100" step="0.5" value={taxRate} onChange={e=>setTaxRate(e.target.value)} placeholder="e.g. 10"/></div>
+          <div style={col}><div style={lbl}>Tax Label</div><input style={inp} value={taxLabel} onChange={e=>setTaxLabel(e.target.value)} placeholder="e.g. GST"/></div>
+        </div>
       </div>
     </>
   );
