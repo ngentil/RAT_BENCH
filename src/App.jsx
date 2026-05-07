@@ -166,7 +166,7 @@ function App(){
   const tierGlow = TIER_GLOW[effectiveTier(profile, company)];
 
   return (
-    <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column"}}>
+    <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
       {billingBanner==="success"&&(
         <div style={{background:"#0a1a0a",color:"#00ff66",fontSize:11,fontWeight:700,letterSpacing:"0.12em",textAlign:"center",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 0 24px #00ff6688, 0 0 6px #00ff6644",borderBottom:"1px solid #00ff6655"}}>
           <span style={{textShadow:"0 0 12px #00ff66, 0 0 4px #00ff66"}}>✓ SUBSCRIPTION ACTIVE — WELCOME TO YOUR NEW PLAN</span>
@@ -204,14 +204,14 @@ function App(){
           {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:8}}>⚙️</button>}
         </div>
       </div>
-      <div style={{display:"flex",background:SURF,borderBottom:"1px solid "+BRD}}>
+      <div style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
         {TABS.filter(t=>{
           const tier=effectiveTier(profile,company);
           if(t.teamOnly&&!["team","business"].includes(tier))return false;
           if(t.enthusiastOnly&&tier==="free")return false;
           return true;
         }).map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"10px 4px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:tab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:tab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flexShrink:0,padding:"10px 10px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:tab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:tab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
             {t.label}
           </button>
         ))}
