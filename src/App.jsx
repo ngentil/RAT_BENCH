@@ -22,6 +22,7 @@ import UsersTab from './components/users/UsersTab';
 import ServiceReminders from './components/tracker/ServiceReminders';
 import RevenueDashboard from './components/tracker/RevenueDashboard';
 import CustomersTab from './components/customers/CustomersTab';
+import PartsTab from './components/tracker/PartsTab';
 function App(){
   const [tab,setTab]=useState(()=>localStorage.getItem("rat_tab")||"tracker");
   const [machines,setMachines]=useState([]);
@@ -220,6 +221,7 @@ function App(){
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines}/></div>
       <div style={{display:tab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="parts"?"contents":"none"}}><PartsTab machines={machines}/></div>
       <div style={{display:tab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} session={session}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>
