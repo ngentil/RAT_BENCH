@@ -566,7 +566,6 @@ function JobBoard({ machines, setMachines, profile, company, onGoToBilling }) {
                   </div>
                   <div style={{ fontSize: 9, color: MUT, marginBottom: 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
                   {m.notes && <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, marginBottom: 8 }}>{m.notes}</div>}
-                  <SkullRating value={m.rage || 0} onChange={r => updateRage(m, r)} />
                   <JobTimer machine={m} onUpdate={updateM} locked={timerLocked} onGoToBilling={onGoToBilling} />
                   <TimeLogSection machine={m} company={company} onUpdate={updateM} />
                   <Divider />
@@ -577,6 +576,12 @@ function JobBoard({ machines, setMachines, profile, company, onGoToBilling }) {
                       </button>
                     ))}
                   </div>
+                  {(m.timeLog?.length >= 5) && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Rage Factor</div>
+                      <SkullRating value={m.rage || 0} onChange={r => updateRage(m, r)} />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
