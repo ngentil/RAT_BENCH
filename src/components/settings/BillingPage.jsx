@@ -3,6 +3,30 @@ import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { TIERS, effectiveTier } from '../../lib/gates';
 
+function GlowBtn({ onClick, disabled, style, glow, children }) {
+  const [hov, setHov] = useState(false);
+  const [active, setActive] = useState(false);
+  const glowColor = glow || ACC;
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => { setHov(false); setActive(false); }}
+      onMouseDown={() => setActive(true)}
+      onMouseUp={() => setActive(false)}
+      style={{
+        ...style,
+        boxShadow: hov ? `0 0 10px ${glowColor}55, 0 0 3px ${glowColor}33` : "none",
+        transform: active ? "scale(0.96)" : "scale(1)",
+        transition: "box-shadow 0.15s ease, transform 0.1s ease",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 const PRICE_IDS = {
   enthusiast_monthly: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_MONTHLY,
   enthusiast_yearly:  import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_YEARLY,
@@ -86,22 +110,24 @@ function PlanCard({ plan, current, billing, onUpgrade, onManage, loading }) {
         ))}
       </ul>
       {!isCurrent && plan.id !== "free" && (
-        <button
+        <GlowBtn
           onClick={() => onUpgrade(plan.id)}
           disabled={isLoading}
+          glow={ACC}
           style={{ ...btnA, ...sm, width: "100%", opacity: isLoading ? 0.6 : 1 }}
         >
           {isLoading ? "Redirecting…" : "Upgrade"}
-        </button>
+        </GlowBtn>
       )}
       {isCurrent && plan.id !== "free" && (
-        <button
+        <GlowBtn
           onClick={() => onManage(plan.id)}
           disabled={isLoading}
+          glow="#888"
           style={{ ...btnG, ...sm, width: "100%", opacity: isLoading ? 0.6 : 1 }}
         >
           {isLoading ? "Redirecting…" : "Manage / Cancel"}
-        </button>
+        </GlowBtn>
       )}
     </div>
   );
