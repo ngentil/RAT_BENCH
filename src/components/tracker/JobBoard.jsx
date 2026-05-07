@@ -309,6 +309,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const [mins, setMins] = useState("");
   const [jobLabel, setJobLabel] = useState(t.jobLabel || "");
   const [customLabel, setCustomLabel] = useState("");
+  const [mode, setMode] = useState("countdown");
 
   const jobOptions = getJobOptions(machine);
   const isCustom = jobLabel === "__custom__";
@@ -338,9 +339,13 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
 
   const handleStart = async () => {
     if (t.status === "idle" && !t.duration) {
-      const dur = parseDuration(hours, mins);
-      if (!dur) return;
-      await save({ duration: dur, elapsed: 0, startedAt: new Date().toISOString(), status: "running", jobLabel: effectiveLabel });
+      if (mode === "countup") {
+        await save({ duration: 0, elapsed: 0, startedAt: new Date().toISOString(), status: "running", jobLabel: effectiveLabel });
+      } else {
+        const dur = parseDuration(hours, mins);
+        if (!dur) return;
+        await save({ duration: dur, elapsed: 0, startedAt: new Date().toISOString(), status: "running", jobLabel: effectiveLabel });
+      }
     } else {
       await save({ startedAt: new Date().toISOString(), status: "running" });
     }
@@ -423,9 +428,18 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   }
 
   if (t.status === "idle" && !t.duration) {
+    const tabStyle = (active) => ({
+      flex: 1, padding: "4px 0", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+      textTransform: "uppercase", cursor: "pointer", border: "1px solid #333", fontFamily: "'IBM Plex Mono',monospace",
+      background: active ? ACC : "#111", color: active ? "#000" : MUT,
+    });
     return (
       <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
         <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Job Timer</div>
+        <div style={{ display: "flex", marginBottom: 10, borderRadius: 2, overflow: "hidden" }}>
+          <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>⬇ Countdown</button>
+          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0 2px 2px 0" }}>⬆ Count Up</button>
+        </div>
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
           <select style={timerSel} value={jobLabel} onChange={e => setJobLabel(e.target.value)}>
@@ -444,42 +458,48 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
             />
           )}
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <input
-              type="number" min="0" max="99" placeholder="0"
-              value={hours} onChange={e => setHours(e.target.value)}
-              style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }}
-            />
-            <span style={{ fontSize: 9, color: MUT }}>h</span>
+        {mode === "countdown" ? (
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <input
+                type="number" min="0" max="99" placeholder="0"
+                value={hours} onChange={e => setHours(e.target.value)}
+                style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }}
+              />
+              <span style={{ fontSize: 9, color: MUT }}>h</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <input
+                type="number" min="0" max="59" placeholder="0"
+                value={mins} onChange={e => setMins(e.target.value)}
+                style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }}
+              />
+              <span style={{ fontSize: 9, color: MUT }}>m</span>
+            </div>
+            <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <input
-              type="number" min="0" max="59" placeholder="0"
-              value={mins} onChange={e => setMins(e.target.value)}
-              style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }}
-            />
-            <span style={{ fontSize: 9, color: MUT }}>m</span>
-          </div>
-          <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
-        </div>
+        ) : (
+          <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Start</button>
+        )}
       </div>
     );
   }
 
+  const isCountUp = t.duration === 0;
+  const displayColor = isCountUp ? GRN : (isExpired ? RED : glowColor);
+
   return (
-    <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${glowColor}44`, borderRadius: 2, boxShadow: `0 0 10px ${glowColor}22` }}>
+    <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${displayColor}44`, borderRadius: 2, boxShadow: `0 0 10px ${displayColor}22` }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: t.jobLabel ? 2 : 8 }}>
         <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-          {t.status === "paused" ? "Paused" : isExpired ? "Time Up — Finish Job" : "Time Remaining"}
+          {t.status === "paused" ? "Paused" : isCountUp ? "Elapsed" : isExpired ? "Time Up — Finish Job" : "Time Remaining"}
         </div>
         <div style={{
           fontSize: 26, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace",
-          color: isExpired ? RED : glowColor,
-          textShadow: `0 0 10px ${isExpired ? RED : glowColor}88`,
-          animation: "none",
+          color: displayColor,
+          textShadow: `0 0 10px ${displayColor}88`,
         }}>
-          {fmt(remaining)}
+          {isCountUp ? fmt(display) : fmt(remaining)}
         </div>
       </div>
       {t.jobLabel && (
@@ -487,7 +507,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
           {t.jobLabel}
         </div>
       )}
-      {t.duration > 0 && (
+      {!isCountUp && t.duration > 0 && (
         <div style={{ height: 3, background: "#1a1a1a", borderRadius: 2, marginBottom: 10, overflow: "hidden" }}>
           <div style={{
             height: "100%", borderRadius: 2,
