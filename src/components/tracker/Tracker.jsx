@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES } from '../../lib/constants';
+import { atMachineLimit } from '../../lib/gates';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
-function Tracker({machines,setMachines,company,profile,setProfile,isGuest}){
+function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoToBilling}){
   const [showAdd,setShowAdd]=useState(false);
   const [showUpgrade,setShowUpgrade]=useState(false);
   const [saving,setSaving]=useState(false);
@@ -127,6 +128,11 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest}){
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
                 <button style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}} onClick={()=>setShowUpgrade(true)}>Create account</button>
+              </div>
+            : !isGuest&&atMachineLimit(machines.length,profile,company)
+            ? <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>50 machine free limit</span>
+                <button style={{...btnA,...sm}} onClick={onGoToBilling}>Upgrade</button>
               </div>
             : <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
