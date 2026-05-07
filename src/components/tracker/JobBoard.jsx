@@ -429,16 +429,16 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
 
   if (t.status === "idle" && !t.duration) {
     const tabStyle = (active) => ({
-      flex: 1, padding: "4px 0", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+      padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em",
       textTransform: "uppercase", cursor: "pointer", border: "1px solid #333", fontFamily: "'IBM Plex Mono',monospace",
-      background: active ? ACC : "#111", color: active ? "#000" : MUT,
+      background: active ? ACC : "none", color: active ? "#000" : MUT,
     });
     return (
       <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Job Timer</div>
-        <div style={{ display: "flex", marginBottom: 10, borderRadius: 2, overflow: "hidden" }}>
-          <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>⬇ Countdown</button>
-          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0 2px 2px 0" }}>⬆ Count Up</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>Job Timer</div>
+          <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>↓ Countdown</button>
+          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0 2px 2px 0" }}>↑ Count Up</button>
         </div>
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
