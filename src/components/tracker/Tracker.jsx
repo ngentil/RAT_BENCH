@@ -120,6 +120,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <SL t="Machines" />
           {sortBy&&<span style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
+          {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:8,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em"}}>{machines.length}/50</span>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>

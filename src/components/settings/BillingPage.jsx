@@ -102,13 +102,18 @@ function PlanCard({ plan, current, billing, onUpgrade, onManage, loading }) {
         {price || "$0"}
         {!price && <span style={{ fontSize: 11, color: MUT }}> forever</span>}
       </div>
-      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 14px", fontSize: 10, color: MUT, lineHeight: 2 }}>
+      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 10px", fontSize: 10, color: MUT, lineHeight: 2 }}>
         {plan.features.map(f => (
           <li key={f} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
             <span style={{ color: GRN, flexShrink: 0 }}>✓</span>{f}
           </li>
         ))}
       </ul>
+      {!plan.personal && !isCurrent && (
+        <div style={{ fontSize: 8, color: MUT, marginBottom: 10, letterSpacing: "0.06em", borderTop: "1px solid #252525", paddingTop: 8 }}>
+          Requires creating an organisation
+        </div>
+      )}
       {!isCurrent && plan.id !== "free" && (
         <GlowBtn
           onClick={() => onUpgrade(plan.id)}
