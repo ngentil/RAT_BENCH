@@ -163,9 +163,6 @@ function App(){
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column"}}>
-      {tierGlow&&(
-        <div style={{height:3,background:tierGlow.color,boxShadow:`0 0 12px ${tierGlow.color}, 0 0 4px ${tierGlow.color}`,flexShrink:0}}/>
-      )}
       {billingBanner==="success"&&(
         <div style={{background:"#0a1a0a",color:"#00ff66",fontSize:11,fontWeight:700,letterSpacing:"0.12em",textAlign:"center",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 0 24px #00ff6688, 0 0 6px #00ff6644",borderBottom:"1px solid #00ff6655"}}>
           <span style={{textShadow:"0 0 12px #00ff66, 0 0 4px #00ff66"}}>✓ SUBSCRIPTION ACTIVE — WELCOME TO YOUR NEW PLAN</span>
@@ -184,7 +181,7 @@ function App(){
           <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:12,lineHeight:1}}>✕</button>
         </div>
       )}
-      <div style={{background:SURF,borderBottom:"2px solid "+ACC,padding:"12px 18px",display:"flex",alignItems:"center",gap:10}}>
+      <div style={{background:SURF,borderBottom:`2px solid ${tierGlow?.color||ACC}`,boxShadow:tierGlow?`0 2px 12px ${tierGlow.color}66, 0 1px 4px ${tierGlow.color}44`:"none",padding:"12px 18px",display:"flex",alignItems:"center",gap:10}}>
         <a href="https://ratbench.net" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
           {company?.logo
             ? <img src={company.logo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD}}/>
