@@ -175,4 +175,4 @@ export const getExpandFields = (type, strokeType) => EXPAND_SECTIONS.filter(f=>{
 });
 export const getTileFields = (type) => TILE_FIELDS.filter(f=>!f.types||f.types.includes(type));
 
-export const TABS = [{id:"tracker",label:"📋 Tracker"},{id:"jobs",label:"🗂 Jobs"},{id:"search",label:"🔍 Search"},{id:"wiki",label:"📖 Wiki"}];
+export const TABS = [{id:"tracker",label:"📋 Tracker"},{id:"jobs",label:"🗂 Jobs"},{id:"search",label:"🔍 Search"},{id:"wiki",label:"📖 Wiki"},{id:"users",label:"👥 Users",teamOnly:true}];

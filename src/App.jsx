@@ -18,6 +18,7 @@ import Tracker from './components/tracker/Tracker';
 import JobBoard from './components/tracker/JobBoard';
 import SpecSearch from './components/tracker/SpecSearch';
 import WikiTab from './components/wiki/WikiTab';
+import UsersTab from './components/users/UsersTab';
 function App(){
   const [tab,setTab]=useState(()=>localStorage.getItem("rat_tab")||"tracker");
   const [machines,setMachines]=useState([]);
@@ -201,7 +202,7 @@ function App(){
         </div>
       </div>
       <div style={{display:"flex",background:SURF,borderBottom:"1px solid "+BRD}}>
-        {TABS.map(t=>(
+        {TABS.filter(t=>!t.teamOnly||["team","business"].includes(effectiveTier(profile,company))).map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"10px 4px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:tab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:tab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
             {t.label}
           </button>
@@ -211,6 +212,7 @@ function App(){
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>
+      <div style={{display:tab==="users"?"contents":"none"}}><UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut}/></div>
     </div>
   );
