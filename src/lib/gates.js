@@ -6,9 +6,13 @@ export const TIERS = {
   business:    { label: "Business",    price: "$99/mo",  machines: Infinity, org: true,  acl: true,  support: true  },
 };
 
-// Resolve the effective tier for a user — company tier takes precedence
+const TIER_RANK = { free: 0, enthusiast: 1, team: 2, business: 3 };
+
+// Resolve the effective tier — returns whichever of profile or company is higher
 export function effectiveTier(profile, company) {
-  return company?.tier || profile?.tier || "free";
+  const p = profile?.tier || "free";
+  const c = company?.tier || "free";
+  return (TIER_RANK[p] ?? 0) >= (TIER_RANK[c] ?? 0) ? p : c;
 }
 
 // Feature gate check
