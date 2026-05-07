@@ -123,7 +123,7 @@ function PlanCard({ plan, current, billing, onUpgrade, onManage, loading }) {
         <GlowBtn
           onClick={() => onManage(plan.id)}
           disabled={isLoading}
-          glow="#888"
+          glow={RED}
           style={{ ...btnG, ...sm, width: "100%", opacity: isLoading ? 0.6 : 1 }}
         >
           {isLoading ? "Redirecting…" : "Manage / Cancel"}
