@@ -89,13 +89,22 @@ const EMPTY = { name:'', partNumber:'', brand:'', supplier:'', buyPrice:'', sell
 function ItemForm({ initial, onSave, onCancel }) {
   const [f, setF] = useState({ ...EMPTY, ...initial });
   const set = k => e => setF(p => ({ ...p, [k]: e.target.value }));
+  const skuRef = useRef(null);
 
   const margin = f.buyPrice && f.sellPrice
     ? (((parseFloat(f.sellPrice) - parseFloat(f.buyPrice)) / parseFloat(f.sellPrice)) * 100).toFixed(0)
     : null;
 
   const fieldStyle = { background:'#0a0a0a', border:'1px solid #252525', color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:'6px 8px', borderRadius:2, outline:'none', boxSizing:'border-box', width:'100%' };
-  const L = ({ t }) => <div style={{ fontSize:8, color:MUT, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>{t}</div>;
+  const L = ({ t, scanner }) => (
+    <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3 }}>
+      <span style={{ fontSize:8, color:MUT, letterSpacing:'0.1em', textTransform:'uppercase' }}>{t}</span>
+      {scanner && <span style={{ display:'flex', alignItems:'center', gap:3, fontSize:7, color:ACC, letterSpacing:'0.08em' }}>
+        <span style={{ width:5, height:5, borderRadius:'50%', background:ACC, display:'inline-block', boxShadow:'0 0 4px '+ACC, animation:'pulse 2s infinite', flexShrink:0 }}/>
+        scan ready
+      </span>}
+    </div>
+  );
 
   return (
     <div style={{ background:'#0a0f0a', border:'1px solid '+ACC+'44', borderRadius:2, padding:'14px', marginBottom:12 }}>
@@ -104,7 +113,11 @@ function ItemForm({ initial, onSave, onCancel }) {
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
         <div style={{ gridColumn:'1/-1', ...col }}><L t="Part Name *"/><input style={fieldStyle} value={f.name} onChange={set('name')} placeholder="e.g. Air Filter" autoFocus/></div>
-        <div style={col}><L t="SKU / Part No."/><input style={fieldStyle} value={f.partNumber} onChange={set('partNumber')} placeholder="e.g. 17211-Z0T"/></div>
+        <div style={col}>
+          <L t="SKU / Part No." scanner/>
+          <input ref={skuRef} style={fieldStyle} value={f.partNumber} onChange={set('partNumber')} placeholder="Focus here, then scan…"
+            onFocus={e => e.target.select()}/>
+        </div>
         <div style={col}><L t="Brand"/><input style={fieldStyle} value={f.brand} onChange={set('brand')} placeholder="e.g. Honda"/></div>
         <div style={col}><L t="Supplier"/><input style={fieldStyle} value={f.supplier} onChange={set('supplier')} placeholder="e.g. Repco"/></div>
         <div style={col}><L t="Location / Bin"/><input style={fieldStyle} value={f.location} onChange={set('location')} placeholder="e.g. Shelf A2"/></div>
@@ -146,7 +159,6 @@ export default function PartsTab({ machines, session }) {
   const [qrItem, setQrItem]   = useState(null);
   const [adjustItem, setAdjustItem] = useState(null);
   const [adjustDelta, setAdjustDelta] = useState('');
-  const skuRef = useRef(null);
 
   const reload = () => setInv(getInventory(userId));
 
@@ -241,26 +253,6 @@ export default function PartsTab({ machines, session }) {
         </div>
       </div>
 
-      {/* Scanner input */}
-      <div style={{ background:'#0a0f0a', border:'1px solid '+ACC+'33', borderRadius:2, padding:'8px 12px', marginBottom:12 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <div style={{ width:7, height:7, borderRadius:'50%', background:ACC, boxShadow:'0 0 6px '+ACC, animation:'pulse 2s infinite', flexShrink:0 }}/>
-          <span style={{ fontSize:8, color:ACC, letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:700 }}>Scanner Active</span>
-          <span style={{ fontSize:8, color:MUT }}>— scan or type a SKU below</span>
-        </div>
-        <input
-          ref={skuRef}
-          style={{ ...inp, marginTop:8, fontSize:12, letterSpacing:'0.06em' }}
-          placeholder="Scan barcode / enter SKU + Enter…"
-          onKeyDown={e => { if (e.key==='Enter' && e.target.value.trim()) { handleScan(e.target.value.trim()); e.target.value=''; } }}
-          onChange={e => setSearch(e.target.value)}
-        />
-        {lastScan && (
-          <div style={{ marginTop:6, fontSize:9, padding:'4px 8px', borderRadius:2, color: lastScan.found ? GRN : ORANGE, background: (lastScan.found ? GRN : ORANGE)+'11', border:'1px solid '+(lastScan.found ? GRN : ORANGE)+'44' }}>
-            {lastScan.found ? `✓ Found: "${lastScan.name}"` : `⚠ SKU "${lastScan.sku}" not in inventory — add it above`}
-          </div>
-        )}
-      </div>
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
 
       {/* New / edit form */}
@@ -291,6 +283,11 @@ export default function PartsTab({ machines, session }) {
         ))}
         {search && <button onClick={() => setSearch('')} style={{ ...btnG, ...sm, fontSize:8 }}>✕ Clear</button>}
       </div>
+      {lastScan && (
+        <div style={{ marginBottom:10, fontSize:9, padding:'5px 10px', borderRadius:2, color: lastScan.found ? GRN : ORANGE, background: (lastScan.found ? GRN : ORANGE)+'11', border:'1px solid '+(lastScan.found ? GRN : ORANGE)+'44' }}>
+          {lastScan.found ? `✓ Found: "${lastScan.name}"` : `⚠ "${lastScan.sku}" not in inventory — add it with + Add Part`}
+        </div>
+      )}
 
       {inv.length === 0 && !editing && (
         <div style={{ fontSize:10, color:MUT, lineHeight:1.7, padding:'32px 0', textAlign:'center' }}>
