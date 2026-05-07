@@ -366,12 +366,20 @@ function PartsSection({ machine, onUpdate }) {
   const [adding, setAdding] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [form, setForm] = useState({});
+  const [skuInput, setSkuInput] = useState("");
   const parts = machine.parts || [];
 
   const totalCost = parts.reduce((s, p) => s + (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1), 0);
 
-  const openAdd = () => { setForm({ name:"", partNumber:"", brand:"", qty:"1", unitCost:"", supplier:"", status:"needed", notes:"" }); setAdding(true); setEditIdx(null); };
+  const openAdd = (prefill = {}) => { setForm({ name:"", partNumber:"", brand:"", qty:"1", unitCost:"", supplier:"", status:"needed", notes:"", ...prefill }); setAdding(true); setEditIdx(null); };
   const openEdit = (idx) => { setForm({ ...parts[idx] }); setEditIdx(idx); setAdding(false); };
+
+  const handleSkuScan = (e) => {
+    if (e.key === "Enter" && skuInput.trim()) {
+      openAdd({ partNumber: skuInput.trim() });
+      setSkuInput("");
+    }
+  };
 
   const save = async () => {
     if (!form.name?.trim()) return;
@@ -421,7 +429,16 @@ function PartsSection({ machine, onUpdate }) {
           {totalCost > 0 && <span style={{ color:GRN, marginLeft:8 }}>${totalCost.toFixed(2)}</span>}
         </div>
         {!adding && editIdx === null && (
-          <button onClick={openAdd} style={{ ...btnG, ...sm, fontSize:8 }}>+ Add Part</button>
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            <input
+              value={skuInput}
+              onChange={e => setSkuInput(e.target.value)}
+              onKeyDown={handleSkuScan}
+              placeholder="SKU / scan…"
+              style={{ background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:9, padding:"3px 7px", borderRadius:2, outline:"none", width:90 }}
+            />
+            <button onClick={() => openAdd()} style={{ ...btnG, ...sm, fontSize:8 }}>+ Add</button>
+          </div>
         )}
       </div>
 
