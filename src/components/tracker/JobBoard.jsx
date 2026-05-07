@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { upsertMachine } from '../../lib/db';
+import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm } from '../../lib/styles';
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
 import { SL, Empty, SkullRating, Divider } from '../ui/shared';
@@ -355,170 +356,167 @@ function TimeLogSection({ machine, company, onUpdate }) {
   );
 }
 
-const PART_STATUS = {
-  needed:  { label: "Needed",  color: "#e8870a" },
-  ordered: { label: "Ordered", color: "#4a9eff" },
-  fitted:  { label: "Fitted",  color: "#3d9e50" },
-};
-const PART_STATUS_ORDER = ["needed","ordered","fitted"];
-
-function PartsSection({ machine, onUpdate }) {
-  const [adding, setAdding] = useState(false);
-  const [editIdx, setEditIdx] = useState(null);
-  const [form, setForm] = useState({});
-  const [skuInput, setSkuInput] = useState("");
+function PartsSection({ machine, onUpdate, userId }) {
+  const [mode, setMode]     = useState(null); // null | "inv" | "standalone"
+  const [inv, setInv]       = useState(() => getInventory(userId));
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState(null); // inventory item
+  const [qty, setQty]       = useState("1");
+  const [saForm, setSaForm] = useState({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
   const parts = machine.parts || [];
 
-  const totalCost = parts.reduce((s, p) => s + (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1), 0);
+  const totalRevenue = parts.reduce((s,p)=>(s+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1)),0);
+  const totalCost    = parts.reduce((s,p)=>(s+(parseFloat(p.buyPrice)||0)*(Number(p.qty)||1)),0);
 
-  const openAdd = (prefill = {}) => { setForm({ name:"", partNumber:"", brand:"", qty:"1", unitCost:"", supplier:"", status:"needed", notes:"", ...prefill }); setAdding(true); setEditIdx(null); };
-  const openEdit = (idx) => { setForm({ ...parts[idx] }); setEditIdx(idx); setAdding(false); };
+  const inpS = { background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, outline:"none", boxSizing:"border-box", width:"100%" };
+  const L = ({ t }) => <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{t}</div>;
 
-  const handleSkuScan = (e) => {
-    if (e.key === "Enter" && skuInput.trim()) {
-      openAdd({ partNumber: skuInput.trim() });
-      setSkuInput("");
-    }
-  };
+  const filteredInv = inv.filter(i =>
+    !search || i.name.toLowerCase().includes(search.toLowerCase()) ||
+    (i.partNumber||"").toLowerCase().includes(search.toLowerCase())
+  );
 
-  const save = async () => {
-    if (!form.name?.trim()) return;
-    let updated;
-    if (adding) {
-      updated = { ...machine, parts: [...parts, { ...form, id: crypto.randomUUID(), addedAt: new Date().toISOString() }] };
-    } else {
-      updated = { ...machine, parts: parts.map((p, i) => i === editIdx ? { ...p, ...form } : p) };
-    }
+  const useFromInventory = async () => {
+    if (!selected) return;
+    const useQty = Math.max(1, parseInt(qty) || 1);
+    const entry = {
+      id: crypto.randomUUID(),
+      inventoryId: selected.id,
+      name: selected.name,
+      partNumber: selected.partNumber || "",
+      brand: selected.brand || "",
+      qty: useQty,
+      buyPrice: parseFloat(selected.buyPrice) || 0,
+      sellPrice: parseFloat(selected.sellPrice) || 0,
+      usedAt: new Date().toISOString(),
+    };
+    const updated = { ...machine, parts: [...parts, entry] };
     onUpdate(updated);
     await upsertMachine(updated);
-    setAdding(false); setEditIdx(null);
+    setInv(adjustStock(userId, selected.id, -useQty));
+    setMode(null); setSelected(null); setQty("1"); setSearch("");
+  };
+
+  const addStandalone = async () => {
+    if (!saForm.name.trim()) return;
+    const entry = { ...saForm, id: crypto.randomUUID(), qty: parseInt(saForm.qty)||1, buyPrice: parseFloat(saForm.buyPrice)||0, sellPrice: parseFloat(saForm.sellPrice)||0, usedAt: new Date().toISOString() };
+    const updated = { ...machine, parts: [...parts, entry] };
+    onUpdate(updated);
+    await upsertMachine(updated);
+    setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
   };
 
   const remove = async (idx) => {
-    if (!confirm("Remove this part?")) return;
-    const updated = { ...machine, parts: parts.filter((_, i) => i !== idx) };
+    if (!confirm("Remove this part usage? Stock will be returned if it came from inventory.")) return;
+    const p = parts[idx];
+    const updated = { ...machine, parts: parts.filter((_,i) => i !== idx) };
     onUpdate(updated);
     await upsertMachine(updated);
+    if (p.inventoryId) setInv(adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
   };
-
-  const cycleStatus = async (idx) => {
-    const cur = parts[idx].status || "needed";
-    const next = PART_STATUS_ORDER[(PART_STATUS_ORDER.indexOf(cur) + 1) % PART_STATUS_ORDER.length];
-    const updated = { ...machine, parts: parts.map((p, i) => i === idx ? { ...p, status: next } : p) };
-    onUpdate(updated);
-    await upsertMachine(updated);
-  };
-
-  const F = ({ label, k, type="text", placeholder="" }) => (
-    <div style={{ display:"flex", flexDirection:"column", marginBottom:6 }}>
-      <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{label}</div>
-      <input
-        style={{ background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, outline:"none", boxSizing:"border-box", width:"100%" }}
-        type={type} placeholder={placeholder}
-        value={form[k] || ""}
-        onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))}
-      />
-    </div>
-  );
 
   return (
     <div style={{ marginTop:8 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
         <div style={{ fontSize:9, color:ACC, letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
-          Parts {parts.length > 0 && `(${parts.length})`}
-          {totalCost > 0 && <span style={{ color:GRN, marginLeft:8 }}>${totalCost.toFixed(2)}</span>}
+          Parts Used {parts.length > 0 && `(${parts.length})`}
+          {totalRevenue > 0 && <span style={{ color:GRN, marginLeft:8 }}>${totalRevenue.toFixed(2)}</span>}
+          {totalCost > 0 && totalRevenue > 0 && <span style={{ color:MUT, marginLeft:4, fontSize:8 }}>cost ${totalCost.toFixed(2)}</span>}
         </div>
-        {!adding && editIdx === null && (
-          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-            <input
-              value={skuInput}
-              onChange={e => setSkuInput(e.target.value)}
-              onKeyDown={handleSkuScan}
-              placeholder="SKU / scan…"
-              style={{ background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:9, padding:"3px 7px", borderRadius:2, outline:"none", width:90 }}
-            />
-            <button onClick={() => openAdd()} style={{ ...btnG, ...sm, fontSize:8 }}>+ Add</button>
+        {!mode && (
+          <div style={{ display:"flex", gap:5 }}>
+            {inv.length > 0 && <button onClick={() => setMode("inv")} style={{ ...btnA, ...sm, fontSize:8 }}>Use from Inventory</button>}
+            <button onClick={() => setMode("standalone")} style={{ ...btnG, ...sm, fontSize:8 }}>+ One-off</button>
           </div>
         )}
       </div>
 
-      {parts.map((p, idx) => {
-        const st = PART_STATUS[p.status || "needed"];
-        const cost = (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1);
-        if (editIdx === idx) {
-          return (
-            <div key={p.id||idx} style={{ background:"#0a0a0a", border:"1px solid "+ACC, borderRadius:2, padding:"10px 12px", marginBottom:6 }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-                <div style={{ gridColumn:"1/-1" }}><F label="Part Name *" k="name" placeholder="e.g. Air filter"/></div>
-                <F label="Part Number" k="partNumber" placeholder="e.g. 17211-Z0T"/>
-                <F label="Brand" k="brand" placeholder="e.g. Honda"/>
-                <F label="Qty" k="qty" type="number" placeholder="1"/>
-                <F label="Unit Cost ($)" k="unitCost" type="number" placeholder="0.00"/>
-                <F label="Supplier" k="supplier" placeholder="e.g. Repco"/>
-                <div>
-                  <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>Status</div>
-                  <select value={form.status||"needed"} onChange={e=>setForm(f=>({...f,status:e.target.value}))} style={{ background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, width:"100%" }}>
-                    {PART_STATUS_ORDER.map(s=><option key={s} value={s}>{PART_STATUS[s].label}</option>)}
-                  </select>
+      {/* Inventory picker */}
+      {mode === "inv" && (
+        <div style={{ background:"#0a0f0a", border:"1px solid "+ACC+"44", borderRadius:2, padding:"10px 12px", marginBottom:8 }}>
+          <div style={{ fontSize:9, color:ACC, letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>Use from Inventory</div>
+          <input style={{ ...inpS, marginBottom:8 }} placeholder="Search inventory…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
+          <div style={{ maxHeight:160, overflowY:"auto", marginBottom:8 }}>
+            {filteredInv.map(i => {
+              const stockQty = Number(i.stockQty) || 0;
+              return (
+                <div key={i.id} onClick={() => { setSelected(i); setSearch(""); }}
+                  style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 8px", borderRadius:2, cursor:"pointer", background: selected?.id===i.id ? ACC+"22" : "transparent", border:"1px solid "+(selected?.id===i.id ? ACC+"55" : "transparent"), marginBottom:3 }}>
+                  <div>
+                    <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
+                    <div style={{ fontSize:8, color:MUT }}>{[i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
+                  </div>
+                  <div style={{ textAlign:"right", flexShrink:0 }}>
+                    <div style={{ fontSize:10, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} in stock</div>
+                    {i.sellPrice && <div style={{ fontSize:8, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
+                  </div>
                 </div>
+              );
+            })}
+            {filteredInv.length === 0 && <div style={{ fontSize:9, color:MUT, padding:8 }}>No matching items.</div>}
+          </div>
+          {selected && (
+            <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px", background:"#111", borderRadius:2, marginBottom:8 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{selected.name}</div>
+                <div style={{ fontSize:8, color:MUT }}>Cost ${(parseFloat(selected.buyPrice)||0).toFixed(2)} · Sell ${(parseFloat(selected.sellPrice)||0).toFixed(2)}</div>
               </div>
-              <div style={{ gridColumn:"1/-1" }}><F label="Notes" k="notes" placeholder="Optional notes"/></div>
-              <div style={{ display:"flex", gap:6, marginTop:6, justifyContent:"flex-end" }}>
-                <button onClick={() => setEditIdx(null)} style={{ ...btnG, ...sm }}>Cancel</button>
-                <button onClick={save} style={{ ...btnA, ...sm }}>Save</button>
-              </div>
-            </div>
-          );
-        }
-        return (
-          <div key={p.id||idx} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:"1px solid #181818" }}>
-            <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ fontSize:10, color:TXT, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
-                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0 }}>{p.partNumber}</span>}
-              </div>
-              <div style={{ fontSize:8, color:MUT }}>
-                {[p.brand, p.supplier, p.qty > 1 ? `×${p.qty}` : null].filter(Boolean).join(" · ")}
+                <div style={{ fontSize:8, color:MUT }}>Qty</div>
+                <input style={{ ...inpS, width:50, textAlign:"center" }} type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)}/>
               </div>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
-              {cost > 0 && <span style={{ fontSize:9, color:GRN, fontFamily:"'IBM Plex Mono',monospace" }}>${cost.toFixed(2)}</span>}
-              <button
-                onClick={() => cycleStatus(idx)}
-                style={{ background:"none", border:"1px solid "+st.color+"55", color:st.color, fontSize:7, padding:"2px 5px", borderRadius:2, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" }}
-              >
-                {st.label}
-              </button>
-              <button onClick={() => openEdit(idx)} style={{ background:"none", border:"none", color:MUT, cursor:"pointer", fontSize:10, padding:"0 2px" }}>✎</button>
-              <button onClick={() => remove(idx)} style={{ background:"none", border:"none", color:MUT, cursor:"pointer", fontSize:10, padding:"0 2px" }}>✕</button>
-            </div>
-          </div>
-        );
-      })}
-
-      {adding && (
-        <div style={{ background:"#0a0a0a", border:"1px solid "+ACC, borderRadius:2, padding:"10px 12px", marginTop:6 }}>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-            <div style={{ gridColumn:"1/-1" }}><F label="Part Name *" k="name" placeholder="e.g. Air filter"/></div>
-            <F label="Part Number" k="partNumber" placeholder="e.g. 17211-Z0T"/>
-            <F label="Brand" k="brand" placeholder="e.g. Honda"/>
-            <F label="Qty" k="qty" type="number" placeholder="1"/>
-            <F label="Unit Cost ($)" k="unitCost" type="number" placeholder="0.00"/>
-            <F label="Supplier" k="supplier" placeholder="e.g. Repco"/>
-            <div>
-              <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>Status</div>
-              <select value={form.status||"needed"} onChange={e=>setForm(f=>({...f,status:e.target.value}))} style={{ background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, width:"100%" }}>
-                {PART_STATUS_ORDER.map(s=><option key={s} value={s}>{PART_STATUS[s].label}</option>)}
-              </select>
-            </div>
-          </div>
-          <F label="Notes" k="notes" placeholder="Optional notes"/>
-          <div style={{ display:"flex", gap:6, marginTop:4, justifyContent:"flex-end" }}>
-            <button onClick={() => setAdding(false)} style={{ ...btnG, ...sm }}>Cancel</button>
-            <button onClick={save} style={{ ...btnA, ...sm }}>Save</button>
+          )}
+          <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+            <button onClick={() => { setMode(null); setSelected(null); setSearch(""); }} style={{ ...btnG, ...sm }}>Cancel</button>
+            <button onClick={useFromInventory} disabled={!selected} style={{ ...btnA, ...sm, opacity: selected?1:0.4 }}>Use Part</button>
           </div>
         </div>
       )}
+
+      {/* Standalone one-off */}
+      {mode === "standalone" && (
+        <div style={{ background:"#0a0a0a", border:"1px solid "+ACC, borderRadius:2, padding:"10px 12px", marginBottom:8 }}>
+          <div style={{ fontSize:9, color:ACC, letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>One-off Part</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+            <div style={{ gridColumn:"1/-1" }}><L t="Name *"/><input style={inpS} value={saForm.name} onChange={e=>setSaForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Air filter" autoFocus/></div>
+            <div><L t="SKU"/><input style={inpS} value={saForm.partNumber} onChange={e=>setSaForm(f=>({...f,partNumber:e.target.value}))} placeholder="e.g. 17211-Z0T"/></div>
+            <div><L t="Brand"/><input style={inpS} value={saForm.brand} onChange={e=>setSaForm(f=>({...f,brand:e.target.value}))} placeholder="e.g. Honda"/></div>
+            <div><L t="Qty"/><input style={inpS} type="number" min="1" value={saForm.qty} onChange={e=>setSaForm(f=>({...f,qty:e.target.value}))}/></div>
+            <div><L t="Buy Price ($)"/><input style={inpS} type="number" min="0" step="0.01" value={saForm.buyPrice} onChange={e=>setSaForm(f=>({...f,buyPrice:e.target.value}))} placeholder="0.00"/></div>
+            <div style={{ gridColumn:"1/-1" }}><L t="Sell Price ($)"/><input style={inpS} type="number" min="0" step="0.01" value={saForm.sellPrice} onChange={e=>setSaForm(f=>({...f,sellPrice:e.target.value}))} placeholder="0.00"/></div>
+          </div>
+          <div style={{ display:"flex", gap:6, marginTop:8, justifyContent:"flex-end" }}>
+            <button onClick={() => setMode(null)} style={{ ...btnG, ...sm }}>Cancel</button>
+            <button onClick={addStandalone} style={{ ...btnA, ...sm }}>Add</button>
+          </div>
+        </div>
+      )}
+
+      {parts.map((p, idx) => {
+        const rev  = (parseFloat(p.sellPrice)||0) * (Number(p.qty)||1);
+        const cost = (parseFloat(p.buyPrice)||0)  * (Number(p.qty)||1);
+        return (
+          <div key={p.id||idx} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:"1px solid #181818" }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                <span style={{ fontSize:10, color:TXT, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                {Number(p.qty)>1 && <span style={{ fontSize:8, color:MUT, flexShrink:0 }}>×{p.qty}</span>}
+                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background:"#111", padding:"1px 4px", borderRadius:2 }}>{p.partNumber}</span>}
+                {p.inventoryId && <span style={{ fontSize:7, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
+              </div>
+              {(rev > 0 || cost > 0) && (
+                <div style={{ fontSize:8, color:MUT }}>
+                  {cost > 0 && <span>Cost ${cost.toFixed(2)}</span>}
+                  {rev > 0  && <span style={{ color:GRN }}>{cost>0?" · ":""}Sell ${rev.toFixed(2)}</span>}
+                  {rev > 0 && cost > 0 && <span style={{ color: rev-cost>=0?"#3d9e50":"#c94040" }}> ({rev-cost>=0?"+":""}${(rev-cost).toFixed(2)})</span>}
+                </div>
+              )}
+            </div>
+            <button onClick={() => remove(idx)} style={{ background:"none", border:"none", color:MUT, cursor:"pointer", fontSize:11, lineHeight:1, padding:"0 2px", flexShrink:0 }}>✕</button>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -757,7 +755,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   );
 }
 
-function JobBoard({ machines, setMachines, profile, company, onGoToBilling }) {
+function JobBoard({ machines, setMachines, profile, company, session, onGoToBilling }) {
   const tier = effectiveTier(profile, company);
   const timerLocked = tier === "free";
 
@@ -797,7 +795,7 @@ function JobBoard({ machines, setMachines, profile, company, onGoToBilling }) {
                   {m.notes && <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, marginBottom: 8 }}>{m.notes}</div>}
                   <JobTimer machine={m} onUpdate={updateM} locked={timerLocked} onGoToBilling={onGoToBilling} />
                   <TimeLogSection machine={m} company={company} onUpdate={updateM} />
-                  <PartsSection machine={m} onUpdate={updateM} />
+                  <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />
                   <Divider />
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {STATUSES.filter(s => s !== status).map(s => (
