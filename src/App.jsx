@@ -181,7 +181,7 @@ function App(){
           <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:12,lineHeight:1}}>✕</button>
         </div>
       )}
-      <div style={{background:SURF,borderBottom:`3px solid ${tierGlow?.color||ACC}`,boxShadow:tierGlow?`0 0 8px ${tierGlow.color}, 0 2px 32px ${tierGlow.color}, 0 4px 80px ${tierGlow.color}cc, 0 8px 120px ${tierGlow.color}88`:"none",padding:"12px 18px",display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:10}}>
+      <div style={{background:SURF,borderBottom:`3px solid ${tierGlow?.color||ACC}`,boxShadow:tierGlow?`0 2px 8px ${tierGlow.color}99, 0 4px 24px ${tierGlow.color}55`:"none",padding:"12px 18px",display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:10}}>
         <a href="https://ratbench.net" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
           {company?.logo
             ? <img src={company.logo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD}}/>
