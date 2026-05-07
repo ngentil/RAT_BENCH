@@ -166,6 +166,12 @@ function App(){
           <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:12,lineHeight:1}}>✕</button>
         </div>
       )}
+      {billingBanner==="managed"&&(
+        <div style={{background:"#1a1a1a",color:MUT,fontSize:10,letterSpacing:"0.08em",textAlign:"center",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,borderBottom:"1px solid #333"}}>
+          <span>Billing updated. Changes may take a moment to reflect.</span>
+          <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:12,lineHeight:1}}>✕</button>
+        </div>
+      )}
       <div style={{background:SURF,borderBottom:"2px solid "+ACC,padding:"12px 18px",display:"flex",alignItems:"center",gap:10}}>
         <a href="https://ratbench.net" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
           {company?.logo
