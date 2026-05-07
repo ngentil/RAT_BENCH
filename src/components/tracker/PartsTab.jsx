@@ -1,78 +1,59 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import QRCode from 'qrcode';
-import { ACC, MUT, BRD, TXT, GRN, SURF, inp, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { SL } from '../ui/shared';
-import { mIcon } from '../../lib/helpers';
+import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import { SL, FL } from '../ui/shared';
+import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
 
-const PART_STATUS = {
-  needed:  { label: "Needed",  color: "#e8870a" },
-  ordered: { label: "Ordered", color: "#4a9eff" },
-  fitted:  { label: "Fitted",  color: "#3d9e50" },
-};
+const ORANGE = '#e8870a';
 
-// Detect barcode scanner: chars arrive < 50ms apart, ends with Enter, length >= 3
-function useBarcodeScanner(onScan, enabled) {
+// Detect barcode scanner: chars arrive < 80ms apart, ends with Enter
+function useBarcodeScanner(onScan) {
   const bufRef  = useRef('');
-  const tmrRef  = useRef(null);
   const lastRef = useRef(0);
+  const tmrRef  = useRef(null);
 
   useEffect(() => {
-    if (!enabled) return;
     const handle = (e) => {
-      // Don't intercept when user is actively typing in an input
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
-      const now = Date.now();
-      const gap = now - lastRef.current;
+      const now  = Date.now();
+      const gap  = now - lastRef.current;
       lastRef.current = now;
-
       if (e.key === 'Enter') {
         const buf = bufRef.current.trim();
-        if (buf.length >= 3) onScan(buf);
+        if (buf.length >= 2) onScan(buf);
         bufRef.current = '';
-        if (tmrRef.current) clearTimeout(tmrRef.current);
         return;
       }
-
-      // If gap is large (> 80ms) and buffer has content, it's human typing → reset
       if (gap > 80 && bufRef.current.length > 0) bufRef.current = '';
-
       if (e.key.length === 1) bufRef.current += e.key;
-
       if (tmrRef.current) clearTimeout(tmrRef.current);
       tmrRef.current = setTimeout(() => { bufRef.current = ''; }, 120);
     };
     window.addEventListener('keydown', handle);
-    return () => {
-      window.removeEventListener('keydown', handle);
-      if (tmrRef.current) clearTimeout(tmrRef.current);
-    };
-  }, [onScan, enabled]);
+    return () => { window.removeEventListener('keydown', handle); clearTimeout(tmrRef.current); };
+  }, [onScan]);
 }
 
-function QRModal({ part, onClose }) {
+function QRModal({ item, onClose }) {
   const [dataUrl, setDataUrl] = useState(null);
-  const text = [part.partNumber, part.name, part.brand].filter(Boolean).join(' | ');
+  const text = [item.partNumber, item.name, item.brand].filter(Boolean).join(' | ');
 
   useEffect(() => {
-    QRCode.toDataURL(text, { width: 256, margin: 2, color: { dark: '#000', light: '#fff' } })
-      .then(setDataUrl);
+    QRCode.toDataURL(text, { width: 256, margin: 2, color: { dark: '#000', light: '#fff' } }).then(setDataUrl);
   }, [text]);
 
   const print = () => {
     const w = window.open('', '_blank');
-    w.document.write(`<!DOCTYPE html><html><head><title>Part QR — ${part.name}</title>
+    w.document.write(`<!DOCTYPE html><html><head><title>Part — ${item.name}</title>
     <style>body{font-family:Arial,sans-serif;text-align:center;padding:40px;max-width:320px;margin:0 auto}
     img{width:200px;height:200px;display:block;margin:0 auto 16px}
-    .name{font-size:16px;font-weight:700;margin-bottom:4px}
-    .sub{font-size:12px;color:#666;margin-bottom:4px}
-    @media print{button{display:none}}
-    </style></head><body>
+    .name{font-size:16px;font-weight:700;margin-bottom:4px}.sub{font-size:12px;color:#666;margin-bottom:4px}
+    @media print{button{display:none}}</style></head><body>
     ${dataUrl ? `<img src="${dataUrl}" alt="QR"/>` : ''}
-    <div class="name">${part.name}</div>
-    ${part.partNumber ? `<div class="sub">${part.partNumber}</div>` : ''}
-    ${part.brand ? `<div class="sub">${part.brand}</div>` : ''}
+    <div class="name">${item.name}</div>
+    ${item.partNumber ? `<div class="sub">${item.partNumber}</div>` : ''}
+    ${item.brand ? `<div class="sub">${item.brand}</div>` : ''}
     <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;background:#e8670a;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer">🖨️ Print</button>
     </body></html>`);
     w.document.close();
@@ -85,252 +66,361 @@ function QRModal({ part, onClose }) {
           <span style={{ fontSize: 12, fontWeight: 700, color: TXT }}>Part QR Code</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: MUT, cursor: 'pointer', fontSize: 16 }}>✕</button>
         </div>
-        <div style={{ ...mdlB, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <div style={{ ...mdlB, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
           {dataUrl
-            ? <img src={dataUrl} alt="QR" style={{ width: 200, height: 200, display: 'block', borderRadius: 4 }} />
+            ? <img src={dataUrl} alt="QR" style={{ width: 200, height: 200, borderRadius: 4 }} />
             : <div style={{ width: 200, height: 200, background: '#111', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: MUT }}>Generating…</div>
           }
-          <div style={{ fontSize: 11, fontWeight: 700, color: TXT, textAlign: 'center' }}>{part.name}</div>
-          {part.partNumber && <div style={{ fontSize: 9, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{part.partNumber}</div>}
-          {part.brand && <div style={{ fontSize: 9, color: MUT }}>{part.brand}</div>}
-          <div style={{ fontSize: 8, color: MUT, textAlign: 'center', lineHeight: 1.5 }}>
-            Scan encodes: {text}
-          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{item.name}</div>
+          {item.partNumber && <div style={{ fontSize: 9, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{item.partNumber}</div>}
+          <div style={{ fontSize: 8, color: MUT, textAlign: 'center', lineHeight: 1.5 }}>Encodes: {text}</div>
         </div>
         <div style={mdlF}>
           <button onClick={onClose} style={{ ...btnG, ...sm }}>Close</button>
-          <button onClick={print} disabled={!dataUrl} style={{ ...btnA, ...sm }}>🖨️ Print</button>
+          <button onClick={print} disabled={!dataUrl} style={{ ...btnA, ...sm }}>🖨️ Print Label</button>
         </div>
       </div>
     </div>
   );
 }
 
-export default function PartsTab({ machines }) {
-  const [filter, setFilter]       = useState('all');
-  const [search, setSearch]       = useState('');
-  const [scanActive, setScanActive] = useState(true); // scanner always listening
-  const [lastScan, setLastScan]   = useState(null);   // { sku, found, ts }
-  const [qrPart, setQrPart]       = useState(null);
-  const skuInputRef               = useRef(null);
+const EMPTY = { name:'', partNumber:'', brand:'', supplier:'', buyPrice:'', sellPrice:'', stockQty:'', minStock:'', location:'', notes:'' };
 
-  const allParts = useMemo(() =>
-    machines.flatMap(m =>
-      (m.parts || []).map(p => ({ ...p, machineName: m.name, machineType: m.type, machineId: m.id }))
-    ).sort((a, b) => new Date(b.addedAt || 0) - new Date(a.addedAt || 0)),
-  [machines]);
+function ItemForm({ initial, onSave, onCancel }) {
+  const [f, setF] = useState({ ...EMPTY, ...initial });
+  const set = k => e => setF(p => ({ ...p, [k]: e.target.value }));
+
+  const margin = f.buyPrice && f.sellPrice
+    ? (((parseFloat(f.sellPrice) - parseFloat(f.buyPrice)) / parseFloat(f.sellPrice)) * 100).toFixed(0)
+    : null;
+
+  const fieldStyle = { background:'#0a0a0a', border:'1px solid #252525', color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:'6px 8px', borderRadius:2, outline:'none', boxSizing:'border-box', width:'100%' };
+  const L = ({ t }) => <div style={{ fontSize:8, color:MUT, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>{t}</div>;
+
+  return (
+    <div style={{ background:'#0a0f0a', border:'1px solid '+ACC+'44', borderRadius:2, padding:'14px', marginBottom:12 }}>
+      <div style={{ fontSize:9, color:ACC, letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700, marginBottom:12 }}>
+        {initial.id ? 'Edit Part' : 'New Part'}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+        <div style={{ gridColumn:'1/-1', ...col }}><L t="Part Name *"/><input style={fieldStyle} value={f.name} onChange={set('name')} placeholder="e.g. Air Filter" autoFocus/></div>
+        <div style={col}><L t="SKU / Part No."/><input style={fieldStyle} value={f.partNumber} onChange={set('partNumber')} placeholder="e.g. 17211-Z0T"/></div>
+        <div style={col}><L t="Brand"/><input style={fieldStyle} value={f.brand} onChange={set('brand')} placeholder="e.g. Honda"/></div>
+        <div style={col}><L t="Supplier"/><input style={fieldStyle} value={f.supplier} onChange={set('supplier')} placeholder="e.g. Repco"/></div>
+        <div style={col}><L t="Location / Bin"/><input style={fieldStyle} value={f.location} onChange={set('location')} placeholder="e.g. Shelf A2"/></div>
+
+        <div style={col}>
+          <L t="Buy Price ($)"/>
+          <input style={fieldStyle} type="number" min="0" step="0.01" value={f.buyPrice} onChange={set('buyPrice')} placeholder="0.00"/>
+        </div>
+        <div style={col}>
+          <L t="Sell Price ($)"/>
+          <input style={fieldStyle} type="number" min="0" step="0.01" value={f.sellPrice} onChange={set('sellPrice')} placeholder="0.00"/>
+        </div>
+        {margin !== null && (
+          <div style={{ gridColumn:'1/-1', fontSize:9, color: Number(margin) >= 0 ? GRN : RED, marginTop:-4, marginBottom:4 }}>
+            Margin: {margin}% {Number(margin) >= 0 ? '↑' : '↓'}
+          </div>
+        )}
+
+        <div style={col}><L t="Stock Qty"/><input style={fieldStyle} type="number" min="0" step="1" value={f.stockQty} onChange={set('stockQty')} placeholder="0"/></div>
+        <div style={col}><L t="Low Stock Alert (qty)"/><input style={fieldStyle} type="number" min="0" step="1" value={f.minStock} onChange={set('minStock')} placeholder="e.g. 2"/></div>
+
+        <div style={{ gridColumn:'1/-1', ...col }}><L t="Notes"/><textarea style={{ ...fieldStyle, resize:'vertical', minHeight:40, lineHeight:1.5 }} value={f.notes} onChange={set('notes')} placeholder="Optional notes"/></div>
+      </div>
+      <div style={{ display:'flex', gap:8, marginTop:8, justifyContent:'flex-end' }}>
+        <button onClick={onCancel} style={{ ...btnG, ...sm }}>Cancel</button>
+        <button onClick={() => { if (f.name.trim()) onSave(f); }} style={{ ...btnA, ...sm }}>Save</button>
+      </div>
+    </div>
+  );
+}
+
+export default function PartsTab({ machines, session }) {
+  const userId = session?.user?.id;
+  const [inv, setInv]       = useState(() => getInventory(userId));
+  const [editing, setEditing] = useState(null);
+  const [filter, setFilter]   = useState('all');
+  const [search, setSearch]   = useState('');
+  const [lastScan, setLastScan] = useState(null);
+  const [qrItem, setQrItem]   = useState(null);
+  const [adjustItem, setAdjustItem] = useState(null);
+  const [adjustDelta, setAdjustDelta] = useState('');
+  const skuRef = useRef(null);
+
+  const reload = () => setInv(getInventory(userId));
 
   const handleScan = useCallback((sku) => {
-    const match = allParts.find(p =>
-      (p.partNumber || '').toLowerCase() === sku.toLowerCase() ||
-      (p.name || '').toLowerCase() === sku.toLowerCase()
-    );
-    setLastScan({ sku, found: !!match, machineName: match?.machineName, partName: match?.name, ts: Date.now() });
+    const match = inv.find(i => (i.partNumber || '').toLowerCase() === sku.toLowerCase());
+    setLastScan({ sku, found: !!match, name: match?.name, ts: Date.now() });
     setSearch(sku);
     setFilter('all');
-  }, [allParts]);
+  }, [inv]);
 
-  useBarcodeScanner(handleScan, scanActive);
+  useBarcodeScanner(handleScan);
 
-  // Also handle Enter on the SKU input field
-  const handleSkuKey = (e) => {
-    if (e.key === 'Enter' && e.target.value.trim().length >= 1) {
-      handleScan(e.target.value.trim());
-    }
-  };
-
-  const filtered = useMemo(() => {
-    let list = allParts;
-    if (filter !== 'all') list = list.filter(p => (p.status || 'needed') === filter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.brand || '').toLowerCase().includes(q) ||
-        (p.partNumber || '').toLowerCase().includes(q) ||
-        p.machineName.toLowerCase().includes(q) ||
-        (p.supplier || '').toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [allParts, filter, search]);
-
-  const counts = useMemo(() => {
-    const c = { needed: 0, ordered: 0, fitted: 0 };
-    allParts.forEach(p => { const s = p.status || 'needed'; c[s] = (c[s] || 0) + 1; });
-    return c;
-  }, [allParts]);
-
-  const totalValue = filtered.reduce((s, p) => s + (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1), 0);
-
-  // Clear scan feedback after 4s
   useEffect(() => {
     if (!lastScan) return;
     const t = setTimeout(() => setLastScan(null), 4000);
     return () => clearTimeout(t);
   }, [lastScan]);
 
+  const save = (form) => {
+    const updated = saveInventoryItem(userId, { ...form, id: editing?.id });
+    setInv(updated);
+    setEditing(null);
+  };
+
+  const del = (id) => {
+    if (!confirm('Delete this part from inventory?')) return;
+    setInv(deleteInventoryItem(userId, id));
+  };
+
+  const doAdjust = (delta) => {
+    if (!adjustItem) return;
+    setInv(adjustStock(userId, adjustItem.id, delta));
+    setAdjustItem(null);
+    setAdjustDelta('');
+  };
+
+  // Total stock value (cost basis)
+  const stockValue = inv.reduce((s, i) => s + (parseFloat(i.buyPrice) || 0) * (Number(i.stockQty) || 0), 0);
+
+  // Usage stats from machines
+  const usageStats = useMemo(() => {
+    const map = {};
+    machines.forEach(m => {
+      (m.parts || []).forEach(p => {
+        if (p.inventoryId) {
+          if (!map[p.inventoryId]) map[p.inventoryId] = { used: 0, revenue: 0 };
+          map[p.inventoryId].used     += Number(p.qty) || 1;
+          map[p.inventoryId].revenue  += (parseFloat(p.sellPrice) || 0) * (Number(p.qty) || 1);
+        }
+      });
+    });
+    return map;
+  }, [machines]);
+
+  const lowStock = inv.filter(i => {
+    const qty = Number(i.stockQty) || 0;
+    const min = Number(i.minStock) || 0;
+    return min > 0 ? qty <= min : qty === 0;
+  });
+
+  const filtered = useMemo(() => {
+    let list = inv;
+    if (filter === 'low')    list = list.filter(i => { const q=Number(i.stockQty)||0; const m=Number(i.minStock)||0; return m>0?q<=m:q===0; });
+    if (filter === 'instock') list = list.filter(i => (Number(i.stockQty)||0) > (Number(i.minStock)||0));
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(i =>
+        i.name.toLowerCase().includes(q) ||
+        (i.partNumber||'').toLowerCase().includes(q) ||
+        (i.brand||'').toLowerCase().includes(q) ||
+        (i.supplier||'').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [inv, filter, search]);
+
+  const lbl = { fontSize:9, color:ACC, letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700 };
+
   return (
-    <div style={{ padding: 16, flex: 1 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <SL t="Parts" />
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {counts.needed > 0 && (
-            <span style={{ fontSize: 8, color: '#e8870a', border: '1px solid #e8870a55', background: '#e8870a11', padding: '2px 6px', borderRadius: 2, fontWeight: 700, letterSpacing: '0.1em' }}>
-              {counts.needed} NEEDED
+    <div style={{ padding:16, flex:1, overflowY:'auto' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+        <SL t="Parts Inventory" />
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          {lowStock.length > 0 && (
+            <span style={{ fontSize:8, color:ORANGE, border:'1px solid '+ORANGE+'55', background:ORANGE+'11', padding:'2px 6px', borderRadius:2, fontWeight:700, letterSpacing:'0.1em' }}>
+              {lowStock.length} LOW STOCK
             </span>
           )}
-          {counts.ordered > 0 && (
-            <span style={{ fontSize: 8, color: '#4a9eff', border: '1px solid #4a9eff55', background: '#4a9eff11', padding: '2px 6px', borderRadius: 2, fontWeight: 700, letterSpacing: '0.1em' }}>
-              {counts.ordered} ORDERED
-            </span>
+          {!editing && (
+            <button onClick={() => setEditing({})} style={{ ...btnA, ...sm }}>+ Add Part</button>
           )}
         </div>
       </div>
 
-      {/* SKU / Barcode search row */}
-      <div style={{ background: '#0a0f0a', border: '1px solid ' + ACC + '33', borderRadius: 2, padding: '10px 12px', marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
-            background: ACC,
-            boxShadow: '0 0 6px ' + ACC,
-            animation: 'pulse 2s infinite',
-          }} />
-          <span style={{ fontSize: 9, color: ACC, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
-            Scanner Active
-          </span>
-          <span style={{ fontSize: 8, color: MUT, marginLeft: 2 }}>— scan a barcode or type a SKU below</span>
+      {/* Scanner input */}
+      <div style={{ background:'#0a0f0a', border:'1px solid '+ACC+'33', borderRadius:2, padding:'8px 12px', marginBottom:12 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ width:7, height:7, borderRadius:'50%', background:ACC, boxShadow:'0 0 6px '+ACC, animation:'pulse 2s infinite', flexShrink:0 }}/>
+          <span style={{ fontSize:8, color:ACC, letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:700 }}>Scanner Active</span>
+          <span style={{ fontSize:8, color:MUT }}>— scan or type a SKU below</span>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <input
-            ref={skuInputRef}
-            style={{ ...inp, flex: 1, fontSize: 13, letterSpacing: '0.08em' }}
-            placeholder="Scan barcode / type SKU + Enter…"
-            onKeyDown={handleSkuKey}
-            onChange={e => {
-              // Live search as user types (scanner pastes everything instantly)
-              setSearch(e.target.value);
-            }}
-          />
-          <button
-            onClick={() => { if (skuInputRef.current) skuInputRef.current.focus(); }}
-            style={{ ...btnG, ...sm, flexShrink: 0 }}
-          >
-            Focus
-          </button>
-        </div>
+        <input
+          ref={skuRef}
+          style={{ ...inp, marginTop:8, fontSize:12, letterSpacing:'0.06em' }}
+          placeholder="Scan barcode / enter SKU + Enter…"
+          onKeyDown={e => { if (e.key==='Enter' && e.target.value.trim()) { handleScan(e.target.value.trim()); e.target.value=''; } }}
+          onChange={e => setSearch(e.target.value)}
+        />
         {lastScan && (
-          <div style={{
-            marginTop: 8, fontSize: 9, padding: '5px 8px', borderRadius: 2,
-            color: lastScan.found ? GRN : '#e8870a',
-            background: lastScan.found ? GRN + '11' : '#e8870a11',
-            border: '1px solid ' + (lastScan.found ? GRN : '#e8870a') + '44',
-          }}>
-            {lastScan.found
-              ? `✓ Found: "${lastScan.partName}" on ${lastScan.machineName}`
-              : `⚠ SKU "${lastScan.sku}" not found — add it from the Jobs tab`}
+          <div style={{ marginTop:6, fontSize:9, padding:'4px 8px', borderRadius:2, color: lastScan.found ? GRN : ORANGE, background: (lastScan.found ? GRN : ORANGE)+'11', border:'1px solid '+(lastScan.found ? GRN : ORANGE)+'44' }}>
+            {lastScan.found ? `✓ Found: "${lastScan.name}"` : `⚠ SKU "${lastScan.sku}" not in inventory — add it above`}
           </div>
         )}
       </div>
-
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
-        {[['all', 'All'], ['needed', 'Needed'], ['ordered', 'Ordered'], ['fitted', 'Fitted']].map(([v, l]) => (
-          <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, ...(filter === v ? { color: ACC, border: '1px solid ' + ACC } : {}) }}>
-            {l}{v !== 'all' && counts[v] > 0 ? ` (${counts[v]})` : ''}
-          </button>
+      {/* New / edit form */}
+      {editing !== null && (
+        <ItemForm initial={editing} onSave={save} onCancel={() => setEditing(null)} />
+      )}
+
+      {/* Summary row */}
+      {inv.length > 0 && (
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:14 }}>
+          {[
+            ['Items', inv.length],
+            ['In Stock', inv.filter(i=>(Number(i.stockQty)||0)>0).length + ' / ' + inv.length],
+            ['Stock Value', stockValue > 0 ? '$'+stockValue.toFixed(0) : '—'],
+          ].map(([l,v]) => (
+            <div key={l} style={{ background:SURF, border:'1px solid '+BRD, borderRadius:2, padding:'8px 10px', textAlign:'center' }}>
+              <div style={{ fontSize:8, color:MUT, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>{l}</div>
+              <div style={{ fontSize:13, fontWeight:700, color:TXT, fontFamily:"'IBM Plex Mono',monospace" }}>{v}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filters */}
+      <div style={{ display:'flex', gap:6, marginBottom:12, flexWrap:'wrap' }}>
+        {[['all','All'], ['low','Low / Out'], ['instock','In Stock']].map(([v,l]) => (
+          <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, ...(filter===v ? { color:ACC, border:'1px solid '+ACC } : {}) }}>{l}</button>
         ))}
-        {search && (
-          <button onClick={() => setSearch('')} style={{ ...btnG, ...sm, color: MUT, fontSize: 8 }}>
-            ✕ Clear search
-          </button>
-        )}
+        {search && <button onClick={() => setSearch('')} style={{ ...btnG, ...sm, fontSize:8 }}>✕ Clear</button>}
       </div>
 
-      {allParts.length === 0 && (
-        <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7, padding: '32px 0', textAlign: 'center' }}>
-          <div style={{ fontSize: 22, marginBottom: 10 }}>🔩</div>
-          No parts tracked yet.<br />
-          Add parts to machines on the Jobs tab.
+      {inv.length === 0 && !editing && (
+        <div style={{ fontSize:10, color:MUT, lineHeight:1.7, padding:'32px 0', textAlign:'center' }}>
+          <div style={{ fontSize:22, marginBottom:10 }}>🔩</div>
+          No parts in inventory yet.<br/>Add parts here, then use them against machines on the Jobs tab.
         </div>
       )}
 
-      {filtered.length > 0 && totalValue > 0 && (
-        <div style={{ fontSize: 9, color: MUT, marginBottom: 10 }}>
-          {filtered.length} part{filtered.length !== 1 ? 's' : ''}
-          <span style={{ color: GRN }}> · ${totalValue.toFixed(2)} total value</span>
-        </div>
-      )}
+      {filtered.map(item => {
+        const qty      = Number(item.stockQty) || 0;
+        const minQty   = Number(item.minStock) || 0;
+        const isOut    = qty === 0;
+        const isLow    = !isOut && minQty > 0 && qty <= minQty;
+        const qtyColor = isOut ? RED : isLow ? ORANGE : GRN;
+        const usage    = usageStats[item.id];
+        const margin   = item.buyPrice && item.sellPrice
+          ? (((parseFloat(item.sellPrice) - parseFloat(item.buyPrice)) / parseFloat(item.sellPrice)) * 100).toFixed(0)
+          : null;
 
-      {filtered.map((p, i) => {
-        const st    = PART_STATUS[p.status || 'needed'];
-        const cost  = (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1);
-        const isHit = lastScan?.found && (p.partNumber || '').toLowerCase() === lastScan.sku.toLowerCase();
         return (
-          <div key={p.id || i} style={{
-            background: isHit ? '#0a1a0a' : SURF,
-            border: '1px solid ' + (isHit ? GRN + '88' : BRD),
-            borderRadius: 2, padding: '10px 12px', marginBottom: 8,
-            transition: 'border-color 0.3s',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{p.name}</span>
-                  {p.partNumber && (
-                    <span style={{ fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace", background: '#111', border: '1px solid #252525', padding: '1px 5px', borderRadius: 2 }}>
-                      {p.partNumber}
+          <div key={item.id} style={{ background:SURF, border:'1px solid '+(isOut ? RED+'44' : isLow ? ORANGE+'44' : BRD), borderRadius:2, padding:'12px 14px', marginBottom:10 }}>
+            <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+              {/* Stock level badge */}
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0, minWidth:36 }}>
+                <div style={{ fontSize:18, fontWeight:900, color:qtyColor, fontFamily:"'IBM Plex Mono',monospace", lineHeight:1 }}>{qty}</div>
+                <div style={{ fontSize:7, color:qtyColor, letterSpacing:'0.08em', textTransform:'uppercase' }}>
+                  {isOut ? 'OUT' : isLow ? 'LOW' : 'STOCK'}
+                </div>
+              </div>
+
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:TXT }}>{item.name}</span>
+                  {item.partNumber && (
+                    <span style={{ fontSize:8, color:MUT, background:'#111', border:'1px solid #252525', padding:'1px 5px', borderRadius:2, fontFamily:"'IBM Plex Mono',monospace" }}>
+                      {item.partNumber}
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 9, color: MUT, marginBottom: 4 }}>
-                  {[p.brand, p.supplier, (parseInt(p.qty) || 1) > 1 ? `×${p.qty}` : null].filter(Boolean).join(' · ')}
+                <div style={{ fontSize:9, color:MUT, marginBottom:4 }}>
+                  {[item.brand, item.supplier, item.location].filter(Boolean).join(' · ')}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 12 }}>{mIcon(p.machineType)}</span>
-                  <span style={{ fontSize: 9, color: MUT }}>{p.machineName}</span>
+                <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+                  {item.buyPrice  && <span style={{ fontSize:9, color:MUT }}>Cost <span style={{ color:TXT }}>${parseFloat(item.buyPrice).toFixed(2)}</span></span>}
+                  {item.sellPrice && <span style={{ fontSize:9, color:MUT }}>Sell <span style={{ color:GRN }}>${parseFloat(item.sellPrice).toFixed(2)}</span></span>}
+                  {margin !== null && <span style={{ fontSize:9, color: Number(margin)>=0 ? GRN : RED }}>{margin}% margin</span>}
+                  {usage && <span style={{ fontSize:9, color:MUT }}>Used <span style={{ color:ACC }}>{usage.used}×</span></span>}
+                  {usage?.revenue > 0 && <span style={{ fontSize:9, color:MUT }}>Revenue <span style={{ color:GRN }}>${usage.revenue.toFixed(0)}</span></span>}
                 </div>
-                {p.notes && <div style={{ fontSize: 9, color: MUT, marginTop: 4, lineHeight: 1.5 }}>{p.notes}</div>}
+                {item.notes && <div style={{ fontSize:9, color:MUT, marginTop:4, lineHeight:1.5 }}>{item.notes}</div>}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                <span style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                  color: st.color, border: '1px solid ' + st.color + '55', background: st.color + '11',
-                  padding: '2px 6px', borderRadius: 2,
-                }}>
-                  {st.label}
-                </span>
-                {cost > 0 && (
-                  <span style={{ fontSize: 11, color: GRN, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>
-                    ${cost.toFixed(2)}
-                  </span>
-                )}
-                <button
-                  onClick={() => setQrPart(p)}
-                  title="Generate QR code for this part"
-                  style={{ ...btnG, ...sm, fontSize: 8, padding: '2px 7px' }}
-                >
-                  QR
-                </button>
+
+              <div style={{ display:'flex', flexDirection:'column', gap:5, flexShrink:0 }}>
+                <div style={{ display:'flex', gap:5 }}>
+                  <button onClick={() => setEditing(item)} style={{ ...btnG, ...sm, fontSize:8 }}>Edit</button>
+                  <button onClick={() => setQrItem(item)} style={{ ...btnG, ...sm, fontSize:8 }}>QR</button>
+                  <button onClick={() => del(item.id)} style={{ ...btnD }}>Del</button>
+                </div>
+                <div style={{ display:'flex', gap:5 }}>
+                  <button
+                    onClick={() => { setInv(adjustStock(userId, item.id, 1)); }}
+                    style={{ ...btnG, ...sm, fontSize:10, padding:'2px 8px', color:GRN, border:'1px solid '+GRN+'44' }}
+                    title="Add 1 to stock"
+                  >+1</button>
+                  <button
+                    onClick={() => { if (qty > 0) setInv(adjustStock(userId, item.id, -1)); }}
+                    disabled={qty === 0}
+                    style={{ ...btnG, ...sm, fontSize:10, padding:'2px 8px', color: qty>0 ? ORANGE : MUT, border:'1px solid '+(qty>0 ? ORANGE+'44' : BRD), opacity: qty===0 ? 0.4 : 1 }}
+                    title="Remove 1 from stock"
+                  >−1</button>
+                  <button
+                    onClick={() => { setAdjustItem(item); setAdjustDelta(''); }}
+                    style={{ ...btnG, ...sm, fontSize:8 }}
+                    title="Set exact stock level"
+                  >Set</button>
+                </div>
               </div>
             </div>
           </div>
         );
       })}
 
-      {filtered.length === 0 && allParts.length > 0 && (
-        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>
-          No parts match — try clearing the search or changing the filter.
-        </div>
+      {filtered.length === 0 && inv.length > 0 && (
+        <div style={{ fontSize:10, color:MUT, textAlign:'center', padding:'24px 0' }}>No parts match.</div>
       )}
 
-      <div style={{ marginTop: 8, fontSize: 9, color: MUT, lineHeight: 1.7 }}>
-        Add parts to machines on the Jobs tab. Scanner listens globally when no input is focused.
+      <div style={{ marginTop:8, fontSize:9, color:MUT, lineHeight:1.7 }}>
+        Stock is deducted automatically when parts are used against a machine on the Jobs tab. Buy price = your cost, Sell price = what you charge the customer.
       </div>
 
-      {qrPart && <QRModal part={qrPart} onClose={() => setQrPart(null)} />}
+      {qrItem && <QRModal item={qrItem} onClose={() => setQrItem(null)} />}
+
+      {/* Stock adjustment modal */}
+      {adjustItem && (
+        <div style={ovly} onClick={e => { if (e.target===e.currentTarget) setAdjustItem(null); }}>
+          <div style={{ ...mdl, maxWidth:280 }}>
+            <div style={mdlH}>
+              <span style={{ fontSize:12, fontWeight:700, color:TXT }}>Set Stock — {adjustItem.name}</span>
+              <button onClick={() => setAdjustItem(null)} style={{ background:'none', border:'none', color:MUT, cursor:'pointer', fontSize:16 }}>✕</button>
+            </div>
+            <div style={mdlB}>
+              <div style={{ fontSize:10, color:MUT, marginBottom:8 }}>Current stock: {Number(adjustItem.stockQty)||0}</div>
+              <FL t="New stock quantity" />
+              <input
+                style={{ ...inp, fontSize:18, textAlign:'center', fontFamily:"'IBM Plex Mono',monospace" }}
+                type="number" min="0" step="1"
+                value={adjustDelta}
+                onChange={e => setAdjustDelta(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div style={mdlF}>
+              <button onClick={() => setAdjustItem(null)} style={{ ...btnG, ...sm }}>Cancel</button>
+              <button
+                onClick={() => {
+                  const newQty = parseInt(adjustDelta);
+                  if (!isNaN(newQty) && newQty >= 0) {
+                    const delta = newQty - (Number(adjustItem.stockQty) || 0);
+                    setInv(adjustStock(userId, adjustItem.id, delta));
+                  }
+                  setAdjustItem(null);
+                }}
+                style={{ ...btnA, ...sm }}
+              >
+                Set Stock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

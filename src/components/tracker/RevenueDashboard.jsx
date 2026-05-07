@@ -63,8 +63,29 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
   const rate       = company?.hourly_rate || 0;
   const taxRate    = company?.tax_rate || 0;
   const taxLabel   = company?.tax_label || "Tax";
-  const revenue    = totalHrs * rate;
-  const tax        = revenue * (taxRate / 100);
+  const labourRev  = totalHrs * rate;
+
+  // Parts revenue and cost — sum across all machines for the period
+  const { partsRev, partsCost } = useMemo(() => {
+    let rev = 0, cost = 0;
+    machines.forEach(m => {
+      (m.parts || []).forEach(p => {
+        const usedAt = p.usedAt || p.addedAt;
+        if (!usedAt) return;
+        const d = new Date(usedAt);
+        const now = new Date();
+        if (period === "week"  && (now - d) > 7 * 86400000) return;
+        if (period === "month" && (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear())) return;
+        rev  += (parseFloat(p.sellPrice) || 0) * (Number(p.qty) || 1);
+        cost += (parseFloat(p.buyPrice)  || 0) * (Number(p.qty) || 1);
+      });
+    });
+    return { partsRev: rev, partsCost: cost };
+  }, [machines, period]);
+
+  const totalRevenue = labourRev + partsRev;
+  const tax          = totalRevenue * (taxRate / 100);
+  const grossProfit  = labourRev + partsRev - partsCost;
 
   const byMachine = useMemo(() => {
     const map = {};
@@ -111,9 +132,9 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
         {rate > 0 ? (
           <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px" }}>
             <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Gross Revenue</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>${revenue.toFixed(0)}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>${totalRevenue.toFixed(0)}</div>
             {taxRate > 0
-              ? <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>+{taxLabel} ${tax.toFixed(0)} = ${(revenue + tax).toFixed(0)} inc.</div>
+              ? <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>+{taxLabel} ${tax.toFixed(0)} = ${(totalRevenue + tax).toFixed(0)} inc.</div>
               : <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>${(rate).toFixed(0)}/hr labour rate</div>
             }
           </div>
