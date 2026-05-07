@@ -17,8 +17,8 @@ function GlowBtn({ onClick, disabled, style, glow, children }) {
       onMouseUp={() => setActive(false)}
       style={{
         ...style,
-        boxShadow: hov ? `0 0 10px ${glowColor}55, 0 0 3px ${glowColor}33` : "none",
-        transform: active ? "scale(0.96)" : "scale(1)",
+        boxShadow: hov ? `0 0 14px ${glowColor}77, 0 0 5px ${glowColor}55` : "none",
+        transform: active ? "scale(0.95)" : "scale(1)",
         transition: "box-shadow 0.15s ease, transform 0.1s ease",
       }}
     >
