@@ -269,7 +269,7 @@ function TimeLogSection({ machine, company, onUpdate }) {
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: TXT, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {entry.jobLabel ? entry.jobLabel.slice(0, 60) : "General work"}
+                  {entry.jobLabel && entry.jobLabel !== "Job" ? entry.jobLabel.slice(0, 60) : "General work"}
                 </div>
                 <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
                   {new Date(entry.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -359,7 +359,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
     const elapsed = getElapsed();
     const newEntry = {
       id: crypto.randomUUID(),
-      jobLabel: t.jobLabel || "Job",
+      jobLabel: t.jobLabel || "",
       seconds: elapsed,
       completedAt: new Date().toISOString(),
     };
@@ -378,7 +378,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const handleLogAndReset = async () => {
     const newEntry = {
       id: crypto.randomUUID(),
-      jobLabel: t.jobLabel || "Job",
+      jobLabel: t.jobLabel || "",
       seconds: t.elapsed || 0,
       completedAt: new Date().toISOString(),
     };
