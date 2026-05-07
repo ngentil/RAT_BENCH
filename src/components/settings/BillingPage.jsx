@@ -48,7 +48,7 @@ const PLANS = [
   },
 ];
 
-function PlanCard({ plan, current, billing, onUpgrade, loading }) {
+function PlanCard({ plan, current, billing, onUpgrade, onManage, loading }) {
   const isCurrent = plan.id === current;
   const price = plan.id === "enthusiast" && billing === "yearly"
     ? plan.priceYearly + plan.periodYearly
@@ -95,8 +95,12 @@ function PlanCard({ plan, current, billing, onUpgrade, loading }) {
         </button>
       )}
       {isCurrent && plan.id !== "free" && (
-        <button style={{ ...btnG, ...sm, width: "100%", opacity: 0.5, cursor: "not-allowed" }} disabled>
-          Manage / Cancel — Coming Soon
+        <button
+          onClick={() => onManage(plan.id)}
+          disabled={isLoading}
+          style={{ ...btnG, ...sm, width: "100%", opacity: isLoading ? 0.6 : 1 }}
+        >
+          {isLoading ? "Redirecting…" : "Manage / Cancel"}
         </button>
       )}
     </div>
@@ -136,6 +140,26 @@ function BillingPage({ profile, company, session }) {
     }
   };
 
+  const handleManage = async () => {
+    setLoading("manage"); setErr("");
+    try {
+      const base = window.location.origin;
+      const isOrgPlan = ["team","business"].includes(tier);
+      const { data, error } = await supabase.functions.invoke("create-portal", {
+        body: {
+          user_id: session.user.id,
+          company_id: isOrgPlan && company ? company.id : null,
+          return_url: base + "/",
+        },
+      });
+      if (error || !data?.url) throw new Error(error?.message || "Failed to open billing portal");
+      window.location.href = data.url;
+    } catch (e) {
+      setErr(e.message);
+      setLoading(null);
+    }
+  };
+
   return (
     <div>
       <div style={{ fontSize: 9, color: MUT, marginBottom: 16, lineHeight: 1.7 }}>
@@ -159,6 +183,7 @@ function BillingPage({ profile, company, session }) {
             plan={plan}
             current={tier}
             billing={billing}
+            onManage={handleManage}
             onUpgrade={handleUpgrade}
             loading={loading}
           />
