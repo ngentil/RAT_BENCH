@@ -56,6 +56,11 @@ export async function regenerateInviteCode(companyId) {
   return data;
 }
 
+export async function updateMemberRole(companyId, userId, role) {
+  const { error } = await supabase.from("company_members").update({ role }).eq("company_id", companyId).eq("user_id", userId);
+  if (error) throw error;
+}
+
 export async function updateProfile(userId, fields) {
   const { data, error } = await supabase.from("profiles").update(fields).eq("id", userId).select().single();
   if (error) throw error;

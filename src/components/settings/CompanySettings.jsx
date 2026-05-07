@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
-import { getCompanyMembers, updateCompany, createCompany, joinCompanyByCode, leaveCompany, removeMember, regenerateInviteCode, deleteCompany } from '../../lib/db';
+import { updateCompany, createCompany, joinCompanyByCode, leaveCompany, deleteCompany } from '../../lib/db';
 import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
 import { effectiveTier } from '../../lib/gates';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
@@ -9,9 +9,6 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
   const isAdmin=company&&company.owner_id===session?.user?.id;
   const canMultiUser=["team","business"].includes(effectiveTier(profile,company));
   const [mode,setMode]=useState("view"); // view|create|join
-  const [members,setMembers]=useState([]);
-  const [membersLoaded,setMembersLoaded]=useState(false);
-  const [copied,setCopied]=useState(false);
   const [err,setErr]=useState("");
   const [saving,setSaving]=useState(false);
   const [saved,setSaved]=useState(false);
@@ -48,12 +45,6 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
       setTaxLabel(company.tax_label||"");
     }
   },[company?.id]);
-
-  useEffect(()=>{
-    if(company&&isAdmin&&!membersLoaded){
-      getCompanyMembers(company.id).then(m=>{setMembers(m);setMembersLoaded(true);});
-    }
-  },[company?.id,isAdmin]);
 
   const handleLogo=async e=>{
     const file=e.target.files[0]; if(!file)return;
@@ -95,23 +86,6 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
     if(!confirm("Leave this organisation? Your machines will remain."))return;
     await leaveCompany(company.id,session.user.id);
     setCompany(null);setProfile(prev=>({...prev,company_id:null}));
-  };
-
-  const handleRemoveMember=async(userId)=>{
-    if(!confirm("Remove this member?"))return;
-    await removeMember(company.id,userId);
-    setMembers(prev=>prev.filter(m=>m.user_id!==userId));
-  };
-
-  const handleRegen=async()=>{
-    if(!confirm("Regenerate invite code? The old one will stop working."))return;
-    const updated=await regenerateInviteCode(company.id);
-    setCompany(updated);
-  };
-
-  const copyCode=()=>{
-    navigator.clipboard.writeText(company.invite_code||"");
-    setCopied(true);setTimeout(()=>setCopied(false),1500);
   };
 
   const lbl={fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4};
@@ -223,39 +197,22 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
         </div>
       )}
 
-      {/* Invite code + Members — Team plan required */}
-      {isAdmin&&(canMultiUser ? <>
-        <div style={sec}>
-          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Invite Code</div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{fontSize:18,fontWeight:700,letterSpacing:"0.15em",color:TXT,fontFamily:"monospace"}}>{company.invite_code}</div>
-            <button onClick={copyCode} style={{...btnG,...sm}}>{copied?"✓ Copied":"Copy"}</button>
-            <button onClick={handleRegen} style={{...btnG,...sm,fontSize:8}}>Regenerate</button>
+      {/* Team member management lives in the Users tab */}
+      {canMultiUser ? (
+        <div style={{...sec,padding:"12px 14px",background:"#0a0f0a",border:"1px solid #1a2a1a",borderRadius:2}}>
+          <div style={{fontSize:9,color:GRN,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>Team Management</div>
+          <div style={{fontSize:10,color:MUT,lineHeight:1.6}}>Invite codes, members, and role management have moved to the <span style={{color:TXT,fontWeight:700}}>Users</span> tab.</div>
+        </div>
+      ) : (
+        <div style={{...sec,opacity:0.6,pointerEvents:"none",position:"relative"}}>
+          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1,pointerEvents:"all",flexDirection:"column",gap:6}}>
+            <span style={{fontSize:16}}>🔒</span>
+            <span style={{fontSize:9,color:MUT,letterSpacing:"0.08em"}}>Team plan required for multi-user features</span>
           </div>
-          <div style={{fontSize:9,color:MUT,marginTop:6}}>Share this code with team members to join your org.</div>
+          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Invite Code & Members</div>
+          <div style={{height:60}}/>
         </div>
-        <div style={sec}>
-          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>
-            Members {membersLoaded?`(${members.length})`:""}
-          </div>
-          {members.map(m=>(
-            <div key={m.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid "+BRD}}>
-              <div>
-                <div style={{fontSize:11,color:TXT}}>{m.profile?.display_name||m.profile?.username||m.user_id.slice(0,8)}</div>
-                <div style={{fontSize:9,color:MUT}}>{m.profile?.username} · {m.role}</div>
-              </div>
-              {m.user_id!==session?.user?.id&&<button onClick={()=>handleRemoveMember(m.user_id)} style={{...btnG,...sm,color:RED,border:"1px solid "+RED,fontSize:8}}>Remove</button>}
-            </div>
-          ))}
-        </div>
-      </> : <div style={{...sec,opacity:0.6,pointerEvents:"none",position:"relative"}}>
-        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1,pointerEvents:"all",flexDirection:"column",gap:6}}>
-          <span style={{fontSize:16}}>🔒</span>
-          <span style={{fontSize:9,color:MUT,letterSpacing:"0.08em"}}>Team plan required for multi-user features</span>
-        </div>
-        <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Invite Code & Members</div>
-        <div style={{height:60}}/>
-      </div>)}
+      )}
 
       {/* Leave / danger */}
       <div>
