@@ -149,7 +149,7 @@ function BillingPage({ profile, company, session }) {
         body: {
           user_id: session.user.id,
           company_id: isOrgPlan && company ? company.id : null,
-          return_url: base + "/",
+          return_url: base + "/?billing=managed",
         },
       });
       if (error || !data?.url) throw new Error(error?.message || "Failed to open billing portal");
