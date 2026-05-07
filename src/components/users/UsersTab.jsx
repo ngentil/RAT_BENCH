@@ -45,6 +45,7 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
   const [copied, setCopied] = useState(false);
   const [err, setErr] = useState("");
   const [updatingRole, setUpdatingRole] = useState(null);
+  const [showInvite, setShowInvite] = useState(false);
 
   const isOwner = company?.owner_id === session?.user?.id;
 
@@ -105,30 +106,47 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
     <div style={{ padding: 16, flex: 1 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <SL t="Users" />
-        <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em" }}>
-          {loading ? "…" : `${members.length} member${members.length !== 1 ? "s" : ""}`}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em" }}>
+            {loading ? "…" : `${members.length} member${members.length !== 1 ? "s" : ""}`}
+          </span>
+          {isOwner && (
+            <button onClick={() => setShowInvite(x => !x)} style={{ ...btnA, ...sm }}>
+              {showInvite ? "✕ Close" : "+ Invite Member"}
+            </button>
+          )}
+        </div>
       </div>
 
       {err && <div style={{ fontSize: 10, color: RED, marginBottom: 12 }}>{err}</div>}
 
-      {/* Invite code */}
-      {isOwner && (
-        <div style={sec}>
-          <div style={lbl}>Invite Code</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+      {/* Invite panel */}
+      {isOwner && showInvite && (
+        <div style={{ background: "#0a0f0a", border: "1px solid " + ACC + "44", borderRadius: 2, padding: "14px 14px", marginBottom: 16 }}>
+          <div style={{ fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>
+            Invite Member
+          </div>
+          <div style={{ fontSize: 10, color: MUT, marginBottom: 12, lineHeight: 1.7 }}>
+            Share this code with your team member. They enter it in{" "}
+            <span style={{ color: TXT }}>Settings → Company → Join with Code</span>.
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{
-              fontSize: 20, fontWeight: 700, letterSpacing: "0.2em", color: TXT,
-              fontFamily: "'IBM Plex Mono',monospace", background: "#0d0d0d",
-              border: "1px solid #333", borderRadius: 2, padding: "6px 12px",
+              fontSize: 22, fontWeight: 700, letterSpacing: "0.25em", color: TXT,
+              fontFamily: "'IBM Plex Mono',monospace", background: "#111",
+              border: "1px solid #444", borderRadius: 2, padding: "8px 14px", flex: 1, textAlign: "center",
             }}>
               {company.invite_code || "—"}
             </div>
-            <button onClick={copyCode} style={{ ...btnG, ...sm }}>{copied ? "✓ Copied" : "Copy"}</button>
-            <button onClick={handleRegen} style={{ ...btnG, ...sm, fontSize: 8 }}>Regenerate</button>
+            <button onClick={copyCode} style={{ ...btnA, ...sm, minWidth: 72 }}>
+              {copied ? "✓ Copied!" : "Copy"}
+            </button>
           </div>
-          <div style={{ fontSize: 9, color: MUT, lineHeight: 1.6 }}>
-            Share this code with team members to join <span style={{ color: TXT }}>{company.name}</span>.
+          <button onClick={handleRegen} style={{ ...btnG, ...sm, fontSize: 8, color: MUT }}>
+            Regenerate code
+          </button>
+          <div style={{ fontSize: 8, color: MUT, marginTop: 6, lineHeight: 1.6 }}>
+            Regenerating invalidates the old code immediately.
           </div>
         </div>
       )}
