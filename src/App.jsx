@@ -3,6 +3,13 @@ import { supabase } from './lib/supabase';
 import { BG, TXT, MUT, ACC, BRD, SURF, RED, GRN, btnG, sm } from './lib/styles';
 import { getMachines, getMyCompany } from './lib/db';
 import { TABS } from './lib/constants';
+import { effectiveTier } from './lib/gates';
+
+const TIER_GLOW = {
+  enthusiast: { color: "#e8670a", label: "Enthusiast" },
+  team:       { color: "#0a8fe8", label: "Team"       },
+  business:   { color: "#e8c20a", label: "Business"   },
+};
 import AuthScreen from './components/auth/AuthScreen';
 import OnboardingScreen from './components/auth/OnboardingScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
@@ -152,8 +159,13 @@ function App(){
     );
   }
 
+  const tierGlow = TIER_GLOW[effectiveTier(profile, company)];
+
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column"}}>
+      {tierGlow&&(
+        <div style={{height:3,background:tierGlow.color,boxShadow:`0 0 12px ${tierGlow.color}, 0 0 4px ${tierGlow.color}`,flexShrink:0}}/>
+      )}
       {billingBanner==="success"&&(
         <div style={{background:"#0a1a0a",color:"#00ff66",fontSize:11,fontWeight:700,letterSpacing:"0.12em",textAlign:"center",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 0 24px #00ff6688, 0 0 6px #00ff6644",borderBottom:"1px solid #00ff6655"}}>
           <span style={{textShadow:"0 0 12px #00ff66, 0 0 4px #00ff66"}}>✓ SUBSCRIPTION ACTIVE — WELCOME TO YOUR NEW PLAN</span>
