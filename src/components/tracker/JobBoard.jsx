@@ -224,6 +224,12 @@ const timerSel = {
   cursor: "pointer",
 };
 
+const BILL_STATUS = {
+  logged:   { label: "Logged",   color: "#5a5a5a" },
+  quoted:   { label: "Quoted",   color: "#4a9eff" },
+  invoiced: { label: "Invoiced", color: "#3d9e50" },
+};
+
 function TimeLogSection({ machine, company, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const log = machine.timeLog || [];
@@ -234,6 +240,21 @@ function TimeLogSection({ machine, company, onUpdate }) {
   const removeEntry = async (entryId) => {
     if (!confirm("Remove this time entry?")) return;
     const updated = { ...machine, timeLog: machine.timeLog.filter(e => e.id !== entryId) };
+    onUpdate(updated);
+    await upsertMachine(updated);
+  };
+
+  const cycleBillStatus = async (entryId) => {
+    const order = ["logged", "quoted", "invoiced"];
+    const updated = {
+      ...machine,
+      timeLog: machine.timeLog.map(e => {
+        if (e.id !== entryId) return e;
+        const cur = e.billStatus || "logged";
+        const next = order[(order.indexOf(cur) + 1) % order.length];
+        return { ...e, billStatus: next };
+      }),
+    };
     onUpdate(updated);
     await upsertMachine(updated);
   };
@@ -262,32 +283,47 @@ function TimeLogSection({ machine, company, onUpdate }) {
       </div>
       {expanded && (
         <div style={{ marginTop: 8 }}>
-          {log.map((entry, idx) => (
-            <div
-              key={entry.id || idx}
-              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #181818" }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: TXT, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {entry.jobLabel && entry.jobLabel !== "Job" ? entry.jobLabel.slice(0, 60) : "General work"}
+          {log.map((entry, idx) => {
+            const bs = BILL_STATUS[entry.billStatus || "logged"];
+            return (
+              <div
+                key={entry.id || idx}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #181818" }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: TXT, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {entry.jobLabel && entry.jobLabel !== "Job" ? entry.jobLabel.slice(0, 60) : "General work"}
+                  </div>
+                  <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
+                    {new Date(entry.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </div>
                 </div>
-                <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
-                  {new Date(entry.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <button
+                    onClick={() => cycleBillStatus(entry.id)}
+                    title="Click to cycle: Logged → Quoted → Invoiced"
+                    style={{
+                      background: "none", border: "1px solid " + bs.color + "55",
+                      color: bs.color, fontSize: 7, padding: "2px 5px", borderRadius: 2,
+                      cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace",
+                      fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
+                    }}
+                  >
+                    {bs.label}
+                  </button>
+                  <span style={{ fontSize: 11, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>
+                    {fmtDuration(entry.seconds || 0)}
+                  </span>
+                  <button
+                    onClick={() => removeEntry(entry.id)}
+                    style={{ background: "none", border: "none", color: MUT, cursor: "pointer", fontSize: 11, lineHeight: 1, padding: "0 2px" }}
+                  >
+                    ✕
+                  </button>
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <span style={{ fontSize: 11, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>
-                  {fmtDuration(entry.seconds || 0)}
-                </span>
-                <button
-                  onClick={() => removeEntry(entry.id)}
-                  style={{ background: "none", border: "none", color: MUT, cursor: "pointer", fontSize: 11, lineHeight: 1, padding: "0 2px" }}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

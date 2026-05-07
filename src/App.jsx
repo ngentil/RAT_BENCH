@@ -19,6 +19,9 @@ import JobBoard from './components/tracker/JobBoard';
 import SpecSearch from './components/tracker/SpecSearch';
 import WikiTab from './components/wiki/WikiTab';
 import UsersTab from './components/users/UsersTab';
+import ServiceReminders from './components/tracker/ServiceReminders';
+import RevenueDashboard from './components/tracker/RevenueDashboard';
+import CustomersTab from './components/customers/CustomersTab';
 function App(){
   const [tab,setTab]=useState(()=>localStorage.getItem("rat_tab")||"tracker");
   const [machines,setMachines]=useState([]);
@@ -202,7 +205,12 @@ function App(){
         </div>
       </div>
       <div style={{display:"flex",background:SURF,borderBottom:"1px solid "+BRD}}>
-        {TABS.filter(t=>!t.teamOnly||["team","business"].includes(effectiveTier(profile,company))).map(t=>(
+        {TABS.filter(t=>{
+          const tier=effectiveTier(profile,company);
+          if(t.teamOnly&&!["team","business"].includes(tier))return false;
+          if(t.enthusiastOnly&&tier==="free")return false;
+          return true;
+        }).map(t=>(
           <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"10px 4px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:tab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:tab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
             {t.label}
           </button>
@@ -210,6 +218,9 @@ function App(){
       </div>
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines}/></div>
+      <div style={{display:tab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} session={session}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>
       <div style={{display:tab==="users"?"contents":"none"}}><UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("settings")}/></div>
