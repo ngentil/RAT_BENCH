@@ -100,7 +100,7 @@ function exportInvoice(machine, company) {
     const hrs = (entry.seconds || 0) / 3600;
     const amount = rate !== null ? hrs * rate : null;
     return `<tr>
-      <td>${escHtml(entry.jobLabel || 'Job')}</td>
+      <td>${escHtml(entry.jobLabel ? entry.jobLabel.slice(0, 80) : 'General work')}</td>
       <td style="white-space:nowrap">${fmtDuration(entry.seconds || 0)}<span style="color:#aaa;font-size:11px;margin-left:6px">(${hrs.toFixed(2)} hrs)</span></td>
       <td style="white-space:nowrap;color:#888">${rate !== null ? `$${rate.toFixed(2)}/hr` : '—'}</td>
       <td class="amount">${fmt$(amount)}</td>
@@ -268,11 +268,11 @@ function TimeLogSection({ machine, company, onUpdate }) {
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #181818" }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 10, color: TXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {entry.jobLabel || "Job"}
+                <div style={{ fontSize: 11, color: TXT, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {entry.jobLabel ? entry.jobLabel.slice(0, 60) : "General work"}
                 </div>
-                <div style={{ fontSize: 8, color: MUT, marginTop: 1 }}>
-                  {new Date(entry.completedAt).toLocaleDateString()}
+                <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
+                  {new Date(entry.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
@@ -315,11 +315,20 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const effectiveLabel = isCustom ? customLabel : jobLabel;
 
   useEffect(() => {
-    setDisplay(getElapsed());
+    const clamp = (e) => t.duration > 0 ? Math.min(e, t.duration) : e;
+    setDisplay(clamp(getElapsed()));
     if (t.status !== "running") return;
-    const iv = setInterval(() => setDisplay(getElapsed()), 1000);
+    const iv = setInterval(() => {
+      const e = getElapsed();
+      if (t.duration > 0 && e >= t.duration) {
+        setDisplay(t.duration);
+        clearInterval(iv);
+      } else {
+        setDisplay(e);
+      }
+    }, 1000);
     return () => clearInterval(iv);
-  }, [t.status, t.startedAt, t.elapsed]);
+  }, [t.status, t.startedAt, t.elapsed, t.duration]);
 
   const save = async (updates) => {
     const updated = { ...machine, jobTimer: { ...t, ...updates } };
@@ -382,10 +391,10 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
     await upsertMachine(updated);
   };
 
-  const remaining = t.duration - display;
+  const remaining = t.duration > 0 ? Math.max(0, t.duration - display) : 0;
   const pct = t.duration > 0 ? remaining / t.duration : 1;
+  const isExpired = t.duration > 0 && display >= t.duration && t.status === "running";
   const glowColor = t.status === "done" ? GRN : pct > 0.5 ? GRN : pct > 0.2 ? ORANGE : RED;
-  const isOverdue = remaining < 0 && t.status === "running";
 
   if (locked) {
     return (
@@ -462,13 +471,13 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
     <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${glowColor}44`, borderRadius: 2, boxShadow: `0 0 10px ${glowColor}22` }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: t.jobLabel ? 2 : 8 }}>
         <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-          {t.status === "paused" ? "Paused" : isOverdue ? "Overdue" : "Time Remaining"}
+          {t.status === "paused" ? "Paused" : isExpired ? "Time Up — Finish Job" : "Time Remaining"}
         </div>
         <div style={{
           fontSize: 26, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace",
-          color: glowColor,
-          textShadow: `0 0 10px ${glowColor}88`,
-          animation: isOverdue ? "pulse 1s infinite" : "none",
+          color: isExpired ? RED : glowColor,
+          textShadow: `0 0 10px ${isExpired ? RED : glowColor}88`,
+          animation: "none",
         }}>
           {fmt(remaining)}
         </div>
