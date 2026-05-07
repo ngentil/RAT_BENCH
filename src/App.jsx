@@ -191,6 +191,7 @@ function App(){
             {company
               ? <div style={{fontSize:9,color:TXT,letterSpacing:"0.08em",textTransform:"uppercase",marginTop:1}}>{company.name}</div>
               : <div style={{fontSize:9,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:1}}>small engine & equipment repair</div>}
+            {tierGlow&&<div style={{fontSize:8,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",marginTop:2,color:tierGlow.color,textShadow:`0 0 8px ${tierGlow.color}`}}>{tierGlow.label}</div>}
           </div>
         </a>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
