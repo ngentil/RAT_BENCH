@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { getCompanyMembers, removeMember, regenerateInviteCode, updateMemberRole } from '../../lib/db';
 import { SL } from '../ui/shared';
+import { effectiveTier } from '../../lib/gates';
 
 const ROLES = ["admin", "technician", "viewer"];
 
@@ -48,13 +49,28 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
   const [showInvite, setShowInvite] = useState(false);
 
   const isOwner = company?.owner_id === session?.user?.id;
+  const tier = effectiveTier(profile, company);
+  const canManageUsers = ["team", "business"].includes(tier);
 
   useEffect(() => {
-    if (!company) return;
+    if (!company || !canManageUsers) return;
     getCompanyMembers(company.id)
       .then(setMembers)
       .finally(() => setLoading(false));
-  }, [company?.id]);
+  }, [company?.id, canManageUsers]);
+
+  if (!canManageUsers) {
+    return (
+      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
+        <div style={{ fontSize: 28 }}>👥</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Team Management</div>
+        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
+          Invite staff, assign roles, and manage access to your shop. Available on the Team plan and above.
+        </div>
+        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
+      </div>
+    );
+  }
 
   if (!company) {
     return (

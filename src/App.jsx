@@ -112,6 +112,16 @@ function App(){
 
   useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
 
+  // If stored tab requires a higher tier than the user has, reset to tracker
+  useEffect(()=>{
+    if(!profile) return;
+    const tier=effectiveTier(profile,company);
+    const tabDef=TABS.find(t=>t.id===tab);
+    if(!tabDef) return;
+    if(tabDef.teamOnly&&!["team","business"].includes(tier)) setTab("tracker");
+    if(tabDef.enthusiastOnly&&tier==="free") setTab("tracker");
+  },[profile,company]);
+
   useEffect(()=>{
     // Bootstrap from existing session
     supabase.auth.getSession().then(({data:{session}})=>loadForSession(session));
