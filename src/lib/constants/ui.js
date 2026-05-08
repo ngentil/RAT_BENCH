@@ -166,6 +166,7 @@ export const EXPAND_SECTIONS = [
   {k:"deckSize",     l:"Blade / Deck",               types:["Lawnmower","Ride-on Mower"]},
   {k:"lighting",     l:"Lighting",                   types:null},
   {k:"notes",        l:"Notes",                      types:null},
+  {k:"parts",        l:"Parts Used",                 types:null},
   {k:"serviceHistory",l:"Service History",           types:null},
 ];
 export const DEFAULT_EXPAND = EXPAND_SECTIONS.map(f=>f.k);
