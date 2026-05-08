@@ -20,6 +20,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [desc,setDesc]=useState(e.desc||"");
   const [source,setSource]=useState(e.source||"");
   const [status,setStatus]=useState(e.status||"");
+  const [dueDate,setDueDate]=useState(e.dueDate||"");
   const [colour,setColour]=useState(e.colour||"");
   const [bodyType,setBodyType]=useState(e.bodyType||"");
   const [driveConfig,setDriveConfig]=useState(e.driveConfig||"");
@@ -523,6 +524,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       crankPinDiameter:crankPinDiameter.toString(),crankPinLength:crankPinLength.toString(),mainJournalDiameter:mainJournalDiameter.toString(),crankEndFloat:crankEndFloat.toString(),crankRunout:crankRunout.toString(),crankStroke:crankStroke.toString(),crankSealLeft:crankSealLeft.trim(),crankSealRight:crankSealRight.trim(),
       conrodLength:conrodLength.toString(),conrodSmallEnd:conrodSmallEnd.toString(),conrodSmallClear:conrodSmallClear.toString(),conrodBigEnd:conrodBigEnd.toString(),conrodBigClear:conrodBigClear.toString(),conrodSideClear:conrodSideClear.toString(),conrodBearingType,conrodBearingPartNo:conrodBearingPartNo.trim(),
       pistonDiameter:pistonDiameter.toString(),pistonClearance:pistonClearance.toString(),ringCount,ringGapTop:ringGapTop.toString(),ringGapSecond:ringGapSecond.toString(),ringGapOil:ringGapOil.toString(),ringWidth:ringWidth.toString(),ringThickness:ringThickness.toString(),gudgeonDiameter:gudgeonDiameter.toString(),gudgeonLength:gudgeonLength.toString(),gudgeonFit,gudgeonCirclip:gudgeonCirclip.toString(),
+      dueDate:dueDate.trim(),
       oilChangeInterval:oilChangeInterval.toString(),oilChangeUnit,filterInterval:filterInterval.toString(),filterIntervalUnit,majorServiceInterval:majorServiceInterval.toString(),majorServiceUnit,lastServiceOdo:lastServiceOdo.toString(),lastServiceDate:lastServiceDate.trim(),
       engineOilGrade:engineOilGrade.trim(),engineOilBrand:engineOilBrand.trim(),engineOilJaso:engineOilJaso.trim(),engineOilSynth:engineOilSynth.trim(),engineOilCapacity:engineOilCapacity.toString(),hydraulicFluidType:hydraulicFluidType.trim(),brakeFluidType,diffOilType:diffOilType.trim(),diffOilCapacity:diffOilCapacity.toString(),transferCaseOil:transferCaseOil.trim(),
       dryWeight:dryWeight.toString(),grossWeight:grossWeight.toString(),wheelbase:wheelbase.toString(),overallLength:overallLength.toString(),overallWidth:overallWidth.toString(),overallHeight:overallHeight.toString(),
@@ -602,7 +604,10 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 {isTracked(type)&&<div style={{...col,flex:1}}><FL t="Model" /><input style={inp} placeholder="e.g. PC130, 308, JD-50G" value={model} onChange={ev=>setModel(ev.target.value)} /></div>}
                 <div style={{...col,maxWidth:140}}><FL t="Year" /><input style={inp} type="number" placeholder="e.g. 2018" min="1900" max="2099" step="1" value={year} onChange={ev=>setYear(ev.target.value)} /></div>
                 <div style={col}><FL t="Description" /><textarea style={txa} placeholder={getPH(type,"desc")} value={desc} onChange={ev=>setDesc(ev.target.value)} /></div>
-                <div style={col}><FL t="Status" /><select style={sel} value={status} onChange={ev=>setStatus(ev.target.value)}><option value="">— not set —</option>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></div>
+                <div style={row}>
+                  <div style={{...col,flex:2}}><FL t="Status" /><select style={sel} value={status} onChange={ev=>setStatus(ev.target.value)}><option value="">— not set —</option>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></div>
+                  <div style={{...col,flex:1}}><FL t="Due Date" /><input style={inp} type="date" value={dueDate} onChange={ev=>setDueDate(ev.target.value)} /></div>
+                </div>
                 {/* Vehicle-specific fields */}
                 {isVehicle(type)&&<>
                   <div style={row}>

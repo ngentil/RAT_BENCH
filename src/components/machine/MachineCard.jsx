@@ -118,6 +118,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
               {timerRunning&&<span style={{width:7,height:7,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,flexShrink:0,display:"inline-block"}}/>}
             </div>
             <div style={{fontSize:9,color:MUT,marginTop:2}}>{[m.make,m.model,m.year,m.source].filter(Boolean).join(" · ")}</div>
+            {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const today=now.toDateString()===due.toDateString();const dueColor=overdue?"#e87a0a":today?"#4a9eff":MUT;return<div style={{fontSize:8,color:dueColor,marginTop:1}}>{overdue?"OVERDUE ":"DUE "}{due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>;})()}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:"55%",overflow:"hidden"}}>
             {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
