@@ -179,6 +179,8 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
   }, [lastScan]);
 
   const save = (form) => {
+    const isNew = !form.id && !editing?.id;
+    if (isNew && isFree && inv.length >= FREE_PARTS_LIMIT) return;
     const updated = saveInventoryItem(userId, { ...form, id: editing?.id });
     setInv(updated);
     setEditing(null);
@@ -237,25 +239,20 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
   }, [inv, filter, search]);
 
   const lbl = { fontSize:9, color:ACC, letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700 };
-
-  if (effectiveTier(profile, company) === "free") {
-    return (
-      <div style={{ padding:16, flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, textAlign:"center" }}>
-        <div style={{ fontSize:28 }}>🔩</div>
-        <div style={{ fontSize:13, fontWeight:700, color:TXT }}>Parts Inventory</div>
-        <div style={{ fontSize:10, color:MUT, maxWidth:280, lineHeight:1.7 }}>
-          Track stock levels, part numbers, suppliers, and usage across all machines. Available on the Enthusiast plan and above.
-        </div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
-      </div>
-    );
-  }
+  const isFree = effectiveTier(profile, company) === "free";
+  const FREE_PARTS_LIMIT = 10;
+  const atPartsLimit = isFree && inv.length >= FREE_PARTS_LIMIT;
+  const cappedFiltered = isFree ? filtered.slice(0, FREE_PARTS_LIMIT) : filtered;
+  const hiddenCount = isFree ? Math.max(0, filtered.length - FREE_PARTS_LIMIT) : 0;
 
   return (
     <div style={{ padding:16, flex:1, overflowY:'auto' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
         <SL t="Parts Inventory" />
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          {isFree && (
+            <span style={{ fontSize:8, color: atPartsLimit ? RED : MUT, letterSpacing:'0.06em' }}>{inv.length}/{FREE_PARTS_LIMIT}</span>
+          )}
           {lowStock.length > 0 && (
             <button
               onClick={() => {
@@ -271,7 +268,9 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
             </button>
           )}
           {!editing && (
-            <button onClick={() => setEditing({})} style={{ ...btnA, ...sm }}>+ Add Part</button>
+            atPartsLimit
+              ? <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade for more</button>
+              : <button onClick={() => setEditing({})} style={{ ...btnA, ...sm }}>+ Add Part</button>
           )}
         </div>
       </div>
@@ -281,6 +280,16 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
       {/* New / edit form */}
       {editing !== null && (
         <ItemForm initial={editing} onSave={save} onCancel={() => setEditing(null)} />
+      )}
+
+      {isFree && inv.length > 0 && (
+        <div style={{ background:"#0a1a0a", border:"1px solid #1a3a1a", borderRadius:2, padding:"10px 14px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+          <div>
+            <div style={{ fontSize:9, color:"#4ade80", letterSpacing:"0.15em", textTransform:"uppercase", fontWeight:700, marginBottom:3 }}>Free Plan — Parts Preview</div>
+            <div style={{ fontSize:10, color:MUT, lineHeight:1.6 }}>Up to {FREE_PARTS_LIMIT} parts on the free plan. Upgrade for unlimited inventory.</div>
+          </div>
+          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace:"nowrap" }}>Upgrade</button>}
+        </div>
       )}
 
       {/* Summary row */}
@@ -327,7 +336,7 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
         </div>
       )}
 
-      {filtered.map(item => {
+      {cappedFiltered.map(item => {
         const qty      = Number(item.stockQty) || 0;
         const minQty   = Number(item.minStock) || 0;
         const isOut    = qty === 0;
@@ -401,8 +410,15 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
         );
       })}
 
-      {filtered.length === 0 && inv.length > 0 && (
+      {cappedFiltered.length === 0 && inv.length > 0 && (
         <div style={{ fontSize:10, color:MUT, textAlign:'center', padding:'24px 0' }}>No parts match.</div>
+      )}
+
+      {hiddenCount > 0 && (
+        <div style={{ border:"1px dashed #2a2a2a", borderRadius:2, padding:"14px", textAlign:"center", marginBottom:10 }}>
+          <div style={{ fontSize:10, color:MUT, marginBottom:8 }}>+{hiddenCount} more part{hiddenCount !== 1 ? "s" : ""} hidden — upgrade for unlimited inventory</div>
+          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to Enthusiast</button>}
+        </div>
       )}
 
       <div style={{ marginTop:8, fontSize:9, color:MUT, lineHeight:1.7 }}>
