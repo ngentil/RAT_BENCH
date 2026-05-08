@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ACC, MUT, BRD, TXT, GRN, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
 import { upsertMachine } from '../../lib/db';
@@ -17,9 +17,88 @@ function fmtHrs(secs) {
   return m + "m";
 }
 
-const EMPTY_FORM = { name: "", phone: "", email: "", notes: "" };
+const EMPTY_FORM = { name: "", phone: "", email: "", address: "", notes: "" };
 
-export default function CustomersTab({ machines, setMachines, session }) {
+function escHtml(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function fmtMoney(n) { return "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
+
+function exportClientInvoice(client, linked, company) {
+  const rate = company?.hourly_rate || 0;
+  const taxRate = company?.tax_rate || 0;
+  const taxLabel = company?.tax_label || "Tax";
+  const currencySymbol = company?.currency || "$";
+  const companyName = company?.name || "Repair Shop";
+  const companyPhone = company?.phone || "";
+  const companyEmail = company?.email || "";
+
+  let rows = "";
+  let labourTotal = 0, partsTotal = 0, partsCost = 0;
+
+  linked.forEach(m => {
+    const mLabel = `${m.name}${m.make ? " — " + m.make : ""}${m.model ? " " + m.model : ""}`;
+    rows += `<tr><td colspan="3" style="background:#f5f5f5;font-weight:700;font-size:13px;padding:8px 10px;border-top:2px solid #ddd">${escHtml(mLabel)}</td></tr>`;
+
+    (m.timeLog || []).filter(e => e.completedAt).forEach(e => {
+      const hrs = (e.seconds || 0) / 3600;
+      const amount = hrs * rate;
+      labourTotal += amount;
+      const label = e.jobLabel && e.jobLabel !== "Job" ? e.jobLabel : "General work";
+      const notes = e.sessionNotes ? `<div style="font-size:11px;color:#777;margin-top:2px">${escHtml(e.sessionNotes)}</div>` : "";
+      const date = new Date(e.completedAt).toLocaleDateString();
+      rows += `<tr><td style="padding:6px 10px">${escHtml(label)}${notes}<div style="font-size:10px;color:#aaa">${date}</div></td><td style="padding:6px 10px;text-align:right">${hrs.toFixed(2)}h × ${currencySymbol}${rate}/hr</td><td style="padding:6px 10px;text-align:right;font-weight:600">${currencySymbol}${amount.toFixed(2)}</td></tr>`;
+    });
+
+    (m.parts || []).forEach(p => {
+      const qty = Number(p.qty) || 1;
+      const sell = (parseFloat(p.sellPrice) || 0) * qty;
+      const buy = (parseFloat(p.buyPrice) || 0) * qty;
+      partsTotal += sell;
+      partsCost += buy;
+      const date = p.usedAt || p.addedAt ? new Date(p.usedAt || p.addedAt).toLocaleDateString() : "";
+      rows += `<tr><td style="padding:6px 10px">${escHtml(p.name || "Part")}<div style="font-size:10px;color:#aaa">${date ? date + " · " : ""}${escHtml(p.partNumber || "")}</div></td><td style="padding:6px 10px;text-align:right">Qty ${qty}</td><td style="padding:6px 10px;text-align:right;font-weight:600">${currencySymbol}${sell.toFixed(2)}</td></tr>`;
+    });
+  });
+
+  const subtotal = labourTotal + partsTotal;
+  const tax = subtotal * (taxRate / 100);
+  const total = subtotal + tax;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice — ${escHtml(client.name)}</title>
+  <style>body{font-family:Arial,sans-serif;max-width:760px;margin:40px auto;color:#111;font-size:13px}
+  h1{font-size:22px;margin:0}table{width:100%;border-collapse:collapse;margin-top:20px}
+  td,th{border-bottom:1px solid #eee;vertical-align:top}th{background:#111;color:#fff;padding:8px 10px;text-align:left;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+  .total-row td{font-weight:700;font-size:15px;border-top:2px solid #111;border-bottom:none}
+  @media print{button{display:none}}</style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px">
+    <div><h1>${escHtml(companyName)}</h1>${companyPhone ? `<div style="color:#777;margin-top:4px">${escHtml(companyPhone)}</div>` : ""}${companyEmail ? `<div style="color:#777">${escHtml(companyEmail)}</div>` : ""}</div>
+    <div style="text-align:right"><div style="font-size:22px;font-weight:700">INVOICE</div><div style="color:#777;margin-top:4px">${new Date().toLocaleDateString()}</div></div>
+  </div>
+  <div style="background:#f9f9f9;border:1px solid #eee;border-radius:4px;padding:14px 18px;margin-bottom:20px">
+    <div style="font-size:10px;color:#777;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Bill To</div>
+    <div style="font-weight:700;font-size:15px">${escHtml(client.name)}</div>
+    ${client.address ? `<div style="color:#555;margin-top:3px;white-space:pre-line">${escHtml(client.address)}</div>` : ""}
+    ${client.phone ? `<div style="color:#555;margin-top:3px">📞 ${escHtml(client.phone)}</div>` : ""}
+    ${client.email ? `<div style="color:#555">✉ ${escHtml(client.email)}</div>` : ""}
+  </div>
+  <table><thead><tr><th>Description</th><th style="text-align:right">Details</th><th style="text-align:right">Amount</th></tr></thead>
+  <tbody>${rows}
+  ${labourTotal > 0 ? `<tr><td colspan="2" style="padding:8px 10px;text-align:right;color:#777">Labour</td><td style="padding:8px 10px;text-align:right;font-weight:600">${currencySymbol}${labourTotal.toFixed(2)}</td></tr>` : ""}
+  ${partsTotal > 0 ? `<tr><td colspan="2" style="padding:8px 10px;text-align:right;color:#777">Parts</td><td style="padding:8px 10px;text-align:right;font-weight:600">${currencySymbol}${partsTotal.toFixed(2)}</td></tr>` : ""}
+  ${taxRate > 0 ? `<tr><td colspan="2" style="padding:8px 10px;text-align:right;color:#777">${escHtml(taxLabel)} (${taxRate}%)</td><td style="padding:8px 10px;text-align:right;font-weight:600">${currencySymbol}${tax.toFixed(2)}</td></tr>` : ""}
+  <tr class="total-row"><td colspan="2" style="padding:10px 10px;text-align:right">Total</td><td style="padding:10px 10px;text-align:right">${currencySymbol}${total.toFixed(2)}</td></tr>
+  </tbody></table>
+  <div style="margin-top:30px;text-align:center"><button onclick="window.print()" style="background:#111;color:#fff;border:none;padding:10px 24px;border-radius:4px;font-size:13px;cursor:pointer">Print / Save PDF</button></div>
+  </body></html>`;
+
+  const w = window.open("", "_blank");
+  w.document.write(html);
+  w.document.close();
+}
+
+export default function CustomersTab({ machines, setMachines, session, company }) {
   const userId = session?.user?.id;
   const [clients, setClients] = useState(() => loadClients(userId));
   const [editing, setEditing] = useState(null);
@@ -32,16 +111,16 @@ export default function CustomersTab({ machines, setMachines, session }) {
   }, [clients, userId]);
 
   const openNew = () => { setForm(EMPTY_FORM); setErr(""); setEditing("new"); };
-  const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", notes: c.notes || "" }); setErr(""); setEditing(c); };
+  const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" }); setErr(""); setEditing(c); };
   const closeModal = () => { setEditing(null); setErr(""); };
 
   const save = () => {
     if (!form.name.trim()) { setErr("Name is required."); return; }
     if (editing === "new") {
-      const c = { ...form, name: form.name.trim(), id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+      const c = { ...form, name: form.name.trim(), address: form.address.trim(), id: crypto.randomUUID(), createdAt: new Date().toISOString() };
       setClients(prev => [...prev, c]);
     } else {
-      setClients(prev => prev.map(c => c.id === editing.id ? { ...c, ...form, name: form.name.trim() } : c));
+      setClients(prev => prev.map(c => c.id === editing.id ? { ...c, ...form, name: form.name.trim(), address: form.address.trim() } : c));
     }
     closeModal();
   };
@@ -117,23 +196,34 @@ export default function CustomersTab({ machines, setMachines, session }) {
       {filtered.map(client => {
         const linked = getLinked(client.id);
         const totalSecs = linked.flatMap(m => m.timeLog || []).reduce((s, e) => s + (e.seconds || 0), 0);
+        const totalPartsRev = linked.flatMap(m => m.parts || []).reduce((s, p) => s + (parseFloat(p.sellPrice) || 0) * (Number(p.qty) || 1), 0);
+        const rate = company?.hourly_rate || 0;
+        const labourRev = (totalSecs / 3600) * rate;
+        const totalRev = labourRev + totalPartsRev;
         return (
           <div key={client.id} style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px", marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: linked.length ? 10 : 0 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{client.name}</div>
                   {totalSecs > 0 && (
                     <span style={{ fontSize: 8, color: GRN, border: "1px solid " + GRN + "44", background: GRN + "11", padding: "1px 6px", borderRadius: 2 }}>
                       {fmtHrs(totalSecs)} logged
                     </span>
                   )}
+                  {totalRev > 0 && rate > 0 && (
+                    <span style={{ fontSize: 8, color: ACC, border: "1px solid " + ACC + "44", background: ACC + "11", padding: "1px 6px", borderRadius: 2 }}>
+                      ${totalRev.toFixed(0)} revenue
+                    </span>
+                  )}
                 </div>
                 {client.phone && <div style={{ fontSize: 9, color: MUT, marginTop: 3 }}>📞 {client.phone}</div>}
                 {client.email && <div style={{ fontSize: 9, color: MUT }}>✉ {client.email}</div>}
+                {client.address && <div style={{ fontSize: 9, color: MUT, marginTop: 2, lineHeight: 1.5, whiteSpace: "pre-line" }}>📍 {client.address}</div>}
                 {client.notes && <div style={{ fontSize: 9, color: MUT, marginTop: 4, lineHeight: 1.5 }}>{client.notes}</div>}
               </div>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 10 }}>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {linked.length > 0 && <button onClick={() => exportClientInvoice(client, linked, company)} style={{ ...btnG, ...sm }}>Invoice</button>}
                 <button onClick={() => openEdit(client)} style={{ ...btnG, ...sm }}>Edit</button>
                 <button onClick={() => deleteClient(client.id)} style={{ ...btnD }}>Del</button>
               </div>
@@ -213,6 +303,10 @@ export default function CustomersTab({ machines, setMachines, session }) {
               <div style={col}>
                 <FL t="Email" />
                 <input style={inp} type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="client@example.com" />
+              </div>
+              <div style={col}>
+                <FL t="Address" />
+                <textarea style={{ ...txa, minHeight: 48 }} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Street, suburb, postcode…" />
               </div>
               <div style={col}>
                 <FL t="Notes" />
