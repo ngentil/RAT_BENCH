@@ -103,6 +103,14 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
     m.iatSensor&&{label:"IAT Sensor",value:m.iatSensor},
     m.o2Sensor&&{label:"O2 Sensor",value:m.o2Sensor},
     m.iacSensor&&{label:"IAC",value:m.iacSensor},
+    m.obShaftLength&&{label:"Shaft Length",value:m.obShaftLength+(m.obTransomHeight?" · Transom: "+m.obTransomHeight+"mm":"")},
+    m.obTiltTrim&&{label:"Tilt / Trim",value:m.obTiltTrim+(m.obSteering?" · "+m.obSteering:"")},
+    m.obPropPitch&&{label:"Propeller",value:[m.obPropDiameter?m.obPropDiameter+'" dia':null,m.obPropPitch?m.obPropPitch+'" pitch':null,m.obPropMaterial].filter(Boolean).join(" · ")},
+    m.obGearRatio&&{label:"Gear Ratio",value:m.obGearRatio},
+    m.obLowerUnitOilType&&{label:"Lower Unit Oil",value:m.obLowerUnitOilType+(m.obLowerUnitOilCapacity?" · "+m.obLowerUnitOilCapacity+"mL":"")},
+    m.obAnodeMaterial&&{label:"Anode Material",value:m.obAnodeMaterial},
+    m.obBreakInHours&&{label:"Break-in Hours",value:m.obBreakInHours+"h"},
+    m.obImpellerLastChanged&&{label:"Impeller Last Changed",value:m.obImpellerLastChanged},
   ].filter(Boolean);
 
   const timerRunning = m.jobTimer?.status === "running";
