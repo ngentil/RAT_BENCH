@@ -101,18 +101,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   const [search, setSearch] = useState("");
   const [err, setErr] = useState("");
 
-  if (effectiveTier(profile, company) === "free") {
-    return (
-      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>👤</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Clients</div>
-        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Link machines to clients, track work history per customer, and generate client reports. Available on the Enthusiast plan and above.
-        </div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
-      </div>
-    );
-  }
+  const isFree = effectiveTier(profile, company) === "free";
 
   const openNew = () => { setForm(EMPTY_FORM); setErr(""); setEditing("new"); };
   const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" }); setErr(""); setEditing(c); };
@@ -165,6 +154,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   };
 
   const filtered = useMemo(() => {
+    if (isFree) return [];
     if (!search.trim()) return clients;
     const q = search.toLowerCase();
     return clients.filter(c =>
@@ -172,7 +162,20 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
       (c.email || "").toLowerCase().includes(q) ||
       (c.phone || "").includes(q)
     );
-  }, [clients, search]);
+  }, [clients, search, isFree]);
+
+  if (isFree) {
+    return (
+      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
+        <div style={{ fontSize: 28 }}>👤</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Clients</div>
+        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
+          Link machines to clients, track work history per customer, and generate client reports. Available on the Enthusiast plan and above.
+        </div>
+        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
+      </div>
+    );
+  }
 
   const getLinked = (clientId) => machines.filter(m => m.clientId === clientId);
   const unlinked = machines.filter(m => !m.clientId);
