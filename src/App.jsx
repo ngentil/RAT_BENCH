@@ -248,7 +248,7 @@ function App(){
       <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines}/></div>
       <div style={{display:tab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session}/></div>
-      <div style={{display:tab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} session={session}/></div>
+      <div style={{display:tab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} session={session} company={company}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>
       <div style={{display:tab==="users"?"contents":"none"}}><UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("settings")}/></div>
