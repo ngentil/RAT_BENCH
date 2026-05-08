@@ -118,7 +118,7 @@ function ToolForm({ tool, onSave, onCancel }) {
             <textarea style={{ ...txa, minHeight: 50 }} value={f.notes} onChange={e => s("notes", e.target.value)} placeholder="e.g. 115mm disc, 11,000 RPM, bought from bunnings" />
           </div>
           <div style={{ gridColumn: "1/-1" }}>
-            <PhotoAdder photos={f.photos} setPhotos={ps => s("photos", ps)} label="Photos" />
+            <PhotoAdder photos={f.photos} setPhotos={ps => s("photos", typeof ps === "function" ? ps(f.photos) : ps)} label="Photos" />
           </div>
         </div>
         <div style={mdlF}>
