@@ -139,7 +139,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
         </div>
       </div>
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
-      {machines.length===0&&<Empty t="No machines yet — tap + Add" />}
+      {machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
       {view==="grid"?(
         <>
           <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8}}>

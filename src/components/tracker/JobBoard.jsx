@@ -502,8 +502,19 @@ function PartsSection({ machine, onUpdate, userId }) {
             <div><L t="SKU"/><input style={inpS} value={saForm.partNumber} onChange={e=>setSaForm(f=>({...f,partNumber:e.target.value}))} placeholder="e.g. 17211-Z0T"/></div>
             <div><L t="Brand"/><input style={inpS} value={saForm.brand} onChange={e=>setSaForm(f=>({...f,brand:e.target.value}))} placeholder="e.g. Honda"/></div>
             <div><L t="Qty"/><input style={inpS} type="number" min="1" value={saForm.qty} onChange={e=>setSaForm(f=>({...f,qty:e.target.value}))}/></div>
+            <div/>
             <div><L t="Buy Price ($)"/><input style={inpS} type="number" min="0" step="0.01" value={saForm.buyPrice} onChange={e=>setSaForm(f=>({...f,buyPrice:e.target.value}))} placeholder="0.00"/></div>
-            <div style={{ gridColumn:"1/-1" }}><L t="Sell Price ($)"/><input style={inpS} type="number" min="0" step="0.01" value={saForm.sellPrice} onChange={e=>setSaForm(f=>({...f,sellPrice:e.target.value}))} placeholder="0.00"/></div>
+            <div><L t="Sell Price ($)"/><input style={inpS} type="number" min="0" step="0.01" value={saForm.sellPrice} onChange={e=>setSaForm(f=>({...f,sellPrice:e.target.value}))} placeholder="0.00"/></div>
+            {saForm.buyPrice && saForm.sellPrice && (() => {
+              const bp = parseFloat(saForm.buyPrice), sp = parseFloat(saForm.sellPrice);
+              const margin = sp > 0 ? (((sp - bp) / sp) * 100).toFixed(0) : null;
+              const profit = ((sp - bp) * (parseInt(saForm.qty)||1)).toFixed(2);
+              return margin !== null ? (
+                <div style={{ gridColumn:"1/-1", fontSize:9, color: Number(margin)>=0 ? GRN : RED, marginTop:-2 }}>
+                  Margin {margin}% · Profit ${profit} {Number(margin)>=0?"↑":"↓"}
+                </div>
+              ) : null;
+            })()}
           </div>
           <div style={{ display:"flex", gap:6, marginTop:8, justifyContent:"flex-end" }}>
             <button onClick={() => setMode(null)} style={{ ...btnG, ...sm }}>Cancel</button>
@@ -786,7 +797,7 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
   return (
     <div style={{ padding: 16, flex: 1 }}>
       <SL t="Job Board" />
-      {machines.length === 0 && <Empty t="No machines yet" />}
+      {machines.length === 0 && <Empty icon="🗂" t="No machines yet" sub="Add machines from the Tracker tab, then manage their jobs, parts, and timers here." />}
       {groups.map(({ status, items }) => items.length === 0 ? null : (
         <div key={status} style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
