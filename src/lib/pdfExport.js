@@ -62,6 +62,16 @@ export const PDF_SCHEMA=[
     {k:"tyreFront",l:"Front Tyre"},{k:"tyreRear",l:"Rear Tyre"},
     {k:"rimFront",l:"Front Rim"},{k:"rimRear",l:"Rear Rim"},
   ]},
+  {k:"outboard",l:"Outboard Specs",fields:[
+    {k:"obShaftLength",l:"Shaft Length"},{k:"obTransomHeight",l:"Transom Height"},
+    {k:"obTiltTrim",l:"Tilt / Trim"},{k:"obSteering",l:"Steering"},
+    {k:"obPropPitch",l:"Prop Pitch"},{k:"obPropDiameter",l:"Prop Diameter"},
+    {k:"obPropMaterial",l:"Prop Material"},{k:"obGearRatio",l:"Gear Ratio"},
+    {k:"obLowerUnitOilType",l:"Lower Unit Oil"},{k:"obLowerUnitOilCapacity",l:"Oil Capacity"},
+    {k:"obAnodeMaterial",l:"Anode Material"},{k:"obBreakInHours",l:"Break-in Hours"},
+    {k:"obImpellerLastChanged",l:"Impeller Last Changed"},
+  ]},
+  {k:"lighting",l:"Lighting",array:true},
   {k:"notes",l:"Notes",fields:[{k:"notes",l:"Notes"}]},
   {k:"history",l:"Service History",svc:true},
 ];
@@ -204,6 +214,28 @@ export function exportMachinePDF(m, svcs, opts){
   if(iS('tyres')&&(m.tyreFront||m.tyreRear)){
     addSection("Tyres");
     sf('tyres','tyreFront','Front Tyre',m.tyreFront);sf('tyres','tyreRear','Rear Tyre',m.tyreRear);sf('tyres','rimFront','Front Rim',m.rimFront);sf('tyres','rimRear','Rear Rim',m.rimRear);
+  }
+
+  if(iS('outboard')&&(m.obShaftLength||m.obPropPitch||m.obGearRatio)){
+    addSection("Outboard Specs");
+    sf('outboard','obShaftLength','Shaft Length',m.obShaftLength?(m.obShaftLength+(m.obTransomHeight?" · Transom: "+m.obTransomHeight+"mm":"")):null);
+    sf('outboard','obTiltTrim','Tilt / Trim',m.obTiltTrim?(m.obTiltTrim+(m.obSteering?" · "+m.obSteering:"")):null);
+    sf('outboard','obPropPitch','Propeller',[m.obPropDiameter?m.obPropDiameter+'" dia':null,m.obPropPitch?m.obPropPitch+'" pitch':null,m.obPropMaterial].filter(Boolean).join(" · ")||null);
+    sf('outboard','obGearRatio','Gear Ratio',m.obGearRatio);
+    sf('outboard','obLowerUnitOilType','Lower Unit Oil',m.obLowerUnitOilType?(m.obLowerUnitOilType+(m.obLowerUnitOilCapacity?" · "+m.obLowerUnitOilCapacity+"mL":"")):null);
+    sf('outboard','obAnodeMaterial','Anode Material',m.obAnodeMaterial);
+    sf('outboard','obBreakInHours','Break-in Hours',m.obBreakInHours?m.obBreakInHours+"h":null);
+    sf('outboard','obImpellerLastChanged','Impeller Changed',m.obImpellerLastChanged);
+  }
+
+  if(iS('lighting')&&m.lighting&&m.lighting.length>0){
+    addSection("Lighting");
+    m.lighting.forEach(l=>{
+      const loc=l.location==="Other"?(l.locationOther||"Other"):(l.location||"—");
+      const parts=[l.lightType,l.wattage?l.wattage+"W":null,l.voltage,l.amperage?l.amperage+"A":null,l.plug].filter(Boolean).join(" · ");
+      addField(loc,parts||(l.notes||"No specs"));
+      if(l.notes&&parts)addLine("  "+l.notes,8,false,[80,80,80]);
+    });
   }
 
   if(iS('notes')&&m.notes){addSection("Notes");if(iF('notes','notes'))addLine(m.notes,9);}

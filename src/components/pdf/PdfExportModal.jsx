@@ -4,7 +4,7 @@ import { PDF_SCHEMA, exportMachinePDF } from '../../lib/pdfExport';
 function PdfExportModal({m,svcs,onClose}){
   const available=React.useMemo(()=>PDF_SCHEMA.map(sec=>{
     if(sec.svc) return svcs.length>0?sec:null;
-    if(sec.array) return m.fasteners?.length>0?sec:null;
+    if(sec.array) return (m[sec.k]?.length>0)?sec:null;
     const fields=sec.fields.filter(f=>m[f.k]!=null&&m[f.k]!=="");
     return fields.length>0?{...sec,fields}:null;
   }).filter(Boolean),[]);
@@ -63,7 +63,7 @@ function PdfExportModal({m,svcs,onClose}){
                 )}
                 {isOpen&&(sec.svc||sec.array)&&(
                   <div style={{paddingLeft:42,paddingBottom:8}}>
-                    <span style={{fontSize:9,color:MUT}}>{sec.svc?`${svcs.length} entr${svcs.length===1?"y":"ies"}`:"All fasteners included as block"}</span>
+                    <span style={{fontSize:9,color:MUT}}>{sec.svc?`${svcs.length} entr${svcs.length===1?"y":"ies"}`:`${(m[sec.k]||[]).length} entr${(m[sec.k]||[]).length===1?"y":"ies"} included`}</span>
                   </div>
                 )}
               </div>
