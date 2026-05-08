@@ -145,6 +145,22 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
             </div>
           </div>
         )}
+
+        {partsRev > 0 && (
+          <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px" }}>
+            <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Parts Revenue</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>${partsRev.toFixed(0)}</div>
+            <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Cost ${partsCost.toFixed(0)}</div>
+          </div>
+        )}
+
+        {(grossProfit > 0 || partsCost > 0) && (
+          <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px" }}>
+            <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Gross Profit</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: grossProfit >= 0 ? GRN : RED, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>${grossProfit.toFixed(0)}</div>
+            <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Labour + Parts − Cost</div>
+          </div>
+        )}
       </div>
 
       {/* By machine */}

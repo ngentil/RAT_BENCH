@@ -5,7 +5,18 @@ import { RAGE_LBL } from '../../lib/constants';
 export function SL({t}){ return <div style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,marginBottom:8}}>{t}</div>; }
 export function FL({t}){ return <div style={{fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:4}}>{t}</div>; }
 export function Divider(){ return <div style={dvdr} />; }
-export function Empty({t}){ return <div style={empt}>{t}</div>; }
+export function Empty({t, icon, sub}){
+  if(icon||sub){
+    return (
+      <div style={{...empt,border:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"40px 24px"}}>
+        {icon&&<div style={{fontSize:28,marginBottom:4}}>{icon}</div>}
+        <div style={{fontSize:11,color:MUT,letterSpacing:"0.06em"}}>{t}</div>
+        {sub&&<div style={{fontSize:9,color:MUT,opacity:0.6,maxWidth:260,lineHeight:1.6,textAlign:"center"}}>{sub}</div>}
+      </div>
+    );
+  }
+  return <div style={empt}>{t}</div>;
+}
 
 export function Tooltip({text,children,pos="top"}){
   const [vis,setVis]=useState(false);
