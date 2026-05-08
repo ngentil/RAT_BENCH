@@ -15,10 +15,12 @@ function fmtHrs(secs) {
   return "<1m";
 }
 
-const PERIODS = [["week","This Week"], ["month","This Month"], ["all","All Time"]];
+const PERIODS = [["week","This Week"], ["month","This Month"], ["all","All Time"], ["custom","Custom"]];
 
 export default function RevenueDashboard({ machines, company, profile, onGoToBilling }) {
   const [period, setPeriod] = useState("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
 
   const tier = effectiveTier(profile, company);
   if (tier === "free") {
@@ -54,9 +56,14 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
       const d = new Date(e.completedAt);
       if (period === "week")  return (now - d) <= 7 * 86400000;
       if (period === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (period === "custom") {
+        if (customFrom && d < new Date(customFrom)) return false;
+        if (customTo   && d > new Date(customTo + "T23:59:59")) return false;
+        return true;
+      }
       return true;
     });
-  }, [allEntries, period]);
+  }, [allEntries, period, customFrom, customTo]);
 
   const totalSecs  = filtered.reduce((s, e) => s + (e.seconds || 0), 0);
   const totalHrs   = totalSecs / 3600;
@@ -112,7 +119,7 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <SL t="Revenue" />
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {PERIODS.map(([v,l]) => (
             <button key={v} onClick={() => setPeriod(v)} style={{ ...btnG, ...sm, ...(period === v ? { color: ACC, border: "1px solid " + ACC } : {}) }}>
               {l}
@@ -120,6 +127,16 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
           ))}
         </div>
       </div>
+
+      {period === "custom" && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
+          <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+            style={{ background: "#0a0a0a", border: "1px solid #252525", color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: "5px 8px", borderRadius: 2, outline: "none" }} />
+          <span style={{ fontSize: 9, color: MUT }}>to</span>
+          <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+            style={{ background: "#0a0a0a", border: "1px solid #252525", color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: "5px 8px", borderRadius: 2, outline: "none" }} />
+        </div>
+      )}
 
       {/* Summary cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
