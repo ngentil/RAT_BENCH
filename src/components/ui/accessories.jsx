@@ -103,7 +103,21 @@ export function LightingForm({l, onSave, onCancel}){
         </div>
         <div style={col}>
           <FL t="Wattage (W)" />
-          <input style={inp} type="number" placeholder="e.g. 55" min="0" step="0.5" value={wattage} onChange={ev=>setWattage(ev.target.value)} />
+          {(()=>{
+            const w = parseFloat(wattage) || 0;
+            const intensity = Math.min(w / 200, 1);
+            const glow = intensity > 0
+              ? `0 0 ${4 + intensity*14}px rgba(255,${Math.round(200 - intensity*80)},0,${0.3 + intensity*0.55})`
+              : undefined;
+            const bg = intensity > 0
+              ? `rgba(${Math.round(18 + intensity*30)},${Math.round(14 + intensity*10)},0,1)`
+              : undefined;
+            return <input
+              style={{...inp, ...(bg?{background:bg}:{}), ...(glow?{boxShadow:glow,borderColor:`rgba(255,${Math.round(200-intensity*80)},0,${0.4+intensity*0.5})`}:{})}}
+              type="number" placeholder="e.g. 55" min="0" step="0.5"
+              value={wattage} onChange={ev=>setWattage(ev.target.value)}
+            />;
+          })()}
         </div>
         <div style={col}>
           <FL t="Amperage draw (auto)" />
