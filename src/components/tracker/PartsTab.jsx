@@ -285,7 +285,15 @@ export default function PartsTab({ machines, session }) {
         </div>
       )}
 
-      {/* Filters */}
+      {/* Search + Filters */}
+      {inv.length > 0 && (
+        <input
+          style={{ ...inp, marginBottom:8, fontSize:11 }}
+          placeholder="Search by name, SKU, brand or supplier…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+      )}
       <div style={{ display:'flex', gap:6, marginBottom:12, flexWrap:'wrap' }}>
         {[['all','All'], ['low','Low / Out'], ['instock','In Stock']].map(([v,l]) => (
           <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, ...(filter===v ? { color:ACC, border:'1px solid '+ACC } : {}) }}>{l}</button>
