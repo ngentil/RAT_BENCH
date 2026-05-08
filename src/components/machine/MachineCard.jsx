@@ -10,7 +10,7 @@ import PdfExportModal from '../pdf/PdfExportModal';
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
+function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}){
   const [open,setOpen]=useState(false);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -26,12 +26,9 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
   const m=machine;
 
   const clientName = useMemo(() => {
-    if (!m.clientId) return null;
-    try {
-      const clients = JSON.parse(localStorage.getItem(`rat_clients_${profile?.id}`) || "[]");
-      return clients.find(c => c.id === m.clientId)?.name || null;
-    } catch { return null; }
-  }, [m.clientId, profile?.id]);
+    if (!m.clientId || !clients?.length) return null;
+    return clients.find(c => c.id === m.clientId)?.name || null;
+  }, [m.clientId, clients]);
 
   useEffect(()=>{
     if(open&&!loaded) getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);});
