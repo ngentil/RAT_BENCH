@@ -282,7 +282,7 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
         <ItemForm initial={editing} onSave={save} onCancel={() => setEditing(null)} />
       )}
 
-      {isFree && inv.length > 0 && (
+      {isFree && (
         <div style={{ background:"#0a1a0a", border:"1px solid #1a3a1a", borderRadius:2, padding:"10px 14px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
           <div>
             <div style={{ fontSize:9, color:"#4ade80", letterSpacing:"0.15em", textTransform:"uppercase", fontWeight:700, marginBottom:3 }}>Free Plan — Parts Preview</div>
