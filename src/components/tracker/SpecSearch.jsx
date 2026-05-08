@@ -117,6 +117,14 @@ const FIELDS=[
   {k:"deckSize",         l:"Deck Size",                         u:"inches"},
   {k:"bladeType",        l:"Blade Type",                        u:""},
   {k:"bladeLength",      l:"Blade Length",                      u:"mm"},
+  {k:"obShaftLength",    l:"Outboard Shaft Length",             u:""},
+  {k:"obTransomHeight",  l:"Outboard Transom Height",           u:"mm"},
+  {k:"obPropPitch",      l:"Propeller Pitch",                   u:"in"},
+  {k:"obPropDiameter",   l:"Propeller Diameter",                u:"in"},
+  {k:"obPropMaterial",   l:"Propeller Material",                u:""},
+  {k:"obGearRatio",      l:"Outboard Gear Ratio",               u:""},
+  {k:"obLowerUnitOilType",l:"Lower Unit Oil Type",              u:""},
+  {k:"obAnodeMaterial",  l:"Anode Material",                    u:""},
 ];
 
 function SpecSearch({machines}){
