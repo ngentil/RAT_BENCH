@@ -4,7 +4,7 @@ import { getServices, upsertService, deleteServiceApi } from '../../lib/db';
 import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, DEFAULT_EXPAND, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
-import { mIcon, fmtDT } from '../../lib/helpers';
+import { mIcon, fmtDT, getMachineServiceStatus } from '../../lib/helpers';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import PdfExportModal from '../pdf/PdfExportModal';
 import ServiceModal from '../ui/ServiceModal';
@@ -98,6 +98,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
   ].filter(Boolean);
 
   const timerRunning = m.jobTimer?.status === "running";
+  const svcStatus = getMachineServiceStatus(m);
   return (
     <div style={{background:SURF,border:"1px solid "+(timerRunning?GRN+"55":BRD),borderRadius:3,marginBottom:8,overflow:"hidden",boxShadow:timerRunning?"0 0 8px "+GRN+"22":undefined}}>
       {fullImg&&<div onClick={()=>setFullImg(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}><img src={fullImg} alt="" style={{maxWidth:"95vw",maxHeight:"95vh",objectFit:"contain"}} /></div>}
@@ -134,6 +135,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
               }
               return null;
             })}
+            {svcStatus.overdue  && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0}}>SERVICE</span>}
+            {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",flexShrink:0}}>DUE SOON</span>}
             <span style={{fontSize:10,color:MUT}}>{open?"▲":"▼"}</span>
           </div>
         </div>

@@ -163,7 +163,7 @@ function SpecSearch({machines}){
         <input style={{...inp,fontSize:13}} placeholder="e.g.  28  /  Walbro  /  NGK  /  M5..." value={query} onChange={e=>setQuery(e.target.value)} />
         {query&&<button style={{...btnG,...sm,whiteSpace:"nowrap"}} onClick={()=>setQuery("")}>Clear</button>}
       </div>
-      {!q&&machines.length===0&&<Empty t="No machines in inventory yet" />}
+      {!q&&machines.length===0&&<Empty icon="🔍" t="No machines yet" sub="Add machines from the Tracker tab to search their specs here." />}
       {!q&&machines.length>0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0",lineHeight:2}}>{machines.length} machine{machines.length!==1?"s":""} in inventory<br /><span style={{fontSize:9}}>Start typing to search</span></div>}
       {q&&results.length===0&&<Empty t={"No matches for \""+query+"\""} />}
       {q&&results.length>0&&(
