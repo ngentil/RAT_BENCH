@@ -28,3 +28,36 @@ export const toB64 = f => new Promise((res,rej) => {
   r.readAsDataURL(f);
 });
 
+
+export function getMachineServiceStatus(machine) {
+  const totalHrs = (machine.timeLog || []).reduce((s, e) => s + (e.seconds || 0), 0) / 3600;
+  const lastDate = machine.lastServiceDate;
+  const lastOdo  = parseFloat(machine.lastServiceOdo) || 0;
+  let overdue = false, dueSoon = false;
+
+  function check(interval, unit) {
+    if (!interval) return;
+    const n = parseFloat(interval);
+    if (!n || isNaN(n)) return;
+    const isHours = !unit || unit === "hours";
+    if (isHours) {
+      const dueAt = lastOdo > 0 ? lastOdo + n : n;
+      const pct = totalHrs / dueAt;
+      if (totalHrs >= dueAt) overdue = true;
+      else if (pct >= 0.8) dueSoon = true;
+    } else {
+      if (!lastDate) return;
+      const daysSince = Math.floor((Date.now() - new Date(lastDate)) / 86400000);
+      const dueDays = n * 30;
+      const pct = daysSince / dueDays;
+      if (daysSince >= dueDays) overdue = true;
+      else if (pct >= 0.8) dueSoon = true;
+    }
+  }
+
+  check(machine.oilChangeInterval,   machine.oilChangeUnit);
+  check(machine.filterInterval,       machine.filterIntervalUnit);
+  check(machine.majorServiceInterval, machine.majorServiceUnit);
+
+  return { overdue, dueSoon };
+}
