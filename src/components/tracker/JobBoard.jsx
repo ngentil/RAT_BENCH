@@ -81,165 +81,188 @@ function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function exportInvoice(machine, company) {
-  const log = machine.timeLog || [];
-  if (!log.length) return;
+function nextInvoiceNumber(userId) {
+  const key = `rat_inv_seq_${userId}`;
+  const n = (parseInt(localStorage.getItem(key) || '0') || 0) + 1;
+  localStorage.setItem(key, String(n));
+  return `INV-${new Date().getFullYear()}-${String(n).padStart(4, '0')}`;
+}
 
-  const rate = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
-  const taxRate = company?.tax_rate ? parseFloat(company.tax_rate) : null;
-  const taxLabel = company?.tax_label || "GST";
-  const co = company || {};
+function exportInvoice(machine, company, userId, docType = 'invoice') {
+  const log   = machine.timeLog || [];
+  const parts = machine.parts   || [];
+  if (!log.length && !parts.length) return;
 
-  const totalSecs = log.reduce((s, e) => s + (e.seconds || 0), 0);
-  const totalHrs = totalSecs / 3600;
+  // Load linked client from localStorage
+  const clients = (() => { try { return JSON.parse(localStorage.getItem(`rat_clients_${userId}`) || '[]'); } catch { return []; } })();
+  const client  = machine.clientId ? clients.find(c => c.id === machine.clientId) : null;
+
+  const rate     = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
+  const taxRate  = company?.tax_rate    ? parseFloat(company.tax_rate)    : null;
+  const taxLabel = company?.tax_label   || 'Tax';
+  const co       = company || {};
+
+  const totalSecs      = log.reduce((s, e) => s + (e.seconds || 0), 0);
+  const totalHrs       = totalSecs / 3600;
   const labourSubtotal = rate !== null ? totalHrs * rate : null;
-  const parts = machine.parts || [];
-  const partsTotal = parts.reduce((s, p) => s + (parseFloat(p.unitCost) || 0) * (parseInt(p.qty) || 1), 0);
-  const subtotal = labourSubtotal !== null ? labourSubtotal + partsTotal : (partsTotal > 0 ? partsTotal : null);
-  const tax = (subtotal !== null && taxRate) ? subtotal * taxRate / 100 : null;
-  const total = subtotal !== null ? subtotal + (tax || 0) : null;
-  const fmt$ = n => n !== null ? `$${n.toFixed(2)}` : '—';
+  const partsSubtotal  = parts.reduce((s, p) => s + (parseFloat(p.sellPrice) || 0) * (Number(p.qty) || 1), 0);
+  const subtotal       = labourSubtotal !== null ? labourSubtotal + partsSubtotal : (partsSubtotal > 0 ? partsSubtotal : null);
+  const tax            = subtotal !== null && taxRate ? subtotal * taxRate / 100 : null;
+  const total          = subtotal !== null ? subtotal + (tax || 0) : null;
+  const fmt$           = n => `$${(n || 0).toFixed(2)}`;
 
-  const lineItemsHtml = log.map(entry => {
-    const hrs = (entry.seconds || 0) / 3600;
+  const isQuote  = docType === 'quote';
+  const docLabel = isQuote ? 'QUOTE' : 'INVOICE';
+  const docRef   = isQuote
+    ? `QT-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase().slice(-5)}`
+    : nextInvoiceNumber(userId);
+
+  const coAddress  = [co.address, co.city, co.state, co.postcode, co.country].filter(Boolean).join(', ');
+  const coContact  = [co.abn ? `ABN ${co.abn}` : null, co.phone, co.email].filter(Boolean).join('  ·  ');
+  const machineSub = [machine.year, machine.make, machine.model, machine.serial ? `S/N ${machine.serial}` : null].filter(Boolean).join(' · ');
+
+  const clientHtml = client ? `
+    <div class="bill-to">
+      <div class="bill-to-label">Bill To</div>
+      <div class="bill-to-name">${escHtml(client.name)}</div>
+      ${client.company  ? `<div class="bill-to-line">${escHtml(client.company)}</div>`  : ''}
+      ${client.email    ? `<div class="bill-to-line">${escHtml(client.email)}</div>`    : ''}
+      ${client.phone    ? `<div class="bill-to-line">${escHtml(client.phone)}</div>`    : ''}
+      ${client.address  ? `<div class="bill-to-line">${escHtml(client.address)}</div>` : ''}
+    </div>` : '';
+
+  const labourRows = log.map(e => {
+    const hrs    = (e.seconds || 0) / 3600;
     const amount = rate !== null ? hrs * rate : null;
     return `<tr>
-      <td>${escHtml(entry.jobLabel ? entry.jobLabel.slice(0, 80) : 'General work')}</td>
-      <td style="white-space:nowrap">${fmtDuration(entry.seconds || 0)}<span style="color:#aaa;font-size:11px;margin-left:6px">(${hrs.toFixed(2)} hrs)</span></td>
-      <td style="white-space:nowrap;color:#888">${rate !== null ? `$${rate.toFixed(2)}/hr` : '—'}</td>
-      <td class="amount">${fmt$(amount)}</td>
+      <td>${escHtml(e.jobLabel && e.jobLabel !== 'Job' ? e.jobLabel.slice(0, 80) : 'General work')}</td>
+      <td class="num">${fmtDuration(e.seconds || 0)} <span class="dim">(${hrs.toFixed(2)} hrs)</span></td>
+      <td class="num">${rate !== null ? `$${rate.toFixed(2)}/hr` : '—'}</td>
+      <td class="num">${amount !== null ? fmt$(amount) : '—'}</td>
     </tr>`;
   }).join('');
 
-  const partsHtml = parts.length > 0 ? `
-<h3 style="font-size:13px;font-weight:700;margin:28px 0 10px">Parts &amp; Materials</h3>
-<table>
-  <thead><tr><th>Part</th><th>Part No.</th><th>Qty</th><th>Unit Price</th><th class="amount">Amount</th></tr></thead>
-  <tbody>
-    ${parts.map(p => {
-      const unitCost = parseFloat(p.unitCost) || 0;
-      const qty = parseInt(p.qty) || 1;
-      const line = unitCost * qty;
-      return `<tr>
-        <td>${escHtml(p.name)}${p.brand ? `<span style="color:#888;font-size:11px;margin-left:6px">${escHtml(p.brand)}</span>` : ''}</td>
-        <td style="color:#888;font-size:11px">${escHtml(p.partNumber || '—')}</td>
-        <td>${qty}</td>
-        <td class="amount">${unitCost > 0 ? fmt$(unitCost) : '—'}</td>
-        <td class="amount">${line > 0 ? fmt$(line) : '—'}</td>
-      </tr>`;
-    }).join('')}
-  </tbody>
-</table>` : '';
-
-  const coAddress = [co.address, co.city, co.state, co.postcode, co.country].filter(Boolean).join(', ');
-  const coDetail = [co.abn ? `ABN: ${co.abn}` : null, co.phone, co.email].filter(Boolean).join('  ·  ');
-  const machineLine = [machine.source, machine.make, machine.model].filter(Boolean).join(' · ');
-  const invoiceRef = `${(machine.name || 'INV').replace(/\s+/g,'-').toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+  const partsRows = parts.map(p => {
+    const sell = parseFloat(p.sellPrice) || 0;
+    const qty  = Number(p.qty) || 1;
+    return `<tr>
+      <td>${escHtml(p.name)}${p.brand      ? ` <span class="dim">${escHtml(p.brand)}</span>`      : ''}
+          ${p.partNumber ? ` <span class="dim">${escHtml(p.partNumber)}</span>` : ''}</td>
+      <td class="num">${qty}</td>
+      <td class="num">${sell > 0 ? fmt$(sell) : '—'}</td>
+      <td class="num">${sell > 0 ? fmt$(sell * qty) : '—'}</td>
+    </tr>`;
+  }).join('');
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Invoice — ${escHtml(machine.name)}</title>
+<title>${docLabel} — ${escHtml(machine.name)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#111;padding:48px;max-width:860px;margin:0 auto;font-size:13px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;gap:24px}
-.co-logo{width:64px;height:64px;object-fit:cover;border-radius:4px;margin-bottom:10px;display:block}
-.co-name{font-size:20px;font-weight:700;margin-bottom:6px}
-.co-detail{font-size:11px;color:#555;line-height:1.8}
-.inv-label{font-size:48px;font-weight:900;color:#e8670a;letter-spacing:-0.02em;line-height:1}
-.inv-meta{font-size:12px;color:#666;margin-top:10px;text-align:right;line-height:2}
-hr{border:none;border-top:2px solid #111;margin:24px 0}
-.machine-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;gap:16px}
-.machine-name{font-size:17px;font-weight:700;margin-bottom:4px}
-.machine-sub{font-size:11px;color:#666}
-.total-time{text-align:right;flex-shrink:0}
-.total-time-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
-.total-time-val{font-size:22px;font-weight:700}
-.total-time-hrs{font-size:11px;color:#aaa;margin-top:2px}
-table{width:100%;border-collapse:collapse;margin-bottom:16px}
-th{background:#f5f5f5;padding:10px 12px;font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#444;border-bottom:1px solid #ccc;text-align:left}
-td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top}
-.amount{text-align:right;font-family:monospace}
-.totals-wrap{display:flex;justify-content:flex-end;margin-bottom:8px}
-.totals{width:280px;border-collapse:collapse}
-.totals td{padding:8px 12px;font-size:13px;border:none}
-.totals .subtotal td{color:#555}
-.totals .tax-row td{color:#888;font-size:11px}
-.totals .grand td{font-size:16px;font-weight:700;border-top:2px solid #111;padding-top:12px}
-.no-rate-note{font-size:10px;color:#bbb;text-align:right;margin-bottom:24px}
-.footer{margin-top:48px;font-size:11px;color:#ccc;text-align:center;border-top:1px solid #eee;padding-top:20px}
-.print-btn{position:fixed;bottom:24px;right:24px;background:#e8670a;color:#fff;border:none;padding:13px 24px;font-size:14px;font-weight:700;border-radius:4px;cursor:pointer;box-shadow:0 4px 16px rgba(232,103,10,0.35)}
-@media print{.print-btn{display:none}body{padding:24px}}
+body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#111;padding:48px;max-width:820px;margin:0 auto;font-size:13px;line-height:1.5}
+.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;gap:32px}
+.co-side{flex:1}
+.co-logo{width:56px;height:56px;object-fit:cover;border-radius:3px;margin-bottom:10px;display:block}
+.co-name{font-size:18px;font-weight:700;margin-bottom:4px}
+.co-sub{font-size:11px;color:#666;line-height:1.8}
+.doc-side{text-align:right;flex-shrink:0}
+.doc-type{font-size:44px;font-weight:900;color:#e8670a;letter-spacing:-0.02em;line-height:1;margin-bottom:10px}
+.doc-meta{font-size:11px;color:#555;line-height:2}
+.doc-meta strong{color:#111}
+.divider{border:none;border-top:2px solid #111;margin:24px 0}
+.mid{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;gap:24px}
+.bill-to{flex:1}
+.bill-to-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#999;margin-bottom:6px}
+.bill-to-name{font-size:14px;font-weight:700;margin-bottom:3px}
+.bill-to-line{font-size:12px;color:#555}
+.machine-side{text-align:right}
+.machine-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#999;margin-bottom:6px}
+.machine-name{font-size:14px;font-weight:700;margin-bottom:3px}
+.machine-sub{font-size:11px;color:#777}
+.section-head{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#555;margin:28px 0 10px}
+table{width:100%;border-collapse:collapse;margin-bottom:4px}
+th{background:#f7f7f7;padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#555;border-bottom:2px solid #e0e0e0;text-align:left}
+th.num,td.num{text-align:right}
+td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;vertical-align:top}
+.dim{color:#aaa;font-size:10px}
+.totals-wrap{display:flex;justify-content:flex-end;margin-top:16px}
+.totals{width:260px}
+.totals td{padding:6px 12px;font-size:12px;border:none;color:#555}
+.totals .grand td{font-size:15px;font-weight:700;color:#111;border-top:2px solid #111;padding-top:10px;margin-top:4px}
+.footer-note{margin-top:16px;font-size:11px;color:#aaa;text-align:right}
+.footer{margin-top:48px;padding-top:16px;border-top:1px solid #eee;font-size:10px;color:#ccc;text-align:center}
+.print-btn{position:fixed;bottom:24px;right:24px;background:#e8670a;color:#fff;border:none;padding:12px 22px;font-size:13px;font-weight:700;border-radius:4px;cursor:pointer;box-shadow:0 4px 16px rgba(232,103,10,0.3)}
+@media print{.print-btn{display:none}body{padding:20px}}
 </style>
 </head>
 <body>
-<div class="header">
-  <div>
+
+<div class="top">
+  <div class="co-side">
     ${co.logo ? `<img class="co-logo" src="${co.logo}" alt=""/>` : ''}
-    <div class="co-name">${escHtml(co.name || 'Invoice')}</div>
-    ${co.trading_name ? `<div style="font-size:12px;color:#888;margin-bottom:6px">${escHtml(co.trading_name)}</div>` : ''}
-    <div class="co-detail">
-      ${coDetail ? escHtml(coDetail) + '<br/>' : ''}
-      ${coAddress ? escHtml(coAddress) : ''}
+    <div class="co-name">${escHtml(co.name || 'My Business')}</div>
+    ${co.trading_name ? `<div class="co-sub" style="margin-bottom:2px">${escHtml(co.trading_name)}</div>` : ''}
+    <div class="co-sub">
+      ${coContact  ? escHtml(coContact)  + '<br/>' : ''}
+      ${coAddress  ? escHtml(coAddress)            : ''}
     </div>
   </div>
-  <div style="text-align:right;flex-shrink:0">
-    <div class="inv-label">INVOICE</div>
-    <div class="inv-meta">
-      Date: ${new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'})}<br/>
-      Ref: ${escHtml(invoiceRef)}
+  <div class="doc-side">
+    <div class="doc-type">${docLabel}</div>
+    <div class="doc-meta">
+      <strong>${escHtml(docRef)}</strong><br/>
+      ${isQuote ? 'Date' : 'Invoice Date'}: ${new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' })}<br/>
+      ${isQuote ? '' : `Due: On receipt`}
     </div>
   </div>
 </div>
-<hr/>
-<div class="machine-row">
-  <div>
+
+<hr class="divider"/>
+
+<div class="mid">
+  ${clientHtml || '<div></div>'}
+  <div class="machine-side">
+    <div class="machine-label">${isQuote ? 'For' : 'Re'}</div>
     <div class="machine-name">${escHtml(machine.name)}</div>
-    ${machineLine ? `<div class="machine-sub">${escHtml(machineLine)}</div>` : ''}
-  </div>
-  <div class="total-time">
-    <div class="total-time-label">Total Time</div>
-    <div class="total-time-val">${fmtDuration(totalSecs)}</div>
-    <div class="total-time-hrs">${totalHrs.toFixed(2)} hrs</div>
+    ${machineSub ? `<div class="machine-sub">${escHtml(machineSub)}</div>` : ''}
   </div>
 </div>
+
+${log.length ? `
+<div class="section-head">Labour</div>
 <table>
-  <thead>
-    <tr>
-      <th>Job / Task</th>
-      <th>Duration</th>
-      <th>Rate</th>
-      <th class="amount">Amount</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${lineItemsHtml}
-  </tbody>
-</table>
-${partsHtml}
+  <thead><tr><th>Description</th><th>Duration</th><th>Rate</th><th class="num">Amount</th></tr></thead>
+  <tbody>${labourRows}</tbody>
+</table>` : ''}
+
+${parts.length ? `
+<div class="section-head">Parts &amp; Materials</div>
+<table>
+  <thead><tr><th>Part</th><th class="num">Qty</th><th class="num">Unit Price</th><th class="num">Amount</th></tr></thead>
+  <tbody>${partsRows}</tbody>
+</table>` : ''}
+
 <div class="totals-wrap">
   <table class="totals">
     <tbody>
-      ${labourSubtotal !== null ? `<tr class="subtotal"><td>Labour</td><td class="amount">${fmt$(labourSubtotal)}</td></tr>` : ''}
-      ${partsTotal > 0 ? `<tr class="subtotal"><td>Parts</td><td class="amount">${fmt$(partsTotal)}</td></tr>` : ''}
-      ${tax !== null ? `<tr class="tax-row"><td>${escHtml(taxLabel)} ${taxRate}%</td><td class="amount">${fmt$(tax)}</td></tr>` : ''}
-      <tr class="grand">
-        <td>${total !== null ? 'Total' : 'Total Hours'}</td>
-        <td class="amount">${total !== null ? fmt$(total) : fmtDuration(totalSecs)}</td>
-      </tr>
+      ${labourSubtotal !== null ? `<tr><td>Labour</td><td style="text-align:right">${fmt$(labourSubtotal)}</td></tr>` : ''}
+      ${partsSubtotal  > 0      ? `<tr><td>Parts</td><td style="text-align:right">${fmt$(partsSubtotal)}</td></tr>`  : ''}
+      ${tax !== null            ? `<tr><td>${escHtml(taxLabel)} (${taxRate}%)</td><td style="text-align:right">${fmt$(tax)}</td></tr>` : ''}
+      <tr class="grand"><td>${total !== null ? 'Total' : 'Total Time'}</td><td style="text-align:right">${total !== null ? fmt$(total) : fmtDuration(totalSecs)}</td></tr>
     </tbody>
   </table>
 </div>
-${!rate ? '<div class="no-rate-note">Set a Labour Rate in Company Settings → Billing Rates to calculate amounts.</div>' : ''}
-<div class="footer">Generated by Rat Bench &middot; ratbench.net</div>
+
+${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to calculate amounts.</div>' : ''}
+<div class="footer">Generated by Rat Bench · ratbench.net</div>
 <button class="print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
 </body>
 </html>`;
 
   const win = window.open('', '_blank');
-  if (!win) { alert("Please allow popups to export the invoice."); return; }
+  if (!win) { alert('Please allow popups to export.'); return; }
   win.document.write(html);
   win.document.close();
 }
@@ -256,7 +279,7 @@ const BILL_STATUS = {
   invoiced: { label: "Invoiced", color: "#3d9e50" },
 };
 
-function TimeLogSection({ machine, company, onUpdate }) {
+function TimeLogSection({ machine, company, userId, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const log = machine.timeLog || [];
   if (!log.length) return null;
@@ -300,12 +323,8 @@ function TimeLogSection({ machine, company, onUpdate }) {
         >
           {log.length} session{log.length !== 1 ? "s" : ""} · {fmtDuration(totalSecs)} total
         </span>
-        <button
-          onClick={() => exportInvoice(machine, company)}
-          style={{ ...btnA, ...sm, fontSize: 8 }}
-        >
-          Export Invoice
-        </button>
+        <button onClick={() => exportInvoice(machine, company, userId, 'quote')} style={{ ...btnG, ...sm, fontSize: 8 }}>Quote</button>
+        <button onClick={() => exportInvoice(machine, company, userId, 'invoice')} style={{ ...btnA, ...sm, fontSize: 8 }}>Invoice</button>
       </div>
       {expanded && (
         <div style={{ marginTop: 8 }}>
@@ -794,7 +813,7 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
                   <div style={{ fontSize: 9, color: MUT, marginBottom: 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
                   {m.notes && <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, marginBottom: 8 }}>{m.notes}</div>}
                   <JobTimer machine={m} onUpdate={updateM} locked={timerLocked} onGoToBilling={onGoToBilling} />
-                  <TimeLogSection machine={m} company={company} onUpdate={updateM} />
+                  <TimeLogSection machine={m} company={company} userId={session?.user?.id} onUpdate={updateM} />
                   <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />
                   <Divider />
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
