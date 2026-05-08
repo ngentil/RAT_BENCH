@@ -9,7 +9,7 @@ import { SL, Empty } from '../ui/shared';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
-function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoToBilling}){
+function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling}){
   const [showAdd,setShowAdd]=useState(false);
   const [showUpgrade,setShowUpgrade]=useState(false);
   const [saving,setSaving]=useState(false);
@@ -23,12 +23,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
 
-  const clientMap = useMemo(() => {
-    try {
-      const clients = JSON.parse(localStorage.getItem(`rat_clients_${profile?.id}`) || "[]");
-      return Object.fromEntries(clients.map(c => [c.id, c.name]));
-    } catch { return {}; }
-  }, [profile?.id]);
+  const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
   const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
   const setSortByP=v=>{setSortBy(v);if(v)localStorage.setItem("trackerSort",v);else localStorage.removeItem("trackerSort");};
   const setColsP=c=>{setCols(c);localStorage.setItem("trackerCols",String(c));setViewP("grid");};
@@ -183,7 +178,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
           {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
             <div style={{position:"fixed",inset:0,background:"#000a",zIndex:200,overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setTileOpen(null);}}>
               <div style={{maxWidth:640,margin:"24px auto",padding:"0 8px"}}>
-                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} isGuest={isGuest}/>
+                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
                 <button onClick={()=>setTileOpen(null)} style={{...btnG,width:"100%",marginTop:8,fontSize:10}}>Close</button>
               </div>
             </div>
@@ -199,7 +194,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
           onDragEnd={onDragEnd}
           style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
         >
-          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} isGuest={isGuest}/>
+          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
         </div>
       ))}
       {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}

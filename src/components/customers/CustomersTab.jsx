@@ -1,13 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
-import { upsertMachine } from '../../lib/db';
-
-function loadClients(userId) {
-  try { return JSON.parse(localStorage.getItem("rat_clients_" + userId) || "[]"); }
-  catch { return []; }
-}
+import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
 
 function fmtHrs(secs) {
   const h = Math.floor(secs / 3600);
@@ -98,35 +93,37 @@ function exportClientInvoice(client, linked, company) {
   w.document.close();
 }
 
-export default function CustomersTab({ machines, setMachines, session, company }) {
-  const userId = session?.user?.id;
-  const [clients, setClients] = useState(() => loadClients(userId));
+export default function CustomersTab({ machines, setMachines, clients, setClients, session, company }) {
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [search, setSearch] = useState("");
   const [err, setErr] = useState("");
 
-  useEffect(() => {
-    if (userId) localStorage.setItem("rat_clients_" + userId, JSON.stringify(clients));
-  }, [clients, userId]);
-
   const openNew = () => { setForm(EMPTY_FORM); setErr(""); setEditing("new"); };
   const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" }); setErr(""); setEditing(c); };
-  const closeModal = () => { setEditing(null); setErr(""); };
+  const closeModal = () => { setEditing(null); setErr(""); setSaving(false); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.name.trim()) { setErr("Name is required."); return; }
-    if (editing === "new") {
-      const c = { ...form, name: form.name.trim(), address: form.address.trim(), id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-      setClients(prev => [...prev, c]);
-    } else {
-      setClients(prev => prev.map(c => c.id === editing.id ? { ...c, ...form, name: form.name.trim(), address: form.address.trim() } : c));
-    }
-    closeModal();
+    setSaving(true);
+    try {
+      if (editing === "new") {
+        const c = { ...form, name: form.name.trim(), address: form.address.trim(), id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+        await upsertClient(c);
+        setClients(prev => [...prev, c]);
+      } else {
+        const c = { ...editing, ...form, name: form.name.trim(), address: form.address.trim() };
+        await upsertClient(c);
+        setClients(prev => prev.map(x => x.id === c.id ? c : x));
+      }
+      closeModal();
+    } catch (e) { setErr("Save failed: " + e.message); setSaving(false); }
   };
 
-  const deleteClient = (id) => {
+  const deleteClient = async (id) => {
     if (!confirm("Delete this client? Machines linked to them will be unlinked.")) return;
+    await deleteClientApi(id).catch(() => {});
     setClients(prev => prev.filter(c => c.id !== id));
     const toUnlink = machines.filter(m => m.clientId === id);
     toUnlink.forEach(m => {
@@ -281,7 +278,7 @@ export default function CustomersTab({ machines, setMachines, session, company }
       )}
 
       <div style={{ marginTop: 8, fontSize: 8, color: MUT, lineHeight: 1.6 }}>
-        Client data is stored locally on this device. Link machines to clients to track work history per customer.
+        Client data syncs with your account across all devices.
       </div>
 
       {editing !== null && (
@@ -315,8 +312,8 @@ export default function CustomersTab({ machines, setMachines, session, company }
               {err && <div style={{ fontSize: 10, color: "#c94040", marginBottom: 8 }}>{err}</div>}
             </div>
             <div style={mdlF}>
-              <button onClick={closeModal} style={{ ...btnG, ...sm }}>Cancel</button>
-              <button onClick={save} style={{ ...btnA, ...sm }}>Save</button>
+              <button onClick={closeModal} style={{ ...btnG, ...sm }} disabled={saving}>Cancel</button>
+              <button onClick={save} style={{ ...btnA, ...sm, opacity: saving ? 0.6 : 1 }} disabled={saving}>{saving ? "Saving…" : "Save"}</button>
             </div>
           </div>
         </div>

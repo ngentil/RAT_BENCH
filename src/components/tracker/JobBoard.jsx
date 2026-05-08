@@ -88,14 +88,12 @@ function nextInvoiceNumber(userId) {
   return `INV-${new Date().getFullYear()}-${String(n).padStart(4, '0')}`;
 }
 
-function exportInvoice(machine, company, userId, docType = 'invoice') {
+function exportInvoice(machine, company, clients, docType = 'invoice') {
   const log   = machine.timeLog || [];
   const parts = machine.parts   || [];
   if (!log.length && !parts.length) return;
 
-  // Load linked client from localStorage
-  const clients = (() => { try { return JSON.parse(localStorage.getItem(`rat_clients_${userId}`) || '[]'); } catch { return []; } })();
-  const client  = machine.clientId ? clients.find(c => c.id === machine.clientId) : null;
+  const client = machine.clientId ? (clients||[]).find(c => c.id === machine.clientId) : null;
 
   const rate     = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
   const taxRate  = company?.tax_rate    ? parseFloat(company.tax_rate)    : null;
@@ -281,7 +279,7 @@ const BILL_STATUS = {
   invoiced: { label: "Invoiced", color: "#3d9e50" },
 };
 
-function TimeLogSection({ machine, company, userId, onUpdate }) {
+function TimeLogSection({ machine, company, clients, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [editingNotes, setEditingNotes] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -337,8 +335,8 @@ function TimeLogSection({ machine, company, userId, onUpdate }) {
         >
           {log.length} session{log.length !== 1 ? "s" : ""} · {fmtDuration(totalSecs)} total
         </span>
-        <button onClick={() => exportInvoice(machine, company, userId, 'quote')} style={{ ...btnG, ...sm, fontSize: 8 }}>Quote</button>
-        <button onClick={() => exportInvoice(machine, company, userId, 'invoice')} style={{ ...btnA, ...sm, fontSize: 8 }}>Invoice</button>
+        <button onClick={() => exportInvoice(machine, company, clients, 'quote')} style={{ ...btnG, ...sm, fontSize: 8 }}>Quote</button>
+        <button onClick={() => exportInvoice(machine, company, clients, 'invoice')} style={{ ...btnA, ...sm, fontSize: 8 }}>Invoice</button>
       </div>
       {expanded && (
         <div style={{ marginTop: 8 }}>
@@ -847,17 +845,12 @@ function MachineNotes({ machine, onSave }) {
   );
 }
 
-function JobBoard({ machines, setMachines, profile, company, session, onGoToBilling }) {
+function JobBoard({ machines, setMachines, profile, company, session, clients, onGoToBilling }) {
   const tier = effectiveTier(profile, company);
   const timerLocked = tier === "free";
   const [jobSearch, setJobSearch] = useState("");
 
-  const clientMap = useMemo(() => {
-    try {
-      const clients = JSON.parse(localStorage.getItem(`rat_clients_${session?.user?.id}`) || "[]");
-      return Object.fromEntries(clients.map(c => [c.id, c.name]));
-    } catch { return {}; }
-  }, [session?.user?.id]);
+  const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
 
   const visibleMachines = useMemo(() => {
     if (!jobSearch.trim()) return machines;
@@ -946,7 +939,7 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
                   })()}
                   <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; updateM(u); await upsertMachine(u); }} />
                   <JobTimer machine={m} onUpdate={updateM} locked={timerLocked} onGoToBilling={onGoToBilling} />
-                  <TimeLogSection machine={m} company={company} userId={session?.user?.id} onUpdate={updateM} />
+                  <TimeLogSection machine={m} company={company} clients={clients} onUpdate={updateM} />
                   <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />
                   <Divider />
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

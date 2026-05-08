@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { BG, TXT, MUT, ACC, BRD, SURF, RED, GRN, btnG, sm } from './lib/styles';
-import { getMachines, getMyCompany } from './lib/db';
+import { getMachines, getMyCompany, getClients, migrateLocalClients } from './lib/db';
 import { TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
@@ -27,6 +27,7 @@ import PartsTab from './components/tracker/PartsTab';
 function App(){
   const [tab,setTab]=useState(()=>localStorage.getItem("rat_tab")||"tracker");
   const [machines,setMachines]=useState([]);
+  const [clients,setClients]=useState([]);
   const [initializing,setInitializing]=useState(true);
   const [error,setError]=useState(null);
   const initializedRef=useRef(false);
@@ -57,7 +58,7 @@ function App(){
   const loadForSession = async(session) => {
     const first = !initializedRef.current;
     if(!session){
-      setSession(null);setProfile(null);setMachines([]);setCompany(null);
+      setSession(null);setProfile(null);setMachines([]);setCompany(null);setClients([]);
       setAuthChecked(true);setProfileChecked(true);setInitializing(false);
       initializedRef.current=true;
       return;
@@ -92,6 +93,11 @@ function App(){
       const ms = await getMachines();
       setMachines(Array.isArray(ms)?ms:[]);
     } catch(e){ if(first) setError("Could not load machines."); }
+    try {
+      await migrateLocalClients(session.user.id);
+      const cs = await getClients();
+      setClients(Array.isArray(cs)?cs:[]);
+    } catch(e){ console.error("Could not load clients:", e); }
     try {
       const userTier=profileData?.tier||"free";
       const{data:anns}=await supabase.from("announcements").select("*")
@@ -255,12 +261,12 @@ function App(){
           );
         })}
       </div>
-      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines}/></div>
       <div style={{display:tab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session}/></div>
-      <div style={{display:tab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} session={session} company={company}/></div>
+      <div style={{display:tab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>
       <div style={{display:tab==="users"?"contents":"none"}}><UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("settings")}/></div>
