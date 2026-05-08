@@ -916,12 +916,12 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
             <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em" }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
           </div>
           {items.map(m => (
-            <div key={m.id} style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 3, marginBottom: 8, padding: "13px 14px" }}>
+            <div key={m.id} style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 3, marginBottom: 8, padding: "13px 14px", overflow: "hidden" }}>
               <div style={{ display: "flex", gap: 10 }}>
                 {m.photos?.[0]
                   ? <img src={m.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 2, border: "1px solid " + BRD, flexShrink: 0 }} />
                   : <span style={{ fontSize: 17, width: 44, textAlign: "center", lineHeight: "44px", flexShrink: 0 }}>{mIcon(m.type)}</span>}
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 2 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{m.name}</div>
                     {(m.timeLog?.length > 0) && (() => {
