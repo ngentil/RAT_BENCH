@@ -417,6 +417,8 @@ function PartsSection({ machine, onUpdate, userId }) {
   const [selected, setSelected] = useState(null); // inventory item
   const [qty, setQty]       = useState("1");
   const [saForm, setSaForm] = useState({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
+  const [saSuggestions, setSaSuggestions] = useState([]);
+  const [saMatchedInvId, setSaMatchedInvId] = useState(null);
   const parts = machine.parts || [];
 
   const totalRevenue = parts.reduce((s,p)=>(s+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1)),0);
@@ -454,10 +456,26 @@ function PartsSection({ machine, onUpdate, userId }) {
   const addStandalone = async () => {
     if (!saForm.name.trim()) return;
     const entry = { ...saForm, id: crypto.randomUUID(), qty: parseInt(saForm.qty)||1, buyPrice: parseFloat(saForm.buyPrice)||0, sellPrice: parseFloat(saForm.sellPrice)||0, usedAt: new Date().toISOString() };
+    if (saMatchedInvId) entry.inventoryId = saMatchedInvId;
     const updated = { ...machine, parts: [...parts, entry] };
     onUpdate(updated);
     await upsertMachine(updated);
-    setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
+    if (saMatchedInvId) setInv(adjustStock(userId, saMatchedInvId, -(parseInt(saForm.qty)||1)));
+    setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" }); setSaSuggestions([]); setSaMatchedInvId(null);
+  };
+
+  const onSaNameChange = (val) => {
+    setSaForm(f => ({ ...f, name: val }));
+    setSaMatchedInvId(null);
+    if (val.trim().length < 2) { setSaSuggestions([]); return; }
+    const q = val.toLowerCase();
+    setSaSuggestions(inv.filter(i => i.name.toLowerCase().includes(q) || (i.partNumber||"").toLowerCase().includes(q)).slice(0, 6));
+  };
+
+  const pickSaSuggestion = (i) => {
+    setSaForm(f => ({ ...f, name: i.name, partNumber: i.partNumber||"", brand: i.brand||"", buyPrice: i.buyPrice ? String(parseFloat(i.buyPrice).toFixed(2)) : f.buyPrice, sellPrice: i.sellPrice ? String(parseFloat(i.sellPrice).toFixed(2)) : f.sellPrice }));
+    setSaSuggestions([]);
+    setSaMatchedInvId(i.id);
   };
 
   const remove = async (idx) => {
@@ -533,7 +551,33 @@ function PartsSection({ machine, onUpdate, userId }) {
         <div style={{ background:"#0a0a0a", border:"1px solid "+ACC, borderRadius:2, padding:"10px 12px", marginBottom:8 }}>
           <div style={{ fontSize:9, color:ACC, letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>One-off Part</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-            <div style={{ gridColumn:"1/-1" }}><L t="Name *"/><input style={inpS} value={saForm.name} onChange={e=>setSaForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Air filter" autoFocus/></div>
+            <div style={{ gridColumn:"1/-1" }}>
+              <L t="Name *"/>
+              <div style={{ position:"relative" }}>
+                <input style={inpS} value={saForm.name} onChange={e=>onSaNameChange(e.target.value)} placeholder="e.g. Air filter" autoFocus onBlur={()=>setTimeout(()=>setSaSuggestions([]),150)}/>
+                {saMatchedInvId && (() => { const i=inv.find(x=>x.id===saMatchedInvId); const s=Number(i?.stockQty)||0; return i ? <span style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",fontSize:8,color:s>0?GRN:RED,letterSpacing:"0.06em",pointerEvents:"none"}}>{s} in stock</span> : null; })()}
+                {saSuggestions.length > 0 && (
+                  <div style={{ position:"absolute", top:"100%", left:0, right:0, background:"#111", border:"1px solid "+ACC+"55", borderRadius:2, zIndex:50, maxHeight:180, overflowY:"auto" }}>
+                    {saSuggestions.map(i => {
+                      const stockQty = Number(i.stockQty)||0;
+                      return (
+                        <div key={i.id} onMouseDown={()=>pickSaSuggestion(i)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", cursor:"pointer", borderBottom:"1px solid #1a1a1a" }}
+                          onMouseEnter={e=>e.currentTarget.style.background="#1a1a1a"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <div>
+                            <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
+                            {(i.brand||i.partNumber) && <div style={{ fontSize:8, color:MUT }}>{[i.brand,i.partNumber].filter(Boolean).join(" · ")}</div>}
+                          </div>
+                          <div style={{ textAlign:"right", flexShrink:0, marginLeft:10 }}>
+                            <div style={{ fontSize:9, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} in stock</div>
+                            {i.sellPrice && <div style={{ fontSize:8, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
             <div><L t="SKU"/><input style={inpS} value={saForm.partNumber} onChange={e=>setSaForm(f=>({...f,partNumber:e.target.value}))} placeholder="e.g. 17211-Z0T"/></div>
             <div><L t="Brand"/><input style={inpS} value={saForm.brand} onChange={e=>setSaForm(f=>({...f,brand:e.target.value}))} placeholder="e.g. Honda"/></div>
             <div><L t="Qty"/><input style={inpS} type="number" min="1" value={saForm.qty} onChange={e=>setSaForm(f=>({...f,qty:e.target.value}))}/></div>
@@ -552,7 +596,7 @@ function PartsSection({ machine, onUpdate, userId }) {
             })()}
           </div>
           <div style={{ display:"flex", gap:6, marginTop:8, justifyContent:"flex-end" }}>
-            <button onClick={() => setMode(null)} style={{ ...btnG, ...sm }}>Cancel</button>
+            <button onClick={() => { setMode(null); setSaSuggestions([]); setSaMatchedInvId(null); }} style={{ ...btnG, ...sm }}>Cancel</button>
             <button onClick={addStandalone} style={{ ...btnA, ...sm }}>Add</button>
           </div>
         </div>
