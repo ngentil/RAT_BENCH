@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
 import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
@@ -24,6 +24,14 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
   const [showExpandConfig,setShowExpandConfig]=useState(false);
   const [showPdfOpts,setShowPdfOpts]=useState(false);
   const m=machine;
+
+  const clientName = useMemo(() => {
+    if (!m.clientId) return null;
+    try {
+      const clients = JSON.parse(localStorage.getItem(`rat_clients_${profile?.id}`) || "[]");
+      return clients.find(c => c.id === m.clientId)?.name || null;
+    } catch { return null; }
+  }, [m.clientId, profile?.id]);
 
   useEffect(()=>{
     if(open&&!loaded) getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);});
@@ -118,6 +126,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
               {timerRunning&&<span style={{width:7,height:7,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,flexShrink:0,display:"inline-block"}}/>}
             </div>
             <div style={{fontSize:9,color:MUT,marginTop:2}}>{[m.make,m.model,m.year,m.source].filter(Boolean).join(" · ")}</div>
+            {clientName&&<div style={{fontSize:8,color:ACC,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>👤 {clientName}</div>}
             {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const today=now.toDateString()===due.toDateString();const dueColor=overdue?"#e87a0a":today?"#4a9eff":MUT;return<div style={{fontSize:8,color:dueColor,marginTop:1}}>{overdue?"OVERDUE ":"DUE "}{due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>;})()}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:"55%",overflow:"hidden"}}>
