@@ -243,9 +243,18 @@ export default function PartsTab({ machines, session }) {
         <SL t="Parts Inventory" />
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
           {lowStock.length > 0 && (
-            <span style={{ fontSize:8, color:ORANGE, border:'1px solid '+ORANGE+'55', background:ORANGE+'11', padding:'2px 6px', borderRadius:2, fontWeight:700, letterSpacing:'0.1em' }}>
-              {lowStock.length} LOW STOCK
-            </span>
+            <button
+              onClick={() => {
+                const txt = lowStock.map(i => `${i.name}${i.partNumber?' ('+i.partNumber+')':''}${i.brand?' — '+i.brand:''}${i.supplier?', '+i.supplier:''} | Stock: ${Number(i.stockQty)||0}${i.minStock?' / Min: '+i.minStock:''}`).join('\n');
+                const w = window.open('', '_blank');
+                if (!w) return;
+                w.document.write(`<!DOCTYPE html><html><head><title>Reorder List</title><style>body{font-family:Arial,sans-serif;padding:32px;max-width:640px;margin:0 auto;font-size:13px}h1{font-size:18px;margin-bottom:16px}li{margin-bottom:8px;line-height:1.5}.dim{color:#777;font-size:11px}@media print{button{display:none}}</style></head><body><h1>Parts Reorder List</h1><ul>${lowStock.map(i=>`<li><strong>${i.name}</strong>${i.partNumber?` <span class="dim">(${i.partNumber})</span>`:''}<br><span class="dim">${[i.brand,i.supplier,`Stock: ${Number(i.stockQty)||0}`+(i.minStock?' / Min: '+i.minStock:'')].filter(Boolean).join(' · ')}</span></li>`).join('')}</ul><br><button onclick="window.print()">🖨 Print</button></body></html>`);
+                w.document.close();
+              }}
+              style={{ fontSize:8, color:ORANGE, border:'1px solid '+ORANGE+'55', background:ORANGE+'11', padding:'2px 6px', borderRadius:2, fontWeight:700, letterSpacing:'0.1em', cursor:'pointer', fontFamily:"'IBM Plex Mono',monospace" }}
+            >
+              {lowStock.length} LOW — Print Reorder
+            </button>
           )}
           {!editing && (
             <button onClick={() => setEditing({})} style={{ ...btnA, ...sm }}>+ Add Part</button>
