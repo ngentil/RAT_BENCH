@@ -23,20 +23,7 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
   const [customTo, setCustomTo] = useState("");
 
   const tier = effectiveTier(profile, company);
-  if (tier === "free") {
-    return (
-      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>📊</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Revenue Dashboard</div>
-        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Track billable hours, revenue, and work sessions across all machines. Available on the Enthusiast plan and above.
-        </div>
-        <button onClick={onGoToBilling} style={{ ...btnA, ...sm, color: "#fff" }}>
-          View Plans
-        </button>
-      </div>
-    );
-  }
+  const isFree = tier === "free";
 
   const allEntries = useMemo(() =>
     machines.flatMap(m =>
@@ -52,6 +39,7 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
 
   const now = new Date();
   const filtered = useMemo(() => {
+    if (isFree) return [];
     return allEntries.filter(e => {
       const d = new Date(e.completedAt);
       if (period === "week")  return (now - d) <= 7 * 86400000;
@@ -63,17 +51,17 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
       }
       return true;
     });
-  }, [allEntries, period, customFrom, customTo]);
+  }, [allEntries, period, customFrom, customTo, isFree]);
 
-  const totalSecs  = filtered.reduce((s, e) => s + (e.seconds || 0), 0);
-  const totalHrs   = totalSecs / 3600;
   const rate       = company?.hourly_rate || 0;
   const taxRate    = company?.tax_rate || 0;
   const taxLabel   = company?.tax_label || "Tax";
+  const totalSecs  = filtered.reduce((s, e) => s + (e.seconds || 0), 0);
+  const totalHrs   = totalSecs / 3600;
   const labourRev  = totalHrs * rate;
 
-  // Parts revenue and cost — sum across all machines for the period
   const { partsRev, partsCost } = useMemo(() => {
+    if (isFree) return { partsRev: 0, partsCost: 0 };
     let rev = 0, cost = 0;
     machines.forEach(m => {
       (m.parts || []).forEach(p => {
@@ -88,13 +76,14 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
       });
     });
     return { partsRev: rev, partsCost: cost };
-  }, [machines, period]);
+  }, [machines, period, isFree]);
 
   const totalRevenue = labourRev + partsRev;
   const tax          = totalRevenue * (taxRate / 100);
   const grossProfit  = labourRev + partsRev - partsCost;
 
   const byMachine = useMemo(() => {
+    if (isFree) return [];
     const map = {};
     for (const e of filtered) {
       if (!map[e.machineId]) map[e.machineId] = { name: e.machineName, type: e.machineType, secs: 0, sessions: 0 };
@@ -102,18 +91,34 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
       map[e.machineId].sessions++;
     }
     return Object.values(map).sort((a, b) => b.secs - a.secs);
-  }, [filtered]);
+  }, [filtered, isFree]);
 
   const byDow = useMemo(() => {
+    if (isFree) return [0,0,0,0,0,0,0];
     const days = [0,0,0,0,0,0,0];
     for (const e of filtered) {
       days[new Date(e.completedAt).getDay()] += (e.seconds || 0);
     }
     return days;
-  }, [filtered]);
+  }, [filtered, isFree]);
   const maxDow = Math.max(...byDow, 1);
 
   const lbl = { fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 };
+
+  if (isFree) {
+    return (
+      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
+        <div style={{ fontSize: 28 }}>📊</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Revenue Dashboard</div>
+        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
+          Track billable hours, revenue, and work sessions across all machines. Available on the Enthusiast plan and above.
+        </div>
+        <button onClick={onGoToBilling} style={{ ...btnA, ...sm, color: "#fff" }}>
+          View Plans
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
