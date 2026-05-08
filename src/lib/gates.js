@@ -1,6 +1,6 @@
 // Tier definitions
 export const TIERS = {
-  free:        { label: "Free",        price: null,      machines: 50,       org: false, acl: false, support: false },
+  free:        { label: "Free",        price: null,      machines: 30,       org: false, acl: false, support: false },
   enthusiast:  { label: "Enthusiast",  price: "$4.99/mo",machines: Infinity, org: false, acl: false, support: false },
   team:        { label: "Team",        price: "$29/mo",  machines: Infinity, org: true,  acl: true,  support: false },
   business:    { label: "Business",    price: "$99/mo",  machines: Infinity, org: true,  acl: true,  support: true  },
@@ -30,7 +30,7 @@ export function canUse(feature, profile, company) {
 // Machine limit for the current tier
 export function machineLimit(profile, company) {
   const tier = effectiveTier(profile, company);
-  return TIERS[tier]?.machines ?? 50;
+  return TIERS[tier]?.machines ?? 30;
 }
 
 // Whether the user has hit their machine limit
