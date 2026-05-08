@@ -7,6 +7,7 @@ import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
 import { WikiTrackerModal } from '../wiki/WikiModals';
+import { effectiveTier } from '../../lib/gates';
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
   const e=existing||{};
   const isNew=true;
@@ -2638,7 +2639,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
         </div>
         <div style={mdlF}>
           <button style={btnG} onClick={onClose}>Cancel</button>
-          {!isGuest&&existing&&profile&&make&&model&&<button style={{...btnG,...sm}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
+          {!isGuest&&effectiveTier(profile,company)!=="free"&&existing&&profile&&make&&model&&<button style={{...btnG,...sm}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
           <button style={btnA} onClick={save}>{existing?"Save Changes":"Add Machine"}</button>
         </div>
       </div>

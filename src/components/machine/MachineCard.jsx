@@ -6,6 +6,7 @@ import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, DEFAULT_EXPAND, ALL_BADGE_FIEL
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
 import { mIcon, fmtDT, getMachineServiceStatus } from '../../lib/helpers';
 import { WikiTrackerModal } from '../wiki/WikiModals';
+import { effectiveTier } from '../../lib/gates';
 import PdfExportModal from '../pdf/PdfExportModal';
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
@@ -286,7 +287,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
               <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>
               <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>
               {showPdfOpts&&<PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/>}
-              {!isGuest&&m.make&&m.model&&<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
+              {!isGuest&&effectiveTier(profile,company)!=="free"&&m.make&&m.model&&<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
               <button style={btnD} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
             </div>
           </div>
