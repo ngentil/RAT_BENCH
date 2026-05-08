@@ -185,6 +185,7 @@ export const TABS = [
   {id:"clients",   label:"👤 Clients",   enthusiastOnly:true},
   {id:"search",    label:"🔍 Search"},
   {id:"wiki",      label:"📖 Wiki"},
+  {id:"tools",     label:"🔧 Tools",  enthusiastOnly:true},
   {id:"users",     label:"👥 Users", teamOnly:true},
 ];
 
