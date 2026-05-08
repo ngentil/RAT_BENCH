@@ -4,6 +4,7 @@ import { BG, TXT, MUT, ACC, BRD, SURF, RED, GRN, btnG, sm } from './lib/styles';
 import { getMachines, getMyCompany } from './lib/db';
 import { TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
+import { getMachineServiceStatus } from './lib/helpers';
 
 const TIER_GLOW = {
   enthusiast: { color: "#e8670a", label: "Enthusiast" },
@@ -185,6 +186,9 @@ function App(){
   }
 
   const tierGlow = TIER_GLOW[effectiveTier(profile, company)];
+  const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
+  const dueSoonCount = machines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
+  const timerRunning = machines.some(m => m.jobTimer?.status === "running");
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
@@ -237,11 +241,19 @@ function App(){
           if(t.teamOnly&&!["team","business"].includes(tier))return false;
           if(t.enthusiastOnly&&tier==="free")return false;
           return true;
-        }).map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{flexShrink:0,padding:"10px 10px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:tab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:tab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
+        }).map(t=>{
+          const badge=
+            t.id==="reminders"&&overdueCount>0?{n:overdueCount,c:RED}:
+            t.id==="reminders"&&dueSoonCount>0?{n:dueSoonCount,c:"#e8870a"}:
+            t.id==="jobs"&&timerRunning?{n:"▶",c:GRN}:
+            null;
+          return (
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{flexShrink:0,padding:"10px 10px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:tab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:tab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
             {t.label}
+            {badge&&<span style={{position:"absolute",top:4,right:2,fontSize:7,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
           </button>
-        ))}
+          );
+        })}
       </div>
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} onGoToBilling={()=>setTab("settings")}/></div>
