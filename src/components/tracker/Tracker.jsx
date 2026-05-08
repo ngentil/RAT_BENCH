@@ -16,7 +16,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
   const [dragIdx,setDragIdx]=useState(null);
   const [dragOver,setDragOver]=useState(null);
   const [showSort,setShowSort]=useState(false);
-  const [sortBy,setSortBy]=useState(null);
+  const [sortBy,setSortBy]=useState(()=>localStorage.getItem("trackerSort")||null);
   const [view,setView]=useState(()=>localStorage.getItem("trackerView")||"list");
   const [cols,setCols]=useState(()=>parseInt(localStorage.getItem("trackerCols")||"2"));
   const [tileOpen,setTileOpen]=useState(null);
@@ -30,6 +30,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
     } catch { return {}; }
   }, [profile?.id]);
   const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
+  const setSortByP=v=>{setSortBy(v);if(v)localStorage.setItem("trackerSort",v);else localStorage.removeItem("trackerSort");};
   const setColsP=c=>{setCols(c);localStorage.setItem("trackerCols",String(c));setViewP("grid");};
 
   const SORT_OPTS=[
@@ -117,19 +118,19 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
               <button style={{...btnG,...sm}} onClick={()=>setShowSort(false)}>✕</button>
             </div>
             <div style={{...mdlB,paddingTop:8}}>
-              <label style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:"1px solid #1a1a1a",cursor:"pointer"}} onClick={()=>setSortBy(null)}>
+              <label style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:"1px solid #1a1a1a",cursor:"pointer"}} onClick={()=>setSortByP(null)}>
                 <input type="radio" readOnly checked={sortBy===null} style={{accentColor:ACC,width:15,height:15}} />
                 <span style={{fontSize:11,color:sortBy===null?TXT:MUT,fontFamily:"'IBM Plex Mono',monospace"}}>Manual order (drag)</span>
               </label>
               {SORT_OPTS.map(o=>(
-                <label key={o.k} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:"1px solid #1a1a1a",cursor:"pointer"}} onClick={()=>setSortBy(o.k)}>
+                <label key={o.k} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 0",borderBottom:"1px solid #1a1a1a",cursor:"pointer"}} onClick={()=>setSortByP(o.k)}>
                   <input type="radio" readOnly checked={sortBy===o.k} style={{accentColor:ACC,width:15,height:15}} />
                   <span style={{fontSize:11,color:sortBy===o.k?TXT:MUT,fontFamily:"'IBM Plex Mono',monospace"}}>{o.l}</span>
                 </label>
               ))}
             </div>
             <div style={mdlF}>
-              <button style={btnG} onClick={()=>{setSortBy(null);setShowSort(false);}}>Reset</button>
+              <button style={btnG} onClick={()=>{setSortByP(null);setShowSort(false);}}>Reset</button>
               <button style={btnA} onClick={()=>setShowSort(false)}>Done</button>
             </div>
           </div>
