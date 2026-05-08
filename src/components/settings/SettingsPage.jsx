@@ -15,7 +15,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut})
       </div>
       {tab==="profile"&&<ProfileSettings profile={profile} setProfile={setProfile} session={session} onSignOut={onSignOut} isGuest={!!session?.user?.is_anonymous}/>}
       {tab==="company"&&<CompanySettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany} session={session}/>}
-      {tab==="billing"&&<BillingPage profile={profile} setProfile={setProfile} company={company} session={session}/>}
+      {tab==="billing"&&<BillingPage profile={profile} company={company} session={session}/>}
     </div>
   );
 }

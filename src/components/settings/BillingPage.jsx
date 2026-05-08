@@ -138,60 +138,11 @@ function PlanCard({ plan, current, billing, onUpgrade, onManage, loading }) {
   );
 }
 
-function VoucherBox({ session, onRedeemed }) {
-  const [code, setCode]   = useState("");
-  const [busy, setBusy]   = useState(false);
-  const [msg,  setMsg]    = useState(null); // { ok, text }
-
-  const redeem = async () => {
-    const trimmed = code.trim().toUpperCase();
-    if (!trimmed) return;
-    setBusy(true); setMsg(null);
-    const { data, error } = await supabase.rpc("redeem_voucher", { p_code: trimmed });
-    setBusy(false);
-    if (error) { setMsg({ ok: false, text: error.message }); return; }
-    if (data?.error) { setMsg({ ok: false, text: data.error }); return; }
-    setMsg({ ok: true, text: `Code applied — you're now on the ${data.tier} plan!` });
-    setCode("");
-    onRedeemed();
-  };
-
-  return (
-    <div style={{ borderTop: "1px solid #252525", paddingTop: 16, marginTop: 4 }}>
-      <div style={{ fontSize: 9, color: ACC, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 10 }}>
-        Have a voucher code?
-      </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input
-          value={code}
-          onChange={e => { setCode(e.target.value.toUpperCase()); setMsg(null); }}
-          onKeyDown={e => e.key === "Enter" && redeem()}
-          placeholder="Enter code…"
-          style={{ flex: 1, background: "#0a0a0a", border: "1px solid #333", color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 12, padding: "7px 10px", borderRadius: 2, outline: "none", letterSpacing: "0.08em" }}
-        />
-        <GlowBtn onClick={redeem} disabled={busy || !code.trim()} glow={ACC} style={{ ...btnA, ...sm, opacity: busy || !code.trim() ? 0.5 : 1 }}>
-          {busy ? "…" : "Redeem"}
-        </GlowBtn>
-      </div>
-      {msg && (
-        <div style={{ marginTop: 8, fontSize: 10, padding: "6px 10px", borderRadius: 2, color: msg.ok ? GRN : RED, background: (msg.ok ? GRN : RED) + "11", border: "1px solid " + (msg.ok ? GRN : RED) + "44" }}>
-          {msg.text}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function BillingPage({ profile, setProfile, company, session }) {
+function BillingPage({ profile, company, session }) {
   const [billing, setBilling] = useState("monthly");
   const [loading, setLoading] = useState(null);
   const [err, setErr] = useState("");
   const tier = effectiveTier(profile, company);
-
-  const refreshProfile = async () => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
-    if (data) setProfile(data);
-  };
 
   const handleUpgrade = async (planId) => {
     setLoading(planId); setErr("");
@@ -270,9 +221,7 @@ function BillingPage({ profile, setProfile, company, session }) {
         ))}
       </div>
 
-      <VoucherBox session={session} onRedeemed={refreshProfile} />
-
-      <div style={{ fontSize: 9, color: MUT, textAlign: "center", lineHeight: 1.7, borderTop: "1px solid " + BRD, paddingTop: 16, marginTop: 16 }}>
+      <div style={{ fontSize: 9, color: MUT, textAlign: "center", lineHeight: 1.7, borderTop: "1px solid " + BRD, paddingTop: 16 }}>
         Payments secured by Stripe. Cancel anytime.
       </div>
     </div>
