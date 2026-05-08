@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
@@ -22,6 +22,13 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
   const [tileOpen,setTileOpen]=useState(null);
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
+
+  const clientMap = useMemo(() => {
+    try {
+      const clients = JSON.parse(localStorage.getItem(`rat_clients_${profile?.id}`) || "[]");
+      return Object.fromEntries(clients.map(c => [c.id, c.name]));
+    } catch { return {}; }
+  }, [profile?.id]);
   const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
   const setColsP=c=>{setCols(c);localStorage.setItem("trackerCols",String(c));setViewP("grid");};
 
@@ -165,7 +172,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
         <>
           <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8}}>
             {sorted.map(m=>(
-              <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)}/>
+              <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
             ))}
           </div>
           {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(

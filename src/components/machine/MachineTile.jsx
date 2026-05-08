@@ -3,7 +3,7 @@ import { ACC, MUT, BRD, SURF, TXT, GRN, RED } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 import { getMachineServiceStatus } from '../../lib/helpers';
 // ── Tracker ───────────────────────────────────────────────────────────────────
-function MachineTile({machine,onClick}){
+function MachineTile({machine,onClick,clientName}){
   const m=machine;
   const photo=m.photos?.[0];
   const icon=MACHINE_TYPES.find(t=>t.label===m.type)?.icon||"⚙️";
@@ -20,7 +20,8 @@ function MachineTile({machine,onClick}){
       </div>
       <div style={{padding:"8px 10px",flex:1}}>
         <div style={{fontSize:11,fontWeight:700,color:TXT,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{m.name||`${m.make||""} ${m.model||""}`.trim()||"Unnamed"}</div>
-        {(m.make||m.model)&&<div style={{fontSize:9,color:MUT,marginBottom:5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{m.make} {m.model}</div>}
+        {(m.make||m.model)&&<div style={{fontSize:9,color:MUT,marginBottom:clientName?2:5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{m.make} {m.model}</div>}
+        {clientName&&<div style={{fontSize:8,color:ACC,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>👤 {clientName}</div>}
         <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
           <span style={{fontSize:8,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"2px 6px",borderRadius:2,background:SBG_[m.status]||"#222",color:sc,border:"1px solid "+sc+"55"}}>{m.status||"Active"}</span>
           {timerRunning&&<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",color:GRN}}>TIMER ON</span>}
