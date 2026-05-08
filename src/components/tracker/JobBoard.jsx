@@ -646,6 +646,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const [jobLabel, setJobLabel] = useState(t.jobLabel || "");
   const [customLabel, setCustomLabel] = useState("");
   const [mode, setMode] = useState("countdown");
+  const [manualDate, setManualDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const jobOptions = getJobOptions(machine);
   const isCustom = jobLabel === "__custom__";
@@ -694,6 +695,23 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const handleStop = async () => {
     await save({ duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" });
     setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+  };
+
+  const handleManualLog = async () => {
+    const secs = parseDuration(hours, mins);
+    if (!secs) return;
+    const newEntry = {
+      id: crypto.randomUUID(),
+      jobLabel: effectiveLabel,
+      seconds: secs,
+      completedAt: manualDate ? new Date(manualDate + "T12:00:00").toISOString() : new Date().toISOString(),
+      manual: true,
+    };
+    const updated = { ...machine, timeLog: [...(machine.timeLog || []), newEntry] };
+    onUpdate(updated);
+    await upsertMachine(updated);
+    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+    setManualDate(new Date().toISOString().slice(0, 10));
   };
 
   const handleFinish = async () => {
@@ -774,7 +792,8 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>Job Timer</div>
           <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>↓ Countdown</button>
-          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0 2px 2px 0" }}>↑ Count Up</button>
+          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0", borderRight: "none" }}>↑ Count Up</button>
+          <button onClick={() => setMode("manual")}    style={{ ...tabStyle(mode === "manual"),    borderRadius: "0 2px 2px 0" }}>✎ Log</button>
         </div>
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
@@ -794,7 +813,26 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
             />
           )}
         </div>
-        {mode === "countdown" ? (
+        {mode === "manual" ? (
+          <div>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 6 }}>LOG TIME WITHOUT TIMER</div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
+                  style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }} />
+                <span style={{ fontSize: 9, color: MUT }}>h</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
+                  style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }} />
+                <span style={{ fontSize: 9, color: MUT }}>m</span>
+              </div>
+              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
+                style={{ background: "#111", border: "1px solid #333", borderRadius: 2, color: MUT, fontSize: 10, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace" }} />
+              <button onClick={handleManualLog} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>+ Log Time</button>
+            </div>
+          </div>
+        ) : mode === "countdown" ? (
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <input
