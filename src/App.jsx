@@ -271,6 +271,13 @@ function App(){
           );
         })}
       </div>
+      {!session?.user?.is_anonymous&&effectiveTier(profile,company)==="free"&&<div style={{background:"#0a1a0a",borderBottom:"1px solid #1a3a1a",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+        <div>
+          <span style={{fontSize:9,color:"#4ade80",letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginRight:10}}>Free Plan</span>
+          <span style={{fontSize:10,color:MUT}}>30 machines · limited jobs, reminders &amp; parts · no clients or revenue dashboard</span>
+        </div>
+        <button onClick={()=>setTab("settings")} style={{...btnG,...sm,whiteSpace:"nowrap",fontSize:9,color:"#4ade80",borderColor:"#1a3a1a"}}>Upgrade →</button>
+      </div>}
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
