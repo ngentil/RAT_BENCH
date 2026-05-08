@@ -847,7 +847,8 @@ function MachineNotes({ machine, onSave }) {
 
 function JobBoard({ machines, setMachines, profile, company, session, clients, onGoToBilling }) {
   const tier = effectiveTier(profile, company);
-  const timerLocked = tier === "free";
+  const isFree = tier === "free";
+  const FREE_LIMIT = 3;
   const [jobSearch, setJobSearch] = useState("");
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
@@ -867,6 +868,15 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const updateStatus = async (m, status) => { const u = { ...m, status }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
   const updateRage = async (m, rage) => { const u = { ...m, rage }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
   const groups = STATUSES.map(s => ({ status: s, items: visibleMachines.filter(m => (m.status || "Active") === s) }));
+
+  // For free tier: cap to 3 machines total, track flat index for feature access
+  const orderedAll = groups.flatMap(g => g.items);
+  const cappedIds = isFree ? new Set(orderedAll.slice(0, FREE_LIMIT).map(m => m.id)) : null;
+  const freeIdxMap = isFree ? Object.fromEntries(orderedAll.slice(0, FREE_LIMIT).map((m, i) => [m.id, i])) : {};
+  const cappedGroups = isFree
+    ? groups.map(g => ({ ...g, items: g.items.filter(m => cappedIds.has(m.id)) }))
+    : groups;
+  const hiddenCount = isFree ? Math.max(0, orderedAll.length - FREE_LIMIT) : 0;
 
   const totalHrsAll  = machines.reduce((s, m) => s + (m.timeLog||[]).reduce((a,e)=>a+(e.seconds||0),0)/3600, 0);
   const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
@@ -902,21 +912,34 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
       </div>
       {machines.length === 0 && <Empty icon="🗂" t="No machines yet" sub="Add machines from the Tracker tab, then manage their jobs, parts, and timers here." />}
       {machines.length > 5 && <input style={{ ...inp, marginBottom: 12, fontSize: 11 }} placeholder="Filter by machine name, make, or client…" value={jobSearch} onChange={e => setJobSearch(e.target.value)} />}
-      {groups.map(({ status, items }) => items.length === 0 ? null : (
+      {isFree && machines.length > 0 && (
+        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 3 }}>Free Plan — Jobs Preview</div>
+            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Showing {Math.min(machines.length, FREE_LIMIT)} of {machines.length} machines. First machine has full timer &amp; parts access.</div>
+          </div>
+          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade</button>}
+        </div>
+      )}
+      {cappedGroups.map(({ status, items }) => items.length === 0 ? null : (
         <div key={status} style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <StatusBadge status={status} />
             <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em" }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
           </div>
-          {items.map(m => (
-            <div key={m.id} style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 3, marginBottom: 8, padding: "13px 14px", overflow: "hidden" }}>
+          {items.map(m => {
+            const freeIdx = isFree ? (freeIdxMap[m.id] ?? 0) : -1;
+            const timerLocked = isFree && freeIdx > 0;
+            const partsLocked = isFree && freeIdx > 0;
+            return (
+            <div key={m.id} style={{ background: SURF, border: "1px solid " + (timerLocked ? "#1e1e1e" : BRD), borderRadius: 3, marginBottom: 8, padding: "13px 14px", overflow: "hidden", opacity: timerLocked ? 0.7 : 1 }}>
               <div style={{ display: "flex", gap: 10 }}>
                 {m.photos?.[0]
                   ? <img src={m.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 2, border: "1px solid " + BRD, flexShrink: 0 }} />
                   : <span style={{ fontSize: 17, width: 44, textAlign: "center", lineHeight: "44px", flexShrink: 0 }}>{mIcon(m.type)}</span>}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 2 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{m.name}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</div>
                     {(m.timeLog?.length > 0) && (() => {
                       const totalSecs = m.timeLog.reduce((s, e) => s + (e.seconds || 0), 0);
                       return (
@@ -938,9 +961,15 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
                     </div>;
                   })()}
                   <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; updateM(u); await upsertMachine(u); }} />
-                  <JobTimer machine={m} onUpdate={updateM} locked={timerLocked} onGoToBilling={onGoToBilling} />
-                  <TimeLogSection machine={m} company={company} clients={clients} onUpdate={updateM} />
-                  <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />
+                  {!timerLocked && <JobTimer machine={m} onUpdate={updateM} locked={false} onGoToBilling={onGoToBilling} />}
+                  {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} onUpdate={updateM} />}
+                  {!partsLocked && <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />}
+                  {timerLocked && (
+                    <div style={{ marginTop: 8, fontSize: 9, color: MUT, fontStyle: "italic" }}>
+                      🔒 Timer &amp; parts unlocked on Enthusiast —{" "}
+                      <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade</span>
+                    </div>
+                  )}
                   <Divider />
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {STATUSES.filter(s => s !== status).map(s => (
@@ -958,9 +987,16 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       ))}
+      {hiddenCount > 0 && (
+        <div style={{ border: "1px dashed #2a2a2a", borderRadius: 3, padding: "16px 14px", textAlign: "center", marginBottom: 8 }}>
+          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenCount} more machine{hiddenCount !== 1 ? "s" : ""} hidden — upgrade to see all jobs</div>
+          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to Enthusiast</button>}
+        </div>
+      )}
     </div>
   );
 }
