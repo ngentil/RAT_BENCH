@@ -3,6 +3,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col
 import { SL, FL } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
+import { effectiveTier } from '../../lib/gates';
 
 function fmtHrs(secs) {
   const h = Math.floor(secs / 3600);
@@ -93,12 +94,25 @@ function exportClientInvoice(client, linked, company) {
   w.document.close();
 }
 
-export default function CustomersTab({ machines, setMachines, clients, setClients, session, company }) {
+export default function CustomersTab({ machines, setMachines, clients, setClients, session, company, profile, onGoToBilling }) {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [search, setSearch] = useState("");
   const [err, setErr] = useState("");
+
+  if (effectiveTier(profile, company) === "free") {
+    return (
+      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
+        <div style={{ fontSize: 28 }}>👤</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Clients</div>
+        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
+          Link machines to clients, track work history per customer, and generate client reports. Available on the Enthusiast plan and above.
+        </div>
+        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
+      </div>
+    );
+  }
 
   const openNew = () => { setForm(EMPTY_FORM); setErr(""); setEditing("new"); };
   const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" }); setErr(""); setEditing(c); };
