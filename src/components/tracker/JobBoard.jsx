@@ -134,8 +134,10 @@ function exportInvoice(machine, company, userId, docType = 'invoice') {
   const labourRows = log.map(e => {
     const hrs    = (e.seconds || 0) / 3600;
     const amount = rate !== null ? hrs * rate : null;
+    const label  = e.jobLabel && e.jobLabel !== 'Job' ? e.jobLabel.slice(0, 80) : 'General work';
+    const notes  = e.sessionNotes ? `<div style="font-size:11px;color:#777;margin-top:2px">${escHtml(e.sessionNotes)}</div>` : '';
     return `<tr>
-      <td>${escHtml(e.jobLabel && e.jobLabel !== 'Job' ? e.jobLabel.slice(0, 80) : 'General work')}</td>
+      <td>${escHtml(label)}${notes}</td>
       <td class="num">${fmtDuration(e.seconds || 0)} <span class="dim">(${hrs.toFixed(2)} hrs)</span></td>
       <td class="num">${rate !== null ? `$${rate.toFixed(2)}/hr` : '—'}</td>
       <td class="num">${amount !== null ? fmt$(amount) : '—'}</td>
@@ -281,6 +283,8 @@ const BILL_STATUS = {
 
 function TimeLogSection({ machine, company, userId, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
+  const [editingNotes, setEditingNotes] = useState(null);
+  const [noteDraft, setNoteDraft] = useState("");
   const log = machine.timeLog || [];
   if (!log.length) return null;
 
@@ -308,6 +312,16 @@ function TimeLogSection({ machine, company, userId, onUpdate }) {
     await upsertMachine(updated);
   };
 
+  const saveNotes = async (entryId, notes) => {
+    const updated = {
+      ...machine,
+      timeLog: machine.timeLog.map(e => e.id === entryId ? { ...e, sessionNotes: notes.trim() } : e),
+    };
+    onUpdate(updated);
+    await upsertMachine(updated);
+    setEditingNotes(null);
+  };
+
   return (
     <div style={{ marginTop: 8, padding: "8px 10px", background: "#0a0a0a", border: "1px solid #1e1e1e", borderRadius: 2 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -330,42 +344,65 @@ function TimeLogSection({ machine, company, userId, onUpdate }) {
         <div style={{ marginTop: 8 }}>
           {log.map((entry, idx) => {
             const bs = BILL_STATUS[entry.billStatus || "logged"];
+            const isEditingNote = editingNotes === entry.id;
             return (
-              <div
-                key={entry.id || idx}
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #181818" }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: TXT, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {entry.jobLabel && entry.jobLabel !== "Job" ? entry.jobLabel.slice(0, 60) : "General work"}
+              <div key={entry.id || idx} style={{ padding: "6px 0", borderBottom: "1px solid #181818" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: TXT, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {entry.jobLabel && entry.jobLabel !== "Job" ? entry.jobLabel.slice(0, 60) : "General work"}
+                    </div>
+                    <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
+                      {new Date(entry.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
-                    {new Date(entry.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <button
+                      onClick={() => cycleBillStatus(entry.id)}
+                      title="Click to cycle: Logged → Quoted → Invoiced"
+                      style={{
+                        background: "none", border: "1px solid " + bs.color + "55",
+                        color: bs.color, fontSize: 7, padding: "2px 5px", borderRadius: 2,
+                        cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace",
+                        fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
+                      }}
+                    >
+                      {bs.label}
+                    </button>
+                    <span style={{ fontSize: 11, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>
+                      {fmtDuration(entry.seconds || 0)}
+                    </span>
+                    <button
+                      onClick={() => removeEntry(entry.id)}
+                      style={{ background: "none", border: "none", color: MUT, cursor: "pointer", fontSize: 11, lineHeight: 1, padding: "0 2px" }}
+                    >
+                      ✕
+                    </button>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                  <button
-                    onClick={() => cycleBillStatus(entry.id)}
-                    title="Click to cycle: Logged → Quoted → Invoiced"
-                    style={{
-                      background: "none", border: "1px solid " + bs.color + "55",
-                      color: bs.color, fontSize: 7, padding: "2px 5px", borderRadius: 2,
-                      cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace",
-                      fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
-                    }}
+                {isEditingNote ? (
+                  <div style={{ marginTop: 4 }}>
+                    <textarea
+                      autoFocus
+                      style={{ width: "100%", background: "#111", border: "1px solid #333", color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, padding: "5px 7px", borderRadius: 2, resize: "vertical", minHeight: 48, boxSizing: "border-box", outline: "none", lineHeight: 1.5 }}
+                      value={noteDraft}
+                      onChange={e => setNoteDraft(e.target.value)}
+                      placeholder="What was done this session…"
+                    />
+                    <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
+                      <button onClick={() => saveNotes(entry.id, noteDraft)} style={{ ...btnA, ...sm, fontSize: 8 }}>Save</button>
+                      <button onClick={() => setEditingNotes(null)} style={{ ...btnG, ...sm, fontSize: 8 }}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => { setEditingNotes(entry.id); setNoteDraft(entry.sessionNotes || ""); }}
+                    style={{ marginTop: 3, fontSize: 9, color: entry.sessionNotes ? MUT : "#2a2a2a", cursor: "pointer", lineHeight: 1.5, fontStyle: entry.sessionNotes ? "normal" : "italic" }}
+                    title="Click to add session notes"
                   >
-                    {bs.label}
-                  </button>
-                  <span style={{ fontSize: 11, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>
-                    {fmtDuration(entry.seconds || 0)}
-                  </span>
-                  <button
-                    onClick={() => removeEntry(entry.id)}
-                    style={{ background: "none", border: "none", color: MUT, cursor: "pointer", fontSize: 11, lineHeight: 1, padding: "0 2px" }}
-                  >
-                    ✕
-                  </button>
-                </div>
+                    {entry.sessionNotes || "+ add notes"}
+                  </div>
+                )}
               </div>
             );
           })}
