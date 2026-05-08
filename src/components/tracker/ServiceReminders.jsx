@@ -26,7 +26,9 @@ function getMachineReminders(machine) {
       const dueAt  = lastOdo > 0 ? lastOdo + n : n;
       const pct    = Math.min(totalHrs / dueAt, 1.2);
       const overdue = totalHrs >= dueAt;
-      items.push({ label, current: totalHrs.toFixed(1) + "h logged", due: lastOdo > 0 ? "due at " + dueAt.toFixed(0) + "h" : "every " + n + "h", pct: Math.min(pct, 1), overdue, dueSoon: pct >= 0.8 && !overdue });
+      const remaining = dueAt - totalHrs;
+      const remStr = overdue ? (totalHrs - dueAt).toFixed(1) + "h overdue" : remaining.toFixed(1) + "h remaining";
+      items.push({ label, current: totalHrs.toFixed(1) + "h logged", due: "due at " + dueAt.toFixed(0) + "h", rem: remStr, pct: Math.min(pct, 1), overdue, dueSoon: pct >= 0.8 && !overdue });
     } else {
       if (!lastDate) {
         items.push({ label, current: "no service date set", due: "every " + n + "mo", pct: 0, overdue: false, dueSoon: false, noDate: true });
@@ -36,7 +38,9 @@ function getMachineReminders(machine) {
       const dueDays   = n * 30;
       const pct       = Math.min(daysSince / dueDays, 1.2);
       const overdue   = daysSince >= dueDays;
-      items.push({ label, current: daysSince + "d since service", due: "every " + n + "mo", pct: Math.min(pct, 1), overdue, dueSoon: pct >= 0.8 && !overdue });
+      const remDays   = dueDays - daysSince;
+      const remStr    = overdue ? (daysSince - dueDays) + "d overdue" : remDays + "d remaining";
+      items.push({ label, current: daysSince + "d since service", due: "every " + n + "mo", rem: remStr, pct: Math.min(pct, 1), overdue, dueSoon: pct >= 0.8 && !overdue });
     }
   }
 
@@ -208,7 +212,10 @@ export default function ServiceReminders({ machines, setMachines }) {
                       <div style={{ height: "100%", borderRadius: 2, transition: "width 0.3s", width: (item.pct * 100) + "%", background: item.overdue ? RED : item.dueSoon ? ORANGE : GRN }} />
                     </div>
                   )}
-                  <div style={{ fontSize: 8, color: MUT }}>{item.current}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: 8, color: MUT }}>{item.current}</div>
+                    {item.rem && <div style={{ fontSize: 8, color: item.overdue ? RED : item.dueSoon ? ORANGE : MUT, fontWeight: item.overdue || item.dueSoon ? 700 : 400 }}>{item.rem}</div>}
+                  </div>
                 </div>
               );
             })}
