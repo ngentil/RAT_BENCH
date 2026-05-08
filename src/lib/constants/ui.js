@@ -182,7 +182,7 @@ export const TABS = [
   {id:"reminders", label:"🔔 Remind"},
   {id:"revenue",   label:"📊 Revenue", enthusiastOnly:true},
   {id:"parts",     label:"🔩 Parts",    enthusiastOnly:true},
-  {id:"clients",   label:"👤 Clients"},
+  {id:"clients",   label:"👤 Clients",   enthusiastOnly:true},
   {id:"search",    label:"🔍 Search"},
   {id:"wiki",      label:"📖 Wiki"},
   {id:"users",     label:"👥 Users", teamOnly:true},
