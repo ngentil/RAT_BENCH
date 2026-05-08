@@ -14,7 +14,7 @@ function timeLeft(expiresAt) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function ProfileSettings({profile,setProfile,session,onSignOut,isGuest}){
+function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}){
   const [displayName,setDisplayName]=useState(profile?.display_name||"");
   const [units,setUnits]=useState(profile?.units||"metric");
   const [defaultStatus,setDefaultStatus]=useState(profile?.default_status||"Active");
@@ -128,6 +128,23 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest}){
         <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Create an account to keep your machines and sign back in any time.</div>
         <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create Account</button>
       </div>}
+
+      {machines?.length > 0 && (
+        <div style={sec}>
+          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Data</div>
+          <div style={{fontSize:10,color:MUT,lineHeight:1.6,marginBottom:10}}>
+            Export all your machine data as a JSON backup file.
+          </div>
+          <button onClick={()=>{
+            const data={exportedAt:new Date().toISOString(),machines};
+            const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement("a");
+            a.href=url;a.download=`ratbench-backup-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();URL.revokeObjectURL(url);
+          }} style={{...btnG,...sm}}>⬇ Export Machines ({machines.length})</button>
+        </div>
+      )}
 
       <div>
         <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Account</div>
