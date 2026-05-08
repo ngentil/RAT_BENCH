@@ -221,6 +221,27 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,isGuest}){
                 </div>
               </div>}
               {show("notes")&&m.notes&&<div style={{padding:"10px 14px 0"}}><FL t="Notes" /><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.notes}</div></div>}
+              {show("parts")&&m.parts?.length>0&&(
+                <div style={{padding:"12px 14px 0"}}>
+                  <SL t="Parts Used" />
+                  <div style={{marginTop:6}}>
+                    {m.parts.map((p,idx)=>{
+                      const qty=Number(p.qty)||1;
+                      const sell=(parseFloat(p.sellPrice)||0)*qty;
+                      return <div key={p.id||idx} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #181818"}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:10,color:TXT,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
+                          <div style={{fontSize:8,color:MUT}}>{[p.partNumber,p.brand,`Qty ${qty}`].filter(Boolean).join(" · ")}</div>
+                        </div>
+                        {sell>0&&<span style={{fontSize:9,color:GRN,flexShrink:0,marginLeft:8}}>${sell.toFixed(2)}</span>}
+                      </div>;
+                    })}
+                    <div style={{fontSize:9,color:GRN,textAlign:"right",marginTop:5,fontWeight:700}}>
+                      ${m.parts.reduce((s,p)=>(s+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1)),0).toFixed(2)} total parts
+                    </div>
+                  </div>
+                </div>
+              )}
               <div style={{height:1,background:BRD2,margin:"12px 0 0"}} />
             </>;
           })()}
