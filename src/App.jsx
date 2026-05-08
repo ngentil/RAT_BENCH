@@ -39,6 +39,17 @@ function App(){
     const p=new URLSearchParams(window.location.search);
     return p.get("billing")||null;
   });
+  const [announcements,setAnnouncements]=useState([]);
+  const [dismissedAnns,setDismissedAnns]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem("rat_dismissed_anns")||"[]");}catch{return[];}
+  });
+
+  const dismissAnn=(id)=>{
+    const next=[...dismissedAnns,id];
+    localStorage.setItem("rat_dismissed_anns",JSON.stringify(next));
+    setDismissedAnns(next);
+    setAnnouncements(prev=>prev.filter(a=>a.id!==id));
+  };
 
   // Load data for a given session.
   // First call blocks the UI (initializing screen); subsequent calls refresh silently.
@@ -80,6 +91,15 @@ function App(){
       const ms = await getMachines();
       setMachines(Array.isArray(ms)?ms:[]);
     } catch(e){ if(first) setError("Could not load machines."); }
+    try {
+      const userTier=profileData?.tier||"free";
+      const{data:anns}=await supabase.from("announcements").select("*")
+        .eq("active",true).or(`tier_filter.eq.all,tier_filter.eq.${userTier}`);
+      if(anns){
+        const dismissed=JSON.parse(localStorage.getItem("rat_dismissed_anns")||"[]");
+        setAnnouncements(anns.filter(a=>!dismissed.includes(a.id)&&(!a.expires_at||new Date(a.expires_at)>new Date())));
+      }
+    }catch{}
     if(first){ setInitializing(false); initializedRef.current=true; }
   };
 
@@ -186,6 +206,12 @@ function App(){
           <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:12,lineHeight:1}}>✕</button>
         </div>
       )}
+      {announcements.map(a=>(
+        <div key={a.id} style={{background:"#0d0d18",borderBottom:"1px solid "+ACC+"44",color:TXT,fontSize:10,padding:"8px 16px",display:"flex",alignItems:"center",gap:10,lineHeight:1.5}}>
+          <span style={{flex:1}}>{a.message}{a.link_url&&<>{" "}<a href={a.link_url} target="_blank" rel="noreferrer" style={{color:ACC,textDecoration:"none",fontWeight:700}}>{a.link_label||"Learn more"} →</a></>}</span>
+          <button onClick={()=>dismissAnn(a.id)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:13,lineHeight:1,flexShrink:0}}>✕</button>
+        </div>
+      ))}
       <div style={{background:SURF,borderBottom:`3px solid ${tierGlow?.color||ACC}`,boxShadow:tierGlow?`0 2px 8px ${tierGlow.color}99, 0 4px 24px ${tierGlow.color}55`:"none",padding:"12px 18px",display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:10}}>
         <a href="https://ratbench.net" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
           {company?.logo
