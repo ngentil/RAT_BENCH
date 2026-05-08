@@ -139,6 +139,7 @@ export function ExpandConfig({machine, onSave, onClose}){
     {k:"cylMaxWear",    l:"Cylinder Wear Limits",hasData: m => !!m.cylMaxWear},
     {k:"trackedBrand",  l:"Tracked Machine",     hasData: m => !!(m.trackedBrand||m.trackType||m.hydRams?.length>0)},
     {k:"notes",         l:"Notes",               hasData: m => !!m.notes},
+    {k:"parts",         l:"Parts Used",          hasData: m => m.parts?.length>0},
     {k:"serviceHistory",l:"Service History",     hasData: () => true},
   ];
   const available = ALL_EXPAND_SECTIONS.filter(s => {
