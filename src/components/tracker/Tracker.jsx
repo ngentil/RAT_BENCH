@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
-import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, RED, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 import { atMachineLimit } from '../../lib/gates';
 import MachineTile from '../machine/MachineTile';
