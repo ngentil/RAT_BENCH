@@ -822,6 +822,31 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   );
 }
 
+function MachineNotes({ machine, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(machine.notes || "");
+  const inpS = { background: "#0a0a0a", border: "1px solid #252525", color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, padding: "6px 8px", borderRadius: 2, outline: "none", width: "100%", boxSizing: "border-box", resize: "vertical", minHeight: 50, lineHeight: 1.5 };
+
+  if (editing) {
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <textarea style={inpS} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Job notes…" autoFocus />
+        <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+          <button onClick={() => { onSave(draft); setEditing(false); }} style={{ ...btnA, ...sm, fontSize: 8 }}>Save</button>
+          <button onClick={() => { setDraft(machine.notes || ""); setEditing(false); }} style={{ ...btnG, ...sm, fontSize: 8 }}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginBottom: 8 }}>
+      {machine.notes
+        ? <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, cursor: "pointer" }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
+        : <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9, color: MUT, padding: 0, fontFamily: "'IBM Plex Mono',monospace", fontStyle: "italic" }}>+ job notes</button>}
+    </div>
+  );
+}
+
 function JobBoard({ machines, setMachines, profile, company, session, onGoToBilling }) {
   const tier = effectiveTier(profile, company);
   const timerLocked = tier === "free";
@@ -917,7 +942,7 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
                       {isOverdue ? "OVERDUE — " : "DUE "}{due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </div>;
                   })()}
-                  {m.notes && <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, marginBottom: 8 }}>{m.notes}</div>}
+                  <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; updateM(u); await upsertMachine(u); }} />
                   <JobTimer machine={m} onUpdate={updateM} locked={timerLocked} onGoToBilling={onGoToBilling} />
                   <TimeLogSection machine={m} company={company} userId={session?.user?.id} onUpdate={updateM} />
                   <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />
