@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
-import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
 import { SL, Empty, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
@@ -825,11 +825,30 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
 function JobBoard({ machines, setMachines, profile, company, session, onGoToBilling }) {
   const tier = effectiveTier(profile, company);
   const timerLocked = tier === "free";
+  const [jobSearch, setJobSearch] = useState("");
+
+  const clientMap = useMemo(() => {
+    try {
+      const clients = JSON.parse(localStorage.getItem(`rat_clients_${session?.user?.id}`) || "[]");
+      return Object.fromEntries(clients.map(c => [c.id, c.name]));
+    } catch { return {}; }
+  }, [session?.user?.id]);
+
+  const visibleMachines = useMemo(() => {
+    if (!jobSearch.trim()) return machines;
+    const q = jobSearch.toLowerCase();
+    return machines.filter(m =>
+      (m.name||"").toLowerCase().includes(q) ||
+      (m.make||"").toLowerCase().includes(q) ||
+      (m.model||"").toLowerCase().includes(q) ||
+      (m.clientId && (clientMap[m.clientId]||"").toLowerCase().includes(q))
+    );
+  }, [machines, jobSearch, clientMap]);
 
   const updateM = (updated) => setMachines(prev => prev.map(x => x.id === updated.id ? updated : x));
   const updateStatus = async (m, status) => { const u = { ...m, status }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
   const updateRage = async (m, rage) => { const u = { ...m, rage }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
-  const groups = STATUSES.map(s => ({ status: s, items: machines.filter(m => (m.status || "Active") === s) }));
+  const groups = STATUSES.map(s => ({ status: s, items: visibleMachines.filter(m => (m.status || "Active") === s) }));
 
   const totalHrsAll  = machines.reduce((s, m) => s + (m.timeLog||[]).reduce((a,e)=>a+(e.seconds||0),0)/3600, 0);
   const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
@@ -864,6 +883,7 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
         )}
       </div>
       {machines.length === 0 && <Empty icon="🗂" t="No machines yet" sub="Add machines from the Tracker tab, then manage their jobs, parts, and timers here." />}
+      {machines.length > 5 && <input style={{ ...inp, marginBottom: 12, fontSize: 11 }} placeholder="Filter by machine name, make, or client…" value={jobSearch} onChange={e => setJobSearch(e.target.value)} />}
       {groups.map(({ status, items }) => items.length === 0 ? null : (
         <div key={status} style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -887,7 +907,8 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
                       );
                     })()}
                   </div>
-                  <div style={{ fontSize: 9, color: MUT, marginBottom: m.dueDate ? 3 : 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
+                  <div style={{ fontSize: 9, color: MUT, marginBottom: (m.dueDate || m.clientId) ? 2 : 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
+                  {m.clientId && clientMap[m.clientId] && <div style={{ fontSize: 8, color: ACC, marginBottom: m.dueDate ? 2 : 8 }}>👤 {clientMap[m.clientId]}</div>}
                   {m.dueDate && (() => {
                     const due = new Date(m.dueDate);
                     const isOverdue = due < new Date();
