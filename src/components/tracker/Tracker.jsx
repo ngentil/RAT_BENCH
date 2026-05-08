@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
-import { ACC, MUT, BRD, SURF, TXT, RED, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 import { atMachineLimit } from '../../lib/gates';
 import MachineTile from '../machine/MachineTile';
@@ -65,6 +65,9 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
     if(sortBy==="rage_lo") return (a.rage||0)-(b.rage||0);
     return 0;
   }):filtered;
+
+  const totalHrsAll = useMemo(() => machines.reduce((s,m) => s + (m.timeLog||[]).reduce((a,e) => a+(e.seconds||0),0)/3600, 0), [machines]);
+  const rate = company?.hourly_rate || 0;
 
   const addM=async m=>{
     setSaving(true);
@@ -141,6 +144,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
           <SL t="Machines" />
           {sortBy&&<span style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
           {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:8,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em"}}>{machines.length}/50</span>}
+          {totalHrsAll>0&&<span style={{fontSize:8,color:GRN,letterSpacing:"0.06em"}}>{totalHrsAll.toFixed(1)}h{rate>0?" · $"+(totalHrsAll*rate).toFixed(0):""}</span>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
