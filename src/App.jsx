@@ -278,7 +278,7 @@ function App(){
       <div style={{display:tab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
-      <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile}/></div>
+      <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="users"?"contents":"none"}}><UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines}/></div>
     </div>

@@ -107,6 +107,13 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         </div>
         <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create account to save your data</button>
       </div>}
+      {!isGuest&&(profile?.tier||"free")==="free"&&<div style={{background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+        <div>
+          <div style={{fontSize:9,color:"#4ade80",letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:3}}>Free Plan</div>
+          <div style={{fontSize:10,color:MUT,lineHeight:1.6}}>30 machine limit · upgrade for unlimited machines, clients, revenue tracking &amp; more.</div>
+        </div>
+        <button onClick={onGoToBilling} style={{...btnA,...sm,whiteSpace:"nowrap"}}>Upgrade →</button>
+      </div>}
       {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
