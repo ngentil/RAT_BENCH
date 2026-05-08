@@ -162,6 +162,7 @@ export default function ServiceReminders({ machines, setMachines }) {
 
       {filtered.map(({ machine, items }) => {
         const hasAlert = items.some(i => i.overdue || i.dueSoon);
+        const totalHrs = totalLoggedHours(machine);
         return (
           <div key={machine.id} style={{ background: SURF, border: "1px solid " + (items.some(i=>i.overdue) ? RED+"44" : items.some(i=>i.dueSoon) ? ORANGE+"44" : BRD), borderRadius: 2, padding: "12px 14px", marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -171,6 +172,7 @@ export default function ServiceReminders({ machines, setMachines }) {
                 <div style={{ fontSize: 9, color: MUT }}>
                   {[machine.make, machine.model, machine.year || null].filter(Boolean).join(" · ")}
                 </div>
+                {totalHrs > 0 && <div style={{ fontSize: 8, color: GRN, marginTop: 2 }}>{totalHrs.toFixed(1)}h total logged</div>}
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                 {machine.lastServiceDate && (
