@@ -831,9 +831,38 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
   const updateRage = async (m, rage) => { const u = { ...m, rage }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
   const groups = STATUSES.map(s => ({ status: s, items: machines.filter(m => (m.status || "Active") === s) }));
 
+  const totalHrsAll  = machines.reduce((s, m) => s + (m.timeLog||[]).reduce((a,e)=>a+(e.seconds||0),0)/3600, 0);
+  const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
+  const rate         = company?.hourly_rate || 0;
+  const labourRevAll = totalHrsAll * rate;
+  const activeCount  = machines.filter(m => (m.status||"Active") === "Active").length;
+  const runningTimer = machines.find(m => m.jobTimer?.status === "running");
+
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      <SL t="Job Board" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <SL t="Job Board" />
+        {machines.length > 0 && (
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {runningTimer && (
+              <span style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 4px " + GRN, display: "inline-block" }} />
+                TIMER RUNNING
+              </span>
+            )}
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>{totalHrsAll.toFixed(1)}h</div>
+              <div style={{ fontSize: 7, color: MUT, letterSpacing: "0.06em" }}>TOTAL LOGGED</div>
+            </div>
+            {(labourRevAll > 0 || totalRevAll > 0) && (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>${(labourRevAll + totalRevAll).toFixed(0)}</div>
+                <div style={{ fontSize: 7, color: MUT, letterSpacing: "0.06em" }}>GROSS REV</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       {machines.length === 0 && <Empty icon="🗂" t="No machines yet" sub="Add machines from the Tracker tab, then manage their jobs, parts, and timers here." />}
       {groups.map(({ status, items }) => items.length === 0 ? null : (
         <div key={status} style={{ marginBottom: 20 }}>
@@ -858,7 +887,15 @@ function JobBoard({ machines, setMachines, profile, company, session, onGoToBill
                       );
                     })()}
                   </div>
-                  <div style={{ fontSize: 9, color: MUT, marginBottom: 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
+                  <div style={{ fontSize: 9, color: MUT, marginBottom: m.dueDate ? 3 : 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
+                  {m.dueDate && (() => {
+                    const due = new Date(m.dueDate);
+                    const isOverdue = due < new Date();
+                    const dueColor = isOverdue ? "#e87a0a" : "#4a9eff";
+                    return <div style={{ fontSize: 8, color: dueColor, marginBottom: 8, fontWeight: 700, letterSpacing: "0.06em" }}>
+                      {isOverdue ? "OVERDUE — " : "DUE "}{due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </div>;
+                  })()}
                   {m.notes && <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, marginBottom: 8 }}>{m.notes}</div>}
                   <JobTimer machine={m} onUpdate={updateM} locked={timerLocked} onGoToBilling={onGoToBilling} />
                   <TimeLogSection machine={m} company={company} userId={session?.user?.id} onUpdate={updateM} />

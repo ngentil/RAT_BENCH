@@ -28,6 +28,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
     {k:"name_za",l:"Name Z → A"},
     {k:"status",l:"Status"},
     {k:"type",l:"Machine Type"},
+    {k:"due",l:"Due Date (Soonest)"},
     {k:"newest",l:"Date Added (Newest)"},
     {k:"oldest",l:"Date Added (Oldest)"},
     {k:"rage_hi",l:"Rage ☠️ (Highest)"},
@@ -39,6 +40,11 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
     if(sortBy==="name_za") return (b.name||"").localeCompare(a.name||"");
     if(sortBy==="status"){const o=["Active","Queued","Complete"];return o.indexOf(a.status||"Active")-o.indexOf(b.status||"Active");}
     if(sortBy==="type") return (a.type||"").localeCompare(b.type||"");
+    if(sortBy==="due"){
+      const ad=a.dueDate?new Date(a.dueDate).getTime():Infinity;
+      const bd=b.dueDate?new Date(b.dueDate).getTime():Infinity;
+      return ad-bd;
+    }
     if(sortBy==="newest") return new Date(b.createdAt||0)-new Date(a.createdAt||0);
     if(sortBy==="oldest") return new Date(a.createdAt||0)-new Date(b.createdAt||0);
     if(sortBy==="rage_hi") return (b.rage||0)-(a.rage||0);
