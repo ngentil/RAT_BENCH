@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
-import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 import { atMachineLimit } from '../../lib/gates';
 import MachineTile from '../machine/MachineTile';
@@ -21,6 +21,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
   const [cols,setCols]=useState(()=>parseInt(localStorage.getItem("trackerCols")||"2"));
   const [tileOpen,setTileOpen]=useState(null);
   const [statusFilter,setStatusFilter]=useState(null);
+  const [search,setSearch]=useState("");
   const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
   const setColsP=c=>{setCols(c);localStorage.setItem("trackerCols",String(c));setViewP("grid");};
 
@@ -36,7 +37,10 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
     {k:"rage_lo",l:"Rage ☠️ (Lowest)"},
   ];
 
-  const filtered=statusFilter?machines.filter(m=>(m.status||"Active")===statusFilter):machines;
+  const searched=search.trim()
+    ?machines.filter(m=>{const q=search.toLowerCase();return (m.name||"").toLowerCase().includes(q)||(m.make||"").toLowerCase().includes(q)||(m.model||"").toLowerCase().includes(q)||(m.type||"").toLowerCase().includes(q);})
+    :machines;
+  const filtered=statusFilter?searched.filter(m=>(m.status||"Active")===statusFilter):searched;
   const sorted=sortBy?[...filtered].sort((a,b)=>{
     if(sortBy==="name_az") return (a.name||"").localeCompare(b.name||"");
     if(sortBy==="name_za") return (b.name||"").localeCompare(a.name||"");
@@ -146,16 +150,17 @@ function Tracker({machines,setMachines,company,profile,setProfile,isGuest,onGoTo
             : <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
       </div>
+      {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
       {machines.length>1&&<div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
         {[null,"Active","Queued","Complete"].map(s=>{
-          const count=s?machines.filter(m=>(m.status||"Active")===s).length:machines.length;
+          const count=s?searched.filter(m=>(m.status||"Active")===s).length:searched.length;
           const active=statusFilter===s;
           return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:8,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:2,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(s?SCOL[s]+"55":"#2a2a2a"),background:active?(s?SBG_[s]:"#1a1a1a"):"transparent",color:active?(s?SCOL[s]:MUT):(s?SCOL[s]+"aa":MUT)}}>{s||"All"} {count}</button>;
         })}
       </div>}
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
       {machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
-      {machines.length>0&&sorted.length===0&&statusFilter&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No {statusFilter} machines.</div>}
+      {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
       {view==="grid"?(
         <>
           <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8}}>
