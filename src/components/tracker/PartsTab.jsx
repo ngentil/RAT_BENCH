@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
+import { effectiveTier } from '../../lib/gates';
 
 const ORANGE = '#e8870a';
 
@@ -149,7 +150,7 @@ function ItemForm({ initial, onSave, onCancel }) {
   );
 }
 
-export default function PartsTab({ machines, session }) {
+export default function PartsTab({ machines, session, profile, company, onGoToBilling }) {
   const userId = session?.user?.id;
   const [inv, setInv]       = useState(() => getInventory(userId));
   const [editing, setEditing] = useState(null);
@@ -236,6 +237,19 @@ export default function PartsTab({ machines, session }) {
   }, [inv, filter, search]);
 
   const lbl = { fontSize:9, color:ACC, letterSpacing:'0.15em', textTransform:'uppercase', fontWeight:700 };
+
+  if (effectiveTier(profile, company) === "free") {
+    return (
+      <div style={{ padding:16, flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:14, textAlign:"center" }}>
+        <div style={{ fontSize:28 }}>🔩</div>
+        <div style={{ fontSize:13, fontWeight:700, color:TXT }}>Parts Inventory</div>
+        <div style={{ fontSize:10, color:MUT, maxWidth:280, lineHeight:1.7 }}>
+          Track stock levels, part numbers, suppliers, and usage across all machines. Available on the Enthusiast plan and above.
+        </div>
+        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding:16, flex:1, overflowY:'auto' }}>
