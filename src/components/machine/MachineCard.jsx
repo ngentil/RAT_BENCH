@@ -109,6 +109,19 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
     m.obAnodeMaterial&&{label:"Anode Material",value:m.obAnodeMaterial},
     m.obBreakInHours&&{label:"Break-in Hours",value:m.obBreakInHours+"h"},
     m.obImpellerLastChanged&&{label:"Impeller Last Changed",value:m.obImpellerLastChanged},
+    // chipper
+    m.chipperSpec?.type&&{label:"Chipper Type",value:[m.chipperSpec.type,m.chipperSpec.brand&&m.chipperSpec.brand!=="Other"?m.chipperSpec.brand:m.chipperSpec.brandOther].filter(Boolean).join(" · ")},
+    m.chipperSpec?.inchSize&&{label:"Capacity",value:m.chipperSpec.inchSize+'" chip capacity'},
+    m.chipperSpec?.bladeCount&&{label:"Blade Count",value:m.chipperSpec.bladeCount},
+    m.chipperSpec?.hours&&{label:"Hour Meter",value:m.chipperSpec.hours+"h"},
+    m.chipperSpec?.bladeLastSharpened&&{label:"Blades Last Sharpened",value:m.chipperSpec.bladeLastSharpened},
+    // stump grinder
+    m.stumpGrinderSpec?.brand&&{label:"Brand",value:m.stumpGrinderSpec.brand!=="Other"?m.stumpGrinderSpec.brand:m.stumpGrinderSpec.brandOther},
+    m.stumpGrinderSpec?.driveType&&{label:"Drive Type",value:m.stumpGrinderSpec.driveType},
+    m.stumpGrinderSpec?.wheelDiameter&&{label:"Wheel",value:m.stumpGrinderSpec.wheelDiameter+'" dia'+(m.stumpGrinderSpec.toothCount?" · "+m.stumpGrinderSpec.toothCount+" teeth":"")},
+    m.stumpGrinderSpec?.cuttingDepth&&{label:"Cutting",value:m.stumpGrinderSpec.cuttingDepth+'" depth'+(m.stumpGrinderSpec.cuttingWidth?" · "+m.stumpGrinderSpec.cuttingWidth+'" wide':"")},
+    m.stumpGrinderSpec?.hours&&{label:"Hour Meter",value:m.stumpGrinderSpec.hours+"h"},
+    m.stumpGrinderSpec?.teethLastReplaced&&{label:"Teeth Last Replaced",value:m.stumpGrinderSpec.teethLastReplaced},
   ].filter(Boolean);
 
   const timerRunning = m.jobTimer?.status === "running";
