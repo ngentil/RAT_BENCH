@@ -5,7 +5,9 @@ export const MACHINE_TYPES = [
   {icon:"⚡",label:"Generator"},{icon:"🏍️",label:"Motorcycle"},{icon:"🛵",label:"Scooter"},
   {icon:"🛵",label:"Moped"},{icon:"🏍️",label:"Quad Bike"},{icon:"🏎️",label:"Go-kart"},
   {icon:"🚗",label:"Vehicle"},{icon:"🚧",label:"Tracked Machine"},
-  {icon:"⛵",label:"Outboard Motor"},{icon:"⚙️",label:"Custom"},
+  {icon:"⛵",label:"Outboard Motor"},
+  {icon:"🌲",label:"Chipper"},{icon:"🌳",label:"Stump Grinder"},
+  {icon:"⚙️",label:"Custom"},
 ];
 
 export const TYPE_PH = {
@@ -33,6 +35,8 @@ export const TYPE_PH = {
   "Log Splitter":        {name:"e.g. Boss 7T",            make:"e.g. Boss",       model:"e.g. 7T",          desc:"e.g. Condition on arrival, hydraulic issue"},
   "Vehicle":             {name:"e.g. Toyota Hilux SR5",   make:"e.g. Toyota",     model:"e.g. Hilux SR5",   desc:"e.g. Condition on arrival, fault description"},
   "Tracked Machine":     {name:"e.g. Komatsu PC130",      make:"e.g. Komatsu",    model:"e.g. PC130",       desc:"e.g. Condition on arrival, fault description"},
+  "Chipper":             {name:"e.g. Bandit 12XP",        make:"e.g. Bandit",     model:"e.g. 12XP",        desc:"e.g. Condition on arrival, drum fault"},
+  "Stump Grinder":       {name:"e.g. Carlton SP7015",     make:"e.g. Carlton",    model:"e.g. SP7015",      desc:"e.g. Condition on arrival, wheel damage"},
   "Custom":              {name:"e.g. Machine name",       make:"e.g. Brand",      model:"e.g. Model",       desc:"e.g. Condition on arrival, fault description"},
 };
 export const getPH = (t,f) => (TYPE_PH[t]||TYPE_PH["Custom"])[f];
@@ -42,10 +46,12 @@ export const WHEELED     = ["Lawnmower","Ride-on Mower"];
 export const MOTO        = ["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC"];
 export const VEHICLE     = ["Vehicle"];
 export const TRACKED     = ["Tracked Machine"];
-export const isCustom      = t => t==="Custom";
-export const isVehicle     = t => t==="Vehicle";
-export const isTracked     = t => t==="Tracked Machine";
-export const isOutboard    = t => t==="Outboard Motor";
+export const isCustom        = t => t==="Custom";
+export const isVehicle       = t => t==="Vehicle";
+export const isTracked       = t => t==="Tracked Machine";
+export const isOutboard      = t => t==="Outboard Motor";
+export const isChipper       = t => t==="Chipper";
+export const isStumpGrinder  = t => t==="Stump Grinder";
 export const showForCustom = (sec, cs) => cs===null||cs===undefined||cs.includes(sec);
 export const ALL_SECTIONS  = ["Engine","Ignition System","Starter System","Port Dimensions","Output Shaft / PTO","Fuel System","Fastener Specs","Pump","Generator Output","Drivetrain","Suspension","Brakes","Tyres","Electrics","Blade / Deck","Notes"];
 export const ALL_TYPES   = [...HANDHELD,...WHEELED,"Pressure Washer","Generator",...MOTO,"Vehicle","Tracked Machine","Outboard Motor","Custom"];

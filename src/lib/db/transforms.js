@@ -306,6 +306,8 @@ export function toDb(m) {
     overall_width:        m.overallWidth,
     overall_height:       m.overallHeight,
     carb_spec:            m.carbSpec || null,
+    chipper_spec:         m.chipperSpec || null,
+    stump_grinder_spec:   m.stumpGrinderSpec || null,
     job_timer:            m.jobTimer || null,
     time_log:             m.timeLog || [],
   };
@@ -620,6 +622,8 @@ export function fromDb(r) {
     overallHeight:     r.overall_height,
     createdAt:         r.created_at,
     carbSpec:          r.carb_spec || null,
+    chipperSpec:       r.chipper_spec || null,
+    stumpGrinderSpec:  r.stump_grinder_spec || null,
     jobTimer:          r.job_timer || null,
     timeLog:           r.time_log || [],
   };

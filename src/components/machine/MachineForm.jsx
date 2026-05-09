@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_CLONE_BRANDS, CARB_TYPES, CARB_BOLTS, OIL_BRANDS, OIL_SYNTH, JASO_2T, JASO_4T, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS } from '../../lib/constants';
+import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, isChipper, isStumpGrinder, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_CLONE_BRANDS, CARB_TYPES, CARB_BOLTS, OIL_BRANDS, OIL_SYNTH, JASO_2T, JASO_4T, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS, CHIPPER_TYPES, CHIPPER_BRANDS, STUMP_BRANDS, STUMP_DRIVE_TYPES } from '../../lib/constants';
 import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm, FuseBoxCard, FuseBoxForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
@@ -433,6 +433,28 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [obImpellerLastChanged,setObImpellerLastChanged]=useState(e.obImpellerLastChanged||"");
   const [secOutboard,setSecOutboard]=useState(false);
   const [editOutboard,setEditOutboard]=useState(isNew);
+  // chipper-specific
+  const _cs2 = e.chipperSpec || {};
+  const [chipperType,setChipperType]=useState(_cs2.type||"");
+  const [chipperBrand,setChipperBrand]=useState(_cs2.brand||"");
+  const [chipperBrandOther,setChipperBrandOther]=useState(_cs2.brandOther||"");
+  const [chipperInchSize,setChipperInchSize]=useState(_cs2.inchSize||"");
+  const [chipperBladeCount,setChipperBladeCount]=useState(_cs2.bladeCount||"");
+  const [chipperHours,setChipperHours]=useState(_cs2.hours||"");
+  const [chipperBladeLastSharpened,setChipperBladeLastSharpened]=useState(_cs2.bladeLastSharpened||"");
+  const [secChipper,setSecChipper]=useState(false);
+  // stump grinder-specific
+  const _ss = e.stumpGrinderSpec || {};
+  const [stumpBrand,setStumpBrand]=useState(_ss.brand||"");
+  const [stumpBrandOther,setStumpBrandOther]=useState(_ss.brandOther||"");
+  const [stumpWheelDiameter,setStumpWheelDiameter]=useState(_ss.wheelDiameter||"");
+  const [stumpToothCount,setStumpToothCount]=useState(_ss.toothCount||"");
+  const [stumpHours,setStumpHours]=useState(_ss.hours||"");
+  const [stumpCuttingDepth,setStumpCuttingDepth]=useState(_ss.cuttingDepth||"");
+  const [stumpCuttingWidth,setStumpCuttingWidth]=useState(_ss.cuttingWidth||"");
+  const [stumpDriveType,setStumpDriveType]=useState(_ss.driveType||"");
+  const [stumpTeethLastReplaced,setStumpTeethLastReplaced]=useState(_ss.teethLastReplaced||"");
+  const [secStump,setSecStump]=useState(false);
   const [secPto,setSecPto]=useState(false);
   const [secChainsaw,setSecChainsaw]=useState(false);
   const [editChainsaw,setEditChainsaw]=useState(isNew);
@@ -535,7 +557,9 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       hydPumpCount,hydPumpType,hydSystemPressure:hydSystemPressure.toString(),hydOilCapacity:hydOilCapacity.toString(),hydReliefValve:hydReliefValve.toString(),
       hydRams,attachments,lighting,
       carbSpec:{brand:carbBrandSpec,cloneBrand:carbCloneBrand,cloneDerivative:carbCloneDerivative,oemPartNo:carbOemPartNo.trim(),clonePartNo:carbClonePartNo.trim(),repairKitPartNo:carbRepairKitPartNo.trim(),gasketPhotos:carbGasketPhotos,purchaseLinks:carbPurchaseLinks,thickness:carbThickness.toString().trim(),boltSpacing:carbBoltSpacing.toString().trim(),throatDiameter:carbThroatDiameter.toString().trim(),engravings:carbEngravings.trim(),needlePumpValveDiameter:carbNeedlePumpValveDiameter.toString().trim(),needleValveLength:carbNeedleValveLength.toString().trim(),fuelInletBarbDiameter:carbFuelInletBarbDiameter.toString().trim(),fuelOutletBarbDiameter:carbFuelOutletBarbDiameter.toString().trim(),fuelBulbDiameter:carbFuelBulbDiameter.toString().trim()},
-      obShaftLength,obTransomHeight,obTiltTrim,obSteering,obPropPitch:obPropPitch.toString().trim(),obPropDiameter:obPropDiameter.toString().trim(),obPropMaterial,obGearRatio,obLowerUnitOilType:obLowerUnitOilType.trim(),obLowerUnitOilCapacity:obLowerUnitOilCapacity.toString().trim(),obAnodeMaterial,obBreakInHours:obBreakInHours.toString().trim(),obImpellerLastChanged:obImpellerLastChanged.trim()});
+      obShaftLength,obTransomHeight,obTiltTrim,obSteering,obPropPitch:obPropPitch.toString().trim(),obPropDiameter:obPropDiameter.toString().trim(),obPropMaterial,obGearRatio,obLowerUnitOilType:obLowerUnitOilType.trim(),obLowerUnitOilCapacity:obLowerUnitOilCapacity.toString().trim(),obAnodeMaterial,obBreakInHours:obBreakInHours.toString().trim(),obImpellerLastChanged:obImpellerLastChanged.trim(),
+      chipperSpec:{type:chipperType,brand:chipperBrand,brandOther:chipperBrandOther,inchSize:chipperInchSize.toString(),bladeCount:chipperBladeCount.toString(),hours:chipperHours.toString(),bladeLastSharpened:chipperBladeLastSharpened.trim()},
+      stumpGrinderSpec:{brand:stumpBrand,brandOther:stumpBrandOther,wheelDiameter:stumpWheelDiameter.toString(),toothCount:stumpToothCount.toString(),hours:stumpHours.toString(),cuttingDepth:stumpCuttingDepth.toString(),cuttingWidth:stumpCuttingWidth.toString(),driveType:stumpDriveType,teethLastReplaced:stumpTeethLastReplaced.trim()}});
   };
 
   return (
@@ -2610,6 +2634,93 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 <div style={{fontSize:9,color:MUT,marginTop:6}}>Cooling: Raw water (self-cooling) — flush with fresh water after salt use</div>
                 {editOutboard&&hasData&&<div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button onClick={()=>setEditOutboard(false)} style={{...btnA,...sm}}>Done</button></div>}
                 </>}
+              </div>}
+            </div>;
+          })()}
+
+          {/* Chipper */}
+          {isChipper(type)&&(()=>{
+            const hasData=!!(chipperType||chipperBrand||chipperInchSize||chipperBladeCount||chipperHours||chipperBladeLastSharpened);
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecChipper(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Chipper Specs</span>
+                  {hasData&&!secChipper&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secChipper?"▲":"▼"}</span>
+              </div>
+              {secChipper&&<div style={{paddingTop:12}}>
+                <div style={row}>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Chipper Type" />
+                    <div style={{display:"flex",gap:4}}>
+                      {CHIPPER_TYPES.map(t=>(
+                        <button key={t} onClick={()=>setChipperType(chipperType===t?"":t)} style={{padding:"7px 14px",fontSize:9,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"1px solid "+(chipperType===t?ACC:"#252525"),borderRadius:2,background:chipperType===t?ACC:"#111",color:chipperType===t?"#fff":"#3a3a3a"}}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Brand" />
+                    <select style={sel} value={chipperBrand} onChange={ev=>setChipperBrand(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {CHIPPER_BRANDS.map(b=><option key={b}>{b}</option>)}
+                    </select>
+                  </div>
+                </div>
+                {chipperBrand==="Other"&&<div style={col}><FL t="Brand (describe)" /><input style={inp} placeholder="e.g. Brand name" value={chipperBrandOther} onChange={ev=>setChipperBrandOther(ev.target.value)} /></div>}
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Chipping Capacity (inches)" /><input style={inp} type="number" placeholder="e.g. 6" step="1" min="1" max="25" value={chipperInchSize} onChange={ev=>setChipperInchSize(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Blade Count" /><input style={inp} type="number" placeholder="e.g. 2" step="1" min="1" value={chipperBladeCount} onChange={ev=>setChipperBladeCount(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Hour Meter" /><input style={inp} type="number" placeholder="e.g. 450" step="1" min="0" value={chipperHours} onChange={ev=>setChipperHours(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Blades Last Sharpened" /><input style={inp} placeholder="e.g. Jan 2024 / 420 hours" value={chipperBladeLastSharpened} onChange={ev=>setChipperBladeLastSharpened(ev.target.value)} /></div>
+                </div>
+              </div>}
+            </div>;
+          })()}
+
+          {/* Stump Grinder */}
+          {isStumpGrinder(type)&&(()=>{
+            const hasData=!!(stumpBrand||stumpWheelDiameter||stumpToothCount||stumpHours||stumpDriveType||stumpTeethLastReplaced);
+            return <div style={{marginBottom:2}}>
+              <div onClick={()=>setSecStump(o=>!o)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",cursor:"pointer",borderBottom:"1px solid #252525",userSelect:"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,fontWeight:700}}>Stump Grinder Specs</span>
+                  {hasData&&!secStump&&<span style={{width:6,height:6,borderRadius:"50%",background:ACC,display:"inline-block"}}/>}
+                </div>
+                <span style={{color:MUT,fontSize:12}}>{secStump?"▲":"▼"}</span>
+              </div>
+              {secStump&&<div style={{paddingTop:12}}>
+                <div style={row}>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Brand" />
+                    <select style={sel} value={stumpBrand} onChange={ev=>setStumpBrand(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {STUMP_BRANDS.map(b=><option key={b}>{b}</option>)}
+                    </select>
+                  </div>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Drive Type" />
+                    <select style={sel} value={stumpDriveType} onChange={ev=>setStumpDriveType(ev.target.value)}>
+                      <option value="">— not set —</option>
+                      {STUMP_DRIVE_TYPES.map(d=><option key={d}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+                {stumpBrand==="Other"&&<div style={col}><FL t="Brand (describe)" /><input style={inp} placeholder="e.g. Brand name" value={stumpBrandOther} onChange={ev=>setStumpBrandOther(ev.target.value)} /></div>}
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Wheel Diameter (inches)" /><input style={inp} type="number" placeholder="e.g. 16" step="0.5" min="1" value={stumpWheelDiameter} onChange={ev=>setStumpWheelDiameter(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Tooth Count" /><input style={inp} type="number" placeholder="e.g. 24" step="1" min="1" value={stumpToothCount} onChange={ev=>setStumpToothCount(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Cutting Depth (inches)" /><input style={inp} type="number" placeholder="e.g. 12" step="0.5" min="0" value={stumpCuttingDepth} onChange={ev=>setStumpCuttingDepth(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Cutting Width (inches)" /><input style={inp} type="number" placeholder="e.g. 24" step="0.5" min="0" value={stumpCuttingWidth} onChange={ev=>setStumpCuttingWidth(ev.target.value)} /></div>
+                </div>
+                <div style={row}>
+                  <div style={{...col,flex:1}}><FL t="Hour Meter" /><input style={inp} type="number" placeholder="e.g. 320" step="1" min="0" value={stumpHours} onChange={ev=>setStumpHours(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}><FL t="Teeth Last Replaced" /><input style={inp} placeholder="e.g. Mar 2024 / 300 hours" value={stumpTeethLastReplaced} onChange={ev=>setStumpTeethLastReplaced(ev.target.value)} /></div>
+                </div>
               </div>}
             </div>;
           })()}
