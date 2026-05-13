@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -342,7 +342,9 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
 
 export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const userId = session?.user?.id;
-  const [tools, setTools] = useState(() => getTools(userId));
+  const [tools, setTools] = useState([]);
+
+  useEffect(() => { getTools(userId).then(setTools); }, [userId]);
   const [formTool, setFormTool] = useState(null);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState(null);
@@ -387,16 +389,16 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
     );
   }
 
-  const save = (tool) => {
-    setTools(saveToolItem(userId, tool));
+  const save = async (tool) => {
+    setTools(await saveToolItem(userId, tool));
     setFormTool(null);
   };
 
-  const update = (tool) => setTools(saveToolItem(userId, tool));
+  const update = async (tool) => setTools(await saveToolItem(userId, tool));
 
-  const remove = (toolId) => {
+  const remove = async (toolId) => {
     if (!confirm("Delete this tool?")) return;
-    setTools(deleteToolItem(userId, toolId));
+    setTools(await deleteToolItem(userId, toolId));
   };
 
   return (
