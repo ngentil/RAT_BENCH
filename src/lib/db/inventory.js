@@ -3,35 +3,38 @@ import { supabase } from '../supabase';
 const lsKey = uid => `rat_inventory_${uid}`;
 
 function fromDb(r) {
+  const p = r.payload || {};
   return {
     id:         r.id,
-    name:       r.name,
-    brand:      r.brand       || '',
-    supplier:   r.supplier    || '',
-    partNumber: r.part_number || '',
-    location:   r.location    || '',
-    buyPrice:   r.buy_price  != null ? String(r.buy_price)  : '',
-    sellPrice:  r.sell_price != null ? String(r.sell_price) : '',
-    stockQty:   r.stock_qty  != null ? String(r.stock_qty)  : '',
-    minStock:   r.min_stock  != null ? String(r.min_stock)  : '',
-    notes:      r.notes       || '',
+    name:       p.name       || '',
+    brand:      p.brand      || '',
+    supplier:   p.supplier   || '',
+    partNumber: p.partNumber || '',
+    location:   p.location   || '',
+    buyPrice:   p.buyPrice  != null ? String(p.buyPrice)  : '',
+    sellPrice:  p.sellPrice != null ? String(p.sellPrice) : '',
+    stockQty:   p.stockQty  != null ? String(p.stockQty)  : '',
+    minStock:   p.minStock  != null ? String(p.minStock)  : '',
+    notes:      p.notes      || '',
     createdAt:  r.created_at,
   };
 }
 
 function toDb(userId, item) {
   return {
-    user_id:     userId,
-    name:        item.name,
-    brand:       item.brand       || null,
-    supplier:    item.supplier    || null,
-    part_number: item.partNumber  || null,
-    location:    item.location    || null,
-    buy_price:   item.buyPrice  !== '' ? parseFloat(item.buyPrice)  || null : null,
-    sell_price:  item.sellPrice !== '' ? parseFloat(item.sellPrice) || null : null,
-    stock_qty:   item.stockQty  !== '' ? parseInt(item.stockQty)   || 0    : 0,
-    min_stock:   item.minStock  !== '' ? parseInt(item.minStock)   || null : null,
-    notes:       item.notes       || null,
+    user_id: userId,
+    payload: {
+      name:       item.name,
+      brand:      item.brand      || null,
+      supplier:   item.supplier   || null,
+      partNumber: item.partNumber || null,
+      location:   item.location   || null,
+      buyPrice:   item.buyPrice  !== '' ? parseFloat(item.buyPrice)  || null : null,
+      sellPrice:  item.sellPrice !== '' ? parseFloat(item.sellPrice) || null : null,
+      stockQty:   item.stockQty  !== '' ? parseInt(item.stockQty)   || 0    : 0,
+      minStock:   item.minStock  !== '' ? parseInt(item.minStock)   || null : null,
+      notes:      item.notes      || null,
+    },
   };
 }
 
@@ -77,15 +80,16 @@ export async function adjustStock(userId, itemId, delta) {
   try {
     const { data, error } = await supabase
       .from('inventory_items')
-      .select('stock_qty')
+      .select('payload')
       .eq('id', itemId)
       .eq('user_id', userId)
       .single();
     if (error) throw error;
-    const newQty = Math.max(0, (Number(data?.stock_qty) || 0) + delta);
+    const p = data?.payload || {};
+    const newQty = Math.max(0, (Number(p.stockQty) || 0) + delta);
     await supabase
       .from('inventory_items')
-      .update({ stock_qty: newQty, updated_at: new Date().toISOString() })
+      .update({ payload: { ...p, stockQty: newQty }, updated_at: new Date().toISOString() })
       .eq('id', itemId)
       .eq('user_id', userId);
   } catch (e) { console.warn('adjustStock Supabase failed:', e); }
