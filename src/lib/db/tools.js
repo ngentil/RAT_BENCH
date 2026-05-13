@@ -3,43 +3,46 @@ import { supabase } from '../supabase';
 const lsKey = uid => `rat_tools_${uid}`;
 
 function fromDb(r) {
+  const p = r.payload || {};
   return {
     id:              r.id,
-    name:            r.name,
-    brand:           r.brand            || '',
-    model:           r.model            || '',
-    category:        r.category         || '',
-    condition:       r.condition        || 'Good',
-    purchaseDate:    r.purchase_date    || '',
-    purchasePrice:   r.purchase_price   || 0,
-    warrantyExpiry:  r.warranty_expiry  || '',
-    storageLocation: r.storage_location || '',
-    notes:           r.notes            || '',
-    loanedTo:        r.loaned_to        || null,
-    loanedAt:        r.loaned_at        || null,
-    serviceLog:      r.service_log      || [],
-    photos:          r.photos           || [],
+    name:            p.name            || '',
+    brand:           p.brand           || '',
+    model:           p.model           || '',
+    category:        p.category        || '',
+    condition:       p.condition       || 'Good',
+    purchaseDate:    p.purchaseDate    || '',
+    purchasePrice:   p.purchasePrice   || 0,
+    warrantyExpiry:  p.warrantyExpiry  || '',
+    storageLocation: p.storageLocation || '',
+    notes:           p.notes           || '',
+    loanedTo:        p.loanedTo        || null,
+    loanedAt:        p.loanedAt        || null,
+    serviceLog:      p.serviceLog      || [],
+    photos:          p.photos          || [],
     createdAt:       r.created_at,
   };
 }
 
 function toDb(userId, tool) {
   return {
-    user_id:          userId,
-    name:             tool.name,
-    brand:            tool.brand            || null,
-    model:            tool.model            || null,
-    category:         tool.category         || null,
-    condition:        tool.condition        || null,
-    purchase_date:    tool.purchaseDate     || null,
-    purchase_price:   tool.purchasePrice    || null,
-    warranty_expiry:  tool.warrantyExpiry   || null,
-    storage_location: tool.storageLocation  || null,
-    notes:            tool.notes            || null,
-    loaned_to:        tool.loanedTo         || null,
-    loaned_at:        tool.loanedAt         || null,
-    service_log:      tool.serviceLog       || [],
-    photos:           tool.photos           || [],
+    user_id: userId,
+    payload: {
+      name:            tool.name,
+      brand:           tool.brand            || null,
+      model:           tool.model            || null,
+      category:        tool.category         || null,
+      condition:       tool.condition        || null,
+      purchaseDate:    tool.purchaseDate     || null,
+      purchasePrice:   tool.purchasePrice    || null,
+      warrantyExpiry:  tool.warrantyExpiry   || null,
+      storageLocation: tool.storageLocation  || null,
+      notes:           tool.notes            || null,
+      loanedTo:        tool.loanedTo         || null,
+      loanedAt:        tool.loanedAt         || null,
+      serviceLog:      tool.serviceLog       || [],
+      photos:          tool.photos           || [],
+    },
   };
 }
 
