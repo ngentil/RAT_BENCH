@@ -152,8 +152,10 @@ function ItemForm({ initial, onSave, onCancel }) {
 
 export default function PartsTab({ machines, session, profile, company, onGoToBilling }) {
   const userId = session?.user?.id;
-  const [inv, setInv]       = useState(() => getInventory(userId));
+  const [inv, setInv]       = useState([]);
   const [editing, setEditing] = useState(null);
+
+  useEffect(() => { getInventory(userId).then(setInv); }, [userId]);
   const [filter, setFilter]   = useState('all');
   const [search, setSearch]   = useState('');
   const [lastScan, setLastScan] = useState(null);
@@ -161,7 +163,7 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
   const [adjustItem, setAdjustItem] = useState(null);
   const [adjustDelta, setAdjustDelta] = useState('');
 
-  const reload = () => setInv(getInventory(userId));
+  const reload = async () => setInv(await getInventory(userId));
 
   const handleScan = useCallback((sku) => {
     const match = inv.find(i => (i.partNumber || '').toLowerCase() === sku.toLowerCase());
@@ -178,22 +180,21 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
     return () => clearTimeout(t);
   }, [lastScan]);
 
-  const save = (form) => {
+  const save = async (form) => {
     const isNew = !form.id && !editing?.id;
     if (isNew && isFree && inv.length >= FREE_PARTS_LIMIT) return;
-    const updated = saveInventoryItem(userId, { ...form, id: editing?.id });
-    setInv(updated);
+    setInv(await saveInventoryItem(userId, { ...form, id: editing?.id }));
     setEditing(null);
   };
 
-  const del = (id) => {
+  const del = async (id) => {
     if (!confirm('Delete this part from inventory?')) return;
-    setInv(deleteInventoryItem(userId, id));
+    setInv(await deleteInventoryItem(userId, id));
   };
 
-  const doAdjust = (delta) => {
+  const doAdjust = async (delta) => {
     if (!adjustItem) return;
-    setInv(adjustStock(userId, adjustItem.id, delta));
+    setInv(await adjustStock(userId, adjustItem.id, delta));
     setAdjustItem(null);
     setAdjustDelta('');
   };
@@ -388,12 +389,12 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
                 </div>
                 <div style={{ display:'flex', gap:5 }}>
                   <button
-                    onClick={() => { setInv(adjustStock(userId, item.id, 1)); }}
+                    onClick={async () => { setInv(await adjustStock(userId, item.id, 1)); }}
                     style={{ ...btnG, ...sm, fontSize:10, padding:'2px 8px', color:GRN, border:'1px solid '+GRN+'44' }}
                     title="Add 1 to stock"
                   >+1</button>
                   <button
-                    onClick={() => { if (qty > 0) setInv(adjustStock(userId, item.id, -1)); }}
+                    onClick={async () => { if (qty > 0) setInv(await adjustStock(userId, item.id, -1)); }}
                     disabled={qty === 0}
                     style={{ ...btnG, ...sm, fontSize:10, padding:'2px 8px', color: qty>0 ? ORANGE : MUT, border:'1px solid '+(qty>0 ? ORANGE+'44' : BRD), opacity: qty===0 ? 0.4 : 1 }}
                     title="Remove 1 from stock"
@@ -449,11 +450,11 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
             <div style={mdlF}>
               <button onClick={() => setAdjustItem(null)} style={{ ...btnG, ...sm }}>Cancel</button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const newQty = parseInt(adjustDelta);
                   if (!isNaN(newQty) && newQty >= 0) {
                     const delta = newQty - (Number(adjustItem.stockQty) || 0);
-                    setInv(adjustStock(userId, adjustItem.id, delta));
+                    setInv(await adjustStock(userId, adjustItem.id, delta));
                   }
                   setAdjustItem(null);
                 }}
