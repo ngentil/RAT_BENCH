@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
+import { getNextInvoiceNumber } from '../../lib/db/invoices';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
 import { SL, Empty, SkullRating, Divider } from '../ui/shared';
@@ -81,17 +82,14 @@ function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function nextInvoiceNumber(userId) {
-  const key = `rat_inv_seq_${userId}`;
-  const n = (parseInt(localStorage.getItem(key) || '0') || 0) + 1;
-  localStorage.setItem(key, String(n));
-  return `INV-${new Date().getFullYear()}-${String(n).padStart(4, '0')}`;
-}
-
-function exportInvoice(machine, company, clients, docType = 'invoice') {
+async function exportInvoice(machine, company, clients, userId, docType = 'invoice') {
   const log   = machine.timeLog || [];
   const parts = machine.parts   || [];
   if (!log.length && !parts.length) return;
+
+  // Open window synchronously during user interaction to avoid popup blocker
+  const win = window.open('', '_blank');
+  if (!win) { alert('Please allow popups to export.'); return; }
 
   const client = machine.clientId ? (clients||[]).find(c => c.id === machine.clientId) : null;
 
@@ -113,7 +111,7 @@ function exportInvoice(machine, company, clients, docType = 'invoice') {
   const docLabel = isQuote ? 'QUOTE' : 'INVOICE';
   const docRef   = isQuote
     ? `QT-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase().slice(-5)}`
-    : nextInvoiceNumber(userId);
+    : await getNextInvoiceNumber(userId);
 
   const coAddress  = [co.address, co.city, co.state, co.postcode, co.country].filter(Boolean).join(', ');
   const coContact  = [co.abn ? `ABN ${co.abn}` : null, co.phone, co.email].filter(Boolean).join('  ·  ');
@@ -261,8 +259,6 @@ ${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to
 </body>
 </html>`;
 
-  const win = window.open('', '_blank');
-  if (!win) { alert('Please allow popups to export.'); return; }
   win.document.write(html);
   win.document.close();
 }
@@ -279,7 +275,7 @@ const BILL_STATUS = {
   invoiced: { label: "Invoiced", color: "#3d9e50" },
 };
 
-function TimeLogSection({ machine, company, clients, onUpdate }) {
+function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [editingNotes, setEditingNotes] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -335,8 +331,8 @@ function TimeLogSection({ machine, company, clients, onUpdate }) {
         >
           {log.length} session{log.length !== 1 ? "s" : ""} · {fmtDuration(totalSecs)} total
         </span>
-        <button onClick={() => exportInvoice(machine, company, clients, 'quote')} style={{ ...btnG, ...sm, fontSize: 8 }}>Quote</button>
-        <button onClick={() => exportInvoice(machine, company, clients, 'invoice')} style={{ ...btnA, ...sm, fontSize: 8 }}>Invoice</button>
+        <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote')} style={{ ...btnG, ...sm, fontSize: 8 }}>Quote</button>
+        <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice')} style={{ ...btnA, ...sm, fontSize: 8 }}>Invoice</button>
       </div>
       {expanded && (
         <div style={{ marginTop: 8 }}>
@@ -412,8 +408,10 @@ function TimeLogSection({ machine, company, clients, onUpdate }) {
 
 function PartsSection({ machine, onUpdate, userId }) {
   const [mode, setMode]     = useState(null); // null | "inv" | "standalone"
-  const [inv, setInv]       = useState(() => getInventory(userId));
+  const [inv, setInv]       = useState([]);
   const [search, setSearch] = useState("");
+
+  useEffect(() => { getInventory(userId).then(setInv); }, [userId]);
   const [selected, setSelected] = useState(null); // inventory item
   const [qty, setQty]       = useState("1");
   const [saForm, setSaForm] = useState({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
@@ -449,7 +447,7 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: [...parts, entry] };
     onUpdate(updated);
     await upsertMachine(updated);
-    setInv(adjustStock(userId, selected.id, -useQty));
+    setInv(await adjustStock(userId, selected.id, -useQty));
     setMode(null); setSelected(null); setQty("1"); setSearch("");
   };
 
@@ -460,7 +458,7 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: [...parts, entry] };
     onUpdate(updated);
     await upsertMachine(updated);
-    if (saMatchedInvId) setInv(adjustStock(userId, saMatchedInvId, -(parseInt(saForm.qty)||1)));
+    if (saMatchedInvId) setInv(await adjustStock(userId, saMatchedInvId, -(parseInt(saForm.qty)||1)));
     setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" }); setSaSuggestions([]); setSaMatchedInvId(null);
   };
 
@@ -484,7 +482,7 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: parts.filter((_,i) => i !== idx) };
     onUpdate(updated);
     await upsertMachine(updated);
-    if (p.inventoryId) setInv(adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+    if (p.inventoryId) setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
   };
 
   return (
@@ -1044,7 +1042,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
                   })()}
                   <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; updateM(u); await upsertMachine(u); }} />
                   {!timerLocked && <JobTimer machine={m} onUpdate={updateM} locked={false} onGoToBilling={onGoToBilling} />}
-                  {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} onUpdate={updateM} />}
+                  {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={updateM} />}
                   {!partsLocked && <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />}
                   {timerLocked && (
                     <div style={{ marginTop: 8, fontSize: 9, color: MUT, fontStyle: "italic" }}>
