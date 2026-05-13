@@ -1,13 +1,146 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
-import { updateCompany, createCompany, joinCompanyByCode, leaveCompany, deleteCompany } from '../../lib/db';
+import { updateCompany, createCompany, joinCompanyByCode, leaveCompany, deleteCompany, getCompanyMembers, getMachinePermissions, upsertMachinePermission, revokeMachinePermission } from '../../lib/db';
 import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
 import { effectiveTier } from '../../lib/gates';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
-function CompanySettings({profile,setProfile,company,setCompany,session}){
-  const isAdmin=company&&company.owner_id===session?.user?.id;
+function ProvisioningPanel({ machines, company, session }) {
+  const [members, setMembers] = useState([]);
+  const [expanded, setExpanded] = useState(null); // machine id
+  const [perms, setPerms] = useState({}); // { [machineId]: [{ user_id, can_edit }] }
+  const [saving, setSaving] = useState({}); // { [machineId-userId]: true }
+
+  const myMachines = machines.filter(m => m.userId === session?.user?.id && m.companyId === company?.id);
+
+  useEffect(() => {
+    if (!company?.id) return;
+    getCompanyMembers(company.id).then(setMembers);
+  }, [company?.id]);
+
+  const expand = async (machineId) => {
+    if (expanded === machineId) { setExpanded(null); return; }
+    setExpanded(machineId);
+    if (!perms[machineId]) {
+      const p = await getMachinePermissions(machineId);
+      setPerms(prev => ({ ...prev, [machineId]: p }));
+    }
+  };
+
+  const toggle = async (machineId, userId, currentPerm, canEdit) => {
+    const key = `${machineId}-${userId}`;
+    setSaving(prev => ({ ...prev, [key]: true }));
+    try {
+      if (currentPerm && !canEdit && currentPerm.can_edit === false) {
+        // already no-access — revoke
+        await revokeMachinePermission(machineId, userId);
+        setPerms(prev => ({ ...prev, [machineId]: (prev[machineId] || []).filter(p => p.user_id !== userId) }));
+      } else if (currentPerm) {
+        // update can_edit
+        await upsertMachinePermission(machineId, userId, company.id, canEdit);
+        setPerms(prev => ({ ...prev, [machineId]: (prev[machineId] || []).map(p => p.user_id === userId ? { ...p, can_edit: canEdit } : p) }));
+      } else {
+        // grant new access
+        await upsertMachinePermission(machineId, userId, company.id, canEdit);
+        setPerms(prev => ({ ...prev, [machineId]: [...(prev[machineId] || []), { machine_id: machineId, user_id: userId, can_edit: canEdit }] }));
+      }
+    } catch (e) { console.error("toggle perm:", e); }
+    setSaving(prev => ({ ...prev, [key]: false }));
+  };
+
+  const revoke = async (machineId, userId) => {
+    const key = `${machineId}-${userId}`;
+    setSaving(prev => ({ ...prev, [key]: true }));
+    try {
+      await revokeMachinePermission(machineId, userId);
+      setPerms(prev => ({ ...prev, [machineId]: (prev[machineId] || []).filter(p => p.user_id !== userId) }));
+    } catch (e) { console.error("revoke perm:", e); }
+    setSaving(prev => ({ ...prev, [key]: false }));
+  };
+
+  const lbl = { fontSize: 9, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 };
+
+  if (myMachines.length === 0) {
+    return (
+      <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>
+        No org machines to provision. Add machines and tag them to this organisation from the Tracker tab.
+      </div>
+    );
+  }
+
+  const otherMembers = members.filter(m => m.user_id !== session?.user?.id);
+
+  return (
+    <div>
+      {myMachines.map(machine => {
+        const machinePerms = perms[machine.id] || [];
+        const isOpen = expanded === machine.id;
+        return (
+          <div key={machine.id} style={{ marginBottom: 8, border: "1px solid " + BRD, borderRadius: 2, overflow: "hidden" }}>
+            <button onClick={() => expand(machine.id)} style={{ width: "100%", background: isOpen ? "#111" : "#0a0a0a", border: "none", cursor: "pointer", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "'IBM Plex Mono',monospace" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{machine.name}</span>
+                {machinePerms.length > 0 && <span style={{ fontSize: 7, color: MUT }}>{machinePerms.length} member{machinePerms.length !== 1 ? "s" : ""} provisioned</span>}
+              </div>
+              <span style={{ fontSize: 9, color: MUT }}>{isOpen ? "▲" : "▼"}</span>
+            </button>
+            {isOpen && (
+              <div style={{ padding: "10px 12px", background: "#0a0a0a", borderTop: "1px solid " + BRD }}>
+                {otherMembers.length === 0 && <div style={{ fontSize: 10, color: MUT }}>No other members in this organisation yet.</div>}
+                {otherMembers.map(member => {
+                  const perm = machinePerms.find(p => p.user_id === member.user_id);
+                  const key = `${machine.id}-${member.user_id}`;
+                  const isBusy = saving[key];
+                  const name = member.profile?.display_name || member.profile?.username || member.user_id.slice(0, 8);
+                  return (
+                    <div key={member.user_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #1a1a1a" }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: TXT }}>{name}</div>
+                        <div style={{ fontSize: 8, color: MUT, marginTop: 1 }}>{member.role}</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        {isBusy ? (
+                          <span style={{ fontSize: 9, color: MUT }}>…</span>
+                        ) : perm ? (
+                          <>
+                            <button
+                              onClick={() => toggle(machine.id, member.user_id, perm, !perm.can_edit)}
+                              style={{ fontSize: 8, fontWeight: 700, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: perm.can_edit ? "#1a2a1a" : "#1a1a2a", color: perm.can_edit ? GRN : ACC, border: `1px solid ${perm.can_edit ? GRN : ACC}55` }}
+                            >
+                              {perm.can_edit ? "Can Edit" : "View Only"}
+                            </button>
+                            <button onClick={() => revoke(machine.id, member.user_id)} style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: RED, border: `1px solid ${RED}55` }}>Revoke</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => toggle(machine.id, member.user_id, null, false)} style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: ACC, border: `1px solid ${ACC}55` }}>Grant View</button>
+                            <button onClick={() => toggle(machine.id, member.user_id, null, true)}  style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: GRN, border: `1px solid ${GRN}55` }}>Grant Edit</button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CompanySettings({profile,setProfile,company,setCompany,session,machines}){
+  const isOwner=company&&company.owner_id===session?.user?.id;
+  const isAdmin=isOwner; // kept for backward compat in JSX below
   const canMultiUser=["team","business"].includes(effectiveTier(profile,company));
+  const [myRole,setMyRole]=useState(null);
+  useEffect(()=>{
+    if(!company?.id||!session?.user?.id) return;
+    supabase.from("company_members").select("role").eq("company_id",company.id).eq("user_id",session.user.id).single()
+      .then(({data})=>setMyRole(data?.role||null));
+  },[company?.id,session?.user?.id]);
+  const canProvision=canMultiUser&&(isOwner||myRole==="admin");
   const [mode,setMode]=useState("view"); // view|create|join
   const [err,setErr]=useState("");
   const [saving,setSaving]=useState(false);
@@ -211,6 +344,15 @@ function CompanySettings({profile,setProfile,company,setCompany,session}){
           </div>
           <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Invite Code & Members</div>
           <div style={{height:60}}/>
+        </div>
+      )}
+
+      {/* Machine provisioning */}
+      {canProvision && (
+        <div style={{...sec}}>
+          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Machine Provisioning</div>
+          <div style={{fontSize:10,color:MUT,lineHeight:1.6,marginBottom:12}}>Grant org members access to your machines. Members with access can start timers and log time. Revoke at any time at your discretion.</div>
+          <ProvisioningPanel machines={machines||[]} company={company} session={session} />
         </div>
       )}
 

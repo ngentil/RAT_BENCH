@@ -630,8 +630,10 @@ function PartsSection({ machine, onUpdate, userId }) {
   );
 }
 
-function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
-  const t = machine.jobTimer || { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" };
+// Renders one active timer entry from machine.jobTimers
+function TimerEntry({ timer, onSave, onFinish, onRemove, currentUserId }) {
+  const t = timer;
+  const lockedByOther = t.status === "running" && t.startedBy?.userId && t.startedBy.userId !== currentUserId;
 
   const getElapsed = () => {
     if (t.status === "running" && t.startedAt) {
@@ -641,15 +643,6 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   };
 
   const [display, setDisplay] = useState(getElapsed);
-  const [hours, setHours] = useState("");
-  const [mins, setMins] = useState("");
-  const [jobLabel, setJobLabel] = useState(t.jobLabel || "");
-  const [customLabel, setCustomLabel] = useState("");
-  const [mode, setMode] = useState("countdown");
-
-  const jobOptions = getJobOptions(machine);
-  const isCustom = jobLabel === "__custom__";
-  const effectiveLabel = isCustom ? customLabel : jobLabel;
 
   useEffect(() => {
     const clamp = (e) => t.duration > 0 ? Math.min(e, t.duration) : e;
@@ -657,184 +650,67 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
     if (t.status !== "running") return;
     const iv = setInterval(() => {
       const e = getElapsed();
-      if (t.duration > 0 && e >= t.duration) {
-        setDisplay(t.duration);
-        clearInterval(iv);
-      } else {
-        setDisplay(e);
-      }
+      if (t.duration > 0 && e >= t.duration) { setDisplay(t.duration); clearInterval(iv); }
+      else setDisplay(e);
     }, 1000);
     return () => clearInterval(iv);
   }, [t.status, t.startedAt, t.elapsed, t.duration]);
 
-  const save = async (updates) => {
-    const updated = { ...machine, jobTimer: { ...t, ...updates } };
-    onUpdate(updated);
-    await upsertMachine(updated);
-  };
-
-  const handleStart = async () => {
-    if (t.status === "idle" && !t.duration) {
-      if (mode === "countup") {
-        await save({ duration: 0, elapsed: 0, startedAt: new Date().toISOString(), status: "running", jobLabel: effectiveLabel });
-      } else {
-        const dur = parseDuration(hours, mins);
-        if (!dur) return;
-        await save({ duration: dur, elapsed: 0, startedAt: new Date().toISOString(), status: "running", jobLabel: effectiveLabel });
-      }
-    } else {
-      await save({ startedAt: new Date().toISOString(), status: "running" });
-    }
-  };
-
-  const handlePause = async () => {
-    await save({ elapsed: getElapsed(), startedAt: null, status: "paused" });
-  };
-
-  const handleStop = async () => {
-    await save({ duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" });
-    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
-  };
-
+  const handlePause  = async () => { await onSave({ elapsed: getElapsed(), startedAt: null, status: "paused" }); };
+  const handleResume = async () => { await onSave({ startedAt: new Date().toISOString(), status: "running" }); };
+  const handleStop   = async () => { await onRemove(); };
   const handleFinish = async () => {
-    const elapsed = getElapsed();
-    const newEntry = {
-      id: crypto.randomUUID(),
-      jobLabel: t.jobLabel || "",
-      seconds: elapsed,
-      completedAt: new Date().toISOString(),
-    };
-    const updated = {
-      ...machine,
-      status: "Complete",
-      timeLog: [...(machine.timeLog || []), newEntry],
-      jobTimer: { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" },
-    };
-    onUpdate(updated);
-    await upsertMachine(updated);
-    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+    await onFinish({ id: crypto.randomUUID(), jobLabel: t.jobLabel || "", seconds: getElapsed(), completedAt: new Date().toISOString() });
   };
-
-  // Migrate legacy "done" state: allow logging the saved elapsed time
   const handleLogAndReset = async () => {
-    const newEntry = {
-      id: crypto.randomUUID(),
-      jobLabel: t.jobLabel || "",
-      seconds: t.elapsed || 0,
-      completedAt: new Date().toISOString(),
-    };
-    const updated = {
-      ...machine,
-      timeLog: [...(machine.timeLog || []), newEntry],
-      jobTimer: { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" },
-    };
-    onUpdate(updated);
-    await upsertMachine(updated);
+    await onFinish({ id: crypto.randomUUID(), jobLabel: t.jobLabel || "", seconds: t.elapsed || 0, completedAt: new Date().toISOString() });
   };
 
-  const remaining = t.duration > 0 ? Math.max(0, t.duration - display) : 0;
-  const pct = t.duration > 0 ? remaining / t.duration : 1;
-  const isExpired = t.duration > 0 && display >= t.duration && t.status === "running";
-  const glowColor = t.status === "done" ? GRN : pct > 0.5 ? GRN : pct > 0.2 ? ORANGE : RED;
-
-  if (locked) {
-    return (
-      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Job Timer</div>
-        <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6, marginBottom: 8 }}>🔒 Job timers require an Enthusiast subscription.</div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, fontSize: 8 }}>Upgrade</button>}
-      </div>
-    );
-  }
-
-  // Legacy "done" state — show log + reset prompt
+  // Legacy "done" state
   if (t.status === "done") {
     return (
-      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${GRN}44`, borderRadius: 2 }}>
+      <div style={{ marginTop: 8, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${GRN}44`, borderRadius: 2 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>Completed</div>
           <div style={{ fontSize: 11, color: GRN, fontWeight: 700, letterSpacing: "0.08em" }}>✓ JOB COMPLETE</div>
         </div>
         {t.jobLabel && <div style={{ fontSize: 9, color: ACC, marginBottom: 8 }}>{t.jobLabel}</div>}
-        <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={handleLogAndReset} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>Log time & reset</button>
-        </div>
+        <button onClick={handleLogAndReset} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>Log time & reset</button>
       </div>
     );
   }
 
-  if (t.status === "idle" && !t.duration) {
-    const tabStyle = (active) => ({
-      padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em",
-      textTransform: "uppercase", cursor: "pointer", border: "1px solid #333", fontFamily: "'IBM Plex Mono',monospace",
-      background: active ? ACC : "none", color: active ? "#000" : MUT,
-    });
+  // Read-only view — timer started by another member
+  if (lockedByOther) {
     return (
-      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>Job Timer</div>
-          <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>↓ Countdown</button>
-          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0 2px 2px 0" }}>↑ Count Up</button>
-        </div>
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
-          <select style={timerSel} value={jobLabel} onChange={e => setJobLabel(e.target.value)}>
-            <option value="">— select or leave blank —</option>
-            {jobOptions.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-            <option value="__custom__">✏️ Custom…</option>
-          </select>
-          {isCustom && (
-            <input
-              style={{ ...timerSel, marginTop: 4 }}
-              placeholder="Describe the job…"
-              value={customLabel}
-              onChange={e => setCustomLabel(e.target.value)}
-            />
-          )}
-        </div>
-        {mode === "countdown" ? (
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <input
-                type="number" min="0" max="99" placeholder="0"
-                value={hours} onChange={e => setHours(e.target.value)}
-                style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }}
-              />
-              <span style={{ fontSize: 9, color: MUT }}>h</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <input
-                type="number" min="0" max="59" placeholder="0"
-                value={mins} onChange={e => setMins(e.target.value)}
-                style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }}
-              />
-              <span style={{ fontSize: 9, color: MUT }}>m</span>
-            </div>
-            <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
+      <div style={{ marginTop: 8, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <div style={{ fontSize: 9, color: MUT, display: "flex", alignItems: "center", gap: 5 }}>
+            🔒 <span style={{ color: TXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>{t.jobLabel || "Job"}</span>
           </div>
-        ) : (
-          <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Start</button>
-        )}
+          <div style={{ fontSize: 22, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", textShadow: `0 0 10px ${GRN}88` }}>
+            {fmt(display)}
+          </div>
+        </div>
+        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em" }}>Running — {t.startedBy.name}</div>
       </div>
     );
   }
 
-  const isCountUp = t.duration === 0;
+  const remaining    = t.duration > 0 ? Math.max(0, t.duration - display) : 0;
+  const pct          = t.duration > 0 ? remaining / t.duration : 1;
+  const isExpired    = t.duration > 0 && display >= t.duration && t.status === "running";
+  const glowColor    = pct > 0.5 ? GRN : pct > 0.2 ? ORANGE : RED;
+  const isCountUp    = t.duration === 0;
   const displayColor = isCountUp ? GRN : (isExpired ? RED : glowColor);
 
   return (
-    <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${displayColor}44`, borderRadius: 2, boxShadow: `0 0 10px ${displayColor}22` }}>
+    <div style={{ marginTop: 8, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${displayColor}44`, borderRadius: 2, boxShadow: `0 0 10px ${displayColor}22` }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: t.jobLabel ? 2 : 8 }}>
         <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>
           {t.status === "paused" ? "Paused" : isCountUp ? "Elapsed" : isExpired ? "Time Up — Finish Job" : "Time Remaining"}
         </div>
-        <div style={{
-          fontSize: 26, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace",
-          color: displayColor,
-          textShadow: `0 0 10px ${displayColor}88`,
-        }}>
+        <div style={{ fontSize: 26, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace", color: displayColor, textShadow: `0 0 10px ${displayColor}88` }}>
           {isCountUp ? fmt(display) : fmt(remaining)}
         </div>
       </div>
@@ -845,21 +721,166 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
       )}
       {!isCountUp && t.duration > 0 && (
         <div style={{ height: 3, background: "#1a1a1a", borderRadius: 2, marginBottom: 10, overflow: "hidden" }}>
-          <div style={{
-            height: "100%", borderRadius: 2,
-            width: `${Math.max(0, Math.min(100, (remaining / t.duration) * 100))}%`,
-            background: glowColor,
-            boxShadow: `0 0 6px ${glowColor}`,
-            transition: "width 1s linear, background 0.5s",
-          }} />
+          <div style={{ height: "100%", borderRadius: 2, width: `${Math.max(0, Math.min(100, (remaining / t.duration) * 100))}%`, background: glowColor, boxShadow: `0 0 6px ${glowColor}`, transition: "width 1s linear, background 0.5s" }} />
         </div>
       )}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {t.status === "running" && <button onClick={handlePause} style={{ ...btnG, ...sm }}>⏸ Pause</button>}
-        {t.status === "paused"  && <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Resume</button>}
-        <button onClick={handleStop} style={{ ...btnG, ...sm }}>⏹ Reset</button>
+        {t.status === "running" && <button onClick={handlePause}  style={{ ...btnG, ...sm }}>⏸ Pause</button>}
+        {t.status === "paused"  && <button onClick={handleResume} style={{ ...btnA, ...sm }}>▶ Resume</button>}
+        <button onClick={handleStop}   style={{ ...btnG, ...sm }}>⏹ Reset</button>
         <button onClick={handleFinish} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>✓ Finish Job</button>
       </div>
+    </div>
+  );
+}
+
+// New-timer setup form (idle state / add another timer)
+function NewTimerSetup({ machine, onStart, currentUserId, currentUserName, hasActive }) {
+  const [expanded, setExpanded] = useState(!hasActive);
+  const [hours, setHours] = useState("");
+  const [mins, setMins] = useState("");
+  const [jobLabel, setJobLabel] = useState("");
+  const [customLabel, setCustomLabel] = useState("");
+  const [mode, setMode] = useState("countdown");
+
+  const jobOptions = getJobOptions(machine);
+  const isCustom = jobLabel === "__custom__";
+  const effectiveLabel = isCustom ? customLabel : jobLabel;
+
+  useEffect(() => { if (hasActive) setExpanded(false); }, [hasActive]);
+
+  const handleStart = async () => {
+    const dur = mode === "countdown" ? parseDuration(hours, mins) : 0;
+    if (mode === "countdown" && !dur) return;
+    await onStart({
+      id: crypto.randomUUID(),
+      jobLabel: effectiveLabel,
+      duration: dur,
+      elapsed: 0,
+      startedAt: new Date().toISOString(),
+      status: "running",
+      startedBy: { userId: currentUserId, name: currentUserName },
+    });
+    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+    if (hasActive) setExpanded(false);
+  };
+
+  if (hasActive && !expanded) {
+    return (
+      <button onClick={() => setExpanded(true)} style={{ ...btnG, ...sm, marginTop: 8, fontSize: 8, width: "100%", textAlign: "center" }}>+ Start another timer</button>
+    );
+  }
+
+  const tabStyle = (active) => ({
+    padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em",
+    textTransform: "uppercase", cursor: "pointer", border: "1px solid #333", fontFamily: "'IBM Plex Mono',monospace",
+    background: active ? ACC : "none", color: active ? "#000" : MUT,
+  });
+
+  return (
+    <div style={{ marginTop: hasActive ? 8 : 0, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>
+          {hasActive ? "New Timer" : "Job Timer"}
+        </div>
+        {hasActive && <button onClick={() => setExpanded(false)} style={{ background: "none", border: "none", cursor: "pointer", color: MUT, fontSize: 11, lineHeight: 1 }}>✕</button>}
+        <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>↓ Countdown</button>
+        <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0 2px 2px 0" }}>↑ Count Up</button>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
+        <select style={timerSel} value={jobLabel} onChange={e => setJobLabel(e.target.value)}>
+          <option value="">— select or leave blank —</option>
+          {jobOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value="__custom__">✏️ Custom…</option>
+        </select>
+        {isCustom && (
+          <input style={{ ...timerSel, marginTop: 4 }} placeholder="Describe the job…" value={customLabel} onChange={e => setCustomLabel(e.target.value)} />
+        )}
+      </div>
+      {mode === "countdown" ? (
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
+              style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }} />
+            <span style={{ fontSize: 9, color: MUT }}>h</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
+              style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }} />
+            <span style={{ fontSize: 9, color: MUT }}>m</span>
+          </div>
+          <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
+        </div>
+      ) : (
+        <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Start</button>
+      )}
+    </div>
+  );
+}
+
+function JobTimer({ machine, onUpdate, locked, onGoToBilling, currentUserId, currentUserName }) {
+  if (locked) {
+    return (
+      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
+        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Job Timer</div>
+        <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6, marginBottom: 8 }}>🔒 Job timers require an Enthusiast subscription.</div>
+        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, fontSize: 8 }}>Upgrade</button>}
+      </div>
+    );
+  }
+
+  const timers = machine.jobTimers || [];
+  const activeTimers = timers.filter(t => t.status !== "idle");
+
+  const saveTimer = async (timerId, updates) => {
+    const updated = { ...machine, jobTimers: timers.map(t => t.id === timerId ? { ...t, ...updates } : t) };
+    onUpdate(updated);
+    await upsertMachine(updated);
+  };
+
+  const finishTimer = async (timerId, logEntry) => {
+    const updated = {
+      ...machine,
+      status: "Complete",
+      jobTimers: timers.filter(t => t.id !== timerId),
+      timeLog: [...(machine.timeLog || []), logEntry],
+    };
+    onUpdate(updated);
+    await upsertMachine(updated);
+  };
+
+  const removeTimer = async (timerId) => {
+    const updated = { ...machine, jobTimers: timers.filter(t => t.id !== timerId) };
+    onUpdate(updated);
+    await upsertMachine(updated);
+  };
+
+  const addTimer = async (newTimer) => {
+    const updated = { ...machine, jobTimers: [...timers, newTimer] };
+    onUpdate(updated);
+    await upsertMachine(updated);
+  };
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      {activeTimers.map(t => (
+        <TimerEntry
+          key={t.id}
+          timer={t}
+          onSave={(updates) => saveTimer(t.id, updates)}
+          onFinish={(logEntry) => finishTimer(t.id, logEntry)}
+          onRemove={() => removeTimer(t.id)}
+          currentUserId={currentUserId}
+        />
+      ))}
+      <NewTimerSetup
+        machine={machine}
+        onStart={addTimer}
+        currentUserId={currentUserId}
+        currentUserName={currentUserName}
+        hasActive={activeTimers.length > 0}
+      />
     </div>
   );
 }
@@ -927,7 +948,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const rate         = company?.hourly_rate || 0;
   const labourRevAll = totalHrsAll * rate;
   const activeCount  = machines.filter(m => (m.status||"Active") === "Active").length;
-  const runningTimer = machines.find(m => m.jobTimer?.status === "running");
+  const runningTimer = machines.find(m => (m.jobTimers || []).some(t => t.status === "running"));
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
@@ -983,7 +1004,10 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
                   : <span style={{ fontSize: 17, width: 44, textAlign: "center", lineHeight: "44px", flexShrink: 0 }}>{mIcon(m.type)}</span>}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 2 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</div>
+                      {m.userId !== session?.user?.id && <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", background: "#0a1a2a", color: "#4a9eff", border: "1px solid #4a9eff55", borderRadius: 2, padding: "1px 5px" }}>Shared</span>}
+                    </div>
                     {(m.timeLog?.length > 0) && (() => {
                       const totalSecs = m.timeLog.reduce((s, e) => s + (e.seconds || 0), 0);
                       return (
@@ -1005,8 +1029,8 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
                     </div>;
                   })()}
                   <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; updateM(u); await upsertMachine(u); }} />
-                  {!timerLocked && <JobTimer machine={m} onUpdate={updateM} locked={false} onGoToBilling={onGoToBilling} />}
-                  {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} onUpdate={updateM} />}
+                  {!timerLocked && <JobTimer machine={m} onUpdate={updateM} locked={false} onGoToBilling={onGoToBilling} currentUserId={session?.user?.id} currentUserName={profile?.display_name || profile?.username || session?.user?.email} />}
+                  {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={updateM} />}
                   {!partsLocked && <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />}
                   {timerLocked && (
                     <div style={{ marginTop: 8, fontSize: 9, color: MUT, fontStyle: "italic" }}>

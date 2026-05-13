@@ -308,7 +308,7 @@ export function toDb(m) {
     carb_spec:            m.carbSpec || null,
     chipper_spec:         m.chipperSpec || null,
     stump_grinder_spec:   m.stumpGrinderSpec || null,
-    job_timer:            m.jobTimer || null,
+    job_timer:            m.jobTimers || [],
     time_log:             m.timeLog || [],
   };
 }
@@ -624,7 +624,16 @@ export function fromDb(r) {
     carbSpec:          r.carb_spec || null,
     chipperSpec:       r.chipper_spec || null,
     stumpGrinderSpec:  r.stump_grinder_spec || null,
-    jobTimer:          r.job_timer || null,
+    jobTimers:         (() => {
+      const jt = r.job_timer;
+      if (!jt) return [];
+      if (Array.isArray(jt)) return jt;
+      // Legacy single-object format — migrate if non-idle
+      if (jt.status && jt.status !== "idle") {
+        return [{ ...jt, id: jt.id || crypto.randomUUID(), startedBy: jt.startedBy || null }];
+      }
+      return [];
+    })(),
     timeLog:           r.time_log || [],
   };
 }
