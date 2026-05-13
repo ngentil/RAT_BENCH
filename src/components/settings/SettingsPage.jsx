@@ -19,7 +19,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
         ))}
       </div>
       {tab==="profile"&&<ProfileSettings profile={profile} setProfile={setProfile} session={session} onSignOut={onSignOut} isGuest={!!session?.user?.is_anonymous} machines={machines}/>}
-      {tab==="company"&&<CompanySettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany} session={session}/>}
+      {tab==="company"&&<CompanySettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany} session={session} machines={machines}/>}
       {tab==="billing"&&<BillingPage profile={profile} company={company} session={session}/>}
       {tab==="admin"&&isAdmin&&<AdminPanel/>}
     </div>

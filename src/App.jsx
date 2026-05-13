@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { BG, TXT, MUT, ACC, BRD, SURF, RED, GRN, btnG, sm } from './lib/styles';
 import { getMachines, getMyCompany, getClients, migrateLocalClients } from './lib/db';
+import { fromDb } from './lib/db/transforms';
 import { TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
@@ -168,6 +169,18 @@ function App(){
     return ()=>clearInterval(poll);
   },[billingBanner,session?.user?.id]);
 
+  // Realtime sync — machines updated by other org members propagate here
+  useEffect(()=>{
+    if(!company?.id) return;
+    const channel=supabase
+      .channel("machines-sync")
+      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"machines",filter:`company_id=eq.${company.id}`},(payload)=>{
+        setMachines(prev=>prev.map(m=>m.id===payload.new.id?fromDb(payload.new):m));
+      })
+      .subscribe();
+    return ()=>supabase.removeChannel(channel);
+  },[company?.id]);
+
   const signOut=async()=>{
     await supabase.auth.signOut();
     // onAuthStateChange will fire with null session and call loadForSession(null)
@@ -205,7 +218,7 @@ function App(){
   const tierGlow = TIER_GLOW[effectiveTier(profile, company)];
   const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = machines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
-  const timerRunning = machines.some(m => m.jobTimer?.status === "running");
+  const timerRunning = machines.some(m => (m.jobTimers || []).some(t => t.status === "running"));
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
