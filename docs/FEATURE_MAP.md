@@ -136,6 +136,10 @@ Stripe
 | Storage Settings tab (toggle + tier reference table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
 | Booking history per machine | ✅ | getBookingHistory(), machine_bookings | Enthusiast+ |
 | Custom daily rate override per visit | ✅ | machine_bookings.storage_fee_override | Enthusiast+ |
+| Storage revenue in Revenue Dashboard | ✅ | getClosedBookings(), getClosedBookingFee(), RevenueDashboard | Enthusiast+ |
+| Storage revenue card (realized, per period) | ✅ | filteredBookings, storageRev | Enthusiast+ |
+| Storage revenue per-machine breakdown | ✅ | storageByMachineId, byMachine | Enthusiast+ |
+| Storage included in Gross Profit total | ✅ | grossProfit = labour + parts + storage − cost | Enthusiast+ |
 
 ---
 
