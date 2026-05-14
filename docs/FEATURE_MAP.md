@@ -16,6 +16,7 @@ Supabase Auth
                           └── vehicles / equipment / tools tables
               └── machines table (200+ cols)
                     └── services table
+                    └── machine_bookings table
                     └── machine_permissions
               └── clients table
               └── inventory_items table
@@ -117,7 +118,28 @@ Stripe
 
 ---
 
-## 5. Job Board & Time Tracking
+## 5. Storage Policy
+
+| Feature | Status | Depends on | Tier |
+|---------|--------|-----------|------|
+| machine_bookings table + RLS | ✅ | machines, auth.users | Enthusiast+ |
+| Global enable toggle (`profiles.storage_policy_enabled`) | ✅ | profiles | Enthusiast+ |
+| Storage tiers (Bench/Small/Medium/Large/Extra Large/Custom) | ✅ | storageTiers.js constants | Enthusiast+ |
+| Book In — create a booking with tier + received date | ✅ | machine_bookings, MachineCard | Enthusiast+ |
+| Per-visit storage toggle (charge/pause billing) | ✅ | machine_bookings.storage_enabled | Enthusiast+ |
+| Mark Collected — close booking, stop accrual | ✅ | collectMachine(), MachineCard | Enthusiast+ |
+| Tile badge: free days remaining (green) | ✅ | getStorageStatus(), MachineCard | Enthusiast+ |
+| Tile badge: accrued fees (orange) | ✅ | getStorageStatus(), MachineCard | Enthusiast+ |
+| Tile badge: ⚠ FOR SALE escalation (red + glow) | ✅ | getStorageStatus(), MachineCard | Enthusiast+ |
+| ServiceReminders: escalation + billing alerts | ✅ | getAllActiveBookings(), getStorageStatus() | Enthusiast+ |
+| Invoice: storage fees line item | ✅ | getActiveBooking(), exportClientInvoice() | Enthusiast+ |
+| Storage Settings tab (toggle + tier reference table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
+| Booking history per machine | ✅ | getBookingHistory(), machine_bookings | Enthusiast+ |
+| Custom daily rate override per visit | ✅ | machine_bookings.storage_fee_override | Enthusiast+ |
+
+---
+
+## 6. Job Board & Time Tracking
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
@@ -137,7 +159,7 @@ Stripe
 
 ---
 
-## 6. Revenue Dashboard
+## 7. Revenue Dashboard
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
@@ -149,7 +171,7 @@ Stripe
 
 ---
 
-## 7. Parts & Inventory
+## 8. Parts & Inventory
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
@@ -165,7 +187,7 @@ Stripe
 
 ---
 
-## 8. Clients & Invoicing
+## 9. Clients & Invoicing
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
@@ -178,7 +200,7 @@ Stripe
 
 ---
 
-## 9. Asset Tracking (Vehicles / Equipment / Tools)
+## 10. Asset Tracking (Vehicles / Equipment / Tools)
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
@@ -199,7 +221,7 @@ Stripe
 
 ---
 
-## 10. Team & Organisation
+## 11. Team & Organisation
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
@@ -218,7 +240,7 @@ Stripe
 
 ---
 
-## 11. Wiki
+## 12. Wiki
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
@@ -234,7 +256,7 @@ Stripe
 
 ---
 
-## 12. Queued Features
+## 13. Queued Features
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
