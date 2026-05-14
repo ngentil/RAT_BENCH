@@ -48,9 +48,9 @@ function OverviewTab() {
           ['Grants Pending',  stats.grants_pending,  null,  '#e8870a'],
           ['Grants Redeemed', stats.grants_redeemed, null,  GRN],
         ].map(([label, value, sub, color]) => (
-          <div key={label} style={card}>
+          <div key={label} style={{ ...card, borderTop: '2px solid ' + color, boxShadow: '0 0 10px ' + color + '14' }}>
             <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>{value ?? '—'}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: '-0.02em' }}>{value ?? '—'}</div>
             {sub && <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>{sub}</div>}
           </div>
         ))}
@@ -68,8 +68,8 @@ function OverviewTab() {
               <span style={{ fontSize: 10, color: TIER_COLOR[t], textTransform: 'capitalize', fontWeight: 700 }}>{t}</span>
               <span style={{ fontSize: 10, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>{count}</span>
             </div>
-            <div style={{ height: 3, background: '#1a1a1a', borderRadius: 2 }}>
-              <div style={{ height: '100%', background: TIER_COLOR[t], borderRadius: 2, width: (pct * 100) + '%', transition: 'width 0.4s' }} />
+            <div style={{ height: 4, background: '#1a1a1a', borderRadius: 2 }}>
+              <div style={{ height: '100%', background: TIER_COLOR[t], borderRadius: 2, width: (pct * 100) + '%', transition: 'width 0.4s', boxShadow: '0 0 6px ' + TIER_COLOR[t] + '55' }} />
             </div>
           </div>
         );
@@ -478,10 +478,16 @@ export default function AdminPanel() {
   const [tab, setTab] = useState('Overview');
   return (
     <div>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
-        {ADMIN_TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{ ...btnG, ...sm, fontSize: 8,
-            ...(tab === t ? { color: ACC, border: '1px solid ' + ACC } : {}) }}>{t}</button>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid #252525' }}>
+        {ADMIN_TABS.map((t, i, arr) => (
+          <button key={t} onClick={() => setTab(t)} className="tab-btn" style={{
+            background: 'none', border: 'none',
+            borderBottom: tab === t ? '2px solid ' + ACC : '2px solid transparent',
+            borderRadius: 0, color: tab === t ? ACC : MUT,
+            fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '8px 12px', cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace",
+            marginBottom: -1,
+          }}>{t}</button>
         ))}
       </div>
       {tab === 'Overview'      && <OverviewTab />}
