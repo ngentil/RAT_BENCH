@@ -15,6 +15,8 @@ function fmtDate(s) {
   return new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+const TYPE_ICONS = { Excavator:'⛏️', Loader:'🚜', 'Skid Steer':'🚜', Forklift:'🔧', Compressor:'💨', Generator:'⚡', 'Pressure Washer':'💧', Trailer:'🚛', Tractor:'🚜', 'Mower (Commercial)':'🌿', Chainsaw:'🪚', Chipper:'🌳', 'Stump Grinder':'🌱', Other:'⚙️' };
+
 const EMPTY_FORM = {
   name: '', make: '', model: '', year: '', type: '',
   serialNo: '', hours: '', location: '', status: 'Active', notes: '', photos: [],
@@ -120,10 +122,11 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
   };
 
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid ' + (isShared ? ACC + '55' : '#252525'), borderRadius: 2, marginBottom: 6 }}>
+    <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: '3px solid ' + (isShared ? ACC + '55' : statusColor), borderRadius: 2, marginBottom: 6 }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', cursor: 'pointer' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14 }}>{TYPE_ICONS[item.type] || '⚙️'}</span>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{item.name}</span>
             {item.status && (
               <span style={{ fontSize: 7, color: statusColor, border: '1px solid ' + statusColor + '44', borderRadius: 2, padding: '1px 4px', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>
@@ -147,6 +150,9 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
             {item.location && <span style={{ marginLeft: 6, color: MUT }}>· {item.location}</span>}
           </div>
         </div>
+        {item.photos?.[0] && (
+          <img src={item.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }} />
+        )}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           {item.hours != null && (
             <div style={{ fontSize: 9, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>
@@ -183,7 +189,8 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
               Service Log {item.serviceLog?.length > 0 && `(${item.serviceLog.length})`}
             </div>
             {(item.serviceLog || []).map(e => (
-              <div key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid #1a1a1a' }}>
+              <div key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid #1a1a1a', borderLeft: '2px solid ' + ACC + '33', paddingLeft: 10, marginLeft: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: ACC + '66', flexShrink: 0, marginTop: 3 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 8, color: MUT }}>
                     {fmtDate(e.date)}
@@ -322,7 +329,22 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
         </button>
       </div>
 
-      {(equipment || []).length > 4 && (
+      {(equipment||[]).length > 0 && (
+        <div style={{display:'flex',gap:16,marginBottom:10,paddingBottom:10,borderBottom:'1px solid #1a1a1a'}}>
+          {[
+            {label:'Active', value:(equipment||[]).filter(e=>e.status==='Active').length, col:GRN},
+            {label:'In Service', value:(equipment||[]).filter(e=>e.status==='In Service').length, col:ACC},
+            {label:'Total hrs', value:Math.round((equipment||[]).reduce((s,e)=>s+(e.hours||0),0)).toLocaleString(), col:TXT},
+          ].filter(s=>Number(s.value)>0||s.label==='Total hrs').map(s=>(
+            <div key={s.label}>
+              <div style={{fontSize:7,color:MUT,letterSpacing:'0.1em',textTransform:'uppercase'}}>{s.label}</div>
+              <div style={{fontSize:12,fontWeight:700,color:s.col,fontFamily:"'IBM Plex Mono',monospace"}}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(equipment||[]).length > 0 && (
         <input style={{ ...inp, marginBottom: 8, fontSize: 11 }} placeholder="Search equipment…" value={search} onChange={e => setSearch(e.target.value)} />
       )}
 

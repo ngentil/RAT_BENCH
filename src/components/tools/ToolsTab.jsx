@@ -150,20 +150,26 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
     await onUpdate({ ...tool, serviceLog: (tool.serviceLog || []).filter(e => e.id !== id) });
   };
 
+  const borderAccent = isLoaned ? ACC : isShared ? ACC + "88" : condColor;
+
   return (
-    <div style={{ background: "#0d0d0d", border: "1px solid " + (isLoaned ? ACC + "55" : isShared ? ACC + "33" : "#252525"), borderRadius: 2, marginBottom: 6 }}>
+    <div style={{ background: "#0d0d0d", border: "1px solid " + (isLoaned ? ACC + "55" : isShared ? ACC + "33" : "#252525"), borderLeft: "3px solid " + borderAccent, borderRadius: 2, marginBottom: 6, overflow: "hidden" }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", cursor: "pointer" }}>
+        {tool.photos?.[0] && (
+          <img src={tool.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 2, flexShrink: 0, border: "1px solid #252525" }} />
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{tool.name}</span>
             {tool.condition && (
-              <span style={{ fontSize: 7, color: condColor, border: "1px solid " + condColor + "44", borderRadius: 2, padding: "1px 4px", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 7, color: condColor, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: condColor, display: "inline-block" }} />
                 {tool.condition}
               </span>
             )}
             {isLoaned && (
-              <span style={{ fontSize: 7, color: ACC, border: "1px solid " + ACC + "55", borderRadius: 2, padding: "1px 4px", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
-                LOANED → {tool.loanedTo}
+              <span style={{ fontSize: 7, color: ACC, background: ACC + "18", border: "1px solid " + ACC + "55", borderRadius: 2, padding: "1px 5px", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+                ↗ {tool.loanedTo}
               </span>
             )}
             {isShared && (
@@ -172,7 +178,7 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
               </span>
             )}
             {warrantyWarn && !warrantyExpired && (
-              <span style={{ fontSize: 7, color: ACC, letterSpacing: "0.06em" }}>⚠ warranty {warrantyDays}d left</span>
+              <span style={{ fontSize: 7, color: ACC, letterSpacing: "0.06em" }}>⚠ {warrantyDays}d warranty</span>
             )}
             {warrantyExpired && (
               <span style={{ fontSize: 7, color: RED, letterSpacing: "0.06em" }}>✕ warranty expired</span>
@@ -200,10 +206,10 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
       {open && (
         <div style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
           {tool.photos?.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, marginTop: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginTop: 10 }}>
               {tool.photos.map((p, i) => (
                 <img key={i} src={p} alt="" onClick={() => setPhotoIdx(i)}
-                  style={{ width: "100%", height: 72, objectFit: "cover", borderRadius: 2, border: "1px solid #252525", cursor: "pointer" }} />
+                  style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 2, border: "1px solid #252525", cursor: "pointer" }} />
               ))}
             </div>
           )}
@@ -264,7 +270,8 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
               Service / Repair Log {tool.serviceLog?.length > 0 && `(${tool.serviceLog.length})`}
             </div>
             {(tool.serviceLog || []).map(e => (
-              <div key={e.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 0", borderBottom: "1px solid #1a1a1a" }}>
+              <div key={e.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "6px 0 6px 10px", borderBottom: "1px solid #1a1a1a", borderLeft: "2px solid " + ACC + "33", marginLeft: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: ACC + "66", flexShrink: 0, marginTop: 3 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 8, color: MUT }}>{fmtDate(e.date)}</div>
                   <div style={{ fontSize: 10, color: TXT, marginTop: 2, lineHeight: 1.4 }}>{e.notes}</div>
@@ -387,13 +394,12 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <SL t="Tools" />
-          <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.06em" }}>{tools.length} tool{tools.length !== 1 ? "s" : ""}</span>
-          {isFree && <span style={{ fontSize: 8, color: atLimit ? RED : MUT, letterSpacing: "0.06em" }}>{tools.length}/{limit}</span>}
-          {totalValue > 0 && <span style={{ fontSize: 8, color: GRN, letterSpacing: "0.06em" }}>${Number(totalValue).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>}
-          {loanedCount > 0 && <span style={{ fontSize: 8, color: ACC, letterSpacing: "0.06em" }}>{loanedCount} loaned out</span>}
+          <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.06em" }}>
+            {tools.length}{isFree ? `/${limit}` : ""} tool{tools.length !== 1 ? "s" : ""}
+          </span>
         </div>
         <button
           onClick={() => setFormTool({})}
@@ -405,7 +411,21 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
         </button>
       </div>
 
-      {tools.length > 4 && (
+      {tools.length > 0 && (
+        <div style={{ display: "flex", gap: 20, marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid #1a1a1a" }}>
+          {[
+            { label: "Total value", value: fmtMoney(totalValue), col: GRN, show: totalValue > 0 },
+            { label: "Loaned out",  value: loanedCount,          col: ACC, show: loanedCount > 0 },
+          ].filter(s => s.show).map(s => (
+            <div key={s.label}>
+              <div style={{ fontSize: 7, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>{s.label}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: s.col, fontFamily: "'IBM Plex Mono',monospace" }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tools.length > 0 && (
         <input style={{ ...inp, marginBottom: 8, fontSize: 11 }} placeholder="Search tools…" value={search} onChange={e => setSearch(e.target.value)} />
       )}
 
