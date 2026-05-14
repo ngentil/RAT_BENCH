@@ -1,11 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
-import { effectiveTier } from '../../lib/gates';
+import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
-
-const ORANGE = '#e8870a';
 
 const TOOL_CATEGORIES = [
   "Power Tools", "Hand Tools", "Measuring & Diagnostic",
@@ -35,31 +33,27 @@ const EMPTY_FORM = {
 function ToolForm({ tool, onSave, onCancel }) {
   const isEdit = !!tool?.id;
   const [f, setF] = useState(tool ? {
-    name: tool.name || "",
-    brand: tool.brand || "",
-    model: tool.model || "",
-    category: tool.category || "",
-    condition: tool.condition || "Good",
-    purchaseDate: tool.purchaseDate || "",
-    purchasePrice: tool.purchasePrice ? String(tool.purchasePrice) : "",
-    warrantyExpiry: tool.warrantyExpiry || "",
+    name:            tool.name            || "",
+    brand:           tool.brand           || "",
+    model:           tool.model           || "",
+    category:        tool.category        || "",
+    condition:       tool.condition       || "Good",
+    purchaseDate:    tool.purchaseDate    || "",
+    purchasePrice:   tool.purchasePrice   ? String(tool.purchasePrice) : "",
+    warrantyExpiry:  tool.warrantyExpiry  || "",
     storageLocation: tool.storageLocation || "",
-    notes: tool.notes || "",
-    photos: tool.photos || [],
+    notes:           tool.notes           || "",
+    photos:          tool.photos          || [],
   } : EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
   const s = (k, v) => setF(prev => ({ ...prev, [k]: v }));
 
-  const save = () => {
+  const save = async () => {
     if (!f.name.trim()) return;
-    onSave({
-      ...tool,
-      ...f,
-      name: f.name.trim(),
-      brand: f.brand.trim(),
-      model: f.model.trim(),
-      purchasePrice: parseFloat(f.purchasePrice) || 0,
-    });
+    setSaving(true);
+    await onSave({ ...tool, ...f, name: f.name.trim(), brand: f.brand.trim(), model: f.model.trim(), purchasePrice: parseFloat(f.purchasePrice) || 0 });
+    setSaving(false);
   };
 
   return (
@@ -76,14 +70,8 @@ function ToolForm({ tool, onSave, onCancel }) {
             <FL t="Tool name *" />
             <input style={inp} value={f.name} onChange={e => s("name", e.target.value)} placeholder="e.g. Angle Grinder" autoFocus />
           </div>
-          <div>
-            <FL t="Brand" />
-            <input style={inp} value={f.brand} onChange={e => s("brand", e.target.value)} placeholder="e.g. Makita" />
-          </div>
-          <div>
-            <FL t="Model" />
-            <input style={inp} value={f.model} onChange={e => s("model", e.target.value)} placeholder="e.g. GA5030" />
-          </div>
+          <div><FL t="Brand" /><input style={inp} value={f.brand} onChange={e => s("brand", e.target.value)} placeholder="e.g. Makita" /></div>
+          <div><FL t="Model" /><input style={inp} value={f.model} onChange={e => s("model", e.target.value)} placeholder="e.g. GA5030" /></div>
           <div>
             <FL t="Category" />
             <select style={sel} value={f.category} onChange={e => s("category", e.target.value)}>
@@ -97,14 +85,8 @@ function ToolForm({ tool, onSave, onCancel }) {
               {TOOL_CONDITIONS.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
-          <div>
-            <FL t="Purchase date" />
-            <input style={inp} type="date" value={f.purchaseDate} onChange={e => s("purchaseDate", e.target.value)} />
-          </div>
-          <div>
-            <FL t="Purchase price ($)" />
-            <input style={inp} type="number" min="0" step="0.01" value={f.purchasePrice} onChange={e => s("purchasePrice", e.target.value)} placeholder="0.00" />
-          </div>
+          <div><FL t="Purchase date" /><input style={inp} type="date" value={f.purchaseDate} onChange={e => s("purchaseDate", e.target.value)} /></div>
+          <div><FL t="Purchase price ($)" /><input style={inp} type="number" min="0" step="0.01" value={f.purchasePrice} onChange={e => s("purchasePrice", e.target.value)} placeholder="0.00" /></div>
           <div style={{ gridColumn: "1/-1" }}>
             <FL t="Warranty expires" />
             <input style={{ ...inp, width: "calc(50% - 5px)", boxSizing: "border-box" }} type="date" value={f.warrantyExpiry} onChange={e => s("warrantyExpiry", e.target.value)} />
@@ -115,7 +97,7 @@ function ToolForm({ tool, onSave, onCancel }) {
           </div>
           <div style={{ gridColumn: "1/-1" }}>
             <FL t="Notes" />
-            <textarea style={{ ...txa, minHeight: 50 }} value={f.notes} onChange={e => s("notes", e.target.value)} placeholder="e.g. 115mm disc, 11,000 RPM, bought from bunnings" />
+            <textarea style={{ ...txa, minHeight: 50 }} value={f.notes} onChange={e => s("notes", e.target.value)} placeholder="e.g. 115mm disc, 11,000 RPM" />
           </div>
           <div style={{ gridColumn: "1/-1" }}>
             <PhotoAdder photos={f.photos} setPhotos={ps => s("photos", typeof ps === "function" ? ps(f.photos) : ps)} label="Photos" />
@@ -123,8 +105,8 @@ function ToolForm({ tool, onSave, onCancel }) {
         </div>
         <div style={mdlF}>
           <button style={btnG} onClick={onCancel}>Cancel</button>
-          <button style={{ ...btnA, opacity: f.name.trim() ? 1 : 0.4 }} disabled={!f.name.trim()} onClick={save}>
-            {isEdit ? "Save Changes" : "Add Tool"}
+          <button style={{ ...btnA, opacity: f.name.trim() && !saving ? 1 : 0.4 }} disabled={!f.name.trim() || saving} onClick={save}>
+            {saving ? "Saving…" : isEdit ? "Save Changes" : "Add Tool"}
           </button>
         </div>
       </div>
@@ -132,7 +114,7 @@ function ToolForm({ tool, onSave, onCancel }) {
   );
 }
 
-function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
+function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
   const [open, setOpen] = useState(false);
   const [loanForm, setLoanForm] = useState(false);
   const [loanName, setLoanName] = useState("");
@@ -146,35 +128,30 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
   const warrantyExpired = warrantyDays !== null && warrantyDays < 0;
   const warrantyWarn = warrantyDays !== null && warrantyDays >= 0 && warrantyDays <= 30;
 
-  const markLoaned = () => {
+  const markLoaned = async () => {
     if (!loanName.trim()) return;
-    onUpdate({ ...tool, loanedTo: loanName.trim(), loanedAt: new Date().toISOString() });
+    await onUpdate({ ...tool, loanedTo: loanName.trim(), loanedAt: new Date().toISOString() });
     setLoanForm(false);
     setLoanName("");
   };
 
-  const markReturned = () => onUpdate({ ...tool, loanedTo: null, loanedAt: null });
+  const markReturned = async () => onUpdate({ ...tool, loanedTo: null, loanedAt: null });
 
-  const addServiceEntry = () => {
+  const addServiceEntry = async () => {
     if (!svcForm.notes.trim()) return;
-    const entry = {
-      id: crypto.randomUUID(),
-      date: svcForm.date,
-      notes: svcForm.notes.trim(),
-      cost: parseFloat(svcForm.cost) || 0,
-    };
-    onUpdate({ ...tool, serviceLog: [...(tool.serviceLog || []), entry] });
+    const entry = { id: crypto.randomUUID(), date: svcForm.date, notes: svcForm.notes.trim(), cost: parseFloat(svcForm.cost) || 0 };
+    await onUpdate({ ...tool, serviceLog: [...(tool.serviceLog || []), entry] });
     setAddSvc(false);
     setSvcForm({ date: new Date().toISOString().slice(0, 10), notes: "", cost: "" });
   };
 
-  const removeSvcEntry = id => {
+  const removeSvcEntry = async (id) => {
     if (!confirm("Remove this entry?")) return;
-    onUpdate({ ...tool, serviceLog: (tool.serviceLog || []).filter(e => e.id !== id) });
+    await onUpdate({ ...tool, serviceLog: (tool.serviceLog || []).filter(e => e.id !== id) });
   };
 
   return (
-    <div style={{ background: "#0d0d0d", border: "1px solid " + (isLoaned ? ORANGE + "55" : "#252525"), borderRadius: 2, marginBottom: 6 }}>
+    <div style={{ background: "#0d0d0d", border: "1px solid " + (isLoaned ? ACC + "55" : isShared ? ACC + "33" : "#252525"), borderRadius: 2, marginBottom: 6 }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", cursor: "pointer" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
@@ -185,12 +162,17 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
               </span>
             )}
             {isLoaned && (
-              <span style={{ fontSize: 7, color: ORANGE, border: "1px solid " + ORANGE + "55", borderRadius: 2, padding: "1px 4px", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+              <span style={{ fontSize: 7, color: ACC, border: "1px solid " + ACC + "55", borderRadius: 2, padding: "1px 4px", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
                 LOANED → {tool.loanedTo}
               </span>
             )}
+            {isShared && (
+              <span style={{ fontSize: 7, color: ACC, border: "1px solid " + ACC + "55", borderRadius: 2, padding: "1px 4px", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+                Shared
+              </span>
+            )}
             {warrantyWarn && !warrantyExpired && (
-              <span style={{ fontSize: 7, color: ORANGE, letterSpacing: "0.06em" }}>⚠ warranty {warrantyDays}d left</span>
+              <span style={{ fontSize: 7, color: ACC, letterSpacing: "0.06em" }}>⚠ warranty {warrantyDays}d left</span>
             )}
             {warrantyExpired && (
               <span style={{ fontSize: 7, color: RED, letterSpacing: "0.06em" }}>✕ warranty expired</span>
@@ -236,10 +218,10 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
             {tool.warrantyExpiry && (
               <div>
                 <div style={{ fontSize: 7, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>Warranty</div>
-                <div style={{ fontSize: 10, color: warrantyExpired ? RED : warrantyWarn ? ORANGE : TXT }}>
+                <div style={{ fontSize: 10, color: warrantyExpired ? RED : warrantyWarn ? ACC : TXT }}>
                   {fmtDate(tool.warrantyExpiry)}
                   {warrantyDays !== null && !warrantyExpired && (
-                    <span style={{ marginLeft: 5, fontSize: 8, color: warrantyWarn ? ORANGE : MUT }}>({warrantyDays}d left)</span>
+                    <span style={{ marginLeft: 5, fontSize: 8, color: warrantyWarn ? ACC : MUT }}>({warrantyDays}d left)</span>
                   )}
                 </div>
               </div>
@@ -253,33 +235,28 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
           )}
 
           {/* Loaned out */}
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 7, color: ACC, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Loaned Out</div>
-            {isLoaned ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 10, color: ORANGE }}>
-                  Loaned to <b>{tool.loanedTo}</b>
-                  {tool.loanedAt && <span style={{ color: MUT, fontSize: 8, marginLeft: 6 }}>since {fmtDate(tool.loanedAt)}</span>}
-                </span>
-                <button onClick={markReturned} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>Mark Returned</button>
-              </div>
-            ) : loanForm ? (
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <input
-                  style={{ ...inp, flex: 1 }}
-                  placeholder="Who's borrowing it?"
-                  value={loanName}
-                  onChange={e => setLoanName(e.target.value)}
-                  autoFocus
-                  onKeyDown={e => e.key === "Enter" && markLoaned()}
-                />
-                <button onClick={markLoaned} style={{ ...btnA, ...sm }}>Save</button>
-                <button onClick={() => { setLoanForm(false); setLoanName(""); }} style={{ ...btnG, ...sm }}>✕</button>
-              </div>
-            ) : (
-              <button onClick={() => setLoanForm(true)} style={{ ...btnG, ...sm }}>Mark as Loaned</button>
-            )}
-          </div>
+          {!isShared && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 7, color: ACC, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Loaned Out</div>
+              {isLoaned ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 10, color: ACC }}>
+                    Loaned to <b>{tool.loanedTo}</b>
+                    {tool.loanedAt && <span style={{ color: MUT, fontSize: 8, marginLeft: 6 }}>since {fmtDate(tool.loanedAt)}</span>}
+                  </span>
+                  <button onClick={markReturned} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>Mark Returned</button>
+                </div>
+              ) : loanForm ? (
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input style={{ ...inp, flex: 1 }} placeholder="Who's borrowing it?" value={loanName} onChange={e => setLoanName(e.target.value)} autoFocus onKeyDown={e => e.key === "Enter" && markLoaned()} />
+                  <button onClick={markLoaned} style={{ ...btnA, ...sm }}>Save</button>
+                  <button onClick={() => { setLoanForm(false); setLoanName(""); }} style={{ ...btnG, ...sm }}>✕</button>
+                </div>
+              ) : (
+                <button onClick={() => setLoanForm(true)} style={{ ...btnG, ...sm }}>Mark as Loaned</button>
+              )}
+            </div>
+          )}
 
           {/* Service log */}
           <div style={{ marginTop: 12 }}>
@@ -293,24 +270,15 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
                   <div style={{ fontSize: 10, color: TXT, marginTop: 2, lineHeight: 1.4 }}>{e.notes}</div>
                   {e.cost > 0 && <div style={{ fontSize: 8, color: GRN, marginTop: 2 }}>{fmtMoney(e.cost)}</div>}
                 </div>
-                <button onClick={() => removeSvcEntry(e.id)} style={{ background: "none", border: "none", color: MUT, cursor: "pointer", fontSize: 11, padding: 0, lineHeight: 1 }}>✕</button>
+                {!isShared && <button onClick={() => removeSvcEntry(e.id)} style={{ background: "none", border: "none", color: MUT, cursor: "pointer", fontSize: 11, padding: 0, lineHeight: 1 }}>✕</button>}
               </div>
             ))}
-            {addSvc ? (
+            {!isShared && (addSvc ? (
               <div style={{ background: "#0a0a0a", border: "1px solid " + ACC + "44", borderRadius: 2, padding: 10, marginTop: 6 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
-                  <div>
-                    <FL t="Date" />
-                    <input style={inp} type="date" value={svcForm.date} onChange={e => setSvcForm(f => ({ ...f, date: e.target.value }))} />
-                  </div>
-                  <div>
-                    <FL t="Cost ($)" />
-                    <input style={inp} type="number" min="0" step="0.01" value={svcForm.cost} onChange={e => setSvcForm(f => ({ ...f, cost: e.target.value }))} placeholder="0.00" />
-                  </div>
-                  <div style={{ gridColumn: "1/-1" }}>
-                    <FL t="Notes *" />
-                    <textarea style={{ ...txa, minHeight: 40 }} value={svcForm.notes} onChange={e => setSvcForm(f => ({ ...f, notes: e.target.value }))} placeholder="e.g. Replaced carbon brushes" autoFocus />
-                  </div>
+                  <div><FL t="Date" /><input style={inp} type="date" value={svcForm.date} onChange={e => setSvcForm(f => ({ ...f, date: e.target.value }))} /></div>
+                  <div><FL t="Cost ($)" /><input style={inp} type="number" min="0" step="0.01" value={svcForm.cost} onChange={e => setSvcForm(f => ({ ...f, cost: e.target.value }))} placeholder="0.00" /></div>
+                  <div style={{ gridColumn: "1/-1" }}><FL t="Notes *" /><textarea style={{ ...txa, minHeight: 40 }} value={svcForm.notes} onChange={e => setSvcForm(f => ({ ...f, notes: e.target.value }))} placeholder="e.g. Replaced carbon brushes" autoFocus /></div>
                 </div>
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                   <button onClick={() => setAddSvc(false)} style={{ ...btnG, ...sm }}>Cancel</button>
@@ -319,13 +287,15 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
               </div>
             ) : (
               <button onClick={() => setAddSvc(true)} style={{ ...btnG, width: "100%", marginTop: 6, fontSize: 9 }}>+ Log Service / Repair</button>
-            )}
+            ))}
           </div>
 
-          <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-            <button onClick={onEdit} style={{ ...btnG, ...sm }}>Edit</button>
-            <button onClick={onDelete} style={{ ...btnD, ...sm }}>Delete</button>
-          </div>
+          {!isShared && (
+            <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+              <button onClick={onEdit} style={{ ...btnG, ...sm }}>Edit</button>
+              <button onClick={onDelete} style={{ ...btnD, ...sm }}>Delete</button>
+            </div>
+          )}
         </div>
       )}
 
@@ -342,15 +312,24 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate }) {
 
 export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const userId = session?.user?.id;
-  const [tools, setTools] = useState(() => getTools(userId));
+  const [tools, setTools] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [formTool, setFormTool] = useState(null);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState(null);
   const [showLoaned, setShowLoaned] = useState(false);
 
-  const isFree = effectiveTier(profile, company) === "free";
+  const isFree  = effectiveTier(profile, company) === "free";
+  const limit   = assetLimit('tool', profile, company);
+  const atLimit = atAssetLimit('tool', tools.length, profile, company);
 
-  const totalValue = useMemo(() => tools.reduce((s, t) => s + (t.purchasePrice || 0), 0), [tools]);
+  useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
+    getTools().then(ts => { setTools(ts); setLoading(false); }).catch(() => setLoading(false));
+  }, [userId]);
+
+  const totalValue  = useMemo(() => tools.reduce((s, t) => s + (t.purchasePrice || 0), 0), [tools]);
   const loanedCount = useMemo(() => tools.filter(t => t.loanedTo).length, [tools]);
 
   const activeCats = useMemo(() => {
@@ -374,41 +353,56 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
     return r;
   }, [tools, search, catFilter, showLoaned]);
 
-  if (isFree) {
-    return (
-      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>🔧</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Tool Inventory</div>
-        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Track your personal tool collection — brand, condition, warranty, storage location, service history, and who you've loaned tools to. Enthusiast and above.
-        </div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
-      </div>
-    );
-  }
-
-  const save = (tool) => {
-    setTools(saveToolItem(userId, tool));
+  const save = async (tool) => {
+    const saved = await saveToolItem(tool);
+    setTools(prev => {
+      const idx = prev.findIndex(t => t.id === saved.id);
+      return idx >= 0 ? prev.map(t => t.id === saved.id ? saved : t) : [saved, ...prev];
+    });
     setFormTool(null);
   };
 
-  const update = (tool) => setTools(saveToolItem(userId, tool));
+  const update = async (tool) => {
+    const saved = await saveToolItem(tool);
+    setTools(prev => prev.map(t => t.id === saved.id ? saved : t));
+  };
 
-  const remove = (toolId) => {
+  const remove = async (toolId) => {
     if (!confirm("Delete this tool?")) return;
-    setTools(deleteToolItem(userId, toolId));
+    await deleteToolItem(toolId);
+    setTools(prev => prev.filter(t => t.id !== toolId));
   };
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
+      {isFree && (
+        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 3 }}>Free Plan</div>
+            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>
+              {limit} tool limit · upgrade for unlimited tools, vehicles, equipment &amp; more.
+            </div>
+          </div>
+          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade →</button>}
+        </div>
+      )}
+
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <SL t="Tools" />
           <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.06em" }}>{tools.length} tool{tools.length !== 1 ? "s" : ""}</span>
-          {totalValue > 0 && <span style={{ fontSize: 8, color: GRN, letterSpacing: "0.06em" }}>{fmtMoney(totalValue)}</span>}
-          {loanedCount > 0 && <span style={{ fontSize: 8, color: ORANGE, letterSpacing: "0.06em" }}>{loanedCount} loaned out</span>}
+          {isFree && <span style={{ fontSize: 8, color: atLimit ? RED : MUT, letterSpacing: "0.06em" }}>{tools.length}/{limit}</span>}
+          {totalValue > 0 && <span style={{ fontSize: 8, color: GRN, letterSpacing: "0.06em" }}>${Number(totalValue).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>}
+          {loanedCount > 0 && <span style={{ fontSize: 8, color: ACC, letterSpacing: "0.06em" }}>{loanedCount} loaned out</span>}
         </div>
-        <button onClick={() => setFormTool({})} style={{ ...btnA, ...sm }}>+ Add Tool</button>
+        <button
+          onClick={() => setFormTool({})}
+          disabled={atLimit}
+          style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
+          title={atLimit ? `Upgrade to add more than ${limit} tools` : undefined}
+        >
+          + Add Tool
+        </button>
       </div>
 
       {tools.length > 4 && (
@@ -425,17 +419,19 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
           ))}
           {loanedCount > 0 && (
             <button onClick={() => setShowLoaned(x => !x)}
-              style={{ fontSize: 8, letterSpacing: "0.06em", fontWeight: 700, textTransform: "uppercase", padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", border: "1px solid " + ORANGE + "55", background: showLoaned ? ORANGE + "22" : "transparent", color: showLoaned ? ORANGE : MUT }}>
+              style={{ fontSize: 8, letterSpacing: "0.06em", fontWeight: 700, textTransform: "uppercase", padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", border: "1px solid " + ACC + "55", background: showLoaned ? ACC + "22" : "transparent", color: showLoaned ? ACC : MUT }}>
               Loaned Out ({loanedCount})
             </button>
           )}
         </div>
       )}
 
-      {tools.length === 0 && (
+      {loading && <div style={{ fontSize: 10, color: MUT, padding: "24px 0", textAlign: "center" }}>Loading…</div>}
+
+      {!loading && tools.length === 0 && (
         <Empty icon="🔧" t="No tools yet" sub="Add your first tool — power tools, hand tools, specialty gear, anything in your workshop." />
       )}
-      {tools.length > 0 && filtered.length === 0 && (
+      {!loading && tools.length > 0 && filtered.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>No tools match your filter.</div>
       )}
 
@@ -443,6 +439,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
         <ToolCard
           key={tool.id}
           tool={tool}
+          isShared={tool.userId !== userId}
           onEdit={() => setFormTool(tool)}
           onDelete={() => remove(tool.id)}
           onUpdate={update}

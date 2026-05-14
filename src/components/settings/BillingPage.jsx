@@ -40,7 +40,7 @@ const PLANS = [
     label: "Free",
     price: "$0",
     period: "",
-    features: ["Up to 30 machines","Wiki access","Job tracker","Community support"],
+    features: ["Up to 30 machines","Up to 5 tools / vehicles / equipment","Wiki access","Job tracker","Community support"],
     personal: true,
   },
   {
@@ -50,7 +50,7 @@ const PLANS = [
     priceYearly: "$12",
     period: "/mo",
     periodYearly: "/yr",
-    features: ["Unlimited machines","Everything in Free","Early access to new features"],
+    features: ["Unlimited machines","Unlimited tools, vehicles & equipment","Everything in Free","Early access to new features"],
     personal: true,
     highlight: true,
   },
@@ -59,7 +59,7 @@ const PLANS = [
     label: "Team",
     price: "$29",
     period: "/mo",
-    features: ["Unlimited machines","Organisation / multi-user","Access control (ACL)","Shared machine library","Everything in Enthusiast"],
+    features: ["Unlimited machines","Organisation / multi-user","Access control (ACL)","Provision assets to team members","Shared machine library","Everything in Enthusiast"],
     personal: false,
   },
   {

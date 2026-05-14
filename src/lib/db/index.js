@@ -3,3 +3,6 @@ export * from './machines';
 export * from './services';
 export * from './users';
 export * from './clients';
+export * from './vehicles';
+export * from './equipment';
+export * from './tools';

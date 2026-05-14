@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { BG, TXT, MUT, ACC, BRD, SURF, RED, GRN, btnG, sm } from './lib/styles';
 import { getMachines, getMyCompany, getClients, migrateLocalClients } from './lib/db';
+import { getVehicles } from './lib/db/vehicles';
+import { getEquipment } from './lib/db/equipment';
+import { getTools } from './lib/db/tools';
 import { fromDb } from './lib/db/transforms';
 import { TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
@@ -26,10 +29,15 @@ import RevenueDashboard from './components/tracker/RevenueDashboard';
 import CustomersTab from './components/customers/CustomersTab';
 import PartsTab from './components/tracker/PartsTab';
 import ToolsTab from './components/tools/ToolsTab';
+import VehiclesTab from './components/vehicles/VehiclesTab';
+import EquipmentTab from './components/equipment/EquipmentTab';
 function App(){
   const [tab,setTab]=useState(()=>localStorage.getItem("rat_tab")||"tracker");
   const [machines,setMachines]=useState([]);
   const [clients,setClients]=useState([]);
+  const [vehicles,setVehicles]=useState([]);
+  const [equipment,setEquipment]=useState([]);
+  const [tools,setTools]=useState([]);
   const [initializing,setInitializing]=useState(true);
   const [error,setError]=useState(null);
   const initializedRef=useRef(false);
@@ -61,6 +69,7 @@ function App(){
     const first = !initializedRef.current;
     if(!session){
       setSession(null);setProfile(null);setMachines([]);setCompany(null);setClients([]);
+      setVehicles([]);setEquipment([]);setTools([]);
       setAuthChecked(true);setProfileChecked(true);setInitializing(false);
       initializedRef.current=true;
       return;
@@ -100,6 +109,18 @@ function App(){
       const cs = await getClients();
       setClients(Array.isArray(cs)?cs:[]);
     } catch(e){ console.error("Could not load clients:", e); }
+    try {
+      const vs = await getVehicles();
+      setVehicles(Array.isArray(vs)?vs:[]);
+    } catch(e){ console.error("Could not load vehicles:", e); }
+    try {
+      const eq = await getEquipment();
+      setEquipment(Array.isArray(eq)?eq:[]);
+    } catch(e){ console.error("Could not load equipment:", e); }
+    try {
+      const ts = await getTools();
+      setTools(Array.isArray(ts)?ts:[]);
+    } catch(e){ console.error("Could not load tools:", e); }
     try {
       const userTier=profileData?.tier||"free";
       const{data:anns}=await supabase.from("announcements").select("*")
@@ -294,8 +315,10 @@ function App(){
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="vehicles"?"contents":"none"}}><VehiclesTab vehicles={vehicles} setVehicles={setVehicles} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="users"?"contents":"none"}}><UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines}/></div>
+      <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/></div>
     </div>
   );
 }

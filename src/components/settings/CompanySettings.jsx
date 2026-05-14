@@ -2,85 +2,86 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 import { updateCompany, createCompany, joinCompanyByCode, leaveCompany, deleteCompany, getCompanyMembers, getMachinePermissions, upsertMachinePermission, revokeMachinePermission } from '../../lib/db';
+import { getVehiclePermissions, upsertVehiclePermission, revokeVehiclePermission } from '../../lib/db/vehicles';
+import { getEquipmentPermissions, upsertEquipmentPermission, revokeEquipmentPermission } from '../../lib/db/equipment';
+import { getToolPermissions, upsertToolPermission, revokeToolPermission } from '../../lib/db/tools';
 import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
 import { effectiveTier } from '../../lib/gates';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
-function ProvisioningPanel({ machines, company, session }) {
+// Generic provisioning panel — works for machines, vehicles, equipment, tools.
+// getFn   : async (assetId) => [{ user_id, can_edit, ... }]
+// upsertFn: async (assetId, userId, companyId, canEdit)
+// revokeFn: async (assetId, userId)
+function AssetProvisioningPanel({ assets, emptyMsg, company, session, getFn, upsertFn, revokeFn }) {
   const [members, setMembers] = useState([]);
-  const [expanded, setExpanded] = useState(null); // machine id
-  const [perms, setPerms] = useState({}); // { [machineId]: [{ user_id, can_edit }] }
-  const [saving, setSaving] = useState({}); // { [machineId-userId]: true }
-
-  const myMachines = machines.filter(m => m.userId === session?.user?.id && m.companyId === company?.id);
+  const [expanded, setExpanded] = useState(null);
+  const [perms, setPerms] = useState({});
+  const [saving, setSaving] = useState({});
 
   useEffect(() => {
     if (!company?.id) return;
     getCompanyMembers(company.id).then(setMembers);
   }, [company?.id]);
 
-  const expand = async (machineId) => {
-    if (expanded === machineId) { setExpanded(null); return; }
-    setExpanded(machineId);
-    if (!perms[machineId]) {
-      const p = await getMachinePermissions(machineId);
-      setPerms(prev => ({ ...prev, [machineId]: p }));
+  const expand = async (assetId) => {
+    if (expanded === assetId) { setExpanded(null); return; }
+    setExpanded(assetId);
+    if (!perms[assetId]) {
+      const p = await getFn(assetId);
+      setPerms(prev => ({ ...prev, [assetId]: p }));
     }
   };
 
-  const toggle = async (machineId, userId, currentPerm, canEdit) => {
-    const key = `${machineId}-${userId}`;
+  const toggle = async (assetId, userId, currentPerm, canEdit) => {
+    const key = `${assetId}-${userId}`;
     setSaving(prev => ({ ...prev, [key]: true }));
     try {
       if (currentPerm && !canEdit && currentPerm.can_edit === false) {
-        // already no-access — revoke
-        await revokeMachinePermission(machineId, userId);
-        setPerms(prev => ({ ...prev, [machineId]: (prev[machineId] || []).filter(p => p.user_id !== userId) }));
+        await revokeFn(assetId, userId);
+        setPerms(prev => ({ ...prev, [assetId]: (prev[assetId] || []).filter(p => p.user_id !== userId) }));
       } else if (currentPerm) {
-        // update can_edit
-        await upsertMachinePermission(machineId, userId, company.id, canEdit);
-        setPerms(prev => ({ ...prev, [machineId]: (prev[machineId] || []).map(p => p.user_id === userId ? { ...p, can_edit: canEdit } : p) }));
+        await upsertFn(assetId, userId, company.id, canEdit);
+        setPerms(prev => ({ ...prev, [assetId]: (prev[assetId] || []).map(p => p.user_id === userId ? { ...p, can_edit: canEdit } : p) }));
       } else {
-        // grant new access
-        await upsertMachinePermission(machineId, userId, company.id, canEdit);
-        setPerms(prev => ({ ...prev, [machineId]: [...(prev[machineId] || []), { machine_id: machineId, user_id: userId, can_edit: canEdit }] }));
+        await upsertFn(assetId, userId, company.id, canEdit);
+        setPerms(prev => ({ ...prev, [assetId]: [...(prev[assetId] || []), { user_id: userId, can_edit: canEdit }] }));
       }
     } catch (e) { console.error("toggle perm:", e); }
     setSaving(prev => ({ ...prev, [key]: false }));
   };
 
-  const revoke = async (machineId, userId) => {
-    const key = `${machineId}-${userId}`;
+  const revoke = async (assetId, userId) => {
+    const key = `${assetId}-${userId}`;
     setSaving(prev => ({ ...prev, [key]: true }));
     try {
-      await revokeMachinePermission(machineId, userId);
-      setPerms(prev => ({ ...prev, [machineId]: (prev[machineId] || []).filter(p => p.user_id !== userId) }));
+      await revokeFn(assetId, userId);
+      setPerms(prev => ({ ...prev, [assetId]: (prev[assetId] || []).filter(p => p.user_id !== userId) }));
     } catch (e) { console.error("revoke perm:", e); }
     setSaving(prev => ({ ...prev, [key]: false }));
   };
 
-  const lbl = { fontSize: 9, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 };
+  if (!assets || assets.length === 0) {
+    return <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>{emptyMsg}</div>;
+  }
 
-  if (myMachines.length === 0) {
-    return (
-      <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>
-        No org machines to provision. Add machines and tag them to this organisation from the Tracker tab.
-      </div>
-    );
+  const myAssets = assets.filter(a => a.userId === session?.user?.id);
+  if (myAssets.length === 0) {
+    return <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>{emptyMsg}</div>;
   }
 
   const otherMembers = members.filter(m => m.user_id !== session?.user?.id);
 
   return (
     <div>
-      {myMachines.map(machine => {
-        const machinePerms = perms[machine.id] || [];
-        const isOpen = expanded === machine.id;
+      {myAssets.map(asset => {
+        const assetPerms = perms[asset.id] || [];
+        const isOpen = expanded === asset.id;
         return (
-          <div key={machine.id} style={{ marginBottom: 8, border: "1px solid " + BRD, borderRadius: 2, overflow: "hidden" }}>
-            <button onClick={() => expand(machine.id)} style={{ width: "100%", background: isOpen ? "#111" : "#0a0a0a", border: "none", cursor: "pointer", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "'IBM Plex Mono',monospace" }}>
+          <div key={asset.id} style={{ marginBottom: 8, border: "1px solid " + BRD, borderRadius: 2, overflow: "hidden" }}>
+            <button onClick={() => expand(asset.id)} style={{ width: "100%", background: isOpen ? "#111" : "#0a0a0a", border: "none", cursor: "pointer", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "'IBM Plex Mono',monospace" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{machine.name}</span>
-                {machinePerms.length > 0 && <span style={{ fontSize: 7, color: MUT }}>{machinePerms.length} member{machinePerms.length !== 1 ? "s" : ""} provisioned</span>}
+                <span style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{asset.name}</span>
+                {assetPerms.length > 0 && <span style={{ fontSize: 7, color: MUT }}>{assetPerms.length} member{assetPerms.length !== 1 ? "s" : ""} provisioned</span>}
               </div>
               <span style={{ fontSize: 9, color: MUT }}>{isOpen ? "▲" : "▼"}</span>
             </button>
@@ -88,8 +89,8 @@ function ProvisioningPanel({ machines, company, session }) {
               <div style={{ padding: "10px 12px", background: "#0a0a0a", borderTop: "1px solid " + BRD }}>
                 {otherMembers.length === 0 && <div style={{ fontSize: 10, color: MUT }}>No other members in this organisation yet.</div>}
                 {otherMembers.map(member => {
-                  const perm = machinePerms.find(p => p.user_id === member.user_id);
-                  const key = `${machine.id}-${member.user_id}`;
+                  const perm = assetPerms.find(p => p.user_id === member.user_id);
+                  const key = `${asset.id}-${member.user_id}`;
                   const isBusy = saving[key];
                   const name = member.profile?.display_name || member.profile?.username || member.user_id.slice(0, 8);
                   return (
@@ -103,18 +104,19 @@ function ProvisioningPanel({ machines, company, session }) {
                           <span style={{ fontSize: 9, color: MUT }}>…</span>
                         ) : perm ? (
                           <>
-                            <button
-                              onClick={() => toggle(machine.id, member.user_id, perm, !perm.can_edit)}
-                              style={{ fontSize: 8, fontWeight: 700, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: perm.can_edit ? "#1a2a1a" : "#1a1a2a", color: perm.can_edit ? GRN : ACC, border: `1px solid ${perm.can_edit ? GRN : ACC}55` }}
-                            >
+                            <button onClick={() => toggle(asset.id, member.user_id, perm, !perm.can_edit)}
+                              style={{ fontSize: 8, fontWeight: 700, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: perm.can_edit ? "#1a2a1a" : "#1a1a2a", color: perm.can_edit ? GRN : ACC, border: `1px solid ${perm.can_edit ? GRN : ACC}55` }}>
                               {perm.can_edit ? "Can Edit" : "View Only"}
                             </button>
-                            <button onClick={() => revoke(machine.id, member.user_id)} style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: RED, border: `1px solid ${RED}55` }}>Revoke</button>
+                            <button onClick={() => revoke(asset.id, member.user_id)}
+                              style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: RED, border: `1px solid ${RED}55` }}>Revoke</button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => toggle(machine.id, member.user_id, null, false)} style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: ACC, border: `1px solid ${ACC}55` }}>Grant View</button>
-                            <button onClick={() => toggle(machine.id, member.user_id, null, true)}  style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: GRN, border: `1px solid ${GRN}55` }}>Grant Edit</button>
+                            <button onClick={() => toggle(asset.id, member.user_id, null, false)}
+                              style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: ACC, border: `1px solid ${ACC}55` }}>Grant View</button>
+                            <button onClick={() => toggle(asset.id, member.user_id, null, true)}
+                              style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: GRN, border: `1px solid ${GRN}55` }}>Grant Edit</button>
                           </>
                         )}
                       </div>
@@ -130,7 +132,7 @@ function ProvisioningPanel({ machines, company, session }) {
   );
 }
 
-function CompanySettings({profile,setProfile,company,setCompany,session,machines}){
+function CompanySettings({profile,setProfile,company,setCompany,session,machines,vehicles,equipment,tools}){
   const isOwner=company&&company.owner_id===session?.user?.id;
   const isAdmin=isOwner; // kept for backward compat in JSX below
   const canMultiUser=["team","business"].includes(effectiveTier(profile,company));
@@ -347,12 +349,51 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
         </div>
       )}
 
-      {/* Machine provisioning */}
+      {/* Asset provisioning */}
       {canProvision && (
         <div style={{...sec}}>
-          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Machine Provisioning</div>
-          <div style={{fontSize:10,color:MUT,lineHeight:1.6,marginBottom:12}}>Grant org members access to your machines. Members with access can start timers and log time. Revoke at any time at your discretion.</div>
-          <ProvisioningPanel machines={machines||[]} company={company} session={session} />
+          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>Asset Provisioning</div>
+          <div style={{fontSize:10,color:MUT,lineHeight:1.6,marginBottom:14}}>Grant org members access to your assets. Revoke at any time.</div>
+
+          <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Machines</div>
+          <AssetProvisioningPanel
+            assets={(machines||[]).filter(m=>m.companyId===company?.id)}
+            emptyMsg="No org machines to provision. Add machines and tag them to this organisation from the Tracker tab."
+            company={company} session={session}
+            getFn={getMachinePermissions}
+            upsertFn={upsertMachinePermission}
+            revokeFn={revokeMachinePermission}
+          />
+
+          <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8}}>Vehicles</div>
+          <AssetProvisioningPanel
+            assets={vehicles||[]}
+            emptyMsg="No vehicles to provision yet. Add vehicles from the Vehicles tab."
+            company={company} session={session}
+            getFn={getVehiclePermissions}
+            upsertFn={upsertVehiclePermission}
+            revokeFn={revokeVehiclePermission}
+          />
+
+          <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8}}>Equipment</div>
+          <AssetProvisioningPanel
+            assets={equipment||[]}
+            emptyMsg="No equipment to provision yet. Add equipment from the Equipment tab."
+            company={company} session={session}
+            getFn={getEquipmentPermissions}
+            upsertFn={upsertEquipmentPermission}
+            revokeFn={revokeEquipmentPermission}
+          />
+
+          <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8}}>Tools</div>
+          <AssetProvisioningPanel
+            assets={tools||[]}
+            emptyMsg="No tools to provision yet. Add tools from the Tools tab."
+            company={company} session={session}
+            getFn={getToolPermissions}
+            upsertFn={upsertToolPermission}
+            revokeFn={revokeToolPermission}
+          />
         </div>
       )}
 
