@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
-import { mIcon } from '../../lib/helpers';
+import { mIcon, getStorageStatus } from '../../lib/helpers';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
-import { effectiveTier } from '../../lib/gates';
+import { effectiveTier, canUse } from '../../lib/gates';
+import { getActiveBooking } from '../../lib/db/bookings';
 
 function fmtHrs(secs) {
   const h = Math.floor(secs / 3600);
@@ -21,7 +22,7 @@ function escHtml(s) {
 
 function fmtMoney(n) { return "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
 
-function exportClientInvoice(client, linked, company) {
+async function exportClientInvoice(client, linked, company, storagePolicyEnabled) {
   const rate = company?.hourly_rate || 0;
   const taxRate = company?.tax_rate || 0;
   const taxLabel = company?.tax_label || "Tax";
@@ -58,7 +59,16 @@ function exportClientInvoice(client, linked, company) {
     });
   });
 
-  const subtotal = labourTotal + partsTotal;
+  let storageTotal = 0;
+  if (storagePolicyEnabled) {
+    for (const m of linked) {
+      const bk = await getActiveBooking(m.id);
+      const st = getStorageStatus(bk);
+      if (st.active && st.accrued > 0) storageTotal += st.accrued;
+    }
+  }
+
+  const subtotal = labourTotal + partsTotal + storageTotal;
   const tax = subtotal * (taxRate / 100);
   const total = subtotal + tax;
 
@@ -83,6 +93,7 @@ function exportClientInvoice(client, linked, company) {
   <tbody>${rows}
   ${labourTotal > 0 ? `<tr><td colspan="2" style="padding:8px 10px;text-align:right;color:#777">Labour</td><td style="padding:8px 10px;text-align:right;font-weight:600">${currencySymbol}${labourTotal.toFixed(2)}</td></tr>` : ""}
   ${partsTotal > 0 ? `<tr><td colspan="2" style="padding:8px 10px;text-align:right;color:#777">Parts</td><td style="padding:8px 10px;text-align:right;font-weight:600">${currencySymbol}${partsTotal.toFixed(2)}</td></tr>` : ""}
+  ${storageTotal > 0 ? `<tr><td colspan="2" style="padding:8px 10px;text-align:right;color:#777">Storage fees</td><td style="padding:8px 10px;text-align:right;font-weight:600">${currencySymbol}${storageTotal.toFixed(2)}</td></tr>` : ""}
   ${taxRate > 0 ? `<tr><td colspan="2" style="padding:8px 10px;text-align:right;color:#777">${escHtml(taxLabel)} (${taxRate}%)</td><td style="padding:8px 10px;text-align:right;font-weight:600">${currencySymbol}${tax.toFixed(2)}</td></tr>` : ""}
   <tr class="total-row"><td colspan="2" style="padding:10px 10px;text-align:right">Total</td><td style="padding:10px 10px;text-align:right">${currencySymbol}${total.toFixed(2)}</td></tr>
   </tbody></table>
@@ -102,6 +113,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   const [err, setErr] = useState("");
 
   const isFree = effectiveTier(profile, company) === "free";
+  const storagePolicyEnabled = canUse('storage_policy', profile, company) && !!(profile?.storage_policy_enabled);
 
   const openNew = () => { setForm(EMPTY_FORM); setErr(""); setEditing("new"); };
   const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" }); setErr(""); setEditing(c); };
@@ -237,7 +249,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
                 {client.notes && <div style={{ fontSize: 9, color: MUT, marginTop: 4, lineHeight: 1.5 }}>{client.notes}</div>}
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                {linked.length > 0 && <button onClick={() => exportClientInvoice(client, linked, company)} style={{ ...btnG, ...sm }}>Invoice</button>}
+                {linked.length > 0 && <button onClick={() => exportClientInvoice(client, linked, company, storagePolicyEnabled)} style={{ ...btnG, ...sm }}>Invoice</button>}
                 <button onClick={() => openEdit(client)} style={{ ...btnG, ...sm }}>Edit</button>
                 <button onClick={() => deleteClient(client.id)} style={{ ...btnD }}>Del</button>
               </div>

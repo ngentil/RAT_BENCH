@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
-import { mIcon } from '../../lib/helpers';
+import { mIcon, getStorageStatus } from '../../lib/helpers';
 import { upsertMachine } from '../../lib/db';
-import { effectiveTier } from '../../lib/gates';
+import { canUse, effectiveTier } from '../../lib/gates';
+import { getAllActiveBookings } from '../../lib/db/bookings';
 
 const ORANGE = "#e8870a";
 
@@ -101,14 +102,39 @@ function ServiceModal({ machine, onSave, onClose }) {
 export default function ServiceReminders({ machines, setMachines, profile, company, onGoToBilling }) {
   const [filter,      setFilter]      = useState("all");
   const [servicingId, setServicingId] = useState(null);
+  const [activeBookings, setActiveBookings] = useState([]);
 
   const isFree = effectiveTier(profile, company) === "free";
+  const storagePolicyEnabled = canUse('storage_policy', profile, company) && !!(profile?.storage_policy_enabled);
+
+  useEffect(() => {
+    if (!storagePolicyEnabled) return;
+    getAllActiveBookings().then(bs => setActiveBookings(bs || []));
+  }, [storagePolicyEnabled]);
+
+  const bookingByMachineId = useMemo(() => {
+    const map = {};
+    activeBookings.forEach(b => { map[b.machine_id] = b; });
+    return map;
+  }, [activeBookings]);
 
   const machineData = useMemo(() =>
     machines
-      .map(m => ({ machine: m, items: getMachineReminders(m) }))
+      .map(m => {
+        const items = getMachineReminders(m);
+        if (storagePolicyEnabled) {
+          const bk = bookingByMachineId[m.id];
+          const st = bk ? getStorageStatus(bk) : null;
+          if (st?.escalated) {
+            items.push({ label: "Storage — Flagged for sale", current: st.daysIn + "d in shop", due: "escalated at " + (bk.storage_tier || "Bench") + " tier", rem: "$" + st.accrued.toFixed(0) + " accrued", pct: 1, overdue: true, dueSoon: false });
+          } else if (st?.active && st.freeDaysLeft === 0) {
+            items.push({ label: "Storage — Billing active", current: st.daysIn + "d in shop", due: bk.storage_tier + " tier", rem: "$" + st.accrued.toFixed(0) + " accrued · $" + st.dailyRate + "/day", pct: 0.9, overdue: false, dueSoon: true });
+          }
+        }
+        return { machine: m, items };
+      })
       .filter(({ items }) => items.length > 0),
-  [machines]);
+  [machines, storagePolicyEnabled, bookingByMachineId]);
 
   const filtered = useMemo(() => {
     if (filter === "overdue")  return machineData.filter(({ items }) => items.some(i => i.overdue));

@@ -23,6 +23,7 @@ export function canUse(feature, profile, company) {
     case "org":                return ["team","business"].includes(tier);
     case "acl":                return ["team","business"].includes(tier);
     case "priority_support":   return tier === "business";
+    case "storage_policy":     return tier !== "free";
     default:                   return true;
   }
 }

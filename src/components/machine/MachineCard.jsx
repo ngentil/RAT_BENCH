@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
-import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
+import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, inp, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, DEFAULT_EXPAND, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
-import { mIcon, fmtDT, getMachineServiceStatus } from '../../lib/helpers';
+import { mIcon, fmtDT, getMachineServiceStatus, getStorageStatus } from '../../lib/helpers';
 import { WikiTrackerModal } from '../wiki/WikiModals';
-import { effectiveTier } from '../../lib/gates';
+import { canUse, effectiveTier } from '../../lib/gates';
+import { STORAGE_TIERS, TIER_NAMES } from '../../lib/storageTiers';
+import { getActiveBooking, createBooking, collectMachine, updateBooking } from '../../lib/db/bookings';
 import PdfExportModal from '../pdf/PdfExportModal';
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
@@ -24,6 +26,13 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
   const [showWiki,setShowWiki]=useState(false);
   const [showExpandConfig,setShowExpandConfig]=useState(false);
   const [showPdfOpts,setShowPdfOpts]=useState(false);
+  // Storage policy state
+  const [booking,setBooking]=useState(null);
+  const [bookingLoaded,setBookingLoaded]=useState(false);
+  const [showBookIn,setShowBookIn]=useState(false);
+  const [bookForm,setBookForm]=useState({storageTier:"Bench",receivedAt:"",storageEnabled:true,storageFeeOverride:"",notes:""});
+  const [bookSaving,setBookSaving]=useState(false);
+  const [bookErr,setBookErr]=useState("");
   const m=machine;
 
   const clientName = useMemo(() => {
@@ -34,6 +43,44 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
   useEffect(()=>{
     if(open&&!loaded) getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);});
   },[open]);
+
+  const storagePolicyEnabled = canUse('storage_policy',profile,company) && !!(profile?.storage_policy_enabled);
+
+  useEffect(()=>{
+    if(!storagePolicyEnabled||bookingLoaded) return;
+    getActiveBooking(m.id).then(b=>{setBooking(b);setBookingLoaded(true);});
+  },[storagePolicyEnabled,m.id]);
+
+  const storageStatus = useMemo(()=>booking?getStorageStatus(booking):null,[booking]);
+
+  const doBookIn = async () => {
+    setBookSaving(true); setBookErr("");
+    try {
+      const b = await createBooking({
+        machineId: m.id,
+        storageTier: bookForm.storageTier,
+        receivedAt: bookForm.receivedAt ? new Date(bookForm.receivedAt).toISOString() : undefined,
+        storageEnabled: bookForm.storageEnabled,
+        storageFeeOverride: bookForm.storageFeeOverride ? parseFloat(bookForm.storageFeeOverride) : undefined,
+        notes: bookForm.notes || undefined,
+      });
+      setBooking(b); setShowBookIn(false);
+      setBookForm({storageTier:"Bench",receivedAt:"",storageEnabled:true,storageFeeOverride:"",notes:""});
+    } catch(e){ setBookErr(e.message); }
+    setBookSaving(false);
+  };
+
+  const doCollect = async () => {
+    if(!booking) return;
+    const b = await collectMachine(booking.id);
+    setBooking(null); setBookingLoaded(false);
+  };
+
+  const toggleStorageOnBooking = async () => {
+    if(!booking) return;
+    const b = await updateBooking(booking.id, { storage_enabled: !booking.storage_enabled });
+    setBooking(b);
+  };
 
   const saveSvc=async entry=>{
     setSaving(true);
@@ -167,6 +214,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
             })}
             {svcStatus.overdue  && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0}}>SERVICE</span>}
             {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",flexShrink:0}}>DUE SOON</span>}
+            {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0,boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",flexShrink:0}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",flexShrink:0}}>${storageStatus.accrued.toFixed(0)}</span>)}
             <span style={{fontSize:10,color:MUT}}>{open?"▲":"▼"}</span>
           </div>
         </div>
@@ -299,6 +347,78 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
             )}
           </div>
           );})()}
+          {storagePolicyEnabled&&(
+            <div style={{padding:"0 14px 12px"}}>
+              <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8,marginBottom:10}}><SL t="Storage" /></div>
+              {!booking&&!showBookIn&&(
+                <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();const now=new Date();const pad=n=>String(n).padStart(2,"0");setBookForm(f=>({...f,receivedAt:now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+"T"+pad(now.getHours())+":"+pad(now.getMinutes())}));setShowBookIn(true);}}>📥 Book In</button>
+              )}
+              {showBookIn&&(
+                <div style={{background:"#0a0a0a",border:"1px solid "+BRD,borderRadius:2,padding:"12px 14px"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                    <div>
+                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Storage Tier</div>
+                      <select value={bookForm.storageTier} onChange={e=>setBookForm(f=>({...f,storageTier:e.target.value}))} style={{...inp,fontSize:11,padding:"6px 8px"}}>
+                        {TIER_NAMES.map(t=><option key={t} value={t}>{t}{STORAGE_TIERS[t].dailyRate!=null?" — $"+STORAGE_TIERS[t].dailyRate+"/day after "+STORAGE_TIERS[t].freeDays+"d free":""}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Received</div>
+                      <input type="datetime-local" value={bookForm.receivedAt} onChange={e=>setBookForm(f=>({...f,receivedAt:e.target.value}))} style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                    </div>
+                    {bookForm.storageTier==="Custom"&&(
+                      <div>
+                        <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Custom Daily Rate ($)</div>
+                        <input type="number" min="0" step="0.01" value={bookForm.storageFeeOverride} onChange={e=>setBookForm(f=>({...f,storageFeeOverride:e.target.value}))} placeholder="0.00" style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                      </div>
+                    )}
+                    <div>
+                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Notes</div>
+                      <input value={bookForm.notes} onChange={e=>setBookForm(f=>({...f,notes:e.target.value}))} placeholder="Optional" style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                    </div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <input type="checkbox" id={"se-"+m.id} checked={bookForm.storageEnabled} onChange={e=>setBookForm(f=>({...f,storageEnabled:e.target.checked}))} />
+                    <label htmlFor={"se-"+m.id} style={{fontSize:9,color:MUT,cursor:"pointer"}}>Charge storage for this visit</label>
+                  </div>
+                  {bookErr&&<div style={{fontSize:9,color:RED,marginBottom:6}}>{bookErr}</div>}
+                  <div style={{display:"flex",gap:6}}>
+                    <button style={{...btnA,...sm}} onClick={doBookIn} disabled={bookSaving}>{bookSaving?"Saving…":"✓ Book In"}</button>
+                    <button style={{...btnG,...sm}} onClick={()=>{setShowBookIn(false);setBookErr("");}}>Cancel</button>
+                  </div>
+                </div>
+              )}
+              {booking&&!showBookIn&&(
+                <div style={{background:"#0a0a0a",border:"1px solid "+BRD,borderRadius:2,padding:"10px 12px"}}>
+                  <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+                    <div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                        <span style={{fontSize:9,color:TXT,fontWeight:700}}>{booking.storage_tier} tier</span>
+                        <span style={{fontSize:9,color:MUT}}>·</span>
+                        <span style={{fontSize:9,color:MUT}}>{storageStatus?.daysIn??0}d in shop</span>
+                        {storageStatus?.escalated&&<span style={{fontSize:8,color:RED,fontWeight:700,letterSpacing:"0.08em",background:RED+"18",border:"1px solid "+RED+"44",padding:"1px 5px",borderRadius:2,boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>}
+                      </div>
+                      {storageStatus?.active&&(
+                        storageStatus.freeDaysLeft>0
+                          ?<div style={{fontSize:9,color:GRN}}>{storageStatus.freeDaysLeft}d free remaining</div>
+                          :<div style={{fontSize:9,color:storageStatus.escalated?RED:ACC}}>${storageStatus.accrued.toFixed(2)} accrued · ${storageStatus.dailyRate}/day</div>
+                      )}
+                      {!booking.storage_enabled&&<div style={{fontSize:8,color:MUT,marginTop:3,fontStyle:"italic"}}>Storage billing paused</div>}
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"flex-end"}}>
+                      <button style={{...btnA,...sm,fontSize:8}} onClick={ev=>{ev.stopPropagation();doCollect();}}>✓ Collected</button>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8,paddingTop:8,borderTop:"1px solid "+BRD}}>
+                    <input type="checkbox" id={"sb-"+m.id} checked={booking.storage_enabled} onChange={toggleStorageOnBooking} />
+                    <label htmlFor={"sb-"+m.id} style={{fontSize:8,color:MUT,cursor:"pointer"}}>Charge storage for this visit</label>
+                    <span style={{flex:1}}/>
+                    <span style={{fontSize:8,color:MUT}}>in since {new Date(booking.received_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div style={{padding:"0 14px 12px",display:"flex",gap:8,justifyContent:"space-between",alignItems:"center"}}>
             <button onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} title="Configure expanded view">⚙️</button>
             <div style={{display:"flex",gap:8}}>

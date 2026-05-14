@@ -4,13 +4,14 @@ import ProfileSettings from './ProfileSettings';
 import CompanySettings from './CompanySettings';
 import BillingPage from './BillingPage';
 import AdminPanel from './AdminPanel';
+import StorageSettings from './StorageSettings';
 
 const ADMIN_EMAIL = 'ratbenchadmin@gmail.com';
 
 function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,vehicles,equipment,tools}){
   const isAdmin = session?.user?.email === ADMIN_EMAIL;
   const [tab,setTab]=useState("profile");
-  const tabs=[["profile","Profile"],["company","Company / Org"],["billing","Billing"],...(isAdmin?[["admin","⚙ Admin"]]:[])];
+  const tabs=[["profile","Profile"],["company","Company / Org"],["billing","Billing"],["storage","Storage"],...(isAdmin?[["admin","⚙ Admin"]]:[])];
   return(
     <div style={{padding:16,flex:1,maxWidth:560,margin:"0 auto",width:"100%"}}>
       <div style={{display:"flex",borderBottom:"1px solid #252525",marginBottom:20}}>
@@ -21,6 +22,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
       {tab==="profile"&&<ProfileSettings profile={profile} setProfile={setProfile} session={session} onSignOut={onSignOut} isGuest={!!session?.user?.is_anonymous} machines={machines}/>}
       {tab==="company"&&<CompanySettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany} session={session} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/>}
       {tab==="billing"&&<BillingPage profile={profile} company={company} session={session}/>}
+      {tab==="storage"&&<StorageSettings profile={profile} setProfile={setProfile} company={company}/>}
       {tab==="admin"&&isAdmin&&<AdminPanel/>}
     </div>
   );

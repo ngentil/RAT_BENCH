@@ -50,7 +50,7 @@ const PLANS = [
     priceYearly: "$12",
     period: "/mo",
     periodYearly: "/yr",
-    features: ["Unlimited machines","Unlimited tools, vehicles & equipment","Everything in Free","Early access to new features"],
+    features: ["Unlimited machines","Unlimited tools, vehicles & equipment","Storage policy — automated fee tracking","Escalation alerts for long-stay machines","Everything in Free","Early access to new features"],
     personal: true,
     highlight: true,
   },
