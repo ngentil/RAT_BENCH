@@ -122,11 +122,11 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
 
   return (
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, gap: 10 }}>
         <SL t="Revenue" />
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {PERIODS.map(([v,l]) => (
-            <button key={v} onClick={() => setPeriod(v)} style={{ ...btnG, ...sm, ...(period === v ? { color: ACC, border: "1px solid " + ACC } : {}) }}>
+        <div style={{ display: "flex", gap: 0, flexShrink: 0 }}>
+          {PERIODS.map(([v,l], i) => (
+            <button key={v} onClick={() => setPeriod(v)} style={{ ...btnG, ...sm, borderRadius: i === 0 ? "2px 0 0 2px" : i === PERIODS.length-1 ? "0 2px 2px 0" : 0, borderRight: i < PERIODS.length-1 ? "none" : undefined, ...(period === v ? { background: ACC+"18", color: ACC } : {}) }}>
               {l}
             </button>
           ))}
@@ -145,23 +145,23 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
 
       {/* Summary cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-        <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px" }}>
-          <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Hours Logged</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>{totalHrs.toFixed(1)}<span style={{ fontSize: 12 }}>h</span></div>
+        <div style={{ background: SURF, border: "1px solid " + BRD, borderTop: "2px solid " + GRN, borderRadius: 2, padding: "12px 14px", boxShadow: "0 0 12px " + GRN + "18" }}>
+          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Hours Logged</div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: "-0.02em" }}>{totalHrs.toFixed(1)}<span style={{ fontSize: 12, color: MUT }}>h</span></div>
           <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>{filtered.length} session{filtered.length !== 1 ? "s" : ""}</div>
         </div>
 
         {rate > 0 ? (
-          <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px" }}>
-            <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Gross Revenue</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>${totalRevenue.toFixed(0)}</div>
+          <div style={{ background: SURF, border: "1px solid " + BRD, borderTop: "2px solid " + ACC, borderRadius: 2, padding: "12px 14px", boxShadow: "0 0 12px " + ACC + "18" }}>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Gross Revenue</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: "-0.02em" }}>${totalRevenue.toFixed(0)}</div>
             {taxRate > 0
               ? <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>+{taxLabel} ${tax.toFixed(0)} = ${(totalRevenue + tax).toFixed(0)} inc.</div>
-              : <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>${(rate).toFixed(0)}/hr labour rate</div>
+              : <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>${rate.toFixed(0)}/hr</div>
             }
           </div>
         ) : (
-          <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px", display: "flex", alignItems: "center" }}>
+          <div style={{ background: SURF, border: "1px solid " + BRD, borderTop: "2px solid #333", borderRadius: 2, padding: "12px 14px", display: "flex", alignItems: "center" }}>
             <div style={{ fontSize: 9, color: MUT, lineHeight: 1.6 }}>
               Set a Labour Rate in <span style={{ color: TXT }}>Settings → Company</span> to see revenue.
             </div>
@@ -169,20 +169,23 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
         )}
 
         {partsRev > 0 && (
-          <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px" }}>
-            <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Parts Revenue</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>${partsRev.toFixed(0)}</div>
+          <div style={{ background: SURF, border: "1px solid " + BRD, borderTop: "2px solid " + ACC, borderRadius: 2, padding: "12px 14px", boxShadow: "0 0 12px " + ACC + "18" }}>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Parts Revenue</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: "-0.02em" }}>${partsRev.toFixed(0)}</div>
             <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Cost ${partsCost.toFixed(0)}</div>
           </div>
         )}
 
-        {(grossProfit > 0 || partsCost > 0) && (
-          <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px" }}>
-            <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Gross Profit</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: grossProfit >= 0 ? GRN : RED, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>${grossProfit.toFixed(0)}</div>
-            <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Labour + Parts − Cost</div>
-          </div>
-        )}
+        {(grossProfit > 0 || partsCost > 0) && (() => {
+          const profitColor = grossProfit >= 0 ? GRN : RED;
+          return (
+            <div style={{ background: SURF, border: "1px solid " + BRD, borderTop: "2px solid " + profitColor, borderRadius: 2, padding: "12px 14px", boxShadow: "0 0 12px " + profitColor + "18" }}>
+              <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Gross Profit</div>
+              <div style={{ fontSize: 26, fontWeight: 700, color: profitColor, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: "-0.02em" }}>${grossProfit.toFixed(0)}</div>
+              <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Labour + Parts − Cost</div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* By machine */}

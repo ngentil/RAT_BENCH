@@ -156,12 +156,17 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-        {[["all","All"], ["due_soon","Due / Overdue"], ["overdue","Overdue Only"]].map(([v,l]) => (
-          <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, ...(filter === v ? { color: ACC, border: "1px solid " + ACC } : {}) }}>
-            {l}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 0, marginBottom: 14 }}>
+        {[["all","All"], ["due_soon","Due / Overdue"], ["overdue","Overdue Only"]].map(([v,l], idx, arr) => {
+          const isFirst = idx === 0;
+          const isLast  = idx === arr.length - 1;
+          const isActive = filter === v;
+          return (
+            <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, borderRadius: isFirst ? "2px 0 0 2px" : isLast ? "0 2px 2px 0" : 0, borderRight: isLast ? undefined : "none", ...(isActive ? { background: ACC+"18", color: ACC, border: "1px solid "+ACC, borderRight: isLast ? "1px solid "+ACC : "none" } : {}) }}>
+              {l}
+            </button>
+          );
+        })}
       </div>
 
       {machineData.length === 0 && (
@@ -186,7 +191,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
         const hasAlert = items.some(i => i.overdue || i.dueSoon);
         const totalHrs = totalLoggedHours(machine);
         return (
-          <div key={machine.id} style={{ background: SURF, border: "1px solid " + (items.some(i=>i.overdue) ? RED+"44" : items.some(i=>i.dueSoon) ? ORANGE+"44" : BRD), borderRadius: 2, padding: "12px 14px", marginBottom: 10 }}>
+          <div key={machine.id} style={{ background: SURF, border: "1px solid " + (items.some(i=>i.overdue) ? RED+"44" : items.some(i=>i.dueSoon) ? ORANGE+"44" : BRD), borderLeft: "3px solid " + (items.some(i=>i.overdue) ? RED : items.some(i=>i.dueSoon) ? ORANGE : GRN), borderRadius: 2, padding: "12px 14px", marginBottom: 10, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span style={{ fontSize: 18 }}>{mIcon(machine.type)}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -226,8 +231,8 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
                     <span style={{ fontSize: 8, color: MUT }}>{item.due}</span>
                   </div>
                   {!item.noDate && (
-                    <div style={{ height: 4, background: "#1a1a1a", borderRadius: 2, overflow: "hidden", marginBottom: 3 }}>
-                      <div style={{ height: "100%", borderRadius: 2, transition: "width 0.3s", width: (item.pct * 100) + "%", background: item.overdue ? RED : item.dueSoon ? ORANGE : GRN }} />
+                    <div style={{ height: 5, background: "#1a1a1a", borderRadius: 2, overflow: "hidden", marginBottom: 3 }}>
+                      <div style={{ height: "100%", borderRadius: 2, transition: "width 0.3s", width: (item.pct * 100) + "%", background: item.overdue ? RED : item.dueSoon ? ORANGE : GRN, boxShadow: item.overdue ? "0 0 6px "+RED+"88" : item.dueSoon ? "0 0 6px "+ORANGE+"88" : "0 0 6px "+GRN+"44" }} />
                     </div>
                   )}
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
