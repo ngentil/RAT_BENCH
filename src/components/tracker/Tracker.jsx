@@ -165,11 +165,12 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         </div>
       </div>
       {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
-      {machines.length>1&&<div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
-        {[null,"Active","Queued","Complete"].map(s=>{
+      {machines.length>1&&<div style={{display:"flex",gap:0,marginBottom:10}}>
+        {[null,"Active","Queued","Complete"].map((s,i,arr)=>{
           const count=s?searched.filter(m=>(m.status||"Active")===s).length:searched.length;
           const active=statusFilter===s;
-          return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:8,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:2,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(s?SCOL[s]+"55":"#2a2a2a"),background:active?(s?SBG_[s]:"#1a1a1a"):"transparent",color:active?(s?SCOL[s]:MUT):(s?SCOL[s]+"aa":MUT)}}>{s||"All"} {count}</button>;
+          const c=s?SCOL[s]:MUT;
+          return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:8,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:i===0?"2px 0 0 2px":i===arr.length-1?"0 2px 2px 0":0,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(active?c+"55":"#252525"),borderRight:i<arr.length-1?"none":undefined,background:active?c+"18":"transparent",color:active?c:c+"66"}}>{s||"All"} {count}</button>;
         })}
       </div>}
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}

@@ -178,31 +178,31 @@ function SpecSearch({machines}){
         <>
           <div style={{fontSize:9,color:MUT,marginBottom:10,letterSpacing:"0.1em"}}>{results.length} match{results.length!==1?"es":""} for "{query}"</div>
           {results.map(({m,hits})=>(
-            <div key={m.id} style={{background:SURF,border:"1px solid "+BRD,borderRadius:3,marginBottom:10,padding:"13px 14px"}}>
+            <div key={m.id} style={{background:SURF,border:"1px solid "+BRD,borderLeft:"3px solid "+ACC,borderRadius:2,marginBottom:10,padding:"13px 14px"}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                 <span style={{fontSize:15}}>{mIcon(m.type)}</span>
-                <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:TXT}}>{m.name}</div><div style={{fontSize:9,color:MUT,marginTop:1}}>{[m.make,m.model,m.source].filter(Boolean).join(" · ")}</div></div>
+                <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:TXT}}>{m.name}</div><div style={{fontSize:9,color:MUT,marginTop:1}}>{[m.make,m.model,m.source].filter(Boolean).join(" · ")}</div></div>
                 <StatusBadge status={m.status||"Active"} />
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
                 {hits.map(f=>(
                   f.isFastener
-                    ? <div key={f.k} style={{background:"#1a0e00",border:"1px solid #3a2200",borderRadius:2,padding:"6px 9px",gridColumn:"1/-1"}}>
+                    ? <div key={f.k} style={{background:ACC+"0a",border:"1px solid "+ACC+"33",borderRadius:2,padding:"6px 9px",gridColumn:"1/-1"}}>
                         <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
-                        <div style={{fontSize:11,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{f.value}</div>
+                        <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{f.value}</div>
                       </div>
-                    : <div key={f.k} style={{background:"#1a0e00",border:"1px solid #3a2200",borderRadius:2,padding:"6px 9px"}}>
+                    : <div key={f.k} style={{background:ACC+"0a",border:"1px solid "+ACC+"33",borderRadius:2,padding:"6px 9px"}}>
                         <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
-                        <div style={{fontSize:11,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
+                        <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
                       </div>
                 ))}
               </div>
               {FIELDS.filter(f=>m[f.k]&&!hits.find(h=>h.k===f.k)).length>0&&(
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginTop:5}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:4}}>
                   {FIELDS.filter(f=>m[f.k]&&!hits.find(h=>h.k===f.k)).map(f=>(
-                    <div key={f.k} style={{background:"#0d0d0d",border:"1px solid "+BRD2,borderRadius:2,padding:"6px 9px"}}>
+                    <div key={f.k} style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"6px 9px"}}>
                       <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>{f.l}</div>
-                      <div style={{fontSize:11,color:"#555",fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
+                      <div style={{fontSize:11,color:"#484848",fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
                     </div>
                   ))}
                 </div>
