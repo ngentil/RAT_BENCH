@@ -231,6 +231,35 @@ These only become possible once the referenced sections exist:
 
 ---
 
+## Asset Provisioning — Vehicles, Equipment & Tools
+
+> Added from phone session — implement when back at desk.
+
+### Core idea
+- **User is the source of truth for all assets** (vehicles, equipment, tools). Every item is owned by a user, not an org.
+- Org owner (or admin) provisions assets to team members — same ACL model as machines.
+- Assets provisioned to a member appear in their respective tab with a "Shared" badge.
+
+### Assign assets to vehicles
+When provisioning, the owner can:
+- Assign **tools** to a vehicle (e.g. the recovery kit and tyre repair gear lives in the Hilux)
+- Assign **equipment** to a vehicle (e.g. the compressor is towed by the work ute)
+- Assign **users** (team members) to a vehicle (e.g. John drives the white Hilux)
+
+This creates a "vehicle loadout" view — open a vehicle and see its assigned tools, equipment, and driver(s).
+
+### Data model notes
+- Add a `vehicle_assignments` join table: `{ vehicle_id, asset_type ('tool'|'equipment'|'user'), asset_id, assigned_by, assigned_at }`
+- OR store as a JSONB array on the vehicle row: `assigned_tools: [uuid]`, `assigned_equipment: [uuid]`, `assigned_users: [uuid]`
+- JSONB array is simpler to start with; can normalise later if querying becomes complex
+
+### UI changes needed
+- Provisioning panel in CompanySettings: after granting access to a vehicle, show an expandable "Assign to this vehicle" section with checkboxes for tools, equipment, and team members
+- Vehicle card (expanded): show "Assigned equipment", "Assigned tools", "Driver(s)" sections with names/icons
+- When a tool or piece of equipment is assigned to a vehicle, show a small "→ [vehicle name]" tag on its card
+
+---
+
 ## Security & Access Control
 
 ### Machine-Level Permissions (ACL)
