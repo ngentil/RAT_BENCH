@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, btnA, btnG, sm } from '../../lib/styles';
 import { SL } from '../ui/shared';
-import { effectiveTier } from '../../lib/gates';
-import { mIcon } from '../../lib/helpers';
+import { canUse, effectiveTier } from '../../lib/gates';
+import { mIcon, getClosedBookingFee } from '../../lib/helpers';
+import { getClosedBookings } from '../../lib/db/bookings';
 
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
@@ -21,9 +22,16 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
   const [period, setPeriod] = useState("month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [closedBookings, setClosedBookings] = useState([]);
 
   const tier = effectiveTier(profile, company);
   const isFree = tier === "free";
+  const storagePolicyEnabled = canUse('storage_policy', profile, company) && !!(profile?.storage_policy_enabled);
+
+  useEffect(() => {
+    if (!storagePolicyEnabled || isFree) return;
+    getClosedBookings().then(bs => setClosedBookings(bs || []));
+  }, [storagePolicyEnabled, isFree]);
 
   const allEntries = useMemo(() =>
     machines.flatMap(m =>
@@ -78,20 +86,55 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
     return { partsRev: rev, partsCost: cost };
   }, [machines, period, isFree]);
 
-  const totalRevenue = labourRev + partsRev;
+  const filteredBookings = useMemo(() => {
+    if (isFree || !storagePolicyEnabled) return [];
+    const n = new Date();
+    return closedBookings.filter(b => {
+      const d = new Date(b.collected_at);
+      if (period === "week")   return (n - d) <= 7 * 86400000;
+      if (period === "month")  return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+      if (period === "custom") {
+        if (customFrom && d < new Date(customFrom)) return false;
+        if (customTo   && d > new Date(customTo + "T23:59:59")) return false;
+        return true;
+      }
+      return true;
+    });
+  }, [closedBookings, period, customFrom, customTo, isFree, storagePolicyEnabled]);
+
+  const { storageRev, storageByMachineId } = useMemo(() => {
+    let rev = 0;
+    const byMid = {};
+    for (const b of filteredBookings) {
+      const fee = getClosedBookingFee(b);
+      rev += fee;
+      if (fee > 0) byMid[b.machine_id] = (byMid[b.machine_id] || 0) + fee;
+    }
+    return { storageRev: rev, storageByMachineId: byMid };
+  }, [filteredBookings]);
+
+  const totalRevenue = labourRev + partsRev + storageRev;
   const tax          = totalRevenue * (taxRate / 100);
-  const grossProfit  = labourRev + partsRev - partsCost;
+  const grossProfit  = labourRev + partsRev + storageRev - partsCost;
 
   const byMachine = useMemo(() => {
     if (isFree) return [];
     const map = {};
     for (const e of filtered) {
-      if (!map[e.machineId]) map[e.machineId] = { name: e.machineName, type: e.machineType, secs: 0, sessions: 0 };
+      if (!map[e.machineId]) map[e.machineId] = { name: e.machineName, type: e.machineType, secs: 0, sessions: 0, storageRev: 0 };
       map[e.machineId].secs += e.seconds || 0;
       map[e.machineId].sessions++;
     }
+    for (const [mid, sRev] of Object.entries(storageByMachineId)) {
+      if (map[mid]) {
+        map[mid].storageRev = sRev;
+      } else {
+        const machine = machines.find(m => m.id === mid);
+        if (machine) map[mid] = { name: machine.name, type: machine.type, secs: 0, sessions: 0, storageRev: sRev };
+      }
+    }
     return Object.values(map).sort((a, b) => b.secs - a.secs);
-  }, [filtered, isFree]);
+  }, [filtered, isFree, storageByMachineId, machines]);
 
   const byDow = useMemo(() => {
     if (isFree) return [0,0,0,0,0,0,0];
@@ -176,13 +219,22 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
           </div>
         )}
 
+        {storageRev > 0 && (
+          <div style={{ background: SURF, border: "1px solid " + BRD, borderTop: "2px solid " + ACC, borderRadius: 2, padding: "12px 14px", boxShadow: "0 0 12px " + ACC + "18" }}>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Storage Revenue</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: "-0.02em" }}>${storageRev.toFixed(0)}</div>
+            <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>{filteredBookings.length} collected booking{filteredBookings.length !== 1 ? "s" : ""}</div>
+          </div>
+        )}
+
         {(grossProfit > 0 || partsCost > 0) && (() => {
           const profitColor = grossProfit >= 0 ? GRN : RED;
+          const label = [labourRev > 0 && "Labour", partsRev > 0 && "Parts", storageRev > 0 && "Storage"].filter(Boolean).join(" + ") + (partsCost > 0 ? " − Cost" : "");
           return (
             <div style={{ background: SURF, border: "1px solid " + BRD, borderTop: "2px solid " + profitColor, borderRadius: 2, padding: "12px 14px", boxShadow: "0 0 12px " + profitColor + "18" }}>
               <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Gross Profit</div>
               <div style={{ fontSize: 26, fontWeight: 700, color: profitColor, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: "-0.02em" }}>${grossProfit.toFixed(0)}</div>
-              <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Labour + Parts − Cost</div>
+              <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>{label}</div>
             </div>
           );
         })()}
@@ -204,8 +256,9 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
                     <span style={{ fontSize: 8, color: MUT }}>{m.sessions} session{m.sessions !== 1 ? "s" : ""}</span>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, color: GRN, fontWeight: 700 }}>{fmtHrs(m.secs)}</span>
-                    {rate > 0 && <span style={{ fontSize: 9, color: MUT }}> · ${(hrs * rate).toFixed(0)}</span>}
+                    {m.secs > 0 && <span style={{ fontSize: 10, color: GRN, fontWeight: 700 }}>{fmtHrs(m.secs)}</span>}
+                    {rate > 0 && m.secs > 0 && <span style={{ fontSize: 9, color: MUT }}> · ${(hrs * rate).toFixed(0)}</span>}
+                    {m.storageRev > 0 && <span style={{ fontSize: 9, color: ACC, marginLeft: m.secs > 0 ? 6 : 0 }}>🏚 ${m.storageRev.toFixed(0)}</span>}
                   </div>
                 </div>
                 <div style={{ height: 3, background: "#1a1a1a", borderRadius: 2, overflow: "hidden" }}>

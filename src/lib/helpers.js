@@ -76,3 +76,12 @@ export function getStorageStatus(booking) {
   const escalated = tier.escalateDays != null && daysIn >= tier.escalateDays;
   return { active: true, daysIn, freeDaysLeft, billableDays, accrued, escalated, dailyRate, tier };
 }
+
+export function getClosedBookingFee(booking) {
+  if (!booking || !booking.storage_enabled || !booking.collected_at) return 0;
+  const tier = STORAGE_TIERS[booking.storage_tier] ?? STORAGE_TIERS.Bench;
+  const dailyRate = booking.storage_fee_override ?? tier.dailyRate;
+  const daysIn = Math.floor((new Date(booking.collected_at) - new Date(booking.received_at)) / 86400000);
+  const billableDays = Math.max(0, daysIn - (tier.freeDays ?? 0));
+  return Math.max(tier.minFee ?? 0, billableDays * (dailyRate ?? 0));
+}

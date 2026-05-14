@@ -18,6 +18,15 @@ export async function getAllActiveBookings() {
   return data || [];
 }
 
+export async function getClosedBookings() {
+  const { data } = await supabase
+    .from('machine_bookings')
+    .select('*')
+    .not('collected_at', 'is', null)
+    .order('collected_at', { ascending: false });
+  return data || [];
+}
+
 export async function getBookingHistory(machineId) {
   const { data } = await supabase
     .from('machine_bookings')
