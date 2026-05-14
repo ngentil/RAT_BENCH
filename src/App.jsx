@@ -211,9 +211,11 @@ function App(){
   // Initial load — block the UI until auth + data are ready
   if(initializing||!authChecked||!profileChecked){
     return (
-      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}}>
-        <div style={{fontSize:32}}>🐀</div>
-        <div style={{fontSize:11,color:MUT,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.1em"}}>Loading...</div>
+      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14}}>
+        <div className="loading-rat" style={{fontSize:44,lineHeight:1}}>🐀</div>
+        <div className="loading-text" style={{display:"flex",alignItems:"center",gap:1,fontSize:10,color:MUT,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.18em",textTransform:"uppercase"}}>
+          Loading<span className="loading-dot">.</span><span className="loading-dot">.</span><span className="loading-dot">.</span>
+        </div>
       </div>
     );
   }
@@ -286,20 +288,21 @@ function App(){
           {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:8}}>⚙️</button>}
         </div>
       </div>
-      <div style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
+      <div className="tab-bar" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex"}}>
         {TABS.filter(t=>{
           const tier=effectiveTier(profile,company);
           if(t.teamOnly&&!["team","business"].includes(tier))return false;
           if(t.enthusiastOnly&&tier==="free")return false;
           return true;
         }).map(t=>{
+          const active=tab===t.id;
           const badge=
             t.id==="reminders"&&overdueCount>0?{n:overdueCount,c:RED}:
             t.id==="reminders"&&dueSoonCount>0?{n:dueSoonCount,c:"#e8870a"}:
             t.id==="jobs"&&timerRunning?{n:"▶",c:GRN}:
             null;
           return (
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{flexShrink:0,padding:"10px 10px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:tab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:tab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
+          <button key={t.id} onClick={()=>setTab(t.id)} className="tab-btn" style={{flexShrink:0,padding:"10px 10px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?ACC+"12":"none",borderBottom:active?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
             {t.label}
             {badge&&<span style={{position:"absolute",top:4,right:2,fontSize:7,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
           </button>
