@@ -31,12 +31,14 @@ function WikiHomePage({ onSelect, embedded = false }) {
 
   const EntryRow = ({ e }) => {
     const inner = (
-      <div style={{ background: SURF, border: "1px solid " + BRD, padding: "12px 16px", borderRadius: 2, cursor: "pointer" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: ACC, marginBottom: 4 }}>{e.make} {e.model}</div>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          {e.type && <span style={{ fontSize: 10, color: MUT }}>{e.type}</span>}
-          {e.year && <span style={{ fontSize: 10, color: MUT }}>{e.year}</span>}
-          <span style={{ fontSize: 10, color: MUT, marginLeft: "auto" }}>{e.view_count || 0} views</span>
+      <div style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + ACC, padding: "12px 16px", borderRadius: 2, cursor: "pointer" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{e.make} <span style={{ color: ACC }}>{e.model}</span></div>
+          {e.year && <span style={{ fontSize: 9, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{e.year}</span>}
+        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          {e.type && <span style={{ fontSize: 8, color: ACC, background: ACC+"12", border: "1px solid "+ACC+"33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{e.type}</span>}
+          <span style={{ fontSize: 8, color: MUT, marginLeft: "auto" }}>👁 {e.view_count || 0}</span>
         </div>
       </div>
     );
@@ -51,19 +53,20 @@ function WikiHomePage({ onSelect, embedded = false }) {
     <input
       value={query}
       onChange={e => setQuery(e.target.value)}
-      placeholder="Search machines..."
-      style={{ width: "100%", boxSizing: "border-box", background: SURF, border: "1px solid " + BRD, color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, padding: "10px 14px", borderRadius: 2, outline: "none", marginBottom: 20 }}
+      placeholder="Search by make, model or type…"
+      style={{ width: "100%", boxSizing: "border-box", background: "#0a0a0a", border: "1px solid " + BRD, color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: "8px 12px", borderRadius: 2, outline: "none", marginBottom: 14 }}
     />
   );
 
   if (embedded) {
     return (
-      <div style={{ padding: "16px 0" }}>
+      <div style={{ padding: "4px 0" }}>
         {searchBox}
-        {searching && <div style={{ fontSize: 10, color: MUT, marginBottom: 12 }}>Searching…</div>}
+        {searching && <div style={{ fontSize: 9, color: MUT, marginBottom: 10, letterSpacing: "0.06em" }}>Searching…</div>}
         {list.length === 0 && !searching && (
-          <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>
-            {query.trim() ? "No results." : "No wiki entries yet."}
+          <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "32px 0" }}>
+            <div style={{ fontSize: 22, marginBottom: 10 }}>📖</div>
+            {query.trim() ? "No results for that query." : "No wiki entries yet."}
           </div>
         )}
         {list.map(e => <EntryRow key={e.id} e={e} />)}

@@ -94,20 +94,19 @@ function AssetProvisioningPanel({ assets, emptyMsg, company, session, getFn, ups
                   const isBusy = saving[key];
                   const name = member.profile?.display_name || member.profile?.username || member.user_id.slice(0, 8);
                   return (
-                    <div key={member.user_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #1a1a1a" }}>
+                    <div key={member.user_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", borderBottom: "1px solid #1a1a1a", borderLeft: "2px solid #252525", marginBottom: 2 }}>
                       <div>
-                        <div style={{ fontSize: 10, color: TXT }}>{name}</div>
-                        <div style={{ fontSize: 8, color: MUT, marginTop: 1 }}>{member.role}</div>
+                        <div style={{ fontSize: 11, color: TXT, fontWeight: 700 }}>{name}</div>
+                        <span style={{ display: "inline-block", fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "0.08em", textTransform: "uppercase", background: "#1a1a1a", border: "1px solid #252525", borderRadius: 2, padding: "1px 5px", marginTop: 2 }}>{member.role}</span>
                       </div>
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                         {isBusy ? (
                           <span style={{ fontSize: 9, color: MUT }}>…</span>
                         ) : perm ? (
                           <>
-                            <button onClick={() => toggle(asset.id, member.user_id, perm, !perm.can_edit)}
-                              style={{ fontSize: 8, fontWeight: 700, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: perm.can_edit ? "#1a2a1a" : "#1a1a2a", color: perm.can_edit ? GRN : ACC, border: `1px solid ${perm.can_edit ? GRN : ACC}55` }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", fontSize: 8, fontWeight: 700, padding: "3px 8px", borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace", background: perm.can_edit ? "#1a2a1a" : "#1a1a2a", color: perm.can_edit ? GRN : ACC, border: `1px solid ${perm.can_edit ? GRN : ACC}55`, cursor: "pointer" }} onClick={() => toggle(asset.id, member.user_id, perm, !perm.can_edit)}>
                               {perm.can_edit ? "Can Edit" : "View Only"}
-                            </button>
+                            </span>
                             <button onClick={() => revoke(asset.id, member.user_id)}
                               style={{ fontSize: 8, padding: "3px 8px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "none", color: RED, border: `1px solid ${RED}55` }}>Revoke</button>
                           </>
@@ -225,6 +224,9 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
 
   const lbl={fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4};
   const sec={marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+BRD};
+  const secHd={fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,color:TXT,borderLeft:"2px solid "+ACC,paddingLeft:8,marginBottom:12};
+  const secHdRed={fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,color:TXT,borderLeft:"2px solid "+RED,paddingLeft:8,marginBottom:12};
+  const secSep={paddingTop:20,marginTop:20,borderTop:"1px solid #252525"};
 
   const cfg = COUNTRY_CONFIG[country] || DEFAULT_COUNTRY_CONFIG;
 
@@ -284,7 +286,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
 
   if(mode==="join") return(
     <div>
-      <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Join an Organisation</div>
+      <div style={secHd}>Join an Organisation</div>
       <div style={{...col,marginBottom:12}}><div style={lbl}>Invite Code</div><input style={inp} value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} placeholder="e.g. AB12CD34"/></div>
       {err&&<div style={{fontSize:10,color:RED,marginBottom:10}}>{err}</div>}
       <div style={{display:"flex",gap:8}}>
@@ -296,7 +298,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
 
   if(mode==="create"||(!company&&mode!=="join")) return(
     <div>
-      <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:16}}>Create Organisation</div>
+      <div style={{...secHd,marginBottom:16}}>Create Organisation</div>
       {fieldsJsx}
       {err&&<div style={{fontSize:10,color:RED,marginBottom:10}}>{err}</div>}
       <div style={{display:"flex",gap:8}}>
@@ -344,18 +346,18 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             <span style={{fontSize:16}}>🔒</span>
             <span style={{fontSize:9,color:MUT,letterSpacing:"0.08em"}}>Team plan required for multi-user features</span>
           </div>
-          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Invite Code & Members</div>
+          <div style={{...secHd,marginBottom:10}}>Invite Code & Members</div>
           <div style={{height:60}}/>
         </div>
       )}
 
       {/* Asset provisioning */}
       {canProvision && (
-        <div style={{...sec}}>
-          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>Asset Provisioning</div>
+        <div style={{...sec,...secSep}}>
+          <div style={secHd}>Asset Provisioning</div>
           <div style={{fontSize:10,color:MUT,lineHeight:1.6,marginBottom:14}}>Grant org members access to your assets. Revoke at any time.</div>
 
-          <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Machines</div>
+          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Machines</div>
           <AssetProvisioningPanel
             assets={(machines||[]).filter(m=>m.companyId===company?.id)}
             emptyMsg="No org machines to provision. Add machines and tag them to this organisation from the Tracker tab."
@@ -365,7 +367,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeMachinePermission}
           />
 
-          <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8}}>Vehicles</div>
+          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Vehicles</div>
           <AssetProvisioningPanel
             assets={vehicles||[]}
             emptyMsg="No vehicles to provision yet. Add vehicles from the Vehicles tab."
@@ -375,7 +377,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeVehiclePermission}
           />
 
-          <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8}}>Equipment</div>
+          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Equipment</div>
           <AssetProvisioningPanel
             assets={equipment||[]}
             emptyMsg="No equipment to provision yet. Add equipment from the Equipment tab."
@@ -385,7 +387,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeEquipmentPermission}
           />
 
-          <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8}}>Tools</div>
+          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Tools</div>
           <AssetProvisioningPanel
             assets={tools||[]}
             emptyMsg="No tools to provision yet. Add tools from the Tools tab."
@@ -398,8 +400,8 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
       )}
 
       {/* Leave / danger */}
-      <div>
-        <div style={{fontSize:9,color:RED,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:10}}>Danger Zone</div>
+      <div style={secSep}>
+        <div style={secHdRed}>Danger Zone</div>
         {!isAdmin&&<button onClick={handleLeave} style={{...btnG,...sm,color:RED,border:"1px solid "+RED}}>Leave Organisation</button>}
         {isAdmin&&<button onClick={async()=>{
           if(!confirm(`Permanently delete "${company.name}"? This cannot be undone. All members will be removed.`))return;

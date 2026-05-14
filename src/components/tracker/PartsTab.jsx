@@ -297,13 +297,13 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
       {inv.length > 0 && (
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:14 }}>
           {[
-            ['Items', inv.length],
-            ['In Stock', inv.filter(i=>(Number(i.stockQty)||0)>0).length + ' / ' + inv.length],
-            ['Stock Value', stockValue > 0 ? '$'+stockValue.toFixed(0) : '—'],
-          ].map(([l,v]) => (
-            <div key={l} style={{ background:SURF, border:'1px solid '+BRD, borderRadius:2, padding:'8px 10px', textAlign:'center' }}>
+            ['Items', inv.length, TXT],
+            ['In Stock', inv.filter(i=>(Number(i.stockQty)||0)>0).length + ' / ' + inv.length, GRN],
+            ['Stock Value', stockValue > 0 ? '$'+stockValue.toFixed(0) : '—', ACC],
+          ].map(([l,v,c]) => (
+            <div key={l} style={{ background:SURF, border:'1px solid '+BRD, borderTop:'2px solid '+c, borderRadius:2, padding:'8px 10px', textAlign:'center', boxShadow:'0 0 10px '+c+'12' }}>
               <div style={{ fontSize:8, color:MUT, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>{l}</div>
-              <div style={{ fontSize:13, fontWeight:700, color:TXT, fontFamily:"'IBM Plex Mono',monospace" }}>{v}</div>
+              <div style={{ fontSize:13, fontWeight:700, color:c, fontFamily:"'IBM Plex Mono',monospace" }}>{v}</div>
             </div>
           ))}
         </div>
@@ -318,10 +318,12 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
           onChange={e => setSearch(e.target.value)}
         />
       )}
-      <div style={{ display:'flex', gap:6, marginBottom:12, flexWrap:'wrap' }}>
-        {[['all','All'], ['low','Low / Out'], ['instock','In Stock']].map(([v,l]) => (
-          <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, ...(filter===v ? { color:ACC, border:'1px solid '+ACC } : {}) }}>{l}</button>
-        ))}
+      <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap', alignItems:'center' }}>
+        <div style={{ display:'flex', gap:0 }}>
+          {[['all','All'], ['low','Low / Out'], ['instock','In Stock']].map(([v,l], i, arr) => (
+            <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, borderRadius: i===0?'2px 0 0 2px':i===arr.length-1?'0 2px 2px 0':0, borderRight: i<arr.length-1?'none':undefined, ...(filter===v ? { background:ACC+'18', color:ACC } : {}) }}>{l}</button>
+          ))}
+        </div>
         {search && <button onClick={() => setSearch('')} style={{ ...btnG, ...sm, fontSize:8 }}>✕ Clear</button>}
       </div>
       {lastScan && (
@@ -349,7 +351,7 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
           : null;
 
         return (
-          <div key={item.id} style={{ background:SURF, border:'1px solid '+(isOut ? RED+'44' : isLow ? ORANGE+'44' : BRD), borderRadius:2, padding:'12px 14px', marginBottom:10 }}>
+          <div key={item.id} style={{ background:SURF, border:'1px solid '+(isOut ? RED+'44' : isLow ? ORANGE+'44' : BRD), borderLeft:'3px solid '+qtyColor, borderRadius:2, padding:'12px 14px', marginBottom:10 }}>
             <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
               {/* Stock level badge */}
               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0, minWidth:36 }}>

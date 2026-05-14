@@ -925,24 +925,33 @@ function MachineNotes({ machine, onSave }) {
   );
 }
 
+const STATUS_COLOR = {
+  "Active": ACC,
+  "Queued": GRN,
+  "Complete": MUT,
+};
+
 function JobBoard({ machines, setMachines, profile, company, session, clients, onGoToBilling }) {
   const tier = effectiveTier(profile, company);
   const isFree = tier === "free";
   const FREE_LIMIT = 3;
   const [jobSearch, setJobSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
 
   const visibleMachines = useMemo(() => {
-    if (!jobSearch.trim()) return machines;
+    let list = machines;
+    if (statusFilter) list = list.filter(m => (m.status || "Active") === statusFilter);
+    if (!jobSearch.trim()) return list;
     const q = jobSearch.toLowerCase();
-    return machines.filter(m =>
+    return list.filter(m =>
       (m.name||"").toLowerCase().includes(q) ||
       (m.make||"").toLowerCase().includes(q) ||
       (m.model||"").toLowerCase().includes(q) ||
       (m.clientId && (clientMap[m.clientId]||"").toLowerCase().includes(q))
     );
-  }, [machines, jobSearch, clientMap]);
+  }, [machines, jobSearch, statusFilter, clientMap]);
 
   const updateM = (updated) => setMachines(prev => prev.map(x => x.id === updated.id ? updated : x));
   const updateStatus = async (m, status) => { const u = { ...m, status }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
@@ -972,7 +981,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
         {machines.length > 0 && (
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             {runningTimer && (
-              <span style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4 }}>
+              <span className="loading-rat" style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4, animation: "ratPulse 1.4s ease-in-out infinite" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 4px " + GRN, display: "inline-block" }} />
                 TIMER RUNNING
               </span>
@@ -990,8 +999,43 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           </div>
         )}
       </div>
-      {machines.length === 0 && <Empty icon="🗂" t="No machines yet" sub="Add machines from the Tracker tab, then manage their jobs, parts, and timers here." />}
-      {machines.length > 5 && <input style={{ ...inp, marginBottom: 12, fontSize: 11 }} placeholder="Filter by machine name, make, or client…" value={jobSearch} onChange={e => setJobSearch(e.target.value)} />}
+      {machines.length === 0 && (
+        <div style={{ textAlign: "center", padding: "40px 24px" }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
+          <div style={{ fontSize: 12, color: ACC, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>No machines yet</div>
+          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Add machines from the Tracker tab, then manage their jobs, parts, and timers here.</div>
+        </div>
+      )}
+      {machines.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <input style={{ ...inp, marginBottom: 8, fontSize: 11 }} placeholder="Filter by machine name, make, or client…" value={jobSearch} onChange={e => setJobSearch(e.target.value)} />
+          <div style={{ display: "flex", gap: 0 }}>
+            {["", ...STATUSES].map((s, i, arr) => {
+              const isActive = statusFilter === s;
+              return (
+                <button
+                  key={s || "all"}
+                  onClick={() => setStatusFilter(s)}
+                  style={{
+                    ...btnG,
+                    ...sm,
+                    borderRadius: i === 0 ? "2px 0 0 2px" : i === arr.length - 1 ? "0 2px 2px 0" : "0",
+                    borderRight: i < arr.length - 1 ? "none" : "1px solid " + BRD,
+                    background: isActive ? (s ? STATUS_COLOR[s] + "22" : ACC + "18") : "none",
+                    color: isActive ? (s ? STATUS_COLOR[s] : ACC) : MUT,
+                    borderColor: isActive ? (s ? STATUS_COLOR[s] + "66" : ACC + "66") : BRD,
+                    borderTopWidth: "1px",
+                    borderBottomWidth: "1px",
+                    borderLeftWidth: "1px",
+                  }}
+                >
+                  {s || "All"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {isFree && machines.length > 0 && (
         <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div>
@@ -1005,6 +1049,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
         <div key={status} style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <StatusBadge status={status} />
+            <span style={{ fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700 }}>{status}</span>
             <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em" }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
           </div>
           {items.map(m => {
@@ -1012,14 +1057,29 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
             const timerLocked = isFree && freeIdx > 0;
             const partsLocked = isFree && freeIdx > 0;
             return (
-            <div key={m.id} style={{ background: SURF, border: "1px solid " + (timerLocked ? "#1e1e1e" : BRD), borderRadius: 3, marginBottom: 8, padding: "13px 14px", overflow: "hidden", opacity: timerLocked ? 0.7 : 1 }}>
+            <div key={m.id} style={{ background: SURF, border: "1px solid " + (timerLocked ? "#1e1e1e" : BRD), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 3, marginBottom: 8, padding: "13px 14px", overflow: "hidden", opacity: timerLocked ? 0.7 : 1 }}>
               <div style={{ display: "flex", gap: 10 }}>
                 {m.photos?.[0]
                   ? <img src={m.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 2, border: "1px solid " + BRD, flexShrink: 0 }} />
                   : <span style={{ fontSize: 17, width: 44, textAlign: "center", lineHeight: "44px", flexShrink: 0 }}>{mIcon(m.type)}</span>}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 2 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</div>
+                      {m.priority && (
+                        <span style={{
+                          background: m.priority === "High" ? RED + "18" : m.priority === "Medium" ? ACC + "18" : MUT + "18",
+                          color: m.priority === "High" ? RED : m.priority === "Medium" ? ACC : MUT,
+                          fontSize: 8,
+                          padding: "2px 6px",
+                          borderRadius: 2,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}>
+                          {m.priority}
+                        </span>
+                      )}
+                    </div>
                     {(m.timeLog?.length > 0) && (() => {
                       const totalSecs = m.timeLog.reduce((s, e) => s + (e.seconds || 0), 0);
                       return (

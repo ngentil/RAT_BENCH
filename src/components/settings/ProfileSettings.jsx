@@ -62,6 +62,9 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
 
   const lbl={fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4};
   const sec={marginBottom:20,paddingBottom:20,borderBottom:"1px solid "+BRD};
+  const secHd={fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,color:TXT,borderLeft:"2px solid "+ACC,paddingLeft:8,marginBottom:12};
+  const secHdRed={fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,color:TXT,borderLeft:"2px solid "+RED,paddingLeft:8,marginBottom:12};
+  const secSep={paddingTop:20,marginTop:20,borderTop:"1px solid #252525"};
 
   return(
     <div>
@@ -84,7 +87,7 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
         </div>
       )}
       <div style={sec}>
-        <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Profile</div>
+        <div style={secHd}>Profile</div>
         <div style={{...col,marginBottom:10}}><div style={lbl}>Display Name</div><input style={inp} value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="e.g. Jane Smith"/></div>
         <div style={{...col,marginBottom:10}}><div style={lbl}>Username</div><input style={{...inp,opacity:0.5}} value={profile?.username||""} disabled/></div>
         <div style={{...col,marginBottom:10}}><div style={lbl}>Email</div><input style={{...inp,opacity:0.5}} value={session?.user?.email||""} disabled/></div>
@@ -109,13 +112,13 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
         <button onClick={saveProfile} disabled={saving} style={{...btnA,...sm,opacity:saving?0.6:1}}>{saving?"Saving…":"Save Profile"}</button>
       </div>
 
-      {!isGuest&&<div style={sec}>
+      {!isGuest&&<div style={{...sec,...secSep}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:pwSection?12:0}}>
-          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700}}>Change Password</div>
+          <div style={{...secHd,marginBottom:0}}>Security</div>
           <button onClick={()=>setPwSection(o=>!o)} style={{...btnG,...sm}}>{pwSection?"▲":"▼"}</button>
         </div>
         {pwSection&&<>
-          <div style={{...col,marginBottom:8}}><div style={lbl}>New Password</div><input style={inp} type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Min. 8 characters"/></div>
+          <div style={{...col,marginBottom:8,marginTop:12}}><div style={lbl}>New Password</div><input style={inp} type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Min. 8 characters"/></div>
           <div style={{...col,marginBottom:10}}><div style={lbl}>Confirm Password</div><input style={inp} type="password" value={confPw} onChange={e=>setConfPw(e.target.value)}/></div>
           {pwErr&&<div style={{fontSize:10,color:RED,marginBottom:8}}>{pwErr}</div>}
           {pwSaved&&<div style={{fontSize:10,color:GRN,marginBottom:8}}>✓ Password updated</div>}
@@ -123,15 +126,15 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
         </>}
       </div>}
 
-      {isGuest&&<div style={{...sec,background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:16,marginBottom:20}}>
+      {isGuest&&<div style={{...sec,...secSep,background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:16,marginBottom:20}}>
         <div style={{fontSize:9,color:GRN,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Save Your Data</div>
         <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Create an account to keep your machines and sign back in any time.</div>
         <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create Account</button>
       </div>}
 
       {machines?.length > 0 && (
-        <div style={sec}>
-          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Data</div>
+        <div style={{...sec,...secSep}}>
+          <div style={secHd}>Data</div>
           <div style={{fontSize:10,color:MUT,lineHeight:1.6,marginBottom:10}}>
             Export all your machine data as a JSON backup file.
           </div>
@@ -146,8 +149,8 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
         </div>
       )}
 
-      <div>
-        <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Account</div>
+      <div style={secSep}>
+        <div style={secHdRed}>Account</div>
         <button onClick={onSignOut} style={{...btnG,...sm,color:RED,border:"1px solid "+RED}}>Sign Out</button>
       </div>
       {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
