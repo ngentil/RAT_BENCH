@@ -88,80 +88,85 @@ function AuthScreen(){
             </div>
           </div>
 
-          {/* Mode tabs */}
-          <div style={{display:"flex",borderRadius:2,overflow:"hidden",border:"1px solid "+BRD,marginBottom:24}}>
-            {["login","signup"].map(m=>(
-              <button key={m} onClick={()=>{setMode(m);setError("");setMessage("");}}
-                style={{flex:1,padding:"9px 0",fontSize:9,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"none",background:mode===m?ACC:"#0a0a0a",color:mode===m?"#fff":MUT,transition:"background 0.15s"}}>
-                {m==="login"?"Sign In":"Create Account"}
-              </button>
-            ))}
-          </div>
+          {/* Form card */}
+          <div style={{background:SURF,border:"1px solid "+BRD,borderTop:"2px solid "+ACC,borderRadius:3,padding:24}}>
 
-          {/* Google button */}
-          {mode!=="forgot"&&<button onClick={handleGoogle} disabled={loading}
-            style={{width:"100%",padding:"11px 0",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"1px solid "+BRD,borderRadius:2,background:"#0a0a0a",color:TXT,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?0.6:1}}>
-            <span style={{fontSize:14}}>G</span> Continue with Google
-          </button>}
-
-          {/* Divider */}
-          {mode!=="forgot"&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-            <div style={{flex:1,height:1,background:BRD}}/>
-            <span style={{fontSize:9,color:MUT,letterSpacing:"0.1em"}}>OR</span>
-            <div style={{flex:1,height:1,background:BRD}}/>
-          </div>}
-
-          {/* Email/password fields */}
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {mode==="signup"&&(
-              <div>
-                <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Username</div>
-                <input style={{...inp}} placeholder="e.g. wrench_rat" value={username} onChange={e=>setUsername(e.target.value)} />
-              </div>
-            )}
-            <div>
-              <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Email</div>
-              <input style={{...inp}} type="email" placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)} />
+            {/* Mode tabs */}
+            <div style={{display:"flex",borderRadius:2,overflow:"hidden",border:"1px solid "+BRD,marginBottom:20}}>
+              {["login","signup"].map(m=>(
+                <button key={m} onClick={()=>{setMode(m);setError("");setMessage("");}}
+                  style={{flex:1,padding:"9px 0",fontSize:9,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"none",background:mode===m?ACC:"transparent",color:mode===m?"#fff":MUT,transition:"background 0.15s"}}>
+                  {m==="login"?"Sign In":"Create Account"}
+                </button>
+              ))}
             </div>
-            {mode!=="forgot"&&<div>
-              <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Password</div>
-              <input style={{...inp}} type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&handleSubmit()} />
+
+            {/* Google button */}
+            {mode!=="forgot"&&<button onClick={handleGoogle} disabled={loading}
+              style={{width:"100%",padding:"11px 0",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"1px solid "+BRD,borderRadius:2,background:"transparent",color:TXT,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?0.6:1}}>
+              <span style={{fontSize:14}}>G</span> Continue with Google
+            </button>}
+
+            {/* Divider */}
+            {mode!=="forgot"&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+              <div style={{flex:1,height:1,background:BRD}}/>
+              <span style={{fontSize:9,color:MUT,letterSpacing:"0.1em"}}>OR</span>
+              <div style={{flex:1,height:1,background:BRD}}/>
             </div>}
+
+            {/* Email/password fields */}
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {mode==="signup"&&(
+                <div>
+                  <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Username</div>
+                  <input style={{...inp}} placeholder="e.g. wrench_rat" value={username} onChange={e=>setUsername(e.target.value)} />
+                </div>
+              )}
+              <div>
+                <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Email</div>
+                <input style={{...inp}} type="email" placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)} />
+              </div>
+              {mode!=="forgot"&&<div>
+                <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Password</div>
+                <input style={{...inp}} type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&handleSubmit()} />
+              </div>}
+            </div>
+
+            {/* Error / message */}
+            {error&&<div style={{background:RED+"12",border:"1px solid "+RED+"44",color:RED,fontSize:10,padding:"8px 12px",borderRadius:2,marginTop:12,lineHeight:1.5}}>{error}</div>}
+            {message&&<div style={{background:GRN+"12",border:"1px solid "+GRN+"44",color:GRN,fontSize:10,padding:"8px 12px",borderRadius:2,marginTop:12,lineHeight:1.5}}>{message}</div>}
+
+            {/* Submit button */}
+            <button onClick={handleSubmit} disabled={loading}
+              style={{...btnA,width:"100%",marginTop:16,padding:"11px 0",fontSize:10,opacity:loading?0.6:1,letterSpacing:"0.1em"}}>
+              {loading?"Please wait...":(mode==="login"?"Sign In":mode==="signup"?"Create Account":"Send Reset Link")}
+            </button>
+
+            {/* Forgot password */}
+            {mode==="login"&&<div style={{textAlign:"center",marginTop:14}}>
+              <button onClick={()=>{setMode("forgot");setError("");setMessage("");}}
+                style={{background:"none",border:"none",color:MUT,fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace"}}>
+                Forgot password?
+              </button>
+            </div>}
+            {mode==="forgot"&&<div style={{textAlign:"center",marginTop:14}}>
+              <button onClick={()=>setMode("login")}
+                style={{background:"none",border:"none",color:MUT,fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace"}}>
+                ← Back to sign in
+              </button>
+            </div>}
+
+            {mode==="login"&&<div style={{textAlign:"center",marginTop:20}}>
+              <button onClick={handleGuest} disabled={loading}
+                style={{background:"none",border:"1px solid "+ACC,borderRadius:2,color:ACC,fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",padding:"6px 14px",opacity:loading?0.4:1}}>
+                Continue as Guest
+              </button>
+            </div>}
+
           </div>
 
-          {/* Error / message */}
-          {error&&<div style={{fontSize:10,color:RED,marginTop:12,lineHeight:1.5,padding:"8px 10px",background:"#200e0e",border:"1px solid #3a1a1a",borderRadius:2}}>{error}</div>}
-          {message&&<div style={{fontSize:10,color:GRN,marginTop:12,lineHeight:1.5,padding:"8px 10px",background:"#0e200e",border:"1px solid #1a3a1a",borderRadius:2}}>{message}</div>}
-
-          {/* Submit button */}
-          <button onClick={handleSubmit} disabled={loading}
-            style={{...btnA,width:"100%",marginTop:16,padding:"11px 0",fontSize:10,opacity:loading?0.6:1,letterSpacing:"0.1em"}}>
-            {loading?"Please wait...":(mode==="login"?"Sign In":mode==="signup"?"Create Account":"Send Reset Link")}
-          </button>
-
-          {/* Forgot password */}
-          {mode==="login"&&<div style={{textAlign:"center",marginTop:14}}>
-            <button onClick={()=>{setMode("forgot");setError("");setMessage("");}}
-              style={{background:"none",border:"none",color:MUT,fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace"}}>
-              Forgot password?
-            </button>
-          </div>}
-          {mode==="forgot"&&<div style={{textAlign:"center",marginTop:14}}>
-            <button onClick={()=>setMode("login")}
-              style={{background:"none",border:"none",color:MUT,fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace"}}>
-              ← Back to sign in
-            </button>
-          </div>}
-
-          {mode==="login"&&<div style={{textAlign:"center",marginTop:20}}>
-            <button onClick={handleGuest} disabled={loading}
-              style={{background:"#000",border:"1px solid #f97316",borderRadius:2,color:"#f97316",fontSize:9,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",padding:"6px 14px",opacity:loading?0.4:1}}>
-              Continue as Guest
-            </button>
-          </div>}
-
-          <div style={{fontSize:8,color:"#2a2a2a",textAlign:"center",marginTop:32}}>
+          <div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:24}}>
             ratbench.net
           </div>
         </div>

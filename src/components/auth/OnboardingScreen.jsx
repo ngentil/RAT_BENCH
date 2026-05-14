@@ -42,22 +42,24 @@ function OnboardingScreen({session, onComplete}){
           <div style={{fontSize:10,color:MUT,marginTop:8,lineHeight:1.6}}>Just a few quick details to get you set up.</div>
         </div>
 
-        <div style={{background:SURF,border:"1px solid "+BRD,borderTop:"2px solid "+ACC,borderRadius:3,padding:20}}>
+        <div style={{background:SURF,border:"1px solid "+BRD,borderTop:"2px solid "+ACC,borderRadius:2,padding:20}}>
+
+          <div style={{fontSize:9,color:ACC,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:16}}>Account Setup</div>
 
           {/* Username */}
           <div style={{marginBottom:16}}>
-            <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Username *</div>
+            <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Username *</div>
             <input style={{...inp}} placeholder="e.g. wrench_rat" value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,""))} />
-            <div style={{fontSize:8,color:"#444",marginTop:4}}>3-20 chars · letters, numbers, underscores · shown on wiki contributions</div>
+            <div style={{fontSize:8,color:MUT,marginTop:4}}>3-20 chars · letters, numbers, underscores · shown on wiki contributions</div>
           </div>
 
           {/* Account type */}
           <div style={{marginBottom:16}}>
-            <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>How are you using Rat Bench?</div>
-            <div style={{display:"flex",gap:0,borderRadius:2,overflow:"hidden",border:"1px solid #252525"}}>
+            <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>How are you using Rat Bench?</div>
+            <div style={{display:"flex",gap:0,borderRadius:2,overflow:"hidden",border:"1px solid "+BRD}}>
               {[["personal","🔧 Personal Tech"],["business","🏪 Shop / Business"]].map(([val,lbl])=>(
                 <button key={val} onClick={()=>setAccountType(val)}
-                  style={{flex:1,padding:"10px 4px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"none",background:accountType===val?ACC:"#0a0a0a",color:accountType===val?"#fff":MUT,transition:"background 0.15s"}}>
+                  style={{flex:1,padding:"10px 4px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"none",background:accountType===val?ACC:"transparent",color:accountType===val?"#fff":MUT,transition:"background 0.15s"}}>
                   {lbl}
                 </button>
               ))}
@@ -66,20 +68,20 @@ function OnboardingScreen({session, onComplete}){
 
           {/* Company name — business only */}
           {accountType==="business"&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Shop / Company Name</div>
+            <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Shop / Company Name</div>
             <input style={{...inp}} placeholder="e.g. Wrench Rat Small Engines" value={company} onChange={e=>setCompany(e.target.value)} />
           </div>}
 
           {/* Country */}
           <div style={{marginBottom:20}}>
-            <div style={{fontSize:9,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Country</div>
+            <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Country</div>
             <select style={{...inp}} value={country} onChange={e=>setCountry(e.target.value)}>
               <option value="">— select country —</option>
               {COUNTRIES.map(c=><option key={c}>{c}</option>)}
             </select>
           </div>
 
-          {error&&<div style={{fontSize:10,color:RED,marginBottom:12,padding:"8px 10px",background:"#200e0e",border:"1px solid #3a1a1a",borderRadius:2}}>{error}</div>}
+          {error&&<div style={{background:RED+"12",border:"1px solid "+RED+"44",color:RED,fontSize:10,padding:"8px 12px",borderRadius:2,marginBottom:12,lineHeight:1.5}}>{error}</div>}
 
           <button onClick={save} disabled={loading}
             style={{...btnA,width:"100%",padding:"11px 0",fontSize:10,letterSpacing:"0.1em",opacity:loading?0.6:1}}>
@@ -87,7 +89,7 @@ function OnboardingScreen({session, onComplete}){
           </button>
         </div>
 
-        <div style={{fontSize:8,color:"#333",textAlign:"center",marginTop:20}}>You can change these later in settings.</div>
+        <div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:20}}>You can change these later in settings.</div>
       </div>
     </div>
   );

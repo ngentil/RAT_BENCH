@@ -264,9 +264,9 @@ ${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to
 }
 
 const timerSel = {
-  width: "100%", background: "#111", border: "1px solid #333", borderRadius: 2,
+  width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2,
   color: TXT, fontSize: 10, padding: "5px 6px", fontFamily: "'IBM Plex Mono',monospace",
-  cursor: "pointer",
+  cursor: "pointer", outline: "none",
 };
 
 const BILL_STATUS = {
@@ -378,7 +378,7 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
                   <div style={{ marginTop: 4 }}>
                     <textarea
                       autoFocus
-                      style={{ width: "100%", background: "#111", border: "1px solid #333", color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, padding: "5px 7px", borderRadius: 2, resize: "vertical", minHeight: 48, boxSizing: "border-box", outline: "none", lineHeight: 1.5 }}
+                      style={{ width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, padding: "5px 7px", borderRadius: 2, resize: "vertical", minHeight: 48, boxSizing: "border-box", outline: "none", lineHeight: 1.5 }}
                       value={noteDraft}
                       onChange={e => setNoteDraft(e.target.value)}
                       placeholder="What was done this session…"
@@ -526,7 +526,7 @@ function PartsSection({ machine, onUpdate, userId }) {
             {filteredInv.length === 0 && <div style={{ fontSize:9, color:MUT, padding:8 }}>No matching items.</div>}
           </div>
           {selected && (
-            <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px", background:"#111", borderRadius:2, marginBottom:8 }}>
+            <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px", background:"#0a0a0a", borderRadius:2, marginBottom:8 }}>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{selected.name}</div>
                 <div style={{ fontSize:8, color:MUT }}>Cost ${(parseFloat(selected.buyPrice)||0).toFixed(2)} · Sell ${(parseFloat(selected.sellPrice)||0).toFixed(2)}</div>
@@ -555,12 +555,12 @@ function PartsSection({ machine, onUpdate, userId }) {
                 <input style={inpS} value={saForm.name} onChange={e=>onSaNameChange(e.target.value)} placeholder="e.g. Air filter" autoFocus onBlur={()=>setTimeout(()=>setSaSuggestions([]),150)}/>
                 {saMatchedInvId && (() => { const i=inv.find(x=>x.id===saMatchedInvId); const s=Number(i?.stockQty)||0; return i ? <span style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",fontSize:8,color:s>0?GRN:RED,letterSpacing:"0.06em",pointerEvents:"none"}}>{s} in stock</span> : null; })()}
                 {saSuggestions.length > 0 && (
-                  <div style={{ position:"absolute", top:"100%", left:0, right:0, background:"#111", border:"1px solid "+ACC+"55", borderRadius:2, zIndex:50, maxHeight:180, overflowY:"auto" }}>
+                  <div style={{ position:"absolute", top:"100%", left:0, right:0, background:SURF, border:"1px solid "+ACC+"55", borderRadius:2, zIndex:50, maxHeight:180, overflowY:"auto" }}>
                     {saSuggestions.map(i => {
                       const stockQty = Number(i.stockQty)||0;
                       return (
-                        <div key={i.id} onMouseDown={()=>pickSaSuggestion(i)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", cursor:"pointer", borderBottom:"1px solid #1a1a1a" }}
-                          onMouseEnter={e=>e.currentTarget.style.background="#1a1a1a"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <div key={i.id} onMouseDown={()=>pickSaSuggestion(i)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", cursor:"pointer", borderBottom:"1px solid " + BRD }}
+                          onMouseEnter={e=>e.currentTarget.style.background=BRD} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                           <div>
                             <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
                             {(i.brand||i.partNumber) && <div style={{ fontSize:8, color:MUT }}>{[i.brand,i.partNumber].filter(Boolean).join(" · ")}</div>}
@@ -609,7 +609,7 @@ function PartsSection({ machine, onUpdate, userId }) {
               <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                 <span style={{ fontSize:10, color:TXT, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
                 {Number(p.qty)>1 && <span style={{ fontSize:8, color:MUT, flexShrink:0 }}>×{p.qty}</span>}
-                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background:"#111", padding:"1px 4px", borderRadius:2 }}>{p.partNumber}</span>}
+                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background: SURF, padding:"1px 4px", borderRadius:2, border:"1px solid " + BRD }}>{p.partNumber}</span>}
                 {p.inventoryId && <span style={{ fontSize:7, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
               </div>
               {(rev > 0 || cost > 0) && (
@@ -817,16 +817,16 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
-                  style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }} />
+                  style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
                 <span style={{ fontSize: 9, color: MUT }}>h</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
-                  style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }} />
+                  style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
                 <span style={{ fontSize: 9, color: MUT }}>m</span>
               </div>
               <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
-                style={{ background: "#111", border: "1px solid #333", borderRadius: 2, color: MUT, fontSize: 10, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace" }} />
+                style={{ background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: MUT, fontSize: 10, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", outline: "none" }} />
               <button onClick={handleManualLog} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>+ Log Time</button>
             </div>
           </div>
@@ -836,7 +836,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
               <input
                 type="number" min="0" max="99" placeholder="0"
                 value={hours} onChange={e => setHours(e.target.value)}
-                style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }}
+                style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }}
               />
               <span style={{ fontSize: 9, color: MUT }}>h</span>
             </div>
@@ -844,7 +844,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
               <input
                 type="number" min="0" max="59" placeholder="0"
                 value={mins} onChange={e => setMins(e.target.value)}
-                style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }}
+                style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }}
               />
               <span style={{ fontSize: 9, color: MUT }}>m</span>
             </div>
@@ -880,7 +880,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
         </div>
       )}
       {!isCountUp && t.duration > 0 && (
-        <div style={{ height: 3, background: "#1a1a1a", borderRadius: 2, marginBottom: 10, overflow: "hidden" }}>
+        <div style={{ height: 3, background: BRD, borderRadius: 2, marginBottom: 10, overflow: "hidden" }}>
           <div style={{
             height: "100%", borderRadius: 2,
             width: `${Math.max(0, Math.min(100, (remaining / t.duration) * 100))}%`,
@@ -919,7 +919,7 @@ function MachineNotes({ machine, onSave }) {
   return (
     <div style={{ marginBottom: 8 }}>
       {machine.notes
-        ? <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, cursor: "pointer" }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
+        ? <div style={{ fontSize: 11, color: TXT, lineHeight: 1.5, cursor: "pointer", opacity: 0.7 }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
         : <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9, color: MUT, padding: 0, fontFamily: "'IBM Plex Mono',monospace", fontStyle: "italic" }}>+ job notes</button>}
     </div>
   );
@@ -981,7 +981,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
         {machines.length > 0 && (
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             {runningTimer && (
-              <span className="loading-rat" style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4, animation: "ratPulse 1.4s ease-in-out infinite" }}>
+              <span className="loading-rat" style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4 }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 4px " + GRN, display: "inline-block" }} />
                 TIMER RUNNING
               </span>
