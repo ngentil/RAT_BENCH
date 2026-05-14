@@ -190,7 +190,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
         </div>
       </div>
 
-      {clients.length > 5 && (
+      {clients.length > 0 && (
         <input
           style={{ ...inp, marginBottom: 12, fontSize: 11 }}
           placeholder="Search clients…"
@@ -215,7 +215,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
         const labourRev = (totalSecs / 3600) * rate;
         const totalRev = labourRev + totalPartsRev;
         return (
-          <div key={client.id} style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "12px 14px", marginBottom: 10 }}>
+          <div key={client.id} style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + ACC, borderRadius: 2, padding: "12px 14px", marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: linked.length ? 10 : 0 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

@@ -149,8 +149,8 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{
               fontSize: 22, fontWeight: 700, letterSpacing: "0.25em", color: TXT,
-              fontFamily: "'IBM Plex Mono',monospace", background: "#111",
-              border: "1px solid #444", borderRadius: 2, padding: "8px 14px", flex: 1, textAlign: "center",
+              fontFamily: "'IBM Plex Mono',monospace", background: "#0a0a0a",
+              border: "1px solid " + BRD, borderRadius: 2, padding: "8px 14px", flex: 1, textAlign: "center",
             }}>
               {company.invite_code || "—"}
             </div>
@@ -176,10 +176,12 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
           const isMe = m.user_id === session?.user?.id;
           const isMemberOwner = m.user_id === company.owner_id;
 
+          const roleColor = isMemberOwner ? GRN : ROLE_COLOR[m.role] || MUT;
           return (
             <div key={m.user_id} style={{
               display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 0", borderBottom: "1px solid " + BRD,
+              padding: "10px 0 10px 8px", borderBottom: "1px solid " + BRD,
+              borderLeft: "2px solid " + roleColor + "55",
             }}>
               <Avatar name={displayName} />
               <div style={{ flex: 1, minWidth: 0 }}>
