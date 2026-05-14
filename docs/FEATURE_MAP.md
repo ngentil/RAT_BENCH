@@ -192,7 +192,7 @@ Stripe
 | localStorage → Supabase migration (tools) | ✅ | tools table | — |
 | Free-tier item limit (3 per type) | ✅ | gates.js assetLimit() | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
-| Org provisioning (grant/revoke per member) | 📋 | asset_permissions, CompanySettings | Team+ |
+| Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
 | Assign tools/equipment to a vehicle | 📋 | vehicle_assignments (not built yet) | Team+ |
 | Assign team member (driver) to vehicle | 📋 | vehicle_assignments | Team+ |
 | Vehicle loadout view | 📋 | vehicle_assignments | Team+ |
@@ -214,7 +214,7 @@ Stripe
 | Company logo upload | ✅ | companies.logo (base64) | Team+ |
 | Hourly rate / tax rate / currency config | ✅ | companies fields | Team+ |
 | Machine provisioning panel (CompanySettings) | ✅ | machine_permissions | Team+ |
-| Asset provisioning panel (vehicles/equip/tools) | 📋 | asset_permissions, UI not built | Team+ |
+| Asset provisioning panel (vehicles/equip/tools) | ✅ | asset_permissions, CompanySettings | Team+ |
 
 ---
 
@@ -238,7 +238,7 @@ Stripe
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
-| Asset provisioning UI in CompanySettings | 📋 | Tables exist, UI panel not built yet |
+| Asset provisioning UI in CompanySettings | ✅ | Ships with Machines + Vehicles + Equipment + Tools sections |
 | Assign tools/equipment to vehicles | 📋 | Needs vehicle_assignments table (see FEATURE_QUEUE.md) |
 | Assign driver to vehicle | 📋 | Same — vehicle_assignments |
 | Vehicle loadout view | 📋 | Depends on assignments feature |
