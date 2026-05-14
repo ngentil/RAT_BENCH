@@ -140,13 +140,14 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
         <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer",userSelect:"none",minWidth:0}}>
           <span style={{fontSize:16}}>{mIcon(m.type)}</span>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:14,fontWeight:700,color:TXT,display:"flex",alignItems:"center",gap:6}}>
+            <div className={timerRunning?"loading-rat":undefined} style={{fontSize:14,fontWeight:700,color:TXT,display:"flex",alignItems:"center",gap:6}}>
               {m.name}
               {timerRunning&&<span style={{width:7,height:7,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,flexShrink:0,display:"inline-block"}}/>}
             </div>
             <div style={{fontSize:9,color:MUT,marginTop:2}}>{[m.make,m.model,m.year,m.source].filter(Boolean).join(" · ")}</div>
             {clientName&&<div style={{fontSize:8,color:ACC,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>👤 {clientName}</div>}
             {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const today=now.toDateString()===due.toDateString();const dueColor=overdue?"#e87a0a":today?"#4a9eff":MUT;return<div style={{fontSize:8,color:dueColor,marginTop:1}}>{overdue?"OVERDUE ":"DUE "}{due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>;})()}
+            {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const rate=company?.hourly_rate||0;const rev=tHrs*rate;const hasHrs=tHrs>0;const hasRev=rate>0&&rev>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRev&&!hasRage)return null;return<div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>{hasHrs&&<span style={{fontSize:8,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRev&&<span style={{fontSize:8,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}{hasRage&&<span style={{fontSize:8,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</div>;})()}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:"55%",overflow:"hidden"}}>
             {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
@@ -201,11 +202,11 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
               return fk ? show(fk) : true;
             });
             return <>
-              {show("photos")&&m.photos?.length>0&&<div style={{padding:"10px 14px 0"}}><FL t="Photos" /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,marginTop:4}}>{m.photos.map((p,i)=><img key={i} src={p} alt="" onClick={()=>setFullImg(p)} style={{width:"100%",height:80,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD,cursor:"zoom-in",display:"block"}} />)}</div></div>}
-              {show("desc")&&m.desc&&<div style={{padding:"10px 14px 0"}}><FL t="Description" /><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.desc}</div></div>}
-              {visibleSpecs.length>0&&<div style={{padding:"12px 14px 0"}}><SL t="Engine Spec" /><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{visibleSpecs.map(s=><SpecCell key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}</div></div>}
+              {show("photos")&&m.photos?.length>0&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Photos" /></div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginTop:4}}>{m.photos.map((p,i)=><img key={i} src={p} alt="" onClick={()=>setFullImg(p)} style={{width:"100%",height:80,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD,cursor:"zoom-in",display:"block"}} />)}</div></div>}
+              {show("desc")&&m.desc&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Description" /></div><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.desc}</div></div>}
+              {visibleSpecs.length>0&&<div style={{padding:"12px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Engine Spec" /></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{visibleSpecs.map(s=><SpecCell key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}</div></div>}
               {show("fasteners")&&m.fasteners&&m.fasteners.length>0&&<div style={{padding:"12px 14px 0"}}>
-                <SL t="Fastener Specs" />
+                <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Fastener Specs" /></div>
                 <div style={{marginTop:6}}>
                   {m.fasteners.map((f,idx)=>{
                     const loc=f.location==="Other"?(f.locOther||"Other"):(f.location||"—");
@@ -226,7 +227,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
                 </div>
               </div>}
               {show("lighting")&&m.lighting?.length>0&&<div style={{padding:"12px 14px 0"}}>
-                <SL t="Lighting" />
+                <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Lighting" /></div>
                 <div style={{marginTop:6}}>
                   {m.lighting.map((l,idx)=>{
                     const loc=l.location==="Other"?(l.locationOther||"Other"):(l.location||"—");
@@ -239,20 +240,24 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
                   })}
                 </div>
               </div>}
-              {show("notes")&&m.notes&&<div style={{padding:"10px 14px 0"}}><FL t="Notes" /><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.notes}</div></div>}
+              {show("notes")&&m.notes&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Notes" /></div><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.notes}</div></div>}
               {show("parts")&&m.parts?.length>0&&(
                 <div style={{padding:"12px 14px 0"}}>
-                  <SL t="Parts Used" />
+                  <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Parts Used" /></div>
                   <div style={{marginTop:6}}>
                     {m.parts.map((p,idx)=>{
                       const qty=Number(p.qty)||1;
+                      const buy=(parseFloat(p.buyPrice)||0)*qty;
                       const sell=(parseFloat(p.sellPrice)||0)*qty;
                       return <div key={p.id||idx} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #181818"}}>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontSize:10,color:TXT,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div>
                           <div style={{fontSize:8,color:MUT}}>{[p.partNumber,p.brand,`Qty ${qty}`].filter(Boolean).join(" · ")}</div>
                         </div>
-                        {sell>0&&<span style={{fontSize:9,color:GRN,flexShrink:0,marginLeft:8}}>${sell.toFixed(2)}</span>}
+                        <div style={{display:"flex",gap:6,flexShrink:0,marginLeft:8,alignItems:"center"}}>
+                          {buy>0&&<span style={{fontSize:9,color:MUT}}>${buy.toFixed(2)}</span>}
+                          {sell>0&&<span style={{fontSize:9,color:GRN}}>${sell.toFixed(2)}</span>}
+                        </div>
                       </div>;
                     })}
                     <div style={{fontSize:9,color:GRN,textAlign:"right",marginTop:5,fontWeight:700}}>
@@ -268,17 +273,17 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
           {(()=>{const ef=m.expandFields&&m.expandFields.length>0?m.expandFields:DEFAULT_EXPAND;const showSvcH=ef.includes("serviceHistory");return showSvcH&&(
           <div style={{padding:"12px 14px"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <SL t="Service History" />
+              <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Service History" /></div>
               <button style={{...btnA,...sm}} onClick={ev=>{ev.stopPropagation();setShowSvc(true);}}>+ Log</button>
             </div>
             {saving&&<div style={{fontSize:10,color:MUT,marginBottom:8}}>Saving...</div>}
             {!loaded&&<div style={{fontSize:10,color:MUT}}>Loading...</div>}
             {loaded&&svcs.length===0&&<Empty t="No entries yet" />}
             {loaded&&svcs.length>0&&(
-              <div style={{borderLeft:"1px solid "+BRD}}>
+              <div style={{borderLeft:"2px solid "+ACC+"33",paddingLeft:10,marginLeft:6}}>
                 {svcs.map(svc=>(
                   <div key={svc.id} style={{position:"relative",paddingLeft:18,marginBottom:14}}>
-                    <div style={{position:"absolute",left:3,top:4,width:7,height:7,borderRadius:"50%",background:ACC,border:"1px solid #c04f00"}} />
+                    <div style={{position:"absolute",left:-13,top:5,width:6,height:6,borderRadius:"50%",background:ACC,flexShrink:0}} />
                     <div style={{fontSize:9,color:MUT,marginBottom:2}}>{fmtDT(svc.completedAt)}</div>
                     <div style={{fontSize:13,fontWeight:700,color:TXT,marginBottom:3}}>{svc.types.join("  ·  ")}</div>
                     {svc.notes&&<div style={{fontSize:11,color:"#888",lineHeight:1.5,marginBottom:5}}>{svc.notes}</div>}
