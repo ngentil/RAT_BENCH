@@ -108,7 +108,7 @@ function GuestUpgradeModal({profile,setProfile,onClose}){
               <div style={{...col,marginBottom:10}}><div style={lbl}>Email</div><input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"/></div>
               <div style={{...col,marginBottom:10}}><div style={lbl}>Password</div><input style={inp} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Min. 8 characters"/></div>
               <div style={{...col,marginBottom:14}}><div style={lbl}>Confirm Password</div><input style={inp} type="password" value={confirm} onChange={e=>setConfirm(e.target.value)}/></div>
-              {err&&<div style={{fontSize:10,color:RED,marginBottom:10}}>{err}</div>}
+              {err&&<div style={{fontSize:10,color:RED,background:RED+"12",border:"1px solid "+RED+"44",borderRadius:2,padding:"8px 12px",marginBottom:10}}>{err}</div>}
             </>
           )}
         </div>

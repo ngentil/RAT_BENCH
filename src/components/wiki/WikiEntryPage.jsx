@@ -93,10 +93,16 @@ function WikiEntryPage({ slug, profile, onBack, embedded = false }) {
         />
       )}
       <div style={{ maxWidth: embedded ? "none" : 680, margin: embedded ? 0 : "0 auto", padding: embedded ? "0 0 24px" : "24px 16px" }}>
+        {embedded && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{entry.make} <span style={{ color: ACC }}>{entry.model}</span></div>
+            {entry.type && <div style={{ display: "inline-block", marginTop: 4, fontSize: 8, color: ACC, background: ACC + "12", border: "1px solid " + ACC + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{entry.type}</div>}
+          </div>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {embedded && <button onClick={onBack} style={{ ...btnG, ...sm, fontSize: 9 }}>← Wiki</button>}
-            <span style={{ fontSize: 10, color: MUT }}>{entry.view_count || 0} views</span>
+            <span style={{ fontSize: 9, color: MUT }}>{entry.view_count || 0} views</span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {embedded
