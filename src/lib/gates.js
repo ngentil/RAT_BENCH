@@ -1,9 +1,9 @@
 // Tier definitions
 export const TIERS = {
-  free:        { label: "Free",        price: null,      machines: 30,       org: false, acl: false, support: false },
-  enthusiast:  { label: "Enthusiast",  price: "$4.99/mo",machines: Infinity, org: false, acl: false, support: false },
-  team:        { label: "Team",        price: "$29/mo",  machines: Infinity, org: true,  acl: true,  support: false },
-  business:    { label: "Business",    price: "$99/mo",  machines: Infinity, org: true,  acl: true,  support: true  },
+  free:        { label: "Free",        price: null,       machines: 30,       tools: 5,        vehicles: 5,        equipment: 5,        org: false, acl: false, support: false },
+  enthusiast:  { label: "Enthusiast",  price: "$4.99/mo", machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, org: false, acl: false, support: false },
+  team:        { label: "Team",        price: "$29/mo",   machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, org: true,  acl: true,  support: false },
+  business:    { label: "Business",    price: "$99/mo",   machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, org: true,  acl: true,  support: true  },
 };
 
 const TIER_RANK = { free: 0, enthusiast: 1, team: 2, business: 3 };
@@ -37,4 +37,14 @@ export function machineLimit(profile, company) {
 export function atMachineLimit(machineCount, profile, company) {
   const limit = machineLimit(profile, company);
   return machineCount >= limit;
+}
+
+// Asset limit for tools / vehicles / equipment
+export function assetLimit(assetType, profile, company) {
+  const tier = effectiveTier(profile, company);
+  return TIERS[tier]?.[assetType] ?? 5;
+}
+
+export function atAssetLimit(assetType, count, profile, company) {
+  return count >= assetLimit(assetType, profile, company);
 }
