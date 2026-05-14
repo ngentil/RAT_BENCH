@@ -22,9 +22,12 @@ CREATE TABLE IF NOT EXISTS machine_bookings (
 -- 3. Enable Row Level Security
 ALTER TABLE machine_bookings ENABLE ROW LEVEL SECURITY;
 
--- 4. RLS policy: users own their own bookings
+-- 4. RLS policy: users own their own bookings (USING covers SELECT/UPDATE/DELETE; WITH CHECK covers INSERT)
 CREATE POLICY "own" ON machine_bookings
-  FOR ALL USING (user_id = auth.uid());
+  FOR ALL
+  TO authenticated
+  USING     (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
 
 -- 5. Partial index for fast active-booking lookups
 CREATE INDEX IF NOT EXISTS idx_bookings_machine_open
