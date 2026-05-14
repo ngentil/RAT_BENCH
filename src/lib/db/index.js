@@ -6,3 +6,5 @@ export * from './clients';
 export * from './vehicles';
 export * from './equipment';
 export * from './tools';
+export * from './inventory';
+export * from './invoices';

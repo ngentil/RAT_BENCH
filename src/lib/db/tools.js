@@ -57,7 +57,6 @@ async function migrateLocalTools(userId) {
 
   const rows = local.map(t => ({
     ...toDb({ ...t, userId }),
-    // keep original IDs so re-migration is a no-op (upsert)
   }));
 
   await supabase.from('tools').upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
