@@ -282,12 +282,30 @@ Stripe
 
 ---
 
+## 12. Navigation & UX
+
+| Feature | Status | Depends on | Tier |
+|---------|--------|-----------|------|
+| 🔨 Workshop parent tab (nested sub-tab bar) | ✅ | App.jsx, WORKSHOP_TABS constant | Free |
+| Workshop sub-tabs: Parts, Clients, Tools, Vehicles, Equipment, Consumables, Revenue | ✅ | WORKSHOP_TABS, App.jsx content panels | Free / Ent+ |
+| Free-tier Workshop banner (5-item limit nudge + upgrade link) | ✅ | effectiveTier(), Workshop tab | Free |
+| Revenue sub-tab gated behind Enthusiast+ | ✅ | WORKSHOP_TABS enthusiastOnly flag | Enthusiast+ |
+| Per-user Workshop tab visibility preferences | ✅ | localStorage rat_workshop_visible | Free |
+| Per-user Workshop default sub-tab | ✅ | localStorage rat_workshop_tab | Free |
+| Workshop preferences UI in Settings | ✅ | SettingsPage WorkshopPrefs component | Free |
+| Users tab moved into Settings (team/business only) | ✅ | SettingsPage, UsersTab | Team+ |
+| localStorage migration (old flat tab IDs → workshop sub-tabs) | ✅ | App.jsx init state | Free |
+
+---
+
+
 ## 13. Queued Features
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
 | Asset provisioning UI in CompanySettings | ✅ | Ships with Machines + Vehicles + Equipment + Tools sections |
-| Assign driver to vehicle | 📋 | vehicle_assignments driver support not yet built |
+| Assign driver to vehicle | 📋 | asset_assignments driver support not yet built |
+| Workshop tab visibility stored in profiles (cross-device sync) | 📋 | Currently localStorage only — needs profiles column migration |
 | Photo migration → Supabase Storage | 📋 | Currently base64 in DB rows — expensive |
 | Push notifications (service due) | 📋 | Needs FCM or similar |
 | Smart Mode cascade calculations | 📋 | Needs multiple sections complete |
