@@ -4,6 +4,7 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
+import LoadoutSection from '../ui/LoadoutSection';
 
 const EQUIPMENT_TYPES = ["Excavator","Loader","Skid Steer","Forklift","Compressor","Generator","Pressure Washer","Trailer","Tractor","Mower (Commercial)","Chainsaw","Chipper","Stump Grinder","Other"];
 const STATUSES        = ["Active","Inactive","In Service","Project","Sold"];
@@ -212,6 +213,8 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
               <button onClick={() => setAddSvc(true)} style={{ ...btnG, width: '100%', marginTop: 6, fontSize: 9 }}>+ Log Service</button>
             ))}
           </div>
+
+          <LoadoutSection parentType="equipment" parentId={item.id} parentName={item.name} isShared={isShared} />
 
           {!isShared && (
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>

@@ -1,0 +1,109 @@
+import { supabase } from '../supabase';
+
+function fromDb(r) {
+  return {
+    id:          r.id,
+    userId:      r.user_id,
+    companyId:   r.company_id,
+    name:        r.name,
+    category:    r.category,
+    brand:       r.brand       || '',
+    quantity:    r.quantity    ?? 0,
+    unit:        r.unit        || 'L',
+    minQuantity: r.min_quantity ?? null,
+    spec:        r.spec        || {},
+    notes:       r.notes       || '',
+    photos:      r.photos      || [],
+    createdAt:   r.created_at,
+    updatedAt:   r.updated_at,
+  };
+}
+
+export async function getConsumables() {
+  const { data, error } = await supabase
+    .from('consumables')
+    .select('*')
+    .order('category', { ascending: true })
+    .order('name',     { ascending: true });
+  if (error) throw error;
+  return (data || []).map(fromDb);
+}
+
+export async function upsertConsumable(item) {
+  const { data: { user } } = await supabase.auth.getUser();
+  const now = new Date().toISOString();
+  const payload = {
+    user_id:      user.id,
+    company_id:   item.companyId || null,
+    name:         item.name,
+    category:     item.category,
+    brand:        item.brand       || null,
+    quantity:     item.quantity    ?? 0,
+    unit:         item.unit        || 'L',
+    min_quantity: item.minQuantity != null && item.minQuantity !== '' ? parseFloat(item.minQuantity) : null,
+    spec:         item.spec        || {},
+    notes:        item.notes       || null,
+    photos:       item.photos      || [],
+    updated_at:   now,
+  };
+  if (item.id) {
+    const { data, error } = await supabase.from('consumables').update(payload).eq('id', item.id).select().single();
+    if (error) throw error;
+    return fromDb(data);
+  } else {
+    const { data, error } = await supabase.from('consumables').insert({ ...payload, created_at: now }).select().single();
+    if (error) throw error;
+    return fromDb(data);
+  }
+}
+
+export async function deleteConsumable(id) {
+  const { error } = await supabase.from('consumables').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function adjustConsumableQty(id, delta) {
+  const { data, error } = await supabase.from('consumables').select('quantity').eq('id', id).single();
+  if (error) throw error;
+  const newQty = Math.max(0, (Number(data.quantity) || 0) + delta);
+  const { data: updated, error: e2 } = await supabase
+    .from('consumables')
+    .update({ quantity: newQty, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (e2) throw e2;
+  return fromDb(updated);
+}
+
+// ── Permissions (asset_permissions) ─────────────────────────────────────────
+
+export async function getConsumablePermissions(itemId) {
+  const { data, error } = await supabase
+    .from('asset_permissions')
+    .select('*')
+    .eq('asset_type', 'consumable')
+    .eq('asset_id', itemId);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function upsertConsumablePermission(itemId, userId, companyId, canEdit) {
+  const { error } = await supabase.from('asset_permissions').upsert({
+    asset_type: 'consumable',
+    asset_id:   itemId,
+    user_id:    userId,
+    company_id: companyId,
+    can_edit:   canEdit,
+  }, { onConflict: 'asset_type,asset_id,user_id' });
+  if (error) throw error;
+}
+
+export async function revokeConsumablePermission(itemId, userId) {
+  const { error } = await supabase.from('asset_permissions')
+    .delete()
+    .eq('asset_type', 'consumable')
+    .eq('asset_id', itemId)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
