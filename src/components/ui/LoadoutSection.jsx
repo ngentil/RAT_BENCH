@@ -47,7 +47,7 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
   }, [parentType, parentId]);
 
   // Picker types: all types; exclude assigning an item to itself (same type + same id)
-  const pickerTypes = ALL_TYPES;
+  const pickerTypes = ALL_TYPES.filter(t => t !== parentType);
 
   const openPicker = async (type) => {
     const t = type || pickerTypes.find(t => t !== parentType) || pickerTypes[0];
