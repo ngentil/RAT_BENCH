@@ -97,12 +97,18 @@ export async function saveToolItem(tool) {
   if (!user) throw new Error('Not authenticated');
 
   const row = { ...toDb({ ...tool, userId: user.id }) };
-  if (!row.id) delete row.id;
+  const isNew = !row.id;
+  if (isNew) delete row.id;
 
-  const { data, error } = await supabase
-    .from('tools').upsert(row, { onConflict: 'id' }).select().single();
-  if (error) throw error;
-  return fromDb(data);
+  if (isNew) {
+    const { data, error } = await supabase.from('tools').insert(row).select('id').single();
+    if (error) throw error;
+    return fromDb({ ...row, id: data.id, created_at: row.updated_at });
+  } else {
+    const { error } = await supabase.from('tools').update(row).eq('id', row.id);
+    if (error) throw error;
+    return fromDb(row);
+  }
 }
 
 export async function deleteToolItem(id) {
