@@ -4,6 +4,7 @@ import { FL, Empty } from '../ui/shared';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
 import LoadoutSection from '../ui/LoadoutSection';
+import PhotoAdder from '../ui/PhotoAdder';
 import {
   CONSUMABLE_CATEGORIES, CATEGORY_GROUPS, CATEGORY_ICON, CATEGORY_COLOR,
   CATEGORY_SPECS, CATEGORY_UNITS, COMMON_CONSUMABLES,
@@ -63,6 +64,7 @@ function ConsumableForm({ item, onSave, onCancel }) {
     spec:        item.spec        || {},
     notes:       item.notes       || '',
   } : EMPTY_FORM);
+  const [photos, setPhotos] = useState(item?.photos || []);
   const [saving, setSaving] = useState(false);
 
   const s = (k, v) => setF(prev => ({ ...prev, [k]: v }));
@@ -81,6 +83,7 @@ function ConsumableForm({ item, onSave, onCancel }) {
       name:        f.name.trim(),
       quantity:    parseFloat(f.quantity) || 0,
       minQuantity: f.minQuantity !== '' ? parseFloat(f.minQuantity) : null,
+      photos,
     });
     setSaving(false);
   };
@@ -172,6 +175,10 @@ function ConsumableForm({ item, onSave, onCancel }) {
             <textarea style={{ ...txa, minHeight: 44 }} value={f.notes}
               onChange={e => s('notes', e.target.value)} placeholder="Storage location, supplier, part number…" />
           </div>
+
+          <div style={{ gridColumn: '1/-1' }}>
+            <PhotoAdder photos={photos} setPhotos={setPhotos} />
+          </div>
         </div>
 
         <div style={mdlF}>
@@ -185,7 +192,7 @@ function ConsumableForm({ item, onSave, onCancel }) {
   );
 }
 
-function ConsumableCard({ item, onEdit, onDelete, onQtyChange, isShared }) {
+function ConsumableCard({ item, onEdit, onDelete, onQtyChange, onUpdate, isShared }) {
   const [open, setOpen]       = useState(false);
   const [adjusting, setAdj]   = useState(false);
   const [delta, setDelta]     = useState('');
@@ -207,7 +214,9 @@ function ConsumableCard({ item, onEdit, onDelete, onQtyChange, isShared }) {
   return (
     <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${catColor}`, borderRadius: 2, marginBottom: 5, overflow: 'hidden' }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', cursor: 'pointer' }}>
-        <span style={{ fontSize: 16, flexShrink: 0 }}>{catIcon}</span>
+        {item.photos?.[0]
+          ? <img src={item.photos[0]} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 2, flexShrink: 0, border: '1px solid #252525' }} />
+          : <span style={{ fontSize: 16, flexShrink: 0 }}>{catIcon}</span>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{item.name}</span>
@@ -234,6 +243,22 @@ function ConsumableCard({ item, onEdit, onDelete, onQtyChange, isShared }) {
 
       {open && (
         <div style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
+
+          {item.photos?.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 10 }}>
+              {item.photos.map((p, i) => (
+                <div key={i} style={{ position: 'relative' }}>
+                  <img src={p} alt="" style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: 2, border: i === 0 ? `1px solid ${ACC}88` : '1px solid #252525', display: 'block' }} />
+                  <button
+                    title={i === 0 ? 'Cover photo' : 'Set as cover'}
+                    onClick={e => { e.stopPropagation(); if (i === 0 || !onUpdate) return; onUpdate({ ...item, photos: [p, ...item.photos.filter((_, j) => j !== i)] }); }}
+                    style={{ position: 'absolute', top: 2, left: 2, background: i === 0 ? ACC : 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 2, cursor: i === 0 ? 'default' : 'pointer', fontSize: 8, padding: '2px 4px', color: i === 0 ? '#000' : MUT, lineHeight: 1 }}>
+                    {i === 0 ? '⭐' : '☆ Cover'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Specs */}
           <SpecChips category={item.category} spec={item.spec} />
@@ -366,6 +391,11 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
     setFormItem(null);
   };
 
+  const update = async (item) => {
+    const saved = await upsertConsumable({ ...item, companyId: company?.id || null });
+    setItems(prev => prev.map(i => i.id === saved.id ? saved : i));
+  };
+
   const remove = async (id) => {
     if (!confirm('Delete this consumable?')) return;
     await deleteConsumable(id);
@@ -483,6 +513,7 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
             {sorted.map(item => (
               <AssetTile
                 key={item.id}
+                photo={item.photos?.[0]}
                 icon={CATEGORY_ICON[item.category] || '📦'}
                 accentColor={CATEGORY_COLOR[item.category] || ACC}
                 name={item.name}
@@ -507,6 +538,7 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
                     onEdit={() => { setFormItem(item); setTileOpen(null); }}
                     onDelete={() => { remove(item.id); setTileOpen(null); }}
                     onQtyChange={handleQtyChange}
+                    onUpdate={update}
                   />
                   <button onClick={() => setTileOpen(null)} style={{ ...btnG, width: '100%', marginTop: 8, fontSize: 10 }}>Close</button>
                 </div>
@@ -523,6 +555,7 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
             onEdit={() => setFormItem(item)}
             onDelete={() => remove(item.id)}
             onQtyChange={handleQtyChange}
+            onUpdate={update}
           />
         ))
       )}

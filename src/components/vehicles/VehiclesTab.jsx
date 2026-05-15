@@ -224,7 +224,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
                     title={i === 0 ? 'Cover photo' : 'Set as cover'}
                     onClick={e => { e.stopPropagation(); if (i === 0) return; const reordered = [p, ...vehicle.photos.filter((_, j) => j !== i)]; onUpdate({ ...vehicle, photos: reordered }); }}
                     style={{ position: 'absolute', top: 2, left: 2, background: i === 0 ? ACC : 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 2, cursor: i === 0 ? 'default' : 'pointer', fontSize: 8, padding: '1px 3px', color: i === 0 ? '#000' : MUT, lineHeight: 1 }}>
-                    {i === 0 ? '⭐' : '☆'}
+                    {i === 0 ? '⭐' : '☆ Cover'}
                   </button>
                 </div>
               ))}
