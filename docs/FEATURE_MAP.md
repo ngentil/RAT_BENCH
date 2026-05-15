@@ -234,7 +234,9 @@ Stripe
 | 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
 | Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
 | ± stock adjustment inline on card | ✅ | adjustConsumableQty(), ConsumablesTab | Free |
-| Cover photo selection (⭐ sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab | Free |
+| Cover photo selection (☆ Cover sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab, MachineCard | Free |
+| Photos for consumables (add via form, thumbnail in card, cover selection) | ✅ | ConsumablesTab, consumables table photos column | Free |
+| Machine card collapsed header shows cover photo thumbnail | ✅ | MachineCard | Free |
 | Low-stock / out-of-stock badge | ✅ | qtyLabel(), min_quantity threshold | Free |
 | Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
 | Assign team member (driver) to vehicle | 📋 | asset_assignments driver support | Team+ |
