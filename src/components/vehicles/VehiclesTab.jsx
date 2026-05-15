@@ -46,14 +46,21 @@ function VehicleForm({ vehicle, onSave, onCancel, units }) {
     photos:    vehicle.photos    || [],
   } : EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState('');
 
   const s = (k, v) => setF(prev => ({ ...prev, [k]: v }));
 
   const save = async () => {
     if (!f.name.trim()) return;
     setSaving(true);
-    await onSave({ ...vehicle, ...f, name: f.name.trim(), year: f.year ? parseInt(f.year) : null, odometer: f.odometer !== '' ? parseFloat(f.odometer) : null });
-    setSaving(false);
+    setSaveErr('');
+    try {
+      await onSave({ ...vehicle, ...f, name: f.name.trim(), year: f.year ? parseInt(f.year) : null, odometer: f.odometer !== '' ? parseFloat(f.odometer) : null });
+    } catch (e) {
+      setSaveErr(e?.message || 'Save failed. Check console for details.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -108,6 +115,11 @@ function VehicleForm({ vehicle, onSave, onCancel, units }) {
             <PhotoAdder photos={f.photos} setPhotos={ps => s('photos', typeof ps === 'function' ? ps(f.photos) : ps)} label="Photos" />
           </div>
         </div>
+        {saveErr && (
+          <div style={{ margin: '0 16px 8px', padding: '8px 10px', background: '#2a0a0a', border: '1px solid #c9404044', borderRadius: 2, fontSize: 9, color: RED, lineHeight: 1.5 }}>
+            {saveErr}
+          </div>
+        )}
         <div style={mdlF}>
           <button style={btnG} onClick={onCancel}>Cancel</button>
           <button style={{ ...btnA, opacity: f.name.trim() && !saving ? 1 : 0.4 }} disabled={!f.name.trim() || saving} onClick={save}>
@@ -335,8 +347,12 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   };
 
   const update = async (vehicle) => {
-    const saved = await upsertVehicle(vehicle);
-    setVehicles(prev => prev.map(v => v.id === saved.id ? saved : v));
+    try {
+      const saved = await upsertVehicle(vehicle);
+      setVehicles(prev => prev.map(v => v.id === saved.id ? saved : v));
+    } catch (e) {
+      console.error('Vehicle update failed:', e);
+    }
   };
 
   const remove = async (id) => {
