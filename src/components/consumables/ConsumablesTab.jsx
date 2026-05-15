@@ -370,7 +370,7 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🧪 Consumables</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>📦 Consumables</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {items.length} item{items.length !== 1 ? 's' : ''}
             {lowStockCount > 0 && <span style={{ color: '#e8870a', marginLeft: 8 }}>· {lowStockCount} low stock</span>}
@@ -435,7 +435,7 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
       {loading && <div style={{ fontSize: 10, color: MUT, padding: '24px 0', textAlign: 'center' }}>Loading…</div>}
 
       {!loading && items.length === 0 && (
-        <Empty icon="🧪" t="No consumables yet"
+        <Empty icon="📦" t="No consumables yet"
           sub="Track your workshop supplies — oils, fuels, coolant, welding wire, abrasives and more. Use Quick Add for common presets." />
       )}
 
