@@ -4,6 +4,7 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
+import LoadoutSection from '../ui/LoadoutSection';
 
 const TOOL_CATEGORIES = [
   "Power Tools", "Hand Tools", "Measuring & Diagnostic",
@@ -296,6 +297,8 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
               <button onClick={() => setAddSvc(true)} style={{ ...btnG, width: "100%", marginTop: 6, fontSize: 9 }}>+ Log Service / Repair</button>
             ))}
           </div>
+
+          <LoadoutSection parentType="tool" parentId={tool.id} parentName={tool.name} isShared={isShared} />
 
           {!isShared && (
             <div style={{ display: "flex", gap: 6, marginTop: 12 }}>

@@ -188,7 +188,7 @@ export const TABS = [
   {id:"tools",       label:"🔧 Tools"},
   {id:"vehicles",    label:"🚗 Vehicles"},
   {id:"equipment",   label:"⚙️ Equipment"},
-  {id:"consumables", label:"🧪 Supplies"},
+  {id:"consumables", label:"📦 Consumables"},
   {id:"users",     label:"👥 Users", teamOnly:true},
 ];
 

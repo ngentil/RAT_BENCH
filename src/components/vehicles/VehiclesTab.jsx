@@ -4,17 +4,13 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
-import { getVehicleAssignments, assignAsset, unassignAsset } from '../../lib/db/vehicleAssignments';
-import { getTools } from '../../lib/db/tools';
-import { getEquipment } from '../../lib/db/equipment';
-import { getConsumables } from '../../lib/db/consumables';
+import LoadoutSection from '../ui/LoadoutSection';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
 const FUEL_TYPES    = ["Petrol","Diesel","LPG","Electric","Hybrid","Other"];
 const STATUSES      = ["Active","Inactive","Project","Sold"];
 
-const COND_COL  = { Active: "#3d9e50", Project: "#e8870a", Inactive: "#5a5a5a", Sold: "#c94040" };
-const TYPE_ICON = { Car:'🚗', Truck:'🚛', Van:'🚐', SUV:'🚙', Ute:'🛻', Motorcycle:'🏍', Scooter:'🛵', Trailer:'🚌', Boat:'⛵', Other:'🚘' };
+const COND_COL = { Active: "#3d9e50", Project: "#e8870a", Inactive: "#5a5a5a", Sold: "#c94040" };
 
 function fmtDate(s) {
   if (!s) return null;
@@ -121,136 +117,7 @@ function VehicleForm({ vehicle, onSave, onCancel, units }) {
   );
 }
 
-const ASSET_ICON = { tool: '🔧', equipment: '⚙️', consumable: '📦' };
-
-function LoadoutSection({ vehicleId, isShared, userId }) {
-  const [assignments, setAssignments] = useState([]);
-  const [loaded, setLoaded]           = useState(false);
-  const [showPicker, setShowPicker]   = useState(false);
-  const [pickerTab, setPickerTab]     = useState('tool');
-  const [pickerSearch, setPickerSearch] = useState('');
-  const [allTools, setAllTools]         = useState(null);
-  const [allEquipment, setAllEquipment] = useState(null);
-  const [allConsumables, setAllConsumables] = useState(null);
-  const [pickerLoading, setPickerLoading] = useState(false);
-
-  useEffect(() => {
-    getVehicleAssignments(vehicleId).then(a => { setAssignments(a); setLoaded(true); });
-  }, [vehicleId]);
-
-  const openPicker = async () => {
-    setShowPicker(true);
-    if (allTools === null || allEquipment === null || allConsumables === null) {
-      setPickerLoading(true);
-      const [ts, eq, cs] = await Promise.all([getTools(), getEquipment(), getConsumables()]);
-      setAllTools(ts || []);
-      setAllEquipment(eq || []);
-      setAllConsumables(cs || []);
-      setPickerLoading(false);
-    }
-  };
-
-  const doAssign = async (assetType, item) => {
-    const assetName = item.name;
-    const a = await assignAsset({ vehicleId, assetType, assetId: item.id, assetName });
-    setAssignments(prev => [...prev, a]);
-  };
-
-  const doUnassign = async (id) => {
-    await unassignAsset(id);
-    setAssignments(prev => prev.filter(a => a.id !== id));
-  };
-
-  const assignedIds = useMemo(() => {
-    const s = new Set();
-    assignments.forEach(a => s.add(a.asset_type + ':' + a.asset_id));
-    return s;
-  }, [assignments]);
-
-  const pickerItems = useMemo(() => {
-    const pool = pickerTab === 'tool' ? (allTools || []) : pickerTab === 'equipment' ? (allEquipment || []) : (allConsumables || []);
-    const q = pickerSearch.toLowerCase();
-    return pool.filter(item =>
-      !assignedIds.has(pickerTab + ':' + item.id) &&
-      (!q || (item.name || '').toLowerCase().includes(q))
-    );
-  }, [pickerTab, allTools, allEquipment, allConsumables, assignedIds, pickerSearch]);
-
-  return (
-    <div style={{ marginTop: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <div style={{ fontSize: 7, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
-          Loadout {loaded && assignments.length > 0 && `(${assignments.length})`}
-        </div>
-        {!isShared && !showPicker && (
-          <button onClick={openPicker} style={{ ...btnG, ...sm, fontSize: 8 }}>+ Assign</button>
-        )}
-        {!isShared && showPicker && (
-          <button onClick={() => { setShowPicker(false); setPickerSearch(''); }} style={{ ...btnG, ...sm, fontSize: 8 }}>Done</button>
-        )}
-      </div>
-
-      {loaded && assignments.length === 0 && !showPicker && (
-        <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic' }}>No tools, equipment or consumables assigned.</div>
-      )}
-
-      {assignments.map(a => (
-        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: '1px solid #1a1a1a' }}>
-          <span style={{ fontSize: 13 }}>{ASSET_ICON[a.asset_type]}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10, color: TXT, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.asset_name}</div>
-            <div style={{ fontSize: 8, color: MUT, textTransform: 'capitalize' }}>{a.asset_type}</div>
-          </div>
-          {!isShared && (
-            <button onClick={() => doUnassign(a.id)}
-              style={{ background: 'none', border: 'none', color: MUT, cursor: 'pointer', fontSize: 11, padding: '0 2px', lineHeight: 1 }}>✕</button>
-          )}
-        </div>
-      ))}
-
-      {showPicker && (
-        <div style={{ background: '#0a0a0a', border: '1px solid ' + ACC + '33', borderRadius: 2, padding: 10, marginTop: 6 }}>
-          <div style={{ display: 'flex', gap: 0, marginBottom: 8 }}>
-            {[['tool','🔧 Tools'], ['equipment','⚙️ Equipment'], ['consumable','📦 Consumables']].map(([v, l], i, arr) => (
-              <button key={v} onClick={() => { setPickerTab(v); setPickerSearch(''); }}
-                style={{ ...btnG, ...sm, fontSize: 8, borderRadius: i === 0 ? '2px 0 0 2px' : i === arr.length - 1 ? '0 2px 2px 0' : '0', borderRight: i < arr.length - 1 ? 'none' : undefined, ...(pickerTab === v ? { background: ACC + '18', color: ACC, border: '1px solid ' + ACC } : {}) }}>
-                {l}
-              </button>
-            ))}
-          </div>
-          <input
-            style={{ ...inp, fontSize: 10, padding: '5px 8px', marginBottom: 6 }}
-            placeholder={`Search ${pickerTab}s…`}
-            value={pickerSearch}
-            onChange={e => setPickerSearch(e.target.value)}
-          />
-          {pickerLoading && <div style={{ fontSize: 9, color: MUT, padding: '8px 0' }}>Loading…</div>}
-          {!pickerLoading && pickerItems.length === 0 && (
-            <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic', padding: '6px 0' }}>
-              {pickerSearch ? 'No matches.' : `All ${pickerTab}s already assigned.`}
-            </div>
-          )}
-          <div style={{ maxHeight: 180, overflowY: 'auto' }}>
-            {pickerItems.map(item => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #181818' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 10, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                  {(item.brand || item.make || item.category || item.type) && (
-                    <div style={{ fontSize: 8, color: MUT }}>{item.brand || item.make || ''}{(item.category || item.type) ? ' · ' + (item.category || item.type) : ''}</div>
-                  )}
-                </div>
-                <button onClick={() => doAssign(pickerTab, item)}
-                  style={{ ...btnA, ...sm, fontSize: 8, flexShrink: 0, marginLeft: 8 }}>+ Add</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, userId }) {
+function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
   const [open, setOpen] = useState(false);
   const [addSvc, setAddSvc] = useState(false);
   const [svcForm, setSvcForm] = useState({ date: new Date().toISOString().slice(0, 10), notes: '', cost: '' });
@@ -272,23 +139,19 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, use
   };
 
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid ' + (isShared ? ACC + '55' : '#252525'), borderLeft: '3px solid ' + (isShared ? ACC : statusColor), borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
+    <div style={{ background: '#0d0d0d', border: '1px solid ' + (isShared ? ACC + '55' : '#252525'), borderRadius: 2, marginBottom: 6 }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', cursor: 'pointer' }}>
-        {vehicle.photos?.[0] && (
-          <img src={vehicle.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 2, flexShrink: 0, border: '1px solid #252525' }} />
-        )}
-        {!vehicle.photos?.[0] && vehicle.type && (
-          <div style={{ width: 36, height: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, background: '#111', borderRadius: 2, border: '1px solid #1a1a1a' }}>
-            {TYPE_ICON[vehicle.type] || '🚘'}
-          </div>
-        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{vehicle.name}</span>
             {vehicle.status && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 7, color: statusColor, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: statusColor, display: 'inline-block' }} />
+              <span style={{ fontSize: 7, color: statusColor, border: '1px solid ' + statusColor + '44', borderRadius: 2, padding: '1px 4px', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>
                 {vehicle.status}
+              </span>
+            )}
+            {vehicle.type && (
+              <span style={{ fontSize: 7, color: ACC, border: '1px solid ' + ACC + '44', borderRadius: 2, padding: '1px 4px', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>
+                {vehicle.type}
               </span>
             )}
             {isShared && (
@@ -299,18 +162,15 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, use
           </div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ')}
-            {vehicle.rego && <span style={{ marginLeft: 6, fontFamily: "'IBM Plex Mono',monospace", color: ACC + '99', background: '#111', padding: '1px 4px', borderRadius: 2, fontSize: 8 }}>{vehicle.rego}</span>}
+            {vehicle.rego && <span style={{ marginLeft: 6, color: ACC + '99' }}>{vehicle.rego}</span>}
             {vehicle.colour && <span style={{ marginLeft: 6, color: MUT }}>· {vehicle.colour}</span>}
           </div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           {vehicle.odometer != null && (
-            <div style={{ fontSize: 10, color: TXT, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: '-0.02em' }}>
+            <div style={{ fontSize: 9, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>
               {fmtOdo(vehicle.odometer, units)}
             </div>
-          )}
-          {vehicle.fuelType && (
-            <div style={{ fontSize: 7, color: MUT, marginTop: 1 }}>{vehicle.fuelType}</div>
           )}
           {vehicle.serviceLog?.length > 0 && (
             <div style={{ fontSize: 7, color: MUT, marginTop: 1 }}>{vehicle.serviceLog.length} svc</div>
@@ -322,10 +182,10 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, use
       {open && (
         <div style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
           {vehicle.photos?.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginTop: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 10 }}>
               {vehicle.photos.map((p, i) => (
                 <img key={i} src={p} alt="" onClick={() => setPhotoIdx(i)}
-                  style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 2, border: '1px solid #252525', cursor: 'pointer' }} />
+                  style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: 2, border: '1px solid #252525', cursor: 'pointer' }} />
               ))}
             </div>
           )}
@@ -341,13 +201,13 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, use
             </div>
           )}
 
+          {/* Service log */}
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 7, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
               Service Log {vehicle.serviceLog?.length > 0 && `(${vehicle.serviceLog.length})`}
             </div>
             {(vehicle.serviceLog || []).map(e => (
-              <div key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0 6px 10px', borderBottom: '1px solid #1a1a1a', borderLeft: '2px solid ' + ACC + '33', marginLeft: 6 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: ACC + '66', flexShrink: 0, marginTop: 3 }} />
+              <div key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid #1a1a1a' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 8, color: MUT }}>{fmtDate(e.date)}</div>
                   <div style={{ fontSize: 10, color: TXT, marginTop: 2, lineHeight: 1.4 }}>{e.notes}</div>
@@ -373,7 +233,8 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, use
             ))}
           </div>
 
-          <LoadoutSection vehicleId={vehicle.id} isShared={isShared} userId={userId} />
+          <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} />
+
 
           {!isShared && (
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
@@ -400,7 +261,6 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   const [formVehicle, setFormVehicle] = useState(null);
   const [search, setSearch]     = useState('');
   const [typeFilter, setTypeFilter] = useState(null);
-  const [statusFilter, setStatusFilter] = useState(null);
   const userId = session?.user?.id;
   const units  = profile?.units || 'metric';
 
@@ -413,24 +273,16 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
     getVehicles().then(vs => { setVehicles(vs); setLoading(false); }).catch(() => setLoading(false));
   }, [userId]);
 
+  const totalOdo = useMemo(() => (vehicles || []).reduce((s, v) => s + (v.odometer || 0), 0), [vehicles]);
+
   const activeTypes = useMemo(() => {
     const seen = new Set((vehicles || []).map(v => v.type).filter(Boolean));
     return VEHICLE_TYPES.filter(t => seen.has(t));
   }, [vehicles]);
 
-  const stats = useMemo(() => {
-    const vs = vehicles || [];
-    return {
-      active:   vs.filter(v => v.status === 'Active').length,
-      project:  vs.filter(v => v.status === 'Project').length,
-      totalOdo: vs.reduce((s, v) => s + (v.odometer || 0), 0),
-    };
-  }, [vehicles]);
-
   const filtered = useMemo(() => {
     let r = vehicles || [];
-    if (typeFilter)   r = r.filter(v => v.type === typeFilter);
-    if (statusFilter) r = r.filter(v => v.status === statusFilter);
+    if (typeFilter) r = r.filter(v => v.type === typeFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       r = r.filter(v =>
@@ -441,7 +293,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
       );
     }
     return r;
-  }, [vehicles, search, typeFilter, statusFilter]);
+  }, [vehicles, search, typeFilter]);
 
   const save = async (vehicle) => {
     const saved = await upsertVehicle(vehicle);
@@ -470,19 +322,20 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
           <div>
             <div style={{ fontSize: 9, color: '#4ade80', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 3 }}>Free Plan</div>
             <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>
-              {limit} vehicle limit · upgrade for unlimited vehicles, equipment &amp; more.
+              {limit} vehicle limit · upgrade for unlimited vehicles, equipment tracking &amp; more.
             </div>
           </div>
           {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: 'nowrap' }}>Upgrade →</button>}
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <SL t="Vehicles" />
           <span style={{ fontSize: 8, color: MUT, letterSpacing: '0.06em' }}>
-            {(vehicles || []).length}{isFree ? `/${limit}` : ''} vehicle{(vehicles || []).length !== 1 ? 's' : ''}
+            {(vehicles || []).length} vehicle{(vehicles || []).length !== 1 ? 's' : ''}
           </span>
+          {isFree && <span style={{ fontSize: 8, color: atLimit ? RED : MUT, letterSpacing: '0.06em' }}>{(vehicles || []).length}/{limit}</span>}
         </div>
         <button
           onClick={() => setFormVehicle({})}
@@ -494,22 +347,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
         </button>
       </div>
 
-      {(vehicles || []).length > 0 && (
-        <div style={{ display: 'flex', gap: 20, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #1a1a1a' }}>
-          {[
-            { label: 'Active',   value: stats.active,  col: GRN,  show: stats.active > 0 },
-            { label: 'Project',  value: stats.project, col: ACC,  show: stats.project > 0 },
-            { label: units === 'imperial' ? 'Total mi' : 'Total km', value: Math.round(stats.totalOdo).toLocaleString(), col: TXT, show: stats.totalOdo > 0 },
-          ].filter(s => s.show).map(s => (
-            <div key={s.label}>
-              <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{s.label}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: s.col, fontFamily: "'IBM Plex Mono',monospace" }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {(vehicles || []).length > 0 && (
+      {(vehicles || []).length > 4 && (
         <input style={{ ...inp, marginBottom: 8, fontSize: 11 }} placeholder="Search vehicles…" value={search} onChange={e => setSearch(e.target.value)} />
       )}
 
@@ -518,7 +356,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
           {activeTypes.map(t => (
             <button key={t} onClick={() => setTypeFilter(typeFilter === t ? null : t)}
               style={{ fontSize: 8, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", border: '1px solid ' + ACC + '55', background: typeFilter === t ? ACC + '22' : 'transparent', color: typeFilter === t ? ACC : MUT }}>
-              {TYPE_ICON[t] && <span style={{ marginRight: 3 }}>{TYPE_ICON[t]}</span>}{t}
+              {t}
             </button>
           ))}
         </div>
@@ -539,7 +377,6 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
           vehicle={v}
           isShared={v.userId !== userId}
           units={units}
-          userId={userId}
           onEdit={() => setFormVehicle(v)}
           onDelete={() => remove(v.id)}
           onUpdate={update}

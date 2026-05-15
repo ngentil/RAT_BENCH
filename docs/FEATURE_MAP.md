@@ -219,19 +219,19 @@ Stripe
 | Free-tier item limit (3 per type) | ✅ | gates.js assetLimit() | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
 | Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
-| vehicle_assignments table + RLS | ✅ | vehicles, auth.users | Free |
-| Assign tools/equipment to a vehicle | ✅ | vehicle_assignments, LoadoutSection | Free |
-| Unassign tools/equipment from a vehicle | ✅ | unassignAsset(), LoadoutSection | Free |
-| Vehicle loadout view (inline in card) | ✅ | LoadoutSection, VehiclesTab | Free |
+| **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql | Free |
+| All-to-all cross-assignment (any type → any type) | ✅ | asset_assignments, LoadoutSection | Free |
+| Forward loadout panel (Assigned Items + picker) | ✅ | LoadoutSection, VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab | Free |
+| Reverse lookup panel (Assigned To) | ✅ | getAssignedIn(), LoadoutSection | Free |
+| Unassign items from loadout | ✅ | unassignAsset(), LoadoutSection | Free |
 | **consumables** table + RLS | ✅ | asset_permissions | Free |
 | Consumables tab: CRUD + qty tracking + stock alerts | ✅ | consumables table | Free (10 limit) |
 | 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
 | Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
 | ± stock adjustment inline on card | ✅ | adjustConsumableQty(), ConsumablesTab | Free |
 | Low-stock / out-of-stock badge | ✅ | qtyLabel(), min_quantity threshold | Free |
-| Assign consumables to vehicle loadout | ✅ | vehicle_assignments consumable type | Free |
 | Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
-| Assign team member (driver) to vehicle | 📋 | vehicle_assignments driver support | Team+ |
+| Assign team member (driver) to vehicle | 📋 | asset_assignments driver support | Team+ |
 
 ---
 

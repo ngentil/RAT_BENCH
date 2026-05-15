@@ -3,6 +3,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm
 import { FL, Empty } from '../ui/shared';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
+import LoadoutSection from '../ui/LoadoutSection';
 import {
   CONSUMABLE_CATEGORIES, CATEGORY_GROUPS, CATEGORY_ICON, CATEGORY_COLOR,
   CATEGORY_SPECS, CATEGORY_UNITS, COMMON_CONSUMABLES,
@@ -266,6 +267,8 @@ function ConsumableCard({ item, onEdit, onDelete, onQtyChange, isShared }) {
               {item.notes}
             </div>
           )}
+
+          <LoadoutSection parentType="consumable" parentId={item.id} parentName={item.name} isShared={isShared} />
 
           {!isShared && (
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
