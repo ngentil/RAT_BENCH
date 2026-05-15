@@ -7,12 +7,26 @@ import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles
 import LoadoutSection from '../ui/LoadoutSection';
 import ServiceModal from '../ui/ServiceModal';
 import { fmtDT } from '../../lib/helpers';
+import AssetTile from '../ui/AssetTile';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
 const FUEL_TYPES    = ["Petrol","Diesel","LPG","Electric","Hybrid","Other"];
 const STATUSES      = ["Active","Inactive","Project","Sold"];
 
 const COND_COL = { Active: "#3d9e50", Project: "#e8870a", Inactive: "#5a5a5a", Sold: "#c94040" };
+
+const TYPE_ICON = { Car: '🚗', Truck: '🚚', Van: '🚐', SUV: '🚙', Ute: '🛻', Motorcycle: '🏍️', Scooter: '🛵', Trailer: '🚛', Boat: '⛵', Other: '🚗' };
+
+const VEHICLE_SORT_OPTS = [
+  { k: 'name_az', l: 'Name A → Z' },
+  { k: 'name_za', l: 'Name Z → A' },
+  { k: 'status',  l: 'Status' },
+  { k: 'type',    l: 'Vehicle Type' },
+  { k: 'newest',  l: 'Date Added (Newest)' },
+  { k: 'oldest',  l: 'Date Added (Oldest)' },
+  { k: 'odo_hi',  l: 'Odometer (Highest)' },
+  { k: 'odo_lo',  l: 'Odometer (Lowest)' },
+];
 
 function fmtDate(s) {
   if (!s) return null;
@@ -192,6 +206,9 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
             <div style={{ fontSize: 7, color: MUT, marginTop: 1 }}>{vehicle.serviceLog.length} svc</div>
           )}
         </div>
+        {vehicle.photos?.[0] && (
+          <img src={vehicle.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 2, flexShrink: 0, border: '1px solid #252525' }} />
+        )}
         <span style={{ fontSize: 9, color: MUT, flexShrink: 0, marginLeft: 4 }}>{open ? '▲' : '▼'}</span>
       </div>
 
@@ -200,8 +217,16 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
           {vehicle.photos?.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 10 }}>
               {vehicle.photos.map((p, i) => (
-                <img key={i} src={p} alt="" onClick={() => setPhotoIdx(i)}
-                  style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: 2, border: '1px solid #252525', cursor: 'pointer' }} />
+                <div key={i} style={{ position: 'relative' }}>
+                  <img src={p} alt="" onClick={() => setPhotoIdx(i)}
+                    style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: 2, border: i === 0 ? '1px solid ' + ACC + '88' : '1px solid #252525', cursor: 'pointer', display: 'block' }} />
+                  <button
+                    title={i === 0 ? 'Cover photo' : 'Set as cover'}
+                    onClick={e => { e.stopPropagation(); if (i === 0) return; const reordered = [p, ...vehicle.photos.filter((_, j) => j !== i)]; onUpdate({ ...vehicle, photos: reordered }); }}
+                    style={{ position: 'absolute', top: 2, left: 2, background: i === 0 ? ACC : 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 2, cursor: i === 0 ? 'default' : 'pointer', fontSize: 8, padding: '1px 3px', color: i === 0 ? '#000' : MUT, lineHeight: 1 }}>
+                    {i === 0 ? '⭐' : '☆'}
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -303,8 +328,17 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   const [formVehicle, setFormVehicle] = useState(null);
   const [search, setSearch]     = useState('');
   const [typeFilter, setTypeFilter] = useState(null);
+  const [showSort, setShowSort] = useState(false);
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('vehiclesSort') || null);
+  const [view, setView] = useState(() => localStorage.getItem('vehiclesView') || 'list');
+  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('vehiclesCols') || '2'));
+  const [tileOpen, setTileOpen] = useState(null);
   const userId = session?.user?.id;
   const units  = profile?.units || 'metric';
+
+  const setViewP = v => { setView(v); localStorage.setItem('vehiclesView', v); };
+  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('vehiclesSort', v) : localStorage.removeItem('vehiclesSort'); };
+  const setColsP = c => { setCols(c); localStorage.setItem('vehiclesCols', String(c)); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
   const limit   = assetLimit('vehicle', profile, company);
@@ -336,6 +370,21 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
     }
     return r;
   }, [vehicles, search, typeFilter]);
+
+  const sorted = useMemo(() => {
+    if (!sortBy) return filtered;
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'name_az') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'name_za') return (b.name || '').localeCompare(a.name || '');
+      if (sortBy === 'status') { const o = ['Active','Project','Inactive','Sold']; return o.indexOf(a.status) - o.indexOf(b.status); }
+      if (sortBy === 'type') return (a.type || '').localeCompare(b.type || '');
+      if (sortBy === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      if (sortBy === 'oldest') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      if (sortBy === 'odo_hi') return (b.odometer || 0) - (a.odometer || 0);
+      if (sortBy === 'odo_lo') return (a.odometer || 0) - (b.odometer || 0);
+      return 0;
+    });
+  }, [filtered, sortBy]);
 
   const save = async (vehicle) => {
     const saved = await upsertVehicle(vehicle);
@@ -383,14 +432,18 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
           </span>
           {isFree && <span style={{ fontSize: 8, color: atLimit ? RED : MUT, letterSpacing: '0.06em' }}>{(vehicles || []).length}/{limit}</span>}
         </div>
-        <button
-          onClick={() => setFormVehicle({})}
-          disabled={atLimit}
-          style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
-          title={atLimit ? `Upgrade to add more than ${limit} vehicles` : undefined}
-        >
-          + Add Vehicle
-        </button>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
+          <button
+            onClick={() => setFormVehicle({})}
+            disabled={atLimit}
+            style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
+            title={atLimit ? `Upgrade to add more than ${limit} vehicles` : undefined}
+          >
+            + Add Vehicle
+          </button>
+        </div>
       </div>
 
       {(vehicles || []).length > 4 && (
@@ -413,21 +466,89 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
       {!loading && (vehicles || []).length === 0 && (
         <Empty icon="🚗" t="No vehicles yet" sub="Track your fleet — cars, utes, motorbikes, trailers. Add service history and keep odometers up to date." />
       )}
-      {!loading && (vehicles || []).length > 0 && filtered.length === 0 && (
+      {!loading && (vehicles || []).length > 0 && sorted.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>No vehicles match your filter.</div>
       )}
 
-      {filtered.map(v => (
-        <VehicleCard
-          key={v.id}
-          vehicle={v}
-          isShared={v.userId !== userId}
-          units={units}
-          onEdit={() => setFormVehicle(v)}
-          onDelete={() => remove(v.id)}
-          onUpdate={update}
-        />
-      ))}
+      {view === 'grid' ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
+            {sorted.map(v => (
+              <AssetTile
+                key={v.id}
+                photo={v.photos?.[0]}
+                icon={TYPE_ICON[v.type] || '🚗'}
+                accentColor={COND_COL[v.status] || MUT}
+                name={v.name}
+                sub={[v.year, v.make, v.model].filter(Boolean).join(' ')}
+                badges={[
+                  v.status && { l: v.status, c: COND_COL[v.status] || MUT },
+                  v.type && { l: v.type, c: ACC },
+                ].filter(Boolean)}
+                onClick={() => setTileOpen(v.id)}
+              />
+            ))}
+          </div>
+          {tileOpen && (() => {
+            const v = sorted.find(x => x.id === tileOpen);
+            return v ? (
+              <div style={{ position: 'fixed', inset: 0, background: '#000a', zIndex: 200, overflowY: 'auto' }}
+                onClick={e => { if (e.target === e.currentTarget) setTileOpen(null); }}>
+                <div style={{ maxWidth: 640, margin: '24px auto', padding: '0 8px' }}>
+                  <VehicleCard
+                    vehicle={v}
+                    isShared={v.userId !== userId}
+                    units={units}
+                    onEdit={() => { setFormVehicle(v); setTileOpen(null); }}
+                    onDelete={() => { remove(v.id); setTileOpen(null); }}
+                    onUpdate={update}
+                  />
+                  <button onClick={() => setTileOpen(null)} style={{ ...btnG, width: '100%', marginTop: 8, fontSize: 10 }}>Close</button>
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </>
+      ) : (
+        sorted.map(v => (
+          <VehicleCard
+            key={v.id}
+            vehicle={v}
+            isShared={v.userId !== userId}
+            units={units}
+            onEdit={() => setFormVehicle(v)}
+            onDelete={() => remove(v.id)}
+            onUpdate={update}
+          />
+        ))
+      )}
+
+      {showSort && (
+        <div style={ovly} onClick={() => setShowSort(false)}>
+          <div style={{ ...mdl, maxHeight: '70vh' }} onClick={e => e.stopPropagation()}>
+            <div style={mdlH}>
+              <b style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sort Vehicles</b>
+              <button style={{ ...btnG, ...sm }} onClick={() => setShowSort(false)}>✕</button>
+            </div>
+            <div style={{ ...mdlB, paddingTop: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(null)}>
+                <input type="radio" readOnly checked={sortBy === null} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                <span style={{ fontSize: 11, color: sortBy === null ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Default order</span>
+              </label>
+              {VEHICLE_SORT_OPTS.map(o => (
+                <label key={o.k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(o.k)}>
+                  <input type="radio" readOnly checked={sortBy === o.k} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                  <span style={{ fontSize: 11, color: sortBy === o.k ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{o.l}</span>
+                </label>
+              ))}
+            </div>
+            <div style={mdlF}>
+              <button style={btnG} onClick={() => { setSortByP(null); setShowSort(false); }}>Reset</button>
+              <button style={btnA} onClick={() => setShowSort(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {formVehicle !== null && (
         <VehicleForm

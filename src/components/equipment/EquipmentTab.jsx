@@ -5,11 +5,22 @@ import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
 import LoadoutSection from '../ui/LoadoutSection';
+import AssetTile from '../ui/AssetTile';
 
 const EQUIPMENT_TYPES = ["Excavator","Loader","Skid Steer","Forklift","Compressor","Generator","Pressure Washer","Trailer","Tractor","Mower (Commercial)","Chainsaw","Chipper","Stump Grinder","Other"];
 const STATUSES        = ["Active","Inactive","In Service","Project","Sold"];
 
 const STATUS_COL = { Active: "#3d9e50", "In Service": "#e8870a", Inactive: "#5a5a5a", Project: "#3a7bd5", Sold: "#c94040" };
+
+const EQUIP_SORT_OPTS = [
+  { k: 'name_az', l: 'Name A → Z' },
+  { k: 'name_za', l: 'Name Z → A' },
+  { k: 'status',  l: 'Status' },
+  { k: 'type',    l: 'Equipment Type' },
+  { k: 'newest',  l: 'Date Added (Newest)' },
+  { k: 'oldest',  l: 'Date Added (Oldest)' },
+  { k: 'hours_hi',l: 'Hours (Highest)' },
+];
 
 function fmtDate(s) {
   if (!s) return null;
@@ -172,8 +183,16 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
           {item.photos?.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 10 }}>
               {item.photos.map((p, i) => (
-                <img key={i} src={p} alt="" onClick={() => setPhotoIdx(i)}
-                  style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: 2, border: '1px solid #252525', cursor: 'pointer' }} />
+                <div key={i} style={{ position: 'relative' }}>
+                  <img src={p} alt="" onClick={() => setPhotoIdx(i)}
+                    style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: 2, border: i === 0 ? '1px solid ' + ACC + '88' : '1px solid #252525', cursor: 'pointer', display: 'block' }} />
+                  <button
+                    title={i === 0 ? 'Cover photo' : 'Set as cover'}
+                    onClick={e => { e.stopPropagation(); if (i === 0) return; const reordered = [p, ...item.photos.filter((_, j) => j !== i)]; onUpdate({ ...item, photos: reordered }); }}
+                    style={{ position: 'absolute', top: 2, left: 2, background: i === 0 ? ACC : 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 2, cursor: i === 0 ? 'default' : 'pointer', fontSize: 8, padding: '1px 3px', color: i === 0 ? '#000' : MUT, lineHeight: 1 }}>
+                    {i === 0 ? '⭐' : '☆'}
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -248,7 +267,16 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
   const [formItem, setFormItem] = useState(null);
   const [search, setSearch]    = useState('');
   const [typeFilter, setTypeFilter] = useState(null);
+  const [showSort, setShowSort] = useState(false);
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('equipmentSort') || null);
+  const [view, setView] = useState(() => localStorage.getItem('equipmentView') || 'list');
+  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('equipmentCols') || '2'));
+  const [tileOpen, setTileOpen] = useState(null);
   const userId = session?.user?.id;
+
+  const setViewP = v => { setView(v); localStorage.setItem('equipmentView', v); };
+  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('equipmentSort', v) : localStorage.removeItem('equipmentSort'); };
+  const setColsP = c => { setCols(c); localStorage.setItem('equipmentCols', String(c)); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
   const limit   = assetLimit('equipment', profile, company);
@@ -279,6 +307,20 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
     }
     return r;
   }, [equipment, search, typeFilter]);
+
+  const sorted = useMemo(() => {
+    if (!sortBy) return filtered;
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'name_az') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'name_za') return (b.name || '').localeCompare(a.name || '');
+      if (sortBy === 'status') { const o = ['Active','In Service','Project','Inactive','Sold']; return o.indexOf(a.status||'Active') - o.indexOf(b.status||'Active'); }
+      if (sortBy === 'type') return (a.type||'').localeCompare(b.type||'');
+      if (sortBy === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      if (sortBy === 'oldest') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      if (sortBy === 'hours_hi') return (b.hours||0) - (a.hours||0);
+      return 0;
+    });
+  }, [filtered, sortBy]);
 
   const save = async (item) => {
     const saved = await upsertEquipment(item);
@@ -322,14 +364,18 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
           </span>
           {isFree && <span style={{ fontSize: 8, color: atLimit ? RED : MUT, letterSpacing: '0.06em' }}>{(equipment || []).length}/{limit}</span>}
         </div>
-        <button
-          onClick={() => setFormItem({})}
-          disabled={atLimit}
-          style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
-          title={atLimit ? `Upgrade to add more than ${limit} equipment items` : undefined}
-        >
-          + Add Equipment
-        </button>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
+          <button
+            onClick={() => setFormItem({})}
+            disabled={atLimit}
+            style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
+            title={atLimit ? `Upgrade to add more than ${limit} equipment items` : undefined}
+          >
+            + Add Equipment
+          </button>
+        </div>
       </div>
 
       {(equipment||[]).length > 0 && (
@@ -367,20 +413,87 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
       {!loading && (equipment || []).length === 0 && (
         <Empty icon="⚙️" t="No equipment yet" sub="Track your equipment fleet — excavators, compressors, trailers, generators and more." />
       )}
-      {!loading && (equipment || []).length > 0 && filtered.length === 0 && (
+      {!loading && (equipment || []).length > 0 && sorted.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>No equipment matches your filter.</div>
       )}
 
-      {filtered.map(item => (
-        <EquipmentCard
-          key={item.id}
-          item={item}
-          isShared={item.userId !== userId}
-          onEdit={() => setFormItem(item)}
-          onDelete={() => remove(item.id)}
-          onUpdate={update}
-        />
-      ))}
+      {view === 'grid' ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
+            {sorted.map(item => (
+              <AssetTile
+                key={item.id}
+                photo={item.photos?.[0]}
+                icon="⚙️"
+                accentColor={STATUS_COL[item.status] || MUT}
+                name={item.name}
+                sub={[item.make, item.model].filter(Boolean).join(' ') || item.type}
+                badges={[
+                  item.status && { l: item.status, c: STATUS_COL[item.status] || MUT },
+                  item.hours != null && { l: item.hours + 'h', c: MUT },
+                ].filter(Boolean)}
+                onClick={() => setTileOpen(item.id)}
+              />
+            ))}
+          </div>
+          {tileOpen && (() => {
+            const item = sorted.find(x => x.id === tileOpen);
+            return item ? (
+              <div style={{ position: 'fixed', inset: 0, background: '#000a', zIndex: 200, overflowY: 'auto' }}
+                onClick={e => { if (e.target === e.currentTarget) setTileOpen(null); }}>
+                <div style={{ maxWidth: 640, margin: '24px auto', padding: '0 8px' }}>
+                  <EquipmentCard
+                    item={item}
+                    isShared={item.userId !== userId}
+                    onEdit={() => { setFormItem(item); setTileOpen(null); }}
+                    onDelete={() => { remove(item.id); setTileOpen(null); }}
+                    onUpdate={update}
+                  />
+                  <button onClick={() => setTileOpen(null)} style={{ ...btnG, width: '100%', marginTop: 8, fontSize: 10 }}>Close</button>
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </>
+      ) : (
+        sorted.map(item => (
+          <EquipmentCard
+            key={item.id}
+            item={item}
+            isShared={item.userId !== userId}
+            onEdit={() => setFormItem(item)}
+            onDelete={() => remove(item.id)}
+            onUpdate={update}
+          />
+        ))
+      )}
+
+      {showSort && (
+        <div style={ovly} onClick={() => setShowSort(false)}>
+          <div style={{ ...mdl, maxHeight: '70vh' }} onClick={e => e.stopPropagation()}>
+            <div style={mdlH}>
+              <b style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sort Equipment</b>
+              <button style={{ ...btnG, ...sm }} onClick={() => setShowSort(false)}>✕</button>
+            </div>
+            <div style={{ ...mdlB, paddingTop: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(null)}>
+                <input type="radio" readOnly checked={sortBy === null} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                <span style={{ fontSize: 11, color: sortBy === null ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Default order</span>
+              </label>
+              {EQUIP_SORT_OPTS.map(o => (
+                <label key={o.k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(o.k)}>
+                  <input type="radio" readOnly checked={sortBy === o.k} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                  <span style={{ fontSize: 11, color: sortBy === o.k ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{o.l}</span>
+                </label>
+              ))}
+            </div>
+            <div style={mdlF}>
+              <button style={btnG} onClick={() => { setSortByP(null); setShowSort(false); }}>Reset</button>
+              <button style={btnA} onClick={() => setShowSort(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {formItem !== null && (
         <EquipmentForm

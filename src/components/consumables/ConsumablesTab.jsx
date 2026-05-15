@@ -8,6 +8,16 @@ import {
   CONSUMABLE_CATEGORIES, CATEGORY_GROUPS, CATEGORY_ICON, CATEGORY_COLOR,
   CATEGORY_SPECS, CATEGORY_UNITS, COMMON_CONSUMABLES,
 } from '../../lib/consumableTypes';
+import AssetTile from '../ui/AssetTile';
+
+const CONSUMABLE_SORT_OPTS = [
+  { k: 'name_az',   l: 'Name A → Z' },
+  { k: 'name_za',   l: 'Name Z → A' },
+  { k: 'category',  l: 'Category' },
+  { k: 'stock_lo',  l: 'Stock Level (Low first)' },
+  { k: 'newest',    l: 'Date Added (Newest)' },
+  { k: 'oldest',    l: 'Date Added (Oldest)' },
+];
 
 const EMPTY_FORM = {
   name: '', category: '', brand: '', quantity: '0', unit: 'L',
@@ -290,6 +300,15 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
   const [groupFilter, setGroupFilter] = useState(null);
   const [showPreset, setShowPreset]   = useState(false);
   const [presetVal, setPresetVal]     = useState('');
+  const [showSort, setShowSort] = useState(false);
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('consumablesSort') || null);
+  const [view, setView] = useState(() => localStorage.getItem('consumablesView') || 'list');
+  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('consumablesCols') || '2'));
+  const [tileOpen, setTileOpen] = useState(null);
+
+  const setViewP = v => { setView(v); localStorage.setItem('consumablesView', v); };
+  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('consumablesSort', v) : localStorage.removeItem('consumablesSort'); };
+  const setColsP = c => { setCols(c); localStorage.setItem('consumablesCols', String(c)); setViewP('grid'); };
 
   const userId = session?.user?.id;
   const tier   = effectiveTier(profile, company);
@@ -319,6 +338,19 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
     }
     return r;
   }, [items, groupFilter, search]);
+
+  const sorted = useMemo(() => {
+    if (!sortBy) return filtered;
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'name_az') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'name_za') return (b.name || '').localeCompare(a.name || '');
+      if (sortBy === 'category') return (a.category||'').localeCompare(b.category||'');
+      if (sortBy === 'stock_lo') return (a.quantity||0) - (b.quantity||0);
+      if (sortBy === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      if (sortBy === 'oldest') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      return 0;
+    });
+  }, [filtered, sortBy]);
 
   const lowStockCount = useMemo(() =>
     items.filter(i => i.minQuantity != null && i.quantity < i.minQuantity).length,
@@ -378,6 +410,8 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
           {!atLimit && (
             <>
               <div style={{ position: 'relative' }}>
@@ -439,20 +473,86 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
           sub="Track your workshop supplies — oils, fuels, coolant, welding wire, abrasives and more. Use Quick Add for common presets." />
       )}
 
-      {!loading && items.length > 0 && filtered.length === 0 && (
+      {!loading && items.length > 0 && sorted.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>No consumables match your filter.</div>
       )}
 
-      {filtered.map(item => (
-        <ConsumableCard
-          key={item.id}
-          item={item}
-          isShared={item.userId !== userId}
-          onEdit={() => setFormItem(item)}
-          onDelete={() => remove(item.id)}
-          onQtyChange={handleQtyChange}
-        />
-      ))}
+      {view === 'grid' ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
+            {sorted.map(item => (
+              <AssetTile
+                key={item.id}
+                icon={CATEGORY_ICON[item.category] || '📦'}
+                accentColor={CATEGORY_COLOR[item.category] || ACC}
+                name={item.name}
+                sub={item.category + (item.brand ? ' · ' + item.brand : '')}
+                badges={[{
+                  l: item.quantity + ' ' + item.unit,
+                  c: item.quantity === 0 ? RED : (item.minQuantity != null && item.quantity <= item.minQuantity) ? '#e8870a' : GRN,
+                }]}
+                onClick={() => setTileOpen(item.id)}
+              />
+            ))}
+          </div>
+          {tileOpen && (() => {
+            const item = sorted.find(x => x.id === tileOpen);
+            return item ? (
+              <div style={{ position: 'fixed', inset: 0, background: '#000a', zIndex: 200, overflowY: 'auto' }}
+                onClick={e => { if (e.target === e.currentTarget) setTileOpen(null); }}>
+                <div style={{ maxWidth: 640, margin: '24px auto', padding: '0 8px' }}>
+                  <ConsumableCard
+                    item={item}
+                    isShared={item.userId !== userId}
+                    onEdit={() => { setFormItem(item); setTileOpen(null); }}
+                    onDelete={() => { remove(item.id); setTileOpen(null); }}
+                    onQtyChange={handleQtyChange}
+                  />
+                  <button onClick={() => setTileOpen(null)} style={{ ...btnG, width: '100%', marginTop: 8, fontSize: 10 }}>Close</button>
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </>
+      ) : (
+        sorted.map(item => (
+          <ConsumableCard
+            key={item.id}
+            item={item}
+            isShared={item.userId !== userId}
+            onEdit={() => setFormItem(item)}
+            onDelete={() => remove(item.id)}
+            onQtyChange={handleQtyChange}
+          />
+        ))
+      )}
+
+      {showSort && (
+        <div style={ovly} onClick={() => setShowSort(false)}>
+          <div style={{ ...mdl, maxHeight: '70vh' }} onClick={e => e.stopPropagation()}>
+            <div style={mdlH}>
+              <b style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sort Consumables</b>
+              <button style={{ ...btnG, ...sm }} onClick={() => setShowSort(false)}>✕</button>
+            </div>
+            <div style={{ ...mdlB, paddingTop: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(null)}>
+                <input type="radio" readOnly checked={sortBy === null} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                <span style={{ fontSize: 11, color: sortBy === null ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Default order</span>
+              </label>
+              {CONSUMABLE_SORT_OPTS.map(o => (
+                <label key={o.k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(o.k)}>
+                  <input type="radio" readOnly checked={sortBy === o.k} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                  <span style={{ fontSize: 11, color: sortBy === o.k ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{o.l}</span>
+                </label>
+              ))}
+            </div>
+            <div style={mdlF}>
+              <button style={btnG} onClick={() => { setSortByP(null); setShowSort(false); }}>Reset</button>
+              <button style={btnA} onClick={() => setShowSort(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {formItem !== null && (
         <ConsumableForm
