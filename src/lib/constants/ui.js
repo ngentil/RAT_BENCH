@@ -180,15 +180,18 @@ export const TABS = [
   {id:"tracker",   label:"📋 Tracker"},
   {id:"jobs",      label:"🗂 Jobs"},
   {id:"reminders", label:"🔔 Remind"},
-  {id:"revenue",   label:"📊 Revenue", enthusiastOnly:true},
-  {id:"parts",     label:"🔩 Parts"},
-  {id:"clients",   label:"👤 Clients",   enthusiastOnly:true},
   {id:"search",    label:"🔍 Search"},
   {id:"wiki",      label:"📖 Wiki"},
+  {id:"workshop",  label:"🔨 Workshop"},
+];
+
+export const WORKSHOP_TABS = [
+  {id:"parts",       label:"🔩 Parts"},
+  {id:"clients",     label:"👤 Clients"},
   {id:"tools",       label:"🔧 Tools"},
   {id:"vehicles",    label:"🚗 Vehicles"},
   {id:"equipment",   label:"⚙️ Equipment"},
-  {id:"consumables", label:"🧪 Supplies"},
-  {id:"users",     label:"👥 Users", teamOnly:true},
+  {id:"consumables", label:"📦 Consumables"},
+  {id:"revenue",     label:"📊 Revenue", enthusiastOnly:true},
 ];
 

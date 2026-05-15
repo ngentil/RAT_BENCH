@@ -79,12 +79,20 @@ export async function upsertVehicle(vehicle) {
   if (!user) throw new Error('Not authenticated');
 
   const row = { ...toDb(vehicle), user_id: user.id };
-  if (!row.id) delete row.id;
+  const isNew = !row.id;
+  if (isNew) delete row.id;
 
-  const { data, error } = await supabase
-    .from('vehicles').upsert(row, { onConflict: 'id' }).select().single();
-  if (error) throw error;
-  return fromDb(data);
+  if (isNew) {
+    // Insert: get back only the id to avoid large-row response issues
+    const { data, error } = await supabase.from('vehicles').insert(row).select('id').single();
+    if (error) throw error;
+    return fromDb({ ...row, id: data.id, created_at: row.updated_at });
+  } else {
+    // Update: no round-trip select needed — reconstruct from what we sent
+    const { error } = await supabase.from('vehicles').update(row).eq('id', row.id);
+    if (error) throw error;
+    return fromDb(row);
+  }
 }
 
 export async function deleteVehicle(id) {

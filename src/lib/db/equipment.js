@@ -75,12 +75,18 @@ export async function upsertEquipment(item) {
   if (!user) throw new Error('Not authenticated');
 
   const row = { ...toDb(item), user_id: user.id };
-  if (!row.id) delete row.id;
+  const isNew = !row.id;
+  if (isNew) delete row.id;
 
-  const { data, error } = await supabase
-    .from('equipment').upsert(row, { onConflict: 'id' }).select().single();
-  if (error) throw error;
-  return fromDb(data);
+  if (isNew) {
+    const { data, error } = await supabase.from('equipment').insert(row).select('id').single();
+    if (error) throw error;
+    return fromDb({ ...row, id: data.id, created_at: row.updated_at });
+  } else {
+    const { error } = await supabase.from('equipment').update(row).eq('id', row.id);
+    if (error) throw error;
+    return fromDb(row);
+  }
 }
 
 export async function deleteEquipmentItem(id) {

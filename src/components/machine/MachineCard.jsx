@@ -185,7 +185,9 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
 
       <div style={{display:"flex",alignItems:"center",padding:"11px 14px",gap:10}}>
         <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer",userSelect:"none",minWidth:0}}>
-          <span style={{fontSize:16}}>{mIcon(m.type)}</span>
+          {m.photos?.[0]
+            ? <img src={m.photos[0]} alt="" style={{width:44,height:44,objectFit:"cover",borderRadius:2,flexShrink:0,border:"1px solid #252525"}} />
+            : <span style={{fontSize:16}}>{mIcon(m.type)}</span>}
           <div style={{flex:1,minWidth:0}}>
             <div className={timerRunning?"loading-rat":undefined} style={{fontSize:14,fontWeight:700,color:TXT,display:"flex",alignItems:"center",gap:6}}>
               {m.name}
@@ -250,7 +252,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
               return fk ? show(fk) : true;
             });
             return <>
-              {show("photos")&&m.photos?.length>0&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Photos" /></div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginTop:4}}>{m.photos.map((p,i)=><img key={i} src={p} alt="" onClick={()=>setFullImg(p)} style={{width:"100%",height:80,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD,cursor:"zoom-in",display:"block"}} />)}</div></div>}
+              {show("photos")&&m.photos?.length>0&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Photos" /></div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginTop:4}}>{m.photos.map((p,i)=><div key={i} style={{position:"relative"}}><img src={p} alt="" onClick={()=>setFullImg(p)} style={{width:"100%",height:80,objectFit:"cover",borderRadius:2,border:i===0?"1px solid "+ACC+"88":"1px solid "+BRD,cursor:"zoom-in",display:"block"}} /><button title={i===0?"Cover photo":"Set as cover"} onClick={ev=>{ev.stopPropagation();if(i===0)return;const r=[p,...m.photos.filter((_,j)=>j!==i)];onUpdate({...m,photos:r});}} style={{position:"absolute",top:2,left:2,background:i===0?ACC:"rgba(0,0,0,0.7)",border:"none",borderRadius:2,cursor:i===0?"default":"pointer",fontSize:8,padding:"2px 4px",color:i===0?"#000":MUT,lineHeight:1}}>{i===0?"⭐":"☆ Cover"}</button></div>)}</div></div>}
               {show("desc")&&m.desc&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Description" /></div><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.desc}</div></div>}
               {visibleSpecs.length>0&&<div style={{padding:"12px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Engine Spec" /></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{visibleSpecs.map(s=><SpecCell key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}</div></div>}
               {show("fasteners")&&m.fasteners&&m.fasteners.length>0&&<div style={{padding:"12px 14px 0"}}>

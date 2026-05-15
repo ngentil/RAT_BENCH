@@ -8,6 +8,7 @@ function fromDb(r) {
     email:     r.email     || "",
     address:   r.address   || "",
     notes:     r.notes     || "",
+    photos:    r.photos    || [],
     createdAt: r.created_at,
   };
 }
@@ -35,6 +36,7 @@ export async function upsertClient(client) {
     email:   client.email   || null,
     address: client.address || null,
     notes:   client.notes   || null,
+    photos:  client.photos  || [],
   }, { onConflict: "id" });
   if (error) { console.error("upsertClient:", error); throw error; }
 }

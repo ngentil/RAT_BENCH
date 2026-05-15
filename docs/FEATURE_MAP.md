@@ -188,6 +188,8 @@ Stripe
 | Stock adjustment (use / restock) | ✅ | inventory_items.payload | Free |
 | Machine parts list (per-machine) | ✅ | machines.parts (jsonb) | Free |
 | localStorage → Supabase migration | ✅ | inventory_items | Free |
+| Photos per part (stored in payload JSONB) | ✅ | inventory_items.payload.photos | Free |
+| Cover photo selection (☆ Cover) for parts | ✅ | PartsTab | Free |
 
 ---
 
@@ -197,6 +199,8 @@ Stripe
 |---------|--------|-----------|------|
 | clients table + RLS | ✅ | profiles, companies | Enthusiast+ |
 | Create / edit / delete clients | ✅ | clients table | Enthusiast+ |
+| Photos per client (clients.photos jsonb column) | ✅ | clients table, add_photos_to_clients.sql | Enthusiast+ |
+| Cover photo selection (☆ Cover) for clients | ✅ | CustomersTab | Enthusiast+ |
 | Link machines to clients | ✅ | machines.client_id | Enthusiast+ |
 | Per-client invoice (all linked machines) | ✅ | time_log, parts, clients | Enthusiast+ |
 | HTML invoice export with company header | ✅ | clients, companies, time_log | Enthusiast+ |
@@ -211,27 +215,35 @@ Stripe
 | asset_permissions table + RLS | ✅ | auth.users, company_members | Team+ |
 | **vehicles** table + RLS | ✅ | asset_permissions | Free |
 | Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (3 limit) |
+| Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab | Free |
+| Sort modal + list/grid view toggle (Vehicles) | ✅ | VehiclesTab, AssetTile | Free |
 | **equipment** table + RLS | ✅ | asset_permissions | Free |
 | Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (3 limit) |
+| Sort modal + list/grid view toggle (Equipment) | ✅ | EquipmentTab, AssetTile | Free |
 | **tools** table + RLS | ✅ | asset_permissions | Free |
 | Tools tab: CRUD + warranty + loan tracking | ✅ | tools table | Free (3 limit) |
+| Sort modal + list/grid view toggle (Tools) | ✅ | ToolsTab, AssetTile | Free |
 | localStorage → Supabase migration (tools) | ✅ | tools table | — |
 | Free-tier item limit (3 per type) | ✅ | gates.js assetLimit() | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
 | Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
-| vehicle_assignments table + RLS | ✅ | vehicles, auth.users | Free |
-| Assign tools/equipment to a vehicle | ✅ | vehicle_assignments, LoadoutSection | Free |
-| Unassign tools/equipment from a vehicle | ✅ | unassignAsset(), LoadoutSection | Free |
-| Vehicle loadout view (inline in card) | ✅ | LoadoutSection, VehiclesTab | Free |
+| **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql | Free |
+| All-to-all cross-assignment (any type → any type) | ✅ | asset_assignments, LoadoutSection | Free |
+| Forward loadout panel (Assigned Items + picker) | ✅ | LoadoutSection, VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab | Free |
+| Reverse lookup panel (Assigned To) | ✅ | getAssignedIn(), LoadoutSection | Free |
+| Unassign items from loadout | ✅ | unassignAsset(), LoadoutSection | Free |
 | **consumables** table + RLS | ✅ | asset_permissions | Free |
 | Consumables tab: CRUD + qty tracking + stock alerts | ✅ | consumables table | Free (10 limit) |
+| Sort modal + list/grid view toggle (Consumables) | ✅ | ConsumablesTab, AssetTile | Free |
 | 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
 | Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
 | ± stock adjustment inline on card | ✅ | adjustConsumableQty(), ConsumablesTab | Free |
+| Cover photo selection (☆ Cover sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab, MachineCard | Free |
+| Photos for consumables (add via form, thumbnail in card, cover selection) | ✅ | ConsumablesTab, consumables table photos column | Free |
+| Machine card collapsed header shows cover photo thumbnail | ✅ | MachineCard | Free |
 | Low-stock / out-of-stock badge | ✅ | qtyLabel(), min_quantity threshold | Free |
-| Assign consumables to vehicle loadout | ✅ | vehicle_assignments consumable type | Free |
 | Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
-| Assign team member (driver) to vehicle | 📋 | vehicle_assignments driver support | Team+ |
+| Assign team member (driver) to vehicle | 📋 | asset_assignments driver support | Team+ |
 
 ---
 
@@ -270,12 +282,30 @@ Stripe
 
 ---
 
+## 12. Navigation & UX
+
+| Feature | Status | Depends on | Tier |
+|---------|--------|-----------|------|
+| 🔨 Workshop parent tab (nested sub-tab bar) | ✅ | App.jsx, WORKSHOP_TABS constant | Free |
+| Workshop sub-tabs: Parts, Clients, Tools, Vehicles, Equipment, Consumables, Revenue | ✅ | WORKSHOP_TABS, App.jsx content panels | Free / Ent+ |
+| Free-tier Workshop banner (5-item limit nudge + upgrade link) | ✅ | effectiveTier(), Workshop tab | Free |
+| Revenue sub-tab gated behind Enthusiast+ | ✅ | WORKSHOP_TABS enthusiastOnly flag | Enthusiast+ |
+| Per-user Workshop tab visibility preferences | ✅ | localStorage rat_workshop_visible | Free |
+| Per-user Workshop default sub-tab | ✅ | localStorage rat_workshop_tab | Free |
+| Workshop preferences UI in Settings | ✅ | SettingsPage WorkshopPrefs component | Free |
+| Users tab moved into Settings (team/business only) | ✅ | SettingsPage, UsersTab | Team+ |
+| localStorage migration (old flat tab IDs → workshop sub-tabs) | ✅ | App.jsx init state | Free |
+
+---
+
+
 ## 13. Queued Features
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
 | Asset provisioning UI in CompanySettings | ✅ | Ships with Machines + Vehicles + Equipment + Tools sections |
-| Assign driver to vehicle | 📋 | vehicle_assignments driver support not yet built |
+| Assign driver to vehicle | 📋 | asset_assignments driver support not yet built |
+| Workshop tab visibility stored in profiles (cross-device sync) | 📋 | Currently localStorage only — needs profiles column migration |
 | Photo migration → Supabase Storage | 📋 | Currently base64 in DB rows — expensive |
 | Push notifications (service due) | 📋 | Needs FCM or similar |
 | Smart Mode cascade calculations | 📋 | Needs multiple sections complete |

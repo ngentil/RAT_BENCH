@@ -4,6 +4,8 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
+import LoadoutSection from '../ui/LoadoutSection';
+import AssetTile from '../ui/AssetTile';
 
 const TOOL_CATEGORIES = [
   "Power Tools", "Hand Tools", "Measuring & Diagnostic",
@@ -11,6 +13,17 @@ const TOOL_CATEGORIES = [
 ];
 const TOOL_CONDITIONS = ["New", "Good", "Fair", "Poor"];
 const COND_COL = { New: "#3d9e50", Good: "#3a7bd5", Fair: "#e8870a", Poor: "#c94040" };
+
+const TOOL_SORT_OPTS = [
+  { k: 'name_az',  l: 'Name A → Z' },
+  { k: 'name_za',  l: 'Name Z → A' },
+  { k: 'condition',l: 'Condition' },
+  { k: 'category', l: 'Category' },
+  { k: 'newest',   l: 'Date Added (Newest)' },
+  { k: 'oldest',   l: 'Date Added (Oldest)' },
+  { k: 'price_hi', l: 'Purchase Price (Highest)' },
+  { k: 'warranty', l: 'Warranty Expiry (Soonest)' },
+];
 
 function fmtDate(s) {
   if (!s) return null;
@@ -208,8 +221,16 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
           {tool.photos?.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginTop: 10 }}>
               {tool.photos.map((p, i) => (
-                <img key={i} src={p} alt="" onClick={() => setPhotoIdx(i)}
-                  style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 2, border: "1px solid #252525", cursor: "pointer" }} />
+                <div key={i} style={{ position: "relative" }}>
+                  <img src={p} alt="" onClick={() => setPhotoIdx(i)}
+                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 2, border: i === 0 ? "1px solid " + ACC + "88" : "1px solid #252525", cursor: "pointer", display: "block" }} />
+                  <button
+                    title={i === 0 ? "Cover photo" : "Set as cover"}
+                    onClick={e => { e.stopPropagation(); if (i === 0) return; const reordered = [p, ...tool.photos.filter((_, j) => j !== i)]; onUpdate({ ...tool, photos: reordered }); }}
+                    style={{ position: "absolute", top: 2, left: 2, background: i === 0 ? ACC : "rgba(0,0,0,0.7)", border: "none", borderRadius: 2, cursor: i === 0 ? "default" : "pointer", fontSize: 8, padding: "1px 3px", color: i === 0 ? "#000" : MUT, lineHeight: 1 }}>
+                    {i === 0 ? "⭐" : "☆ Cover"}
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -297,6 +318,8 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
             ))}
           </div>
 
+          <LoadoutSection parentType="tool" parentId={tool.id} parentName={tool.name} isShared={isShared} />
+
           {!isShared && (
             <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
               <button onClick={onEdit} style={{ ...btnG, ...sm }}>Edit</button>
@@ -325,6 +348,15 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState(null);
   const [showLoaned, setShowLoaned] = useState(false);
+  const [showSort, setShowSort] = useState(false);
+  const [sortBy, setSortBy] = useState(() => localStorage.getItem('toolsSort') || null);
+  const [view, setView] = useState(() => localStorage.getItem('toolsView') || 'list');
+  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('toolsCols') || '2'));
+  const [tileOpen, setTileOpen] = useState(null);
+
+  const setViewP = v => { setView(v); localStorage.setItem('toolsView', v); };
+  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('toolsSort', v) : localStorage.removeItem('toolsSort'); };
+  const setColsP = c => { setCols(c); localStorage.setItem('toolsCols', String(c)); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === "free";
   const limit   = assetLimit('tool', profile, company);
@@ -359,6 +391,25 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
     }
     return r;
   }, [tools, search, catFilter, showLoaned]);
+
+  const sorted = useMemo(() => {
+    if (!sortBy) return filtered;
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'name_az') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'name_za') return (b.name || '').localeCompare(a.name || '');
+      if (sortBy === 'condition') { const o = ['New','Good','Fair','Poor']; return o.indexOf(a.condition||'Good') - o.indexOf(b.condition||'Good'); }
+      if (sortBy === 'category') return (a.category||'').localeCompare(b.category||'');
+      if (sortBy === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      if (sortBy === 'oldest') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      if (sortBy === 'price_hi') return (b.purchasePrice||0) - (a.purchasePrice||0);
+      if (sortBy === 'warranty') {
+        const ad = a.warrantyExpiry ? new Date(a.warrantyExpiry).getTime() : Infinity;
+        const bd = b.warrantyExpiry ? new Date(b.warrantyExpiry).getTime() : Infinity;
+        return ad - bd;
+      }
+      return 0;
+    });
+  }, [filtered, sortBy]);
 
   const save = async (tool) => {
     const saved = await saveToolItem(tool);
@@ -401,14 +452,18 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
             {tools.length}{isFree ? `/${limit}` : ""} tool{tools.length !== 1 ? "s" : ""}
           </span>
         </div>
-        <button
-          onClick={() => setFormTool({})}
-          disabled={atLimit}
-          style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
-          title={atLimit ? `Upgrade to add more than ${limit} tools` : undefined}
-        >
-          + Add Tool
-        </button>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
+          <button
+            onClick={() => setFormTool({})}
+            disabled={atLimit}
+            style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
+            title={atLimit ? `Upgrade to add more than ${limit} tools` : undefined}
+          >
+            + Add Tool
+          </button>
+        </div>
       </div>
 
       {tools.length > 0 && (
@@ -451,20 +506,87 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
       {!loading && tools.length === 0 && (
         <Empty icon="🔧" t="No tools yet" sub="Add your first tool — power tools, hand tools, specialty gear, anything in your workshop." />
       )}
-      {!loading && tools.length > 0 && filtered.length === 0 && (
+      {!loading && tools.length > 0 && sorted.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>No tools match your filter.</div>
       )}
 
-      {filtered.map(tool => (
-        <ToolCard
-          key={tool.id}
-          tool={tool}
-          isShared={tool.userId !== userId}
-          onEdit={() => setFormTool(tool)}
-          onDelete={() => remove(tool.id)}
-          onUpdate={update}
-        />
-      ))}
+      {view === 'grid' ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
+            {sorted.map(tool => (
+              <AssetTile
+                key={tool.id}
+                photo={tool.photos?.[0]}
+                icon="🔧"
+                accentColor={COND_COL[tool.condition] || MUT}
+                name={tool.name}
+                sub={[tool.brand, tool.model].filter(Boolean).join(' ') || tool.category}
+                badges={[
+                  tool.condition && { l: tool.condition, c: COND_COL[tool.condition] || MUT },
+                  tool.loanedTo && { l: 'Loaned', c: ACC },
+                ].filter(Boolean)}
+                onClick={() => setTileOpen(tool.id)}
+              />
+            ))}
+          </div>
+          {tileOpen && (() => {
+            const tool = sorted.find(x => x.id === tileOpen);
+            return tool ? (
+              <div style={{ position: 'fixed', inset: 0, background: '#000a', zIndex: 200, overflowY: 'auto' }}
+                onClick={e => { if (e.target === e.currentTarget) setTileOpen(null); }}>
+                <div style={{ maxWidth: 640, margin: '24px auto', padding: '0 8px' }}>
+                  <ToolCard
+                    tool={tool}
+                    isShared={tool.userId !== userId}
+                    onEdit={() => { setFormTool(tool); setTileOpen(null); }}
+                    onDelete={() => { remove(tool.id); setTileOpen(null); }}
+                    onUpdate={update}
+                  />
+                  <button onClick={() => setTileOpen(null)} style={{ ...btnG, width: '100%', marginTop: 8, fontSize: 10 }}>Close</button>
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </>
+      ) : (
+        sorted.map(tool => (
+          <ToolCard
+            key={tool.id}
+            tool={tool}
+            isShared={tool.userId !== userId}
+            onEdit={() => setFormTool(tool)}
+            onDelete={() => remove(tool.id)}
+            onUpdate={update}
+          />
+        ))
+      )}
+
+      {showSort && (
+        <div style={ovly} onClick={() => setShowSort(false)}>
+          <div style={{ ...mdl, maxHeight: '70vh' }} onClick={e => e.stopPropagation()}>
+            <div style={mdlH}>
+              <b style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sort Tools</b>
+              <button style={{ ...btnG, ...sm }} onClick={() => setShowSort(false)}>✕</button>
+            </div>
+            <div style={{ ...mdlB, paddingTop: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(null)}>
+                <input type="radio" readOnly checked={sortBy === null} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                <span style={{ fontSize: 11, color: sortBy === null ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Default order</span>
+              </label>
+              {TOOL_SORT_OPTS.map(o => (
+                <label key={o.k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(o.k)}>
+                  <input type="radio" readOnly checked={sortBy === o.k} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                  <span style={{ fontSize: 11, color: sortBy === o.k ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{o.l}</span>
+                </label>
+              ))}
+            </div>
+            <div style={mdlF}>
+              <button style={btnG} onClick={() => { setSortByP(null); setShowSort(false); }}>Reset</button>
+              <button style={btnA} onClick={() => setShowSort(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {formTool !== null && (
         <ToolForm
