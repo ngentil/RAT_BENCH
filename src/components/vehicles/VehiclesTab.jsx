@@ -4,6 +4,7 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
+import LoadoutSection from '../ui/LoadoutSection';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
 const FUEL_TYPES    = ["Petrol","Diesel","LPG","Electric","Hybrid","Other"];
@@ -231,6 +232,9 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
               <button onClick={() => setAddSvc(true)} style={{ ...btnG, width: '100%', marginTop: 6, fontSize: 9 }}>+ Log Service</button>
             ))}
           </div>
+
+          <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} />
+
 
           {!isShared && (
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>

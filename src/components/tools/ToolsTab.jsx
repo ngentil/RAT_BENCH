@@ -4,6 +4,7 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
+import LoadoutSection from '../ui/LoadoutSection';
 
 const TOOL_CATEGORIES = [
   "Power Tools", "Hand Tools", "Measuring & Diagnostic",
@@ -290,6 +291,8 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
             ))}
           </div>
 
+          <LoadoutSection parentType="tool" parentId={tool.id} parentName={tool.name} isShared={isShared} />
+
           {!isShared && (
             <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
               <button onClick={onEdit} style={{ ...btnG, ...sm }}>Edit</button>
@@ -313,12 +316,7 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
 export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const userId = session?.user?.id;
   const [tools, setTools] = useState([]);
-<<<<<<< HEAD
   const [loading, setLoading] = useState(true);
-=======
-
-  useEffect(() => { getTools(userId).then(setTools); }, [userId]);
->>>>>>> claude/dev
   const [formTool, setFormTool] = useState(null);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState(null);
@@ -358,7 +356,6 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
     return r;
   }, [tools, search, catFilter, showLoaned]);
 
-<<<<<<< HEAD
   const save = async (tool) => {
     const saved = await saveToolItem(tool);
     setTools(prev => {
@@ -377,31 +374,6 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
     if (!confirm("Delete this tool?")) return;
     await deleteToolItem(toolId);
     setTools(prev => prev.filter(t => t.id !== toolId));
-=======
-  if (isFree) {
-    return (
-      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>🔧</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Tool Inventory</div>
-        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Track your personal tool collection — brand, condition, warranty, storage location, service history, and who you've loaned tools to. Enthusiast and above.
-        </div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
-      </div>
-    );
-  }
-
-  const save = async (tool) => {
-    setTools(await saveToolItem(userId, tool));
-    setFormTool(null);
-  };
-
-  const update = async (tool) => setTools(await saveToolItem(userId, tool));
-
-  const remove = async (toolId) => {
-    if (!confirm("Delete this tool?")) return;
-    setTools(await deleteToolItem(userId, toolId));
->>>>>>> claude/dev
   };
 
   return (
