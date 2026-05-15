@@ -6,7 +6,7 @@ import { getVehicles } from './lib/db/vehicles';
 import { getEquipment } from './lib/db/equipment';
 import { getTools } from './lib/db/tools';
 import { fromDb } from './lib/db/transforms';
-import { TABS } from './lib/constants';
+import { TABS, WORKSHOP_TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
 
@@ -31,8 +31,19 @@ import PartsTab from './components/tracker/PartsTab';
 import ToolsTab from './components/tools/ToolsTab';
 import VehiclesTab from './components/vehicles/VehiclesTab';
 import EquipmentTab from './components/equipment/EquipmentTab';
+import ConsumablesTab from './components/consumables/ConsumablesTab';
 function App(){
-  const [tab,setTab]=useState(()=>localStorage.getItem("rat_tab")||"tracker");
+  const [tab,setTab]=useState(()=>{
+    const stored=localStorage.getItem("rat_tab")||"tracker";
+    const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue"]);
+    if(WS_IDS.has(stored)){localStorage.setItem("rat_workshop_tab",stored);return"workshop";}
+    if(stored==="users") return "tracker";
+    return stored;
+  });
+  const [workshopTab,setWorkshopTab]=useState(()=>localStorage.getItem("rat_workshop_tab")||"parts");
+  const [workshopVisibleTabs,setWorkshopVisibleTabs]=useState(()=>{
+    try{return JSON.parse(localStorage.getItem("rat_workshop_visible")||"null");}catch{return null;}
+  });
   const [machines,setMachines]=useState([]);
   const [clients,setClients]=useState([]);
   const [vehicles,setVehicles]=useState([]);
@@ -134,15 +145,16 @@ function App(){
   };
 
   useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
+  useEffect(()=>{ localStorage.setItem("rat_workshop_tab",workshopTab); },[workshopTab]);
+  useEffect(()=>{ localStorage.setItem("rat_workshop_visible",JSON.stringify(workshopVisibleTabs)); },[workshopVisibleTabs]);
 
-  // If stored tab requires a higher tier than the user has, reset to tracker
   useEffect(()=>{
     if(!profile) return;
+    const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings"]));
+    if(!validTopIds.has(tab)) setTab("tracker");
     const tier=effectiveTier(profile,company);
-    const tabDef=TABS.find(t=>t.id===tab);
-    if(!tabDef) return;
-    if(tabDef.teamOnly&&!["team","business"].includes(tier)) setTab("tracker");
-    if(tabDef.enthusiastOnly&&tier==="free") setTab("tracker");
+    const wsDef=WORKSHOP_TABS.find(t=>t.id===workshopTab);
+    if(wsDef?.enthusiastOnly&&tier==="free") setWorkshopTab("parts");
   },[profile,company]);
 
   useEffect(()=>{
@@ -236,10 +248,16 @@ function App(){
     );
   }
 
-  const tierGlow = TIER_GLOW[effectiveTier(profile, company)];
+  const tier=effectiveTier(profile,company);
+  const tierGlow = TIER_GLOW[tier];
   const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = machines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
   const timerRunning = machines.some(m => (m.jobTimers || []).some(t => t.status === "running"));
+  const visibleWorkshopTabs = WORKSHOP_TABS.filter(t=>{
+    if(t.enthusiastOnly&&tier==="free") return false;
+    if(workshopVisibleTabs&&!workshopVisibleTabs.includes(t.id)) return false;
+    return true;
+  });
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
@@ -287,12 +305,7 @@ function App(){
         </div>
       </div>
       <div style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
-        {TABS.filter(t=>{
-          const tier=effectiveTier(profile,company);
-          if(t.teamOnly&&!["team","business"].includes(tier))return false;
-          if(t.enthusiastOnly&&tier==="free")return false;
-          return true;
-        }).map(t=>{
+        {TABS.map(t=>{
           const badge=
             t.id==="reminders"&&overdueCount>0?{n:overdueCount,c:RED}:
             t.id==="reminders"&&dueSoonCount>0?{n:dueSoonCount,c:"#e8870a"}:
@@ -306,19 +319,34 @@ function App(){
           );
         })}
       </div>
+      {tab==="workshop"&&(
+        <div style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
+          {visibleWorkshopTabs.map(t=>(
+            <button key={t.id} onClick={()=>setWorkshopTab(t.id)} style={{flexShrink:0,padding:"8px 10px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:workshopTab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:workshopTab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {tab==="workshop"&&tier==="free"&&(
+        <div style={{background:"#111",borderBottom:"1px solid #333",padding:"6px 16px",fontSize:9,color:MUT,letterSpacing:"0.06em",display:"flex",alignItems:"center",gap:10}}>
+          <span>🔨 Workshop — free tier limited to 5 items per type.</span>
+          <button onClick={()=>setTab("settings")} style={{background:"none",border:"none",cursor:"pointer",color:ACC,fontSize:9,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.06em",padding:0}}>Upgrade to Enthusiast →</button>
+        </div>
+      )}
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="vehicles"?"contents":"none"}}><VehiclesTab vehicles={vehicles} setVehicles={setVehicles} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="users"?"contents":"none"}}><UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="vehicles"?"contents":"none"}}><VehiclesTab vehicles={vehicles} setVehicles={setVehicles} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools} workshopVisibleTabs={workshopVisibleTabs} setWorkshopVisibleTabs={(v)=>{setWorkshopVisibleTabs(v);}} workshopTab={workshopTab} setWorkshopTab={setWorkshopTab}/></div>
     </div>
   );
 }
