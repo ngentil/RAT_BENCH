@@ -223,8 +223,14 @@ Stripe
 | Assign tools/equipment to a vehicle | ✅ | vehicle_assignments, LoadoutSection | Free |
 | Unassign tools/equipment from a vehicle | ✅ | unassignAsset(), LoadoutSection | Free |
 | Vehicle loadout view (inline in card) | ✅ | LoadoutSection, VehiclesTab | Free |
-| Assign consumables (inventory items) to vehicle loadout | ✅ | vehicle_assignments consumable type | Free |
-| Org provisioning for consumables (inventory items) | ✅ | asset_permissions, CompanySettings | Team+ |
+| **consumables** table + RLS | ✅ | asset_permissions | Free |
+| Consumables tab: CRUD + qty tracking + stock alerts | ✅ | consumables table | Free (10 limit) |
+| 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
+| Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
+| ± stock adjustment inline on card | ✅ | adjustConsumableQty(), ConsumablesTab | Free |
+| Low-stock / out-of-stock badge | ✅ | qtyLabel(), min_quantity threshold | Free |
+| Assign consumables to vehicle loadout | ✅ | vehicle_assignments consumable type | Free |
+| Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
 | Assign team member (driver) to vehicle | 📋 | vehicle_assignments driver support | Team+ |
 
 ---

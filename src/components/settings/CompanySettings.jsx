@@ -5,7 +5,7 @@ import { updateCompany, createCompany, joinCompanyByCode, leaveCompany, deleteCo
 import { getVehiclePermissions, upsertVehiclePermission, revokeVehiclePermission } from '../../lib/db/vehicles';
 import { getEquipmentPermissions, upsertEquipmentPermission, revokeEquipmentPermission } from '../../lib/db/equipment';
 import { getToolPermissions, upsertToolPermission, revokeToolPermission } from '../../lib/db/tools';
-import { getInventory, getInventoryPermissions, upsertInventoryPermission, revokeInventoryPermission } from '../../lib/db/inventory';
+import { getConsumables, getConsumablePermissions, upsertConsumablePermission, revokeConsumablePermission } from '../../lib/db/consumables';
 import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
 import { effectiveTier } from '../../lib/gates';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
@@ -133,9 +133,9 @@ function AssetProvisioningPanel({ assets, emptyMsg, company, session, getFn, ups
 }
 
 function CompanySettings({profile,setProfile,company,setCompany,session,machines,vehicles,equipment,tools}){
-  const [inventory, setInventory] = useState([]);
+  const [consumables, setConsumables] = useState([]);
   useEffect(() => {
-    if (session?.user?.id) getInventory(session.user.id).then(setInventory).catch(() => {});
+    if (session?.user?.id) getConsumables().then(setConsumables).catch(() => {});
   }, [session?.user?.id]);
   const isOwner=company&&company.owner_id===session?.user?.id;
   const isAdmin=isOwner; // kept for backward compat in JSX below
@@ -404,12 +404,12 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
 
           <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Consumables</div>
           <AssetProvisioningPanel
-            assets={inventory||[]}
-            emptyMsg="No consumables to provision yet. Add inventory items from the Inventory tab."
+            assets={consumables||[]}
+            emptyMsg="No consumables to provision yet. Add supplies from the Consumables tab."
             company={company} session={session}
-            getFn={getInventoryPermissions}
-            upsertFn={upsertInventoryPermission}
-            revokeFn={revokeInventoryPermission}
+            getFn={getConsumablePermissions}
+            upsertFn={upsertConsumablePermission}
+            revokeFn={revokeConsumablePermission}
           />
         </div>
       )}

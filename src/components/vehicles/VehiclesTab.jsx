@@ -7,7 +7,7 @@ import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles
 import { getVehicleAssignments, assignAsset, unassignAsset } from '../../lib/db/vehicleAssignments';
 import { getTools } from '../../lib/db/tools';
 import { getEquipment } from '../../lib/db/equipment';
-import { getInventory } from '../../lib/db/inventory';
+import { getConsumables } from '../../lib/db/consumables';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
 const FUEL_TYPES    = ["Petrol","Diesel","LPG","Electric","Hybrid","Other"];
@@ -142,7 +142,7 @@ function LoadoutSection({ vehicleId, isShared, userId }) {
     setShowPicker(true);
     if (allTools === null || allEquipment === null || allConsumables === null) {
       setPickerLoading(true);
-      const [ts, eq, cs] = await Promise.all([getTools(), getEquipment(), getInventory(userId)]);
+      const [ts, eq, cs] = await Promise.all([getTools(), getEquipment(), getConsumables()]);
       setAllTools(ts || []);
       setAllEquipment(eq || []);
       setAllConsumables(cs || []);
