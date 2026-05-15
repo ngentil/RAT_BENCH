@@ -223,6 +223,8 @@ Stripe
 | Assign tools/equipment to a vehicle | ✅ | vehicle_assignments, LoadoutSection | Free |
 | Unassign tools/equipment from a vehicle | ✅ | unassignAsset(), LoadoutSection | Free |
 | Vehicle loadout view (inline in card) | ✅ | LoadoutSection, VehiclesTab | Free |
+| Assign consumables (inventory items) to vehicle loadout | ✅ | vehicle_assignments consumable type | Free |
+| Org provisioning for consumables (inventory items) | ✅ | asset_permissions, CompanySettings | Team+ |
 | Assign team member (driver) to vehicle | 📋 | vehicle_assignments driver support | Team+ |
 
 ---

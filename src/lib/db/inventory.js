@@ -96,6 +96,38 @@ export async function adjustStock(userId, itemId, delta) {
   return getInventory(userId);
 }
 
+// ── Permissions ──────────────────────────────────────────────────────────────
+
+export async function getInventoryPermissions(itemId) {
+  const { data, error } = await supabase
+    .from('asset_permissions')
+    .select('*')
+    .eq('asset_type', 'consumable')
+    .eq('asset_id', itemId);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function upsertInventoryPermission(itemId, userId, companyId, canEdit) {
+  const { error } = await supabase.from('asset_permissions').upsert({
+    asset_type: 'consumable',
+    asset_id:   itemId,
+    user_id:    userId,
+    company_id: companyId,
+    can_edit:   canEdit,
+  }, { onConflict: 'asset_type,asset_id,user_id' });
+  if (error) throw error;
+}
+
+export async function revokeInventoryPermission(itemId, userId) {
+  const { error } = await supabase.from('asset_permissions')
+    .delete()
+    .eq('asset_type', 'consumable')
+    .eq('asset_id', itemId)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
 export async function migrateLocalInventory(userId) {
   if (!userId) return;
   const key = lsKey(userId);

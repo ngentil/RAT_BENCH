@@ -7,6 +7,7 @@ import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles
 import { getVehicleAssignments, assignAsset, unassignAsset } from '../../lib/db/vehicleAssignments';
 import { getTools } from '../../lib/db/tools';
 import { getEquipment } from '../../lib/db/equipment';
+import { getInventory } from '../../lib/db/inventory';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
 const FUEL_TYPES    = ["Petrol","Diesel","LPG","Electric","Hybrid","Other"];
@@ -120,16 +121,17 @@ function VehicleForm({ vehicle, onSave, onCancel, units }) {
   );
 }
 
-const ASSET_ICON = { tool: '🔧', equipment: '⚙️' };
+const ASSET_ICON = { tool: '🔧', equipment: '⚙️', consumable: '📦' };
 
-function LoadoutSection({ vehicleId, isShared }) {
+function LoadoutSection({ vehicleId, isShared, userId }) {
   const [assignments, setAssignments] = useState([]);
   const [loaded, setLoaded]           = useState(false);
   const [showPicker, setShowPicker]   = useState(false);
   const [pickerTab, setPickerTab]     = useState('tool');
   const [pickerSearch, setPickerSearch] = useState('');
-  const [allTools, setAllTools]       = useState(null);
+  const [allTools, setAllTools]         = useState(null);
   const [allEquipment, setAllEquipment] = useState(null);
+  const [allConsumables, setAllConsumables] = useState(null);
   const [pickerLoading, setPickerLoading] = useState(false);
 
   useEffect(() => {
@@ -138,11 +140,12 @@ function LoadoutSection({ vehicleId, isShared }) {
 
   const openPicker = async () => {
     setShowPicker(true);
-    if (allTools === null || allEquipment === null) {
+    if (allTools === null || allEquipment === null || allConsumables === null) {
       setPickerLoading(true);
-      const [ts, eq] = await Promise.all([getTools(), getEquipment()]);
+      const [ts, eq, cs] = await Promise.all([getTools(), getEquipment(), getInventory(userId)]);
       setAllTools(ts || []);
       setAllEquipment(eq || []);
+      setAllConsumables(cs || []);
       setPickerLoading(false);
     }
   };
@@ -165,13 +168,13 @@ function LoadoutSection({ vehicleId, isShared }) {
   }, [assignments]);
 
   const pickerItems = useMemo(() => {
-    const pool = pickerTab === 'tool' ? (allTools || []) : (allEquipment || []);
+    const pool = pickerTab === 'tool' ? (allTools || []) : pickerTab === 'equipment' ? (allEquipment || []) : (allConsumables || []);
     const q = pickerSearch.toLowerCase();
     return pool.filter(item =>
       !assignedIds.has(pickerTab + ':' + item.id) &&
       (!q || (item.name || '').toLowerCase().includes(q))
     );
-  }, [pickerTab, allTools, allEquipment, assignedIds, pickerSearch]);
+  }, [pickerTab, allTools, allEquipment, allConsumables, assignedIds, pickerSearch]);
 
   return (
     <div style={{ marginTop: 12 }}>
@@ -188,7 +191,7 @@ function LoadoutSection({ vehicleId, isShared }) {
       </div>
 
       {loaded && assignments.length === 0 && !showPicker && (
-        <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic' }}>No tools or equipment assigned.</div>
+        <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic' }}>No tools, equipment or consumables assigned.</div>
       )}
 
       {assignments.map(a => (
@@ -208,9 +211,9 @@ function LoadoutSection({ vehicleId, isShared }) {
       {showPicker && (
         <div style={{ background: '#0a0a0a', border: '1px solid ' + ACC + '33', borderRadius: 2, padding: 10, marginTop: 6 }}>
           <div style={{ display: 'flex', gap: 0, marginBottom: 8 }}>
-            {[['tool','🔧 Tools'], ['equipment','⚙️ Equipment']].map(([v, l], i, arr) => (
+            {[['tool','🔧 Tools'], ['equipment','⚙️ Equipment'], ['consumable','📦 Consumables']].map(([v, l], i, arr) => (
               <button key={v} onClick={() => { setPickerTab(v); setPickerSearch(''); }}
-                style={{ ...btnG, ...sm, fontSize: 8, borderRadius: i === 0 ? '2px 0 0 2px' : '0 2px 2px 0', borderRight: i === 0 ? 'none' : undefined, ...(pickerTab === v ? { background: ACC + '18', color: ACC, border: '1px solid ' + ACC } : {}) }}>
+                style={{ ...btnG, ...sm, fontSize: 8, borderRadius: i === 0 ? '2px 0 0 2px' : i === arr.length - 1 ? '0 2px 2px 0' : '0', borderRight: i < arr.length - 1 ? 'none' : undefined, ...(pickerTab === v ? { background: ACC + '18', color: ACC, border: '1px solid ' + ACC } : {}) }}>
                 {l}
               </button>
             ))}
@@ -247,7 +250,7 @@ function LoadoutSection({ vehicleId, isShared }) {
   );
 }
 
-function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
+function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, userId }) {
   const [open, setOpen] = useState(false);
   const [addSvc, setAddSvc] = useState(false);
   const [svcForm, setSvcForm] = useState({ date: new Date().toISOString().slice(0, 10), notes: '', cost: '' });
@@ -370,7 +373,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
             ))}
           </div>
 
-          <LoadoutSection vehicleId={vehicle.id} isShared={isShared} />
+          <LoadoutSection vehicleId={vehicle.id} isShared={isShared} userId={userId} />
 
           {!isShared && (
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
@@ -536,6 +539,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
           vehicle={v}
           isShared={v.userId !== userId}
           units={units}
+          userId={userId}
           onEdit={() => setFormVehicle(v)}
           onDelete={() => remove(v.id)}
           onUpdate={update}
