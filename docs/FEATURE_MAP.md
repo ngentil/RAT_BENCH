@@ -211,6 +211,7 @@ Stripe
 | asset_permissions table + RLS | ✅ | auth.users, company_members | Team+ |
 | **vehicles** table + RLS | ✅ | asset_permissions | Free |
 | Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (3 limit) |
+| Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab | Free |
 | **equipment** table + RLS | ✅ | asset_permissions | Free |
 | Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (3 limit) |
 | **tools** table + RLS | ✅ | asset_permissions | Free |
