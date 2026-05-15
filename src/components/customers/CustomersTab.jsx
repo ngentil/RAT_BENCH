@@ -5,6 +5,7 @@ import { mIcon, getStorageStatus } from '../../lib/helpers';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
 import { effectiveTier, canUse } from '../../lib/gates';
 import { getActiveBooking } from '../../lib/db/bookings';
+import PhotoAdder from '../ui/PhotoAdder';
 
 function fmtHrs(secs) {
   const h = Math.floor(secs / 3600);
@@ -14,7 +15,7 @@ function fmtHrs(secs) {
   return m + "m";
 }
 
-const EMPTY_FORM = { name: "", phone: "", email: "", address: "", notes: "" };
+const EMPTY_FORM = { name: "", phone: "", email: "", address: "", notes: "", photos: [] };
 
 function escHtml(s) {
   return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -116,7 +117,12 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   const storagePolicyEnabled = canUse('storage_policy', profile, company) && !!(profile?.storage_policy_enabled);
 
   const openNew = () => { setForm(EMPTY_FORM); setErr(""); setEditing("new"); };
-  const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" }); setErr(""); setEditing(c); };
+  const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "", photos: c.photos || [] }); setErr(""); setEditing(c); };
+
+  const updateClient = async (c) => {
+    await upsertClient(c).catch(() => {});
+    setClients(prev => prev.map(x => x.id === c.id ? c : x));
+  };
   const closeModal = () => { setEditing(null); setErr(""); setSaving(false); };
 
   const save = async () => {
@@ -124,11 +130,11 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
     setSaving(true);
     try {
       if (editing === "new") {
-        const c = { ...form, name: form.name.trim(), address: form.address.trim(), id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+        const c = { ...form, name: form.name.trim(), address: form.address.trim(), photos: form.photos || [], id: crypto.randomUUID(), createdAt: new Date().toISOString() };
         await upsertClient(c);
         setClients(prev => [...prev, c]);
       } else {
-        const c = { ...editing, ...form, name: form.name.trim(), address: form.address.trim() };
+        const c = { ...editing, ...form, name: form.name.trim(), address: form.address.trim(), photos: form.photos || [] };
         await upsertClient(c);
         setClients(prev => prev.map(x => x.id === c.id ? c : x));
       }
@@ -229,6 +235,9 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
         return (
           <div key={client.id} style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + ACC, borderRadius: 2, padding: "12px 14px", marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: linked.length ? 10 : 0 }}>
+              {client.photos?.[0] && (
+                <img src={client.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 2, flexShrink: 0, border: "1px solid #252525", marginRight: 10, marginTop: 1 }} />
+              )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{client.name}</div>
@@ -247,6 +256,21 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
                 {client.email && <div style={{ fontSize: 9, color: MUT }}>✉ {client.email}</div>}
                 {client.address && <div style={{ fontSize: 9, color: MUT, marginTop: 2, lineHeight: 1.5, whiteSpace: "pre-line" }}>📍 {client.address}</div>}
                 {client.notes && <div style={{ fontSize: 9, color: MUT, marginTop: 4, lineHeight: 1.5 }}>{client.notes}</div>}
+                {client.photos?.length > 0 && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginTop: 8 }}>
+                    {client.photos.map((p, i) => (
+                      <div key={i} style={{ position: "relative" }}>
+                        <img src={p} alt="" style={{ width: "100%", height: 56, objectFit: "cover", borderRadius: 2, border: i === 0 ? "1px solid " + ACC + "88" : "1px solid #252525", display: "block" }} />
+                        <button
+                          title={i === 0 ? "Cover photo" : "Set as cover"}
+                          onClick={e => { e.stopPropagation(); if (i === 0) return; updateClient({ ...client, photos: [p, ...client.photos.filter((_, j) => j !== i)] }); }}
+                          style={{ position: "absolute", top: 2, left: 2, background: i === 0 ? ACC : "rgba(0,0,0,0.7)", border: "none", borderRadius: 2, cursor: i === 0 ? "default" : "pointer", fontSize: 8, padding: "2px 4px", color: i === 0 ? "#000" : MUT, lineHeight: 1 }}>
+                          {i === 0 ? "⭐" : "☆ Cover"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
                 {linked.length > 0 && <button onClick={() => exportClientInvoice(client, linked, company, storagePolicyEnabled)} style={{ ...btnG, ...sm }}>Invoice</button>}
@@ -337,6 +361,9 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
               <div style={col}>
                 <FL t="Notes" />
                 <textarea style={txa} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Address, job notes, preferences…" />
+              </div>
+              <div style={col}>
+                <PhotoAdder photos={form.photos || []} setPhotos={ps => setForm(f => ({ ...f, photos: typeof ps === 'function' ? ps(f.photos || []) : ps }))} />
               </div>
               {err && <div style={{ fontSize: 10, color: "#c94040", marginBottom: 8 }}>{err}</div>}
             </div>

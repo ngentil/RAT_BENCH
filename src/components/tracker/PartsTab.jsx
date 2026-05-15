@@ -4,6 +4,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col
 import { SL, FL } from '../ui/shared';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
 import { effectiveTier } from '../../lib/gates';
+import PhotoAdder from '../ui/PhotoAdder';
 
 const ORANGE = '#e8870a';
 
@@ -85,10 +86,11 @@ function QRModal({ item, onClose }) {
   );
 }
 
-const EMPTY = { name:'', partNumber:'', brand:'', supplier:'', buyPrice:'', sellPrice:'', stockQty:'', minStock:'', location:'', notes:'' };
+const EMPTY = { name:'', partNumber:'', brand:'', supplier:'', buyPrice:'', sellPrice:'', stockQty:'', minStock:'', location:'', notes:'', photos:[] };
 
 function ItemForm({ initial, onSave, onCancel }) {
   const [f, setF] = useState({ ...EMPTY, ...initial });
+  const [photos, setPhotos] = useState(initial?.photos || []);
   const set = k => e => setF(p => ({ ...p, [k]: e.target.value }));
   const skuRef = useRef(null);
 
@@ -141,10 +143,11 @@ function ItemForm({ initial, onSave, onCancel }) {
         <div style={col}><L t="Low Stock Alert (qty)"/><input style={fieldStyle} type="number" min="0" step="1" value={f.minStock} onChange={set('minStock')} placeholder="e.g. 2"/></div>
 
         <div style={{ gridColumn:'1/-1', ...col }}><L t="Notes"/><textarea style={{ ...fieldStyle, resize:'vertical', minHeight:40, lineHeight:1.5 }} value={f.notes} onChange={set('notes')} placeholder="Optional notes"/></div>
+        <div style={{ gridColumn:'1/-1' }}><PhotoAdder photos={photos} setPhotos={setPhotos} /></div>
       </div>
       <div style={{ display:'flex', gap:8, marginTop:8, justifyContent:'flex-end' }}>
         <button onClick={onCancel} style={{ ...btnG, ...sm }}>Cancel</button>
-        <button onClick={() => { if (f.name.trim()) onSave(f); }} style={{ ...btnA, ...sm }}>Save</button>
+        <button onClick={() => { if (f.name.trim()) onSave({ ...f, photos }); }} style={{ ...btnA, ...sm }}>Save</button>
       </div>
     </div>
   );
@@ -361,6 +364,10 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
                 </div>
               </div>
 
+              {item.photos?.[0] && (
+                <img src={item.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 2, flexShrink: 0, border: '1px solid #252525' }} />
+              )}
+
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
                   <span style={{ fontSize:12, fontWeight:700, color:TXT }}>{item.name}</span>
@@ -381,6 +388,21 @@ export default function PartsTab({ machines, session, profile, company, onGoToBi
                   {usage?.revenue > 0 && <span style={{ fontSize:9, color:MUT }}>Revenue <span style={{ color:GRN }}>${usage.revenue.toFixed(0)}</span></span>}
                 </div>
                 {item.notes && <div style={{ fontSize:9, color:MUT, marginTop:4, lineHeight:1.5 }}>{item.notes}</div>}
+                {item.photos?.length > 1 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginTop: 6 }}>
+                    {item.photos.map((p, i) => (
+                      <div key={i} style={{ position: 'relative' }}>
+                        <img src={p} alt="" style={{ width: '100%', height: 48, objectFit: 'cover', borderRadius: 2, border: i === 0 ? '1px solid ' + ACC + '88' : '1px solid #252525', display: 'block' }} />
+                        <button
+                          title={i === 0 ? 'Cover photo' : 'Set as cover'}
+                          onClick={async e => { e.stopPropagation(); if (i === 0) return; setInv(await saveInventoryItem(userId, { ...item, photos: [p, ...item.photos.filter((_, j) => j !== i)] })); }}
+                          style={{ position: 'absolute', top: 2, left: 2, background: i === 0 ? ACC : 'rgba(0,0,0,0.7)', border: 'none', borderRadius: 2, cursor: i === 0 ? 'default' : 'pointer', fontSize: 8, padding: '2px 4px', color: i === 0 ? '#000' : MUT, lineHeight: 1 }}>
+                          {i === 0 ? '⭐' : '☆ Cover'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ display:'flex', flexDirection:'column', gap:5, flexShrink:0 }}>

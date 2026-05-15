@@ -16,6 +16,7 @@ function fromDb(r) {
     stockQty:   p.stockQty  != null ? String(p.stockQty)  : '',
     minStock:   p.minStock  != null ? String(p.minStock)  : '',
     notes:      p.notes      || '',
+    photos:     p.photos     || [],
     createdAt:  r.created_at,
   };
 }
@@ -34,6 +35,7 @@ function toDb(userId, item) {
       stockQty:   item.stockQty  !== '' ? parseInt(item.stockQty)   || 0    : 0,
       minStock:   item.minStock  !== '' ? parseInt(item.minStock)   || null : null,
       notes:      item.notes      || null,
+      photos:     item.photos     || [],
     },
   };
 }
