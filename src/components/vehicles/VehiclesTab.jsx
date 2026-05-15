@@ -5,6 +5,8 @@ import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
 import LoadoutSection from '../ui/LoadoutSection';
+import ServiceModal from '../ui/ServiceModal';
+import { fmtDT } from '../../lib/helpers';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
 const FUEL_TYPES    = ["Petrol","Diesel","LPG","Electric","Hybrid","Other"];
@@ -119,18 +121,20 @@ function VehicleForm({ vehicle, onSave, onCancel, units }) {
 
 function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
   const [open, setOpen] = useState(false);
-  const [addSvc, setAddSvc] = useState(false);
-  const [svcForm, setSvcForm] = useState({ date: new Date().toISOString().slice(0, 10), notes: '', cost: '' });
+  const [showSvc, setShowSvc] = useState(false);
+  const [editSvc, setEditSvc] = useState(null);
   const [photoIdx, setPhotoIdx] = useState(null);
 
   const statusColor = COND_COL[vehicle.status] || MUT;
 
-  const addServiceEntry = async () => {
-    if (!svcForm.notes.trim()) return;
-    const entry = { id: crypto.randomUUID(), date: svcForm.date, notes: svcForm.notes.trim(), cost: parseFloat(svcForm.cost) || 0 };
-    await onUpdate({ ...vehicle, serviceLog: [...(vehicle.serviceLog || []), entry] });
-    setAddSvc(false);
-    setSvcForm({ date: new Date().toISOString().slice(0, 10), notes: '', cost: '' });
+  const saveSvcEntry = async (entry) => {
+    const log = vehicle.serviceLog || [];
+    const updated = log.find(e => e.id === entry.id)
+      ? log.map(e => e.id === entry.id ? entry : e)
+      : [entry, ...log];
+    await onUpdate({ ...vehicle, serviceLog: updated });
+    setShowSvc(false);
+    setEditSvc(null);
   };
 
   const removeSvcEntry = async (id) => {
@@ -203,33 +207,50 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
 
           {/* Service log */}
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 7, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
-              Service Log {vehicle.serviceLog?.length > 0 && `(${vehicle.serviceLog.length})`}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ borderLeft: '2px solid ' + ACC, paddingLeft: 8 }}>
+                <SL t={'Service History' + (vehicle.serviceLog?.length > 0 ? ` (${vehicle.serviceLog.length})` : '')} />
+              </div>
+              {!isShared && (
+                <button style={{ ...btnA, ...sm }} onClick={e => { e.stopPropagation(); setShowSvc(true); }}>+ Log</button>
+              )}
             </div>
+            {(vehicle.serviceLog || []).length === 0 && (
+              <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic' }}>No entries yet.</div>
+            )}
             {(vehicle.serviceLog || []).map(e => (
-              <div key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid #1a1a1a' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 8, color: MUT }}>{fmtDate(e.date)}</div>
-                  <div style={{ fontSize: 10, color: TXT, marginTop: 2, lineHeight: 1.4 }}>{e.notes}</div>
-                  {e.cost > 0 && <div style={{ fontSize: 8, color: GRN, marginTop: 2 }}>${Number(e.cost).toFixed(2)}</div>}
+              <div key={e.id} style={{ position: 'relative', paddingLeft: 18, marginBottom: 14 }}>
+                <div style={{ position: 'absolute', left: 0, top: 4, width: 7, height: 7, borderRadius: '50%', background: ACC, border: '2px solid #0d0d0d', boxSizing: 'border-box' }} />
+                <div style={{ fontSize: 9, color: MUT, marginBottom: 2 }}>
+                  {e.completedAt ? fmtDT(e.completedAt) : fmtDate(e.date)}
                 </div>
-                {!isShared && <button onClick={() => removeSvcEntry(e.id)} style={{ background: 'none', border: 'none', color: MUT, cursor: 'pointer', fontSize: 11, padding: 0, lineHeight: 1 }}>✕</button>}
+                {e.types?.length > 0 && (
+                  <div style={{ fontSize: 13, fontWeight: 700, color: TXT, marginBottom: 3 }}>{e.types.join('  ·  ')}</div>
+                )}
+                {e.notes && <div style={{ fontSize: 11, color: '#888', lineHeight: 1.5, marginBottom: 5 }}>{e.notes}</div>}
+                {e.plugPhoto && (
+                  <div style={{ marginBottom: 6 }}>
+                    <FL t="Spark Plug" />
+                    <img src={e.plugPhoto} alt="" style={{ borderRadius: 2, maxWidth: '100%', maxHeight: 130, objectFit: 'cover', border: '1px solid ' + BRD, display: 'block' }} />
+                  </div>
+                )}
+                {e.jobPhotos?.length > 0 && (
+                  <div style={{ marginBottom: 6 }}>
+                    <FL t={'Job Photos (' + e.jobPhotos.length + ')'} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                      {e.jobPhotos.map((p, i) => (
+                        <img key={i} src={p} alt="" style={{ width: '100%', height: 70, objectFit: 'cover', borderRadius: 2, border: '1px solid ' + BRD, display: 'block' }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!isShared && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                    <button style={{ ...btnG, ...sm }} onClick={() => setEditSvc(e)}>Edit</button>
+                    <button style={{ ...btnD, ...sm }} onClick={() => removeSvcEntry(e.id)}>Delete</button>
+                  </div>
+                )}
               </div>
-            ))}
-            {!isShared && (addSvc ? (
-              <div style={{ background: '#0a0a0a', border: '1px solid ' + ACC + '44', borderRadius: 2, padding: 10, marginTop: 6 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
-                  <div><FL t="Date" /><input style={inp} type="date" value={svcForm.date} onChange={e => setSvcForm(f => ({ ...f, date: e.target.value }))} /></div>
-                  <div><FL t="Cost ($)" /><input style={inp} type="number" min="0" step="0.01" value={svcForm.cost} onChange={e => setSvcForm(f => ({ ...f, cost: e.target.value }))} placeholder="0.00" /></div>
-                  <div style={{ gridColumn: '1/-1' }}><FL t="Notes *" /><textarea style={{ ...txa, minHeight: 40 }} value={svcForm.notes} onChange={e => setSvcForm(f => ({ ...f, notes: e.target.value }))} autoFocus /></div>
-                </div>
-                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                  <button onClick={() => setAddSvc(false)} style={{ ...btnG, ...sm }}>Cancel</button>
-                  <button onClick={addServiceEntry} disabled={!svcForm.notes.trim()} style={{ ...btnA, ...sm, opacity: svcForm.notes.trim() ? 1 : 0.4 }}>Add</button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setAddSvc(true)} style={{ ...btnG, width: '100%', marginTop: 6, fontSize: 9 }}>+ Log Service</button>
             ))}
           </div>
 
@@ -243,6 +264,15 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
             </div>
           )}
         </div>
+      )}
+
+      {(showSvc || editSvc) && (
+        <ServiceModal
+          machine={{ id: vehicle.id, name: vehicle.name, type: vehicle.type || 'Vehicle', strokeType: vehicle.fuelType === 'Diesel' ? 'Diesel' : vehicle.fuelType === 'Electric' ? 'Electric' : '' }}
+          existing={editSvc}
+          onSave={saveSvcEntry}
+          onClose={() => { setShowSvc(false); setEditSvc(null); }}
+        />
       )}
 
       {photoIdx !== null && (
