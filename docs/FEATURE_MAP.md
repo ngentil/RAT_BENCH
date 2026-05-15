@@ -212,10 +212,13 @@ Stripe
 | **vehicles** table + RLS | ✅ | asset_permissions | Free |
 | Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (3 limit) |
 | Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab | Free |
+| Sort modal + list/grid view toggle (Vehicles) | ✅ | VehiclesTab, AssetTile | Free |
 | **equipment** table + RLS | ✅ | asset_permissions | Free |
 | Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (3 limit) |
+| Sort modal + list/grid view toggle (Equipment) | ✅ | EquipmentTab, AssetTile | Free |
 | **tools** table + RLS | ✅ | asset_permissions | Free |
 | Tools tab: CRUD + warranty + loan tracking | ✅ | tools table | Free (3 limit) |
+| Sort modal + list/grid view toggle (Tools) | ✅ | ToolsTab, AssetTile | Free |
 | localStorage → Supabase migration (tools) | ✅ | tools table | — |
 | Free-tier item limit (3 per type) | ✅ | gates.js assetLimit() | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
@@ -227,9 +230,11 @@ Stripe
 | Unassign items from loadout | ✅ | unassignAsset(), LoadoutSection | Free |
 | **consumables** table + RLS | ✅ | asset_permissions | Free |
 | Consumables tab: CRUD + qty tracking + stock alerts | ✅ | consumables table | Free (10 limit) |
+| Sort modal + list/grid view toggle (Consumables) | ✅ | ConsumablesTab, AssetTile | Free |
 | 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
 | Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
 | ± stock adjustment inline on card | ✅ | adjustConsumableQty(), ConsumablesTab | Free |
+| Cover photo selection (⭐ sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab | Free |
 | Low-stock / out-of-stock badge | ✅ | qtyLabel(), min_quantity threshold | Free |
 | Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
 | Assign team member (driver) to vehicle | 📋 | asset_assignments driver support | Team+ |
