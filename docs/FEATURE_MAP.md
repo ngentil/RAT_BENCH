@@ -219,9 +219,11 @@ Stripe
 | Free-tier item limit (3 per type) | ✅ | gates.js assetLimit() | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
 | Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
-| Assign tools/equipment to a vehicle | 📋 | vehicle_assignments (not built yet) | Team+ |
-| Assign team member (driver) to vehicle | 📋 | vehicle_assignments | Team+ |
-| Vehicle loadout view | 📋 | vehicle_assignments | Team+ |
+| vehicle_assignments table + RLS | ✅ | vehicles, auth.users | Free |
+| Assign tools/equipment to a vehicle | ✅ | vehicle_assignments, LoadoutSection | Free |
+| Unassign tools/equipment from a vehicle | ✅ | unassignAsset(), LoadoutSection | Free |
+| Vehicle loadout view (inline in card) | ✅ | LoadoutSection, VehiclesTab | Free |
+| Assign team member (driver) to vehicle | 📋 | vehicle_assignments driver support | Team+ |
 
 ---
 
@@ -265,9 +267,7 @@ Stripe
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
 | Asset provisioning UI in CompanySettings | ✅ | Ships with Machines + Vehicles + Equipment + Tools sections |
-| Assign tools/equipment to vehicles | 📋 | Needs vehicle_assignments table (see FEATURE_QUEUE.md) |
-| Assign driver to vehicle | 📋 | Same — vehicle_assignments |
-| Vehicle loadout view | 📋 | Depends on assignments feature |
+| Assign driver to vehicle | 📋 | vehicle_assignments driver support not yet built |
 | Photo migration → Supabase Storage | 📋 | Currently base64 in DB rows — expensive |
 | Push notifications (service due) | 📋 | Needs FCM or similar |
 | Smart Mode cascade calculations | 📋 | Needs multiple sections complete |

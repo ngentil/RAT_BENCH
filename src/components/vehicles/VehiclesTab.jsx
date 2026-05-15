@@ -4,6 +4,9 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
+import { getVehicleAssignments, assignAsset, unassignAsset } from '../../lib/db/vehicleAssignments';
+import { getTools } from '../../lib/db/tools';
+import { getEquipment } from '../../lib/db/equipment';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
 const FUEL_TYPES    = ["Petrol","Diesel","LPG","Electric","Hybrid","Other"];
@@ -113,6 +116,133 @@ function VehicleForm({ vehicle, onSave, onCancel, units }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+const ASSET_ICON = { tool: '🔧', equipment: '⚙️' };
+
+function LoadoutSection({ vehicleId, isShared }) {
+  const [assignments, setAssignments] = useState([]);
+  const [loaded, setLoaded]           = useState(false);
+  const [showPicker, setShowPicker]   = useState(false);
+  const [pickerTab, setPickerTab]     = useState('tool');
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [allTools, setAllTools]       = useState(null);
+  const [allEquipment, setAllEquipment] = useState(null);
+  const [pickerLoading, setPickerLoading] = useState(false);
+
+  useEffect(() => {
+    getVehicleAssignments(vehicleId).then(a => { setAssignments(a); setLoaded(true); });
+  }, [vehicleId]);
+
+  const openPicker = async () => {
+    setShowPicker(true);
+    if (allTools === null || allEquipment === null) {
+      setPickerLoading(true);
+      const [ts, eq] = await Promise.all([getTools(), getEquipment()]);
+      setAllTools(ts || []);
+      setAllEquipment(eq || []);
+      setPickerLoading(false);
+    }
+  };
+
+  const doAssign = async (assetType, item) => {
+    const assetName = item.name;
+    const a = await assignAsset({ vehicleId, assetType, assetId: item.id, assetName });
+    setAssignments(prev => [...prev, a]);
+  };
+
+  const doUnassign = async (id) => {
+    await unassignAsset(id);
+    setAssignments(prev => prev.filter(a => a.id !== id));
+  };
+
+  const assignedIds = useMemo(() => {
+    const s = new Set();
+    assignments.forEach(a => s.add(a.asset_type + ':' + a.asset_id));
+    return s;
+  }, [assignments]);
+
+  const pickerItems = useMemo(() => {
+    const pool = pickerTab === 'tool' ? (allTools || []) : (allEquipment || []);
+    const q = pickerSearch.toLowerCase();
+    return pool.filter(item =>
+      !assignedIds.has(pickerTab + ':' + item.id) &&
+      (!q || (item.name || '').toLowerCase().includes(q))
+    );
+  }, [pickerTab, allTools, allEquipment, assignedIds, pickerSearch]);
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ fontSize: 7, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
+          Loadout {loaded && assignments.length > 0 && `(${assignments.length})`}
+        </div>
+        {!isShared && !showPicker && (
+          <button onClick={openPicker} style={{ ...btnG, ...sm, fontSize: 8 }}>+ Assign</button>
+        )}
+        {!isShared && showPicker && (
+          <button onClick={() => { setShowPicker(false); setPickerSearch(''); }} style={{ ...btnG, ...sm, fontSize: 8 }}>Done</button>
+        )}
+      </div>
+
+      {loaded && assignments.length === 0 && !showPicker && (
+        <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic' }}>No tools or equipment assigned.</div>
+      )}
+
+      {assignments.map(a => (
+        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: '1px solid #1a1a1a' }}>
+          <span style={{ fontSize: 13 }}>{ASSET_ICON[a.asset_type]}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: TXT, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.asset_name}</div>
+            <div style={{ fontSize: 8, color: MUT, textTransform: 'capitalize' }}>{a.asset_type}</div>
+          </div>
+          {!isShared && (
+            <button onClick={() => doUnassign(a.id)}
+              style={{ background: 'none', border: 'none', color: MUT, cursor: 'pointer', fontSize: 11, padding: '0 2px', lineHeight: 1 }}>✕</button>
+          )}
+        </div>
+      ))}
+
+      {showPicker && (
+        <div style={{ background: '#0a0a0a', border: '1px solid ' + ACC + '33', borderRadius: 2, padding: 10, marginTop: 6 }}>
+          <div style={{ display: 'flex', gap: 0, marginBottom: 8 }}>
+            {[['tool','🔧 Tools'], ['equipment','⚙️ Equipment']].map(([v, l], i, arr) => (
+              <button key={v} onClick={() => { setPickerTab(v); setPickerSearch(''); }}
+                style={{ ...btnG, ...sm, fontSize: 8, borderRadius: i === 0 ? '2px 0 0 2px' : '0 2px 2px 0', borderRight: i === 0 ? 'none' : undefined, ...(pickerTab === v ? { background: ACC + '18', color: ACC, border: '1px solid ' + ACC } : {}) }}>
+                {l}
+              </button>
+            ))}
+          </div>
+          <input
+            style={{ ...inp, fontSize: 10, padding: '5px 8px', marginBottom: 6 }}
+            placeholder={`Search ${pickerTab}s…`}
+            value={pickerSearch}
+            onChange={e => setPickerSearch(e.target.value)}
+          />
+          {pickerLoading && <div style={{ fontSize: 9, color: MUT, padding: '8px 0' }}>Loading…</div>}
+          {!pickerLoading && pickerItems.length === 0 && (
+            <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic', padding: '6px 0' }}>
+              {pickerSearch ? 'No matches.' : `All ${pickerTab}s already assigned.`}
+            </div>
+          )}
+          <div style={{ maxHeight: 180, overflowY: 'auto' }}>
+            {pickerItems.map(item => (
+              <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #181818' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                  {(item.brand || item.make || item.category || item.type) && (
+                    <div style={{ fontSize: 8, color: MUT }}>{item.brand || item.make || ''}{(item.category || item.type) ? ' · ' + (item.category || item.type) : ''}</div>
+                  )}
+                </div>
+                <button onClick={() => doAssign(pickerTab, item)}
+                  style={{ ...btnA, ...sm, fontSize: 8, flexShrink: 0, marginLeft: 8 }}>+ Add</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -239,6 +369,8 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
               <button onClick={() => setAddSvc(true)} style={{ ...btnG, width: '100%', marginTop: 6, fontSize: 9 }}>+ Log Service</button>
             ))}
           </div>
+
+          <LoadoutSection vehicleId={vehicle.id} isShared={isShared} />
 
           {!isShared && (
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
