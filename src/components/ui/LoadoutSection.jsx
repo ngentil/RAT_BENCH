@@ -6,9 +6,10 @@ import { getTools } from '../../lib/db/tools';
 import { getEquipment } from '../../lib/db/equipment';
 import { getConsumables } from '../../lib/db/consumables';
 
-const TYPE_ICON  = { vehicle: '🚗', tool: '🔧', equipment: '⚙️', consumable: '📦' };
-const TYPE_LABEL = { vehicle: 'Vehicle', tool: 'Tool', equipment: 'Equipment', consumable: 'Consumable' };
-const ALL_TYPES  = ['vehicle', 'tool', 'equipment', 'consumable'];
+const TYPE_ICON   = { vehicle: '🚗', tool: '🔧', equipment: '⚙️', consumable: '📦' };
+const TYPE_LABEL  = { vehicle: 'Vehicle', tool: 'Tool', equipment: 'Equipment', consumable: 'Consumable' };
+const TYPE_PLURAL = { vehicle: 'Vehicles', tool: 'Tools', equipment: 'Equipment', consumable: 'Consumables' };
+const ALL_TYPES   = ['vehicle', 'tool', 'equipment', 'consumable'];
 
 const FETCHERS = {
   vehicle:    getVehicles,
@@ -117,8 +118,8 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
   const emptyMsg = pickerSearch
     ? 'No matches.'
     : poolSize === 0
-      ? `No ${TYPE_LABEL[pickerTab]?.toLowerCase()}s added yet — add some from the ${TYPE_LABEL[pickerTab]?.toLowerCase()}s tab.`
-      : `All ${TYPE_LABEL[pickerTab]?.toLowerCase()}s already assigned to this item.`;
+      ? `No ${TYPE_PLURAL[pickerTab]?.toLowerCase()} added yet — add some from the ${TYPE_PLURAL[pickerTab]?.toLowerCase()} tab.`
+      : `All ${TYPE_PLURAL[pickerTab]?.toLowerCase()} already assigned to this item.`;
 
   return (
     <div style={{ marginTop: 12 }}>
@@ -169,7 +170,7 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
                     borderRight: isLast ? undefined : 'none',
                     ...(active ? { background: ACC + '18', color: ACC, border: '1px solid ' + ACC } : {}),
                   }}>
-                  {TYPE_ICON[type]} {TYPE_LABEL[type]}s
+                  {TYPE_ICON[type]} {TYPE_PLURAL[type]}
                 </button>
               );
             })}
@@ -177,7 +178,7 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
 
           <input
             style={{ ...inp, fontSize: 10, padding: '5px 8px', marginBottom: 6 }}
-            placeholder={`Search ${TYPE_LABEL[pickerTab]?.toLowerCase()}s…`}
+            placeholder={`Search ${TYPE_PLURAL[pickerTab]?.toLowerCase()}…`}
             value={pickerSearch}
             onChange={e => setPickerSearch(e.target.value)}
           />
