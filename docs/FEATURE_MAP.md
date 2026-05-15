@@ -188,6 +188,8 @@ Stripe
 | Stock adjustment (use / restock) | ✅ | inventory_items.payload | Free |
 | Machine parts list (per-machine) | ✅ | machines.parts (jsonb) | Free |
 | localStorage → Supabase migration | ✅ | inventory_items | Free |
+| Photos per part (stored in payload JSONB) | ✅ | inventory_items.payload.photos | Free |
+| Cover photo selection (☆ Cover) for parts | ✅ | PartsTab | Free |
 
 ---
 
@@ -197,6 +199,8 @@ Stripe
 |---------|--------|-----------|------|
 | clients table + RLS | ✅ | profiles, companies | Enthusiast+ |
 | Create / edit / delete clients | ✅ | clients table | Enthusiast+ |
+| Photos per client (clients.photos jsonb column) | ✅ | clients table, add_photos_to_clients.sql | Enthusiast+ |
+| Cover photo selection (☆ Cover) for clients | ✅ | CustomersTab | Enthusiast+ |
 | Link machines to clients | ✅ | machines.client_id | Enthusiast+ |
 | Per-client invoice (all linked machines) | ✅ | time_log, parts, clients | Enthusiast+ |
 | HTML invoice export with company header | ✅ | clients, companies, time_log | Enthusiast+ |
