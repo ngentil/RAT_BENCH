@@ -42,9 +42,6 @@ function App(){
     return stored;
   });
   const [workshopTab,setWorkshopTab]=useState(()=>localStorage.getItem("rat_workshop_tab")||"parts");
-  const [workshopVisibleTabs,setWorkshopVisibleTabs]=useState(()=>{
-    try{return JSON.parse(localStorage.getItem("rat_workshop_visible")||"null");}catch{return null;}
-  });
   const [machines,setMachines]=useState([]);
   const [clients,setClients]=useState([]);
   const [vehicles,setVehicles]=useState([]);
@@ -147,7 +144,6 @@ function App(){
 
   useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
   useEffect(()=>{ localStorage.setItem("rat_workshop_tab",workshopTab); },[workshopTab]);
-  useEffect(()=>{ localStorage.setItem("rat_workshop_visible",JSON.stringify(workshopVisibleTabs)); },[workshopVisibleTabs]);
 
   useEffect(()=>{
     if(!profile) return;
@@ -156,6 +152,11 @@ function App(){
     const tier=effectiveTier(profile,company);
     const wsDef=WORKSHOP_TABS.find(t=>t.id===workshopTab);
     if(wsDef?.enthusiastOnly&&tier==="free") setWorkshopTab("parts");
+    const wsVis=profile?.tab_order?.workshop_visible;
+    if(wsVis&&!wsVis.includes(workshopTab)){
+      const first=wsVis.find(id=>WORKSHOP_TABS.some(t=>t.id===id&&!(t.enthusiastOnly&&tier==="free")));
+      if(first) setWorkshopTab(first);
+    }
   },[profile,company]);
 
   useEffect(()=>{
@@ -256,10 +257,11 @@ function App(){
   const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = machines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
   const timerRunning = machines.some(m => (m.jobTimers || []).some(t => t.status === "running"));
+  const savedWorkshopVisible = profile?.tab_order?.workshop_visible;
   const visibleWorkshopTabs = applyTabOrder(
     WORKSHOP_TABS.filter(t=>{
       if(t.enthusiastOnly&&tier==="free") return false;
-      if(workshopVisibleTabs&&!workshopVisibleTabs.includes(t.id)) return false;
+      if(savedWorkshopVisible&&!savedWorkshopVisible.includes(t.id)) return false;
       return true;
     }),
     profile?.tab_order?.workshop
@@ -354,7 +356,7 @@ function App(){
       <div style={{display:tab==="workshop"&&workshopTab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools} workshopVisibleTabs={workshopVisibleTabs} setWorkshopVisibleTabs={(v)=>{setWorkshopVisibleTabs(v);}} workshopTab={workshopTab} setWorkshopTab={setWorkshopTab}/></div>
+      <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/></div>
     </div>
   );
 }
