@@ -213,9 +213,9 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
 
         {partsRev > 0 && (
           <div style={{ background: SURF, border: "1px solid " + BRD, borderTop: "2px solid " + ACC, borderRadius: 2, padding: "12px 14px", boxShadow: "0 0 12px " + ACC + "18" }}>
-            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Parts Revenue</div>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>Parts &amp; Consumables</div>
             <div style={{ fontSize: 26, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: "-0.02em" }}>${partsRev.toFixed(0)}</div>
-            <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Cost ${partsCost.toFixed(0)}</div>
+            <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Stock Cost ${partsCost.toFixed(0)}</div>
           </div>
         )}
 

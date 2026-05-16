@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
+import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
 import { getNextInvoiceNumber } from '../../lib/db/invoices';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
@@ -407,14 +408,18 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
 }
 
 function PartsSection({ machine, onUpdate, userId }) {
-  const [mode, setMode]     = useState(null); // null | "inv" | "standalone"
-  const [inv, setInv]       = useState([]);
-  const [search, setSearch] = useState("");
+  const [mode, setMode]           = useState(null); // null | "inv" | "standalone"
+  const [pickerSource, setPickerSource] = useState("part"); // "part" | "consumable"
+  const [inv, setInv]             = useState([]);
+  const [cons, setCons]           = useState([]);
+  const [search, setSearch]       = useState("");
 
   useEffect(() => { getInventory(userId).then(setInv); }, [userId]);
-  const [selected, setSelected] = useState(null); // inventory item
-  const [qty, setQty]       = useState("1");
-  const [saForm, setSaForm] = useState({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
+  useEffect(() => { getConsumables().then(setCons); }, []);
+
+  const [selected, setSelected]   = useState(null);
+  const [qty, setQty]             = useState("1");
+  const [saForm, setSaForm]       = useState({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
   const [saSuggestions, setSaSuggestions] = useState([]);
   const [saMatchedInvId, setSaMatchedInvId] = useState(null);
   const parts = machine.parts || [];
@@ -425,6 +430,14 @@ function PartsSection({ machine, onUpdate, userId }) {
   const inpS = { background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, outline:"none", boxSizing:"border-box", width:"100%" };
   const L = ({ t }) => <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{t}</div>;
 
+  // Combined search list for the picker
+  const pickerList = pickerSource === "part" ? inv : cons;
+  const filteredPickerList = pickerList.filter(i =>
+    !search || i.name.toLowerCase().includes(search.toLowerCase()) ||
+    (i.partNumber||"").toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Legacy: also search inv for standalone suggestions
   const filteredInv = inv.filter(i =>
     !search || i.name.toLowerCase().includes(search.toLowerCase()) ||
     (i.partNumber||"").toLowerCase().includes(search.toLowerCase())
@@ -435,7 +448,8 @@ function PartsSection({ machine, onUpdate, userId }) {
     const useQty = Math.max(1, parseInt(qty) || 1);
     const entry = {
       id: crypto.randomUUID(),
-      inventoryId: selected.id,
+      sourceType: pickerSource,
+      ...(pickerSource === "part" ? { inventoryId: selected.id } : { consumableId: selected.id }),
       name: selected.name,
       partNumber: selected.partNumber || "",
       brand: selected.brand || "",
@@ -447,14 +461,19 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: [...parts, entry] };
     onUpdate(updated);
     await upsertMachine(updated);
-    setInv(await adjustStock(userId, selected.id, -useQty));
+    if (pickerSource === "part") {
+      setInv(await adjustStock(userId, selected.id, -useQty));
+    } else {
+      const updatedItem = await adjustConsumableQty(selected.id, -useQty);
+      setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+    }
     setMode(null); setSelected(null); setQty("1"); setSearch("");
   };
 
   const addStandalone = async () => {
     if (!saForm.name.trim()) return;
     const entry = { ...saForm, id: crypto.randomUUID(), qty: parseInt(saForm.qty)||1, buyPrice: parseFloat(saForm.buyPrice)||0, sellPrice: parseFloat(saForm.sellPrice)||0, usedAt: new Date().toISOString() };
-    if (saMatchedInvId) entry.inventoryId = saMatchedInvId;
+    if (saMatchedInvId) { entry.inventoryId = saMatchedInvId; entry.sourceType = "part"; }
     const updated = { ...machine, parts: [...parts, entry] };
     onUpdate(updated);
     await upsertMachine(updated);
@@ -482,48 +501,64 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: parts.filter((_,i) => i !== idx) };
     onUpdate(updated);
     await upsertMachine(updated);
-    if (p.inventoryId) setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+    const sourceType = p.sourceType || (p.inventoryId ? "part" : null);
+    if (sourceType === "consumable" && p.consumableId) {
+      const updatedItem = await adjustConsumableQty(p.consumableId, Number(p.qty) || 1);
+      setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+    } else if (p.inventoryId) {
+      setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+    }
   };
 
   return (
     <div style={{ marginTop:8 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
         <div style={{ fontSize:9, color:ACC, letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
-          Parts Used {parts.length > 0 && `(${parts.length})`}
+          Parts &amp; Consumables {parts.length > 0 && `(${parts.length})`}
           {totalRevenue > 0 && <span style={{ color:GRN, marginLeft:8 }}>${totalRevenue.toFixed(2)}</span>}
           {totalCost > 0 && totalRevenue > 0 && <span style={{ color:MUT, marginLeft:4, fontSize:8 }}>cost ${totalCost.toFixed(2)}</span>}
         </div>
         {!mode && (
           <div style={{ display:"flex", gap:5 }}>
-            {inv.length > 0 && <button onClick={() => setMode("inv")} style={{ ...btnA, ...sm, fontSize:8 }}>Use from Inventory</button>}
+            {(inv.length > 0 || cons.length > 0) && <button onClick={() => { setMode("inv"); setSearch(""); setSelected(null); }} style={{ ...btnA, ...sm, fontSize:8 }}>Use from Stock</button>}
             <button onClick={() => setMode("standalone")} style={{ ...btnG, ...sm, fontSize:8 }}>+ One-off</button>
           </div>
         )}
       </div>
 
-      {/* Inventory picker */}
+      {/* Stock picker */}
       {mode === "inv" && (
         <div style={{ background:"#0a0f0a", border:"1px solid "+ACC+"44", borderRadius:2, padding:"10px 12px", marginBottom:8 }}>
-          <div style={{ fontSize:9, color:ACC, letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>Use from Inventory</div>
-          <input style={{ ...inpS, marginBottom:8 }} placeholder="Search inventory…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <div style={{ fontSize:9, color:ACC, letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700 }}>Use from Stock</div>
+            <div style={{ display:"flex", gap:0 }}>
+              {[["part","🔩 Parts"],["consumable","📦 Consumables"]].map(([v,l], i) => (
+                <button key={v} onClick={() => { setPickerSource(v); setSearch(""); setSelected(null); }}
+                  style={{ ...btnG, ...sm, fontSize:8, borderRadius: i===0?"2px 0 0 2px":"0 2px 2px 0", borderRight: i===0?"none":undefined, ...(pickerSource===v?{background:ACC+"18",color:ACC}:{}) }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <input style={{ ...inpS, marginBottom:8 }} placeholder={pickerSource==="part"?"Search parts…":"Search consumables…"} value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
           <div style={{ maxHeight:160, overflowY:"auto", marginBottom:8 }}>
-            {filteredInv.map(i => {
-              const stockQty = Number(i.stockQty) || 0;
+            {filteredPickerList.map(i => {
+              const stockQty = pickerSource === "part" ? (Number(i.stockQty) || 0) : (Number(i.quantity) || 0);
               return (
                 <div key={i.id} onClick={() => { setSelected(i); setSearch(""); }}
                   style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 8px", borderRadius:2, cursor:"pointer", background: selected?.id===i.id ? ACC+"22" : "transparent", border:"1px solid "+(selected?.id===i.id ? ACC+"55" : "transparent"), marginBottom:3 }}>
                   <div>
                     <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
-                    <div style={{ fontSize:8, color:MUT }}>{[i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
+                    <div style={{ fontSize:8, color:MUT }}>{[i.category, i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
                   </div>
                   <div style={{ textAlign:"right", flexShrink:0 }}>
-                    <div style={{ fontSize:10, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} in stock</div>
+                    <div style={{ fontSize:10, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} {pickerSource==="part"?"in stock":i.unit||"in stock"}</div>
                     {i.sellPrice && <div style={{ fontSize:8, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
                   </div>
                 </div>
               );
             })}
-            {filteredInv.length === 0 && <div style={{ fontSize:9, color:MUT, padding:8 }}>No matching items.</div>}
+            {filteredPickerList.length === 0 && <div style={{ fontSize:9, color:MUT, padding:8 }}>No matching items.</div>}
           </div>
           {selected && (
             <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px", background:"#0a0a0a", borderRadius:2, marginBottom:8 }}>
@@ -539,7 +574,7 @@ function PartsSection({ machine, onUpdate, userId }) {
           )}
           <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
             <button onClick={() => { setMode(null); setSelected(null); setSearch(""); }} style={{ ...btnG, ...sm }}>Cancel</button>
-            <button onClick={useFromInventory} disabled={!selected} style={{ ...btnA, ...sm, opacity: selected?1:0.4 }}>Use Part</button>
+            <button onClick={useFromInventory} disabled={!selected} style={{ ...btnA, ...sm, opacity: selected?1:0.4 }}>Use {pickerSource === "part" ? "Part" : "Consumable"}</button>
           </div>
         </div>
       )}
@@ -610,7 +645,8 @@ function PartsSection({ machine, onUpdate, userId }) {
                 <span style={{ fontSize:10, color:TXT, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
                 {Number(p.qty)>1 && <span style={{ fontSize:8, color:MUT, flexShrink:0 }}>×{p.qty}</span>}
                 {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background: SURF, padding:"1px 4px", borderRadius:2, border:"1px solid " + BRD }}>{p.partNumber}</span>}
-                {p.inventoryId && <span style={{ fontSize:7, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
+                {(p.sourceType === "consumable" || p.consumableId) && <span style={{ fontSize:7, color:"#3a7bd5", letterSpacing:"0.06em" }}>CONS</span>}
+                {(p.sourceType === "part" || (!p.sourceType && p.inventoryId)) && <span style={{ fontSize:7, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
               </div>
               {(rev > 0 || cost > 0) && (
                 <div style={{ fontSize:8, color:MUT }}>
@@ -934,11 +970,15 @@ const STATUS_COLOR = {
 function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, session, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
   const [open, setOpen] = useState(false);
 
-  const totalSecs = (m.timeLog||[]).reduce((s, e) => s + (e.seconds||0), 0);
-  const partsCount = (m.parts||[]).length;
-  const due = m.dueDate ? new Date(m.dueDate) : null;
-  const isOverdue = due && due < new Date();
-  const isRunning = m.jobTimer?.status === "running";
+  const totalSecs   = (m.timeLog||[]).reduce((s, e) => s + (e.seconds||0), 0);
+  const partsCount  = (m.parts||[]).length;
+  const due         = m.dueDate ? new Date(m.dueDate) : null;
+  const isOverdue   = due && due < new Date();
+  const isRunning   = m.jobTimer?.status === "running";
+  const hourlyRate  = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
+  const partsTotal  = (m.parts||[]).reduce((s,p) => s + (parseFloat(p.sellPrice)||0)*(Number(p.qty)||1), 0);
+  const labourTotal = hourlyRate ? (totalSecs / 3600) * hourlyRate : null;
+  const grandTotal  = partsTotal + (labourTotal || 0);
 
   return (
     <div style={{ background: "#0d0d0d", border: "1px solid " + (timerLocked ? "#1a1a1a" : "#252525"), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden", opacity: timerLocked ? 0.65 : 1 }}>
@@ -968,7 +1008,8 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
         <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
           {totalSecs > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtDuration(totalSecs)}</span>}
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            {partsCount > 0 && <span style={{ fontSize: 7, color: MUT }}>{partsCount} part{partsCount !== 1 ? "s" : ""}</span>}
+            {grandTotal > 0 && <span style={{ fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>${grandTotal.toFixed(0)}</span>}
+            {partsCount > 0 && <span style={{ fontSize: 7, color: MUT }}>{partsCount} item{partsCount !== 1 ? "s" : ""}</span>}
             <span style={{ fontSize: 9, color: MUT }}>{open ? "▲" : "▼"}</span>
           </div>
         </div>
@@ -985,6 +1026,15 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
             <div style={{ marginTop: 10, fontSize: 9, color: MUT, fontStyle: "italic" }}>
               🔒 Timer &amp; parts unlock on Enthusiast —{" "}
               <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade</span>
+            </div>
+          )}
+          {grandTotal > 0 && (
+            <div style={{ marginTop: 10, padding: "8px 10px", background: "#0a0f0a", border: "1px solid #1e2e1e", borderRadius: 2, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>Cost Summary</span>
+              {labourTotal != null && <span style={{ fontSize: 9, color: MUT }}>Labour <span style={{ color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>${labourTotal.toFixed(0)}</span></span>}
+              {labourTotal == null && totalSecs > 0 && <span style={{ fontSize: 9, color: MUT }}>Labour <span style={{ color: MUT }}>—</span></span>}
+              {partsTotal > 0 && <span style={{ fontSize: 9, color: MUT }}>Stock <span style={{ color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>${partsTotal.toFixed(0)}</span></span>}
+              <span style={{ fontSize: 10, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", marginLeft: "auto" }}>Total ${grandTotal.toFixed(0)}</span>
             </div>
           )}
           <Divider />
