@@ -157,6 +157,7 @@ Stripe
 | Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Team+ |
 | Invoice number auto-increment | ✅ | invoices.js RPC + localStorage fallback | Free |
 | HTML invoice export | ✅ | time_log, parts, company details | Free |
+| Collapsed/expanded job card layout (matching asset tabs) | ✅ | JobBoard, JobCard | Free |
 | Common jobs autocomplete | ✅ | COMMON_JOBS constant | Free |
 | Barcode scanner (keyboard detection) | ✅ | inventory items | Free |
 | Stock auto-deduct on part use | ✅ | adjustStock(), inventory | Free |
