@@ -5,16 +5,19 @@ import { getVehicles } from '../../lib/db/vehicles';
 import { getTools } from '../../lib/db/tools';
 import { getEquipment } from '../../lib/db/equipment';
 import { getConsumables } from '../../lib/db/consumables';
+import { getInventoryItems } from '../../lib/db/inventory';
 
-const TYPE_ICON  = { vehicle: '🚗', tool: '🔧', equipment: '⚙️', consumable: '📦' };
-const TYPE_LABEL = { vehicle: 'Vehicle', tool: 'Tool', equipment: 'Equipment', consumable: 'Consumable' };
-const ALL_TYPES  = ['vehicle', 'tool', 'equipment', 'consumable'];
+const TYPE_ICON   = { vehicle: '🚗', tool: '🔧', equipment: '⚙️', consumable: '📦', part: '🔩' };
+const TYPE_LABEL  = { vehicle: 'Vehicle', tool: 'Tool', equipment: 'Equipment', consumable: 'Consumable', part: 'Part' };
+const TYPE_PLURAL = { vehicle: 'Vehicles', tool: 'Tools', equipment: 'Equipment', consumable: 'Consumables', part: 'Parts' };
+const ALL_TYPES   = ['vehicle', 'tool', 'equipment', 'consumable', 'part'];
 
 const FETCHERS = {
   vehicle:    getVehicles,
   tool:       getTools,
   equipment:  getEquipment,
   consumable: getConsumables,
+  part:       getInventoryItems,
 };
 
 // Returns display name for a fetched item based on its type
@@ -31,7 +34,7 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerLoading, setPickerLoading] = useState(false);
   // data cache: { vehicle: [...] | null, tool: [...] | null, ... }
-  const [cache, setCache] = useState({ vehicle: null, tool: null, equipment: null, consumable: null });
+  const [cache, setCache] = useState({ vehicle: null, tool: null, equipment: null, consumable: null, part: null });
 
   useEffect(() => {
     if (!parentId) return;
@@ -45,8 +48,8 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
     }).catch(() => setLoaded(true));
   }, [parentType, parentId]);
 
-  // Picker types: all types; exclude assigning an item to itself (same type + same id)
-  const pickerTypes = ALL_TYPES;
+  // Picker types: all types except the parent's own type
+  const pickerTypes = ALL_TYPES.filter(t => t !== parentType);
 
   const openPicker = async (type) => {
     const t = type || pickerTypes.find(t => t !== parentType) || pickerTypes[0];
@@ -117,8 +120,8 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
   const emptyMsg = pickerSearch
     ? 'No matches.'
     : poolSize === 0
-      ? `No ${TYPE_LABEL[pickerTab]?.toLowerCase()}s added yet — add some from the ${TYPE_LABEL[pickerTab]?.toLowerCase()}s tab.`
-      : `All ${TYPE_LABEL[pickerTab]?.toLowerCase()}s already assigned to this item.`;
+      ? `No ${TYPE_PLURAL[pickerTab]?.toLowerCase()} added yet — add some from the ${TYPE_PLURAL[pickerTab]?.toLowerCase()} tab.`
+      : `All ${TYPE_PLURAL[pickerTab]?.toLowerCase()} already assigned to this item.`;
 
   return (
     <div style={{ marginTop: 12 }}>

@@ -4,6 +4,8 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
+import { getAssignedTo, assignAsset, unassignAsset } from '../../lib/db/assetAssignments';
+import { getCompanyMembers } from '../../lib/db/users';
 import LoadoutSection from '../ui/LoadoutSection';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
@@ -117,7 +119,106 @@ function VehicleForm({ vehicle, onSave, onCancel, units }) {
   );
 }
 
-function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
+function VehicleMemberSection({ vehicle, company, isShared }) {
+  const [members, setMembers] = useState([]);
+  const [assigned, setAssigned] = useState([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!company?.id || !vehicle?.id) return;
+    setLoading(true);
+    Promise.all([
+      getCompanyMembers(company.id),
+      getAssignedTo('vehicle', vehicle.id),
+    ]).then(([mems, asgn]) => {
+      setMembers(mems);
+      setAssigned(asgn.filter(a => a.child_type === 'member'));
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [company?.id, vehicle?.id]);
+
+  if (!company) return null;
+
+  const assignedIds = new Set(assigned.map(a => a.child_id));
+  const available = members.filter(m => !assignedIds.has(m.user_id));
+
+  const doAssign = async (member) => {
+    const name = member.profile?.display_name || member.profile?.username || member.user_id;
+    const a = await assignAsset({
+      parentType: 'vehicle', parentId: vehicle.id, parentName: vehicle.name,
+      childType: 'member', childId: member.user_id, childName: name,
+    });
+    setAssigned(prev => [...prev, a]);
+  };
+
+  const doUnassign = async (id) => {
+    await unassignAsset(id);
+    setAssigned(prev => prev.filter(a => a.id !== id));
+  };
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div style={{ fontSize: 7, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
+          Org Members {assigned.length > 0 && `(${assigned.length})`}
+        </div>
+        {!isShared && !showPicker && (
+          <button onClick={() => setShowPicker(true)} style={{ ...btnG, ...sm, fontSize: 8 }}>+ Assign</button>
+        )}
+        {!isShared && showPicker && (
+          <button onClick={() => setShowPicker(false)} style={{ ...btnG, ...sm, fontSize: 8 }}>Done</button>
+        )}
+      </div>
+
+      {loading && <div style={{ fontSize: 9, color: MUT }}>Loading…</div>}
+
+      {!loading && assigned.length === 0 && !showPicker && (
+        <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic' }}>No members assigned.</div>
+      )}
+
+      {assigned.map(a => (
+        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: '1px solid #1a1a1a' }}>
+          <span style={{ fontSize: 13 }}>👤</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: TXT, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.child_name}</div>
+            <div style={{ fontSize: 8, color: MUT }}>member</div>
+          </div>
+          {!isShared && (
+            <button onClick={() => doUnassign(a.id)}
+              style={{ background: 'none', border: 'none', color: MUT, cursor: 'pointer', fontSize: 11, padding: '0 2px', lineHeight: 1 }}>✕</button>
+          )}
+        </div>
+      ))}
+
+      {showPicker && (
+        <div style={{ background: '#0a0a0a', border: '1px solid ' + ACC + '33', borderRadius: 2, padding: 10, marginTop: 6 }}>
+          {members.length === 0
+            ? <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic' }}>No members yet.</div>
+            : available.length === 0
+              ? <div style={{ fontSize: 9, color: MUT, fontStyle: 'italic' }}>All members already assigned.</div>
+              : available.map(m => {
+                  const name = m.profile?.display_name || m.profile?.username || m.user_id;
+                  return (
+                    <div key={m.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #181818' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 10, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          👤 {name}
+                        </div>
+                      </div>
+                      <button onClick={() => doAssign(m)}
+                        style={{ ...btnA, ...sm, fontSize: 8, flexShrink: 0, marginLeft: 8 }}>+ Add</button>
+                    </div>
+                  );
+                })
+          }
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, company }) {
   const [open, setOpen] = useState(false);
   const [addSvc, setAddSvc] = useState(false);
   const [svcForm, setSvcForm] = useState({ date: new Date().toISOString().slice(0, 10), notes: '', cost: '' });
@@ -234,6 +335,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units }) {
           </div>
 
           <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} />
+          <VehicleMemberSection vehicle={vehicle} company={company} isShared={isShared} />
 
 
           {!isShared && (
@@ -371,17 +473,87 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>No vehicles match your filter.</div>
       )}
 
-      {filtered.map(v => (
-        <VehicleCard
-          key={v.id}
-          vehicle={v}
-          isShared={v.userId !== userId}
-          units={units}
-          onEdit={() => setFormVehicle(v)}
-          onDelete={() => remove(v.id)}
-          onUpdate={update}
-        />
-      ))}
+      {view === 'grid' ? (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
+            {sorted.map(v => (
+              <AssetTile
+                key={v.id}
+                photo={v.photos?.[0]}
+                icon={TYPE_ICON[v.type] || '🚗'}
+                accentColor={COND_COL[v.status] || MUT}
+                name={v.name}
+                sub={[v.year, v.make, v.model].filter(Boolean).join(' ')}
+                badges={[
+                  v.status && { l: v.status, c: COND_COL[v.status] || MUT },
+                  v.type && { l: v.type, c: ACC },
+                ].filter(Boolean)}
+                onClick={() => setTileOpen(v.id)}
+              />
+            ))}
+          </div>
+          {tileOpen && (() => {
+            const v = sorted.find(x => x.id === tileOpen);
+            return v ? (
+              <div style={{ position: 'fixed', inset: 0, background: '#000a', zIndex: 200, overflowY: 'auto' }}
+                onClick={e => { if (e.target === e.currentTarget) setTileOpen(null); }}>
+                <div style={{ maxWidth: 640, margin: '24px auto', padding: '0 8px' }}>
+                  <VehicleCard
+                    vehicle={v}
+                    isShared={v.userId !== userId}
+                    units={units}
+                    company={company}
+                    onEdit={() => { setFormVehicle(v); setTileOpen(null); }}
+                    onDelete={() => { remove(v.id); setTileOpen(null); }}
+                    onUpdate={update}
+                  />
+                  <button onClick={() => setTileOpen(null)} style={{ ...btnG, width: '100%', marginTop: 8, fontSize: 10 }}>Close</button>
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </>
+      ) : (
+        sorted.map(v => (
+          <VehicleCard
+            key={v.id}
+            vehicle={v}
+            isShared={v.userId !== userId}
+            units={units}
+            company={company}
+            onEdit={() => setFormVehicle(v)}
+            onDelete={() => remove(v.id)}
+            onUpdate={update}
+          />
+        ))
+      )}
+
+      {showSort && (
+        <div style={ovly} onClick={() => setShowSort(false)}>
+          <div style={{ ...mdl, maxHeight: '70vh' }} onClick={e => e.stopPropagation()}>
+            <div style={mdlH}>
+              <b style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sort Vehicles</b>
+              <button style={{ ...btnG, ...sm }} onClick={() => setShowSort(false)}>✕</button>
+            </div>
+            <div style={{ ...mdlB, paddingTop: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(null)}>
+                <input type="radio" readOnly checked={sortBy === null} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                <span style={{ fontSize: 11, color: sortBy === null ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Default order</span>
+              </label>
+              {VEHICLE_SORT_OPTS.map(o => (
+                <label key={o.k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }} onClick={() => setSortByP(o.k)}>
+                  <input type="radio" readOnly checked={sortBy === o.k} style={{ accentColor: ACC, width: 15, height: 15 }} />
+                  <span style={{ fontSize: 11, color: sortBy === o.k ? TXT : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{o.l}</span>
+                </label>
+              ))}
+            </div>
+            <div style={mdlF}>
+              <button style={btnG} onClick={() => { setSortByP(null); setShowSort(false); }}>Reset</button>
+              <button style={btnA} onClick={() => setShowSort(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {formVehicle !== null && (
         <VehicleForm
