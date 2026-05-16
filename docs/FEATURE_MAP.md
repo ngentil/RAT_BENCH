@@ -290,6 +290,7 @@ Stripe
 | Full revision history | ✅ | wiki_revisions | Enthusiast+ |
 | Submit machine specs to wiki | ✅ | machines → wiki_entries | Enthusiast+ |
 | Author attribution | ✅ | wiki_revisions.author_id | Enthusiast+ |
+| Admin delete any wiki entry | ✅ | ADMIN_EMAIL check in WikiEntryPage, deleteWikiEntry() | Admin only |
 
 ---
 
