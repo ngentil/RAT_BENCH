@@ -133,7 +133,11 @@ Stripe
 | HTML invoice export | ✅ | time_log, parts, company details | Free |
 | Common jobs autocomplete | ✅ | COMMON_JOBS constant | Free |
 | Barcode scanner (keyboard detection) | ✅ | inventory items | Free |
-| Stock auto-deduct on part use | ✅ | adjustStock(), inventory | Free |
+| Stock auto-deduct on part use (parts) | ✅ | adjustStock(), inventory | Free |
+| Stock auto-deduct on consumable use | ✅ | adjustConsumableQty(), consumables | Free |
+| Jobs picker: Parts tab + Consumables tab | ✅ | inventory + consumables, sourceType on entries | Free |
+| Running cost total per job (parts + labour) | ✅ | machines.parts sellPrice, company.hourly_rate | Free |
+| Cost Summary row in expanded job card | ✅ | partsTotal + labourTotal = grandTotal | Free |
 
 ---
 
@@ -141,7 +145,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| Revenue totals (labour, parts, profit) | ✅ | time_log, inventory, company.hourly_rate | Enthusiast+ |
+| Revenue totals (labour, parts & consumables, profit) | ✅ | time_log, inventory, consumables, company.hourly_rate | Enthusiast+ |
 | Date filters (week / month / all / custom) | ✅ | time_log.completedAt | Enthusiast+ |
 | Per-machine breakdown | ✅ | time_log, machines | Enthusiast+ |
 | Tax deduction display | ✅ | companies.tax_rate | Team+ |
@@ -156,12 +160,14 @@ Stripe
 | inventory_items table + RLS | ✅ | profiles | Free |
 | Create / edit / delete parts | ✅ | inventory_items | Free |
 | Buy price / sell price / stock qty | ✅ | inventory_items.payload (jsonb) | Free |
-| Min stock alert | ✅ | inventory_items.payload | Free |
+| Min par / max par levels with LOW/OVER badges | ✅ | inventory_items.payload minQuantity/maxQuantity | Free |
+| Category, unit, spec fields (parity with consumables) | ✅ | inventory_items.payload, consumableTypes.js | Free |
 | QR code label generation + print | ✅ | inventory_items, qrcode library | Free |
 | Barcode scanner input | ✅ | keyboard detection | Free |
 | Stock adjustment (use / restock) | ✅ | inventory_items.payload | Free |
 | Machine parts list (per-machine) | ✅ | machines.parts (jsonb) | Free |
 | localStorage → Supabase migration | ✅ | inventory_items | Free |
+| Shared UI (StockItemTab) with Consumables tab | ✅ | StockItemTab.jsx, tableType prop | Free |
 
 ---
 
@@ -202,8 +208,12 @@ Stripe
 | Consumables tab: CRUD + qty tracking + stock alerts | ✅ | consumables table | Free (10 limit) |
 | 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
 | Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
-| ± stock adjustment inline on card | ✅ | adjustConsumableQty(), ConsumablesTab | Free |
-| Low-stock / out-of-stock badge | ✅ | qtyLabel(), min_quantity threshold | Free |
+| ± stock adjustment inline on card | ✅ | adjustConsumableQty(), StockItemTab | Free |
+| Low-stock / out-of-stock / over-par badge (LOW / OUT / OVER) | ✅ | qtyLabel(), min_quantity + max_quantity | Free |
+| Min par + max par levels | ✅ | consumables.min_quantity, max_quantity | Free |
+| Buy price / sell price / supplier / part number / location | ✅ | consumables.buy_price, sell_price, supplier, part_number, location | Free |
+| Shared UI (StockItemTab) with Parts tab | ✅ | StockItemTab.jsx, tableType="consumable" | Free |
+| Stock alerts on Reminders tab (LOW/OVER/OUT) | ✅ | ServiceReminders.jsx, getConsumables() | Free |
 | Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
 | Assign team member (driver) to vehicle | 📋 | asset_assignments driver support | Team+ |
 
