@@ -304,9 +304,9 @@ Stripe
 | Workshop sub-tabs: Parts, Clients, Tools, Vehicles, Equipment, Consumables, Revenue | ✅ | WORKSHOP_TABS, App.jsx content panels | Free / Ent+ |
 | Free-tier Workshop banner (5-item limit nudge + upgrade link) | ✅ | effectiveTier(), Workshop tab | Free |
 | Revenue sub-tab gated behind Enthusiast+ | ✅ | WORKSHOP_TABS enthusiastOnly flag | Enthusiast+ |
-| Per-user Workshop tab visibility preferences | ✅ | localStorage rat_workshop_visible | Free |
-| Per-user Workshop default sub-tab | ✅ | localStorage rat_workshop_tab | Free |
-| Workshop preferences UI in Settings | ✅ | SettingsPage WorkshopPrefs component | Free |
+| Per-user Workshop tab visibility preferences | ✅ | profiles.tab_order.workshop_visible (Supabase), TabOrderSettings.jsx checkboxes | Free |
+| Per-user Workshop default sub-tab | ✅ | First visible tab in ordered workshop list (implicit, no separate setting) | Free |
+| Workshop visibility + order UI under Settings → ⇅ Tabs | ✅ | TabOrderSettings.jsx WorkshopReorderList (checkboxes + ↑/↓ + DEFAULT badge) | Free |
 | Users tab moved into Settings (team/business only) | ✅ | SettingsPage, UsersTab | Team+ |
 | localStorage migration (old flat tab IDs → workshop sub-tabs) | ✅ | App.jsx init state | Free |
 | Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
@@ -323,7 +323,7 @@ Stripe
 |---------|--------|--------------------|
 | Asset provisioning UI in CompanySettings | ✅ | Ships with Machines + Vehicles + Equipment + Tools sections |
 | Assign driver/member to vehicle | ✅ | Shipped: VehicleMemberSection in VehiclesTab |
-| Workshop tab visibility stored in profiles (cross-device sync) | 📋 | Currently localStorage only — needs profiles column migration |
+| Workshop tab visibility stored in profiles (cross-device sync) | ✅ | Shipped: profiles.tab_order.workshop_visible, syncs via Supabase |
 | Photo migration → Supabase Storage | 📋 | Currently base64 in DB rows — expensive |
 | Push notifications (service due) | 📋 | Needs FCM or similar |
 | Smart Mode cascade calculations | 📋 | Needs multiple sections complete |
