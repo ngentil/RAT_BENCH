@@ -22,18 +22,20 @@ const CONSUMABLE_SORT_OPTS = [
 
 const EMPTY_FORM = {
   name: '', category: '', brand: '', quantity: '0', unit: 'L',
-  minQuantity: '', spec: {}, notes: '',
+  minQuantity: '', maxQuantity: '', spec: {}, notes: '',
 };
 
-function qtyColor(qty, minQty) {
+function qtyColor(qty, minQty, maxQty) {
   if (qty === 0) return RED;
   if (minQty != null && qty < minQty) return '#e8870a';
+  if (maxQty != null && qty > maxQty) return '#3a7bd5';
   return GRN;
 }
 
-function qtyLabel(qty, minQty) {
+function qtyLabel(qty, minQty, maxQty) {
   if (qty === 0) return 'OUT';
   if (minQty != null && qty < minQty) return 'LOW';
+  if (maxQty != null && qty > maxQty) return 'OVER';
   return null;
 }
 
@@ -61,6 +63,7 @@ function ConsumableForm({ item, onSave, onCancel }) {
     quantity:    item.quantity    != null ? String(item.quantity) : '0',
     unit:        item.unit        || 'L',
     minQuantity: item.minQuantity != null ? String(item.minQuantity) : '',
+    maxQuantity: item.maxQuantity != null ? String(item.maxQuantity) : '',
     spec:        item.spec        || {},
     notes:       item.notes       || '',
   } : EMPTY_FORM);
@@ -83,6 +86,7 @@ function ConsumableForm({ item, onSave, onCancel }) {
       name:        f.name.trim(),
       quantity:    parseFloat(f.quantity) || 0,
       minQuantity: f.minQuantity !== '' ? parseFloat(f.minQuantity) : null,
+      maxQuantity: f.maxQuantity !== '' ? parseFloat(f.maxQuantity) : null,
       photos,
     });
     setSaving(false);
@@ -137,9 +141,15 @@ function ConsumableForm({ item, onSave, onCancel }) {
           </div>
 
           <div>
-            <FL t="Low-stock alert below" />
+            <FL t="Min par (reorder point)" />
             <input style={inp} type="number" min="0" step="0.1" value={f.minQuantity}
               onChange={e => s('minQuantity', e.target.value)} placeholder={`e.g. 2 ${f.unit}`} />
+          </div>
+
+          <div>
+            <FL t="Max par (ceiling)" />
+            <input style={inp} type="number" min="0" step="0.1" value={f.maxQuantity}
+              onChange={e => s('maxQuantity', e.target.value)} placeholder={`e.g. 10 ${f.unit}`} />
           </div>
 
           {/* Dynamic spec fields */}
@@ -200,8 +210,8 @@ function ConsumableCard({ item, onEdit, onDelete, onQtyChange, onUpdate, isShare
 
   const catColor = CATEGORY_COLOR[item.category] || MUT;
   const catIcon  = CATEGORY_ICON[item.category]  || '📦';
-  const qColor   = qtyColor(item.quantity, item.minQuantity);
-  const badge    = qtyLabel(item.quantity, item.minQuantity);
+  const qColor   = qtyColor(item.quantity, item.minQuantity, item.maxQuantity);
+  const badge    = qtyLabel(item.quantity, item.minQuantity, item.maxQuantity);
 
   const doAdjust = async (sign) => {
     const d = parseFloat(delta);
@@ -271,8 +281,12 @@ function ConsumableCard({ item, onEdit, onDelete, onQtyChange, onUpdate, isShare
                 <div style={{ fontSize: 18, fontWeight: 700, color: qColor, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: '-0.02em' }}>
                   {Number(item.quantity).toLocaleString()} {item.unit}
                 </div>
-                {item.minQuantity != null && (
-                  <div style={{ fontSize: 8, color: MUT, marginTop: 1 }}>Alert below {item.minQuantity} {item.unit}</div>
+                {(item.minQuantity != null || item.maxQuantity != null) && (
+                  <div style={{ fontSize: 8, color: MUT, marginTop: 1 }}>
+                    {item.minQuantity != null && <span>Min {item.minQuantity} {item.unit}</span>}
+                    {item.minQuantity != null && item.maxQuantity != null && <span style={{ margin: '0 4px' }}>·</span>}
+                    {item.maxQuantity != null && <span>Max {item.maxQuantity} {item.unit}</span>}
+                  </div>
                 )}
               </div>
               {!isShared && !adjusting && (
@@ -414,7 +428,7 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
     if (!preset) return;
     setPresetVal('');
     setShowPreset(false);
-    setFormItem({ ...preset, quantity: 0, minQuantity: null, notes: '' });
+    setFormItem({ ...preset, quantity: 0, minQuantity: null, maxQuantity: null, notes: '' });
   };
 
   // Group presets by category for the optgroup select
@@ -520,7 +534,7 @@ export default function ConsumablesTab({ session, profile, company, onGoToBillin
                 sub={item.category + (item.brand ? ' · ' + item.brand : '')}
                 badges={[{
                   l: item.quantity + ' ' + item.unit,
-                  c: item.quantity === 0 ? RED : (item.minQuantity != null && item.quantity <= item.minQuantity) ? '#e8870a' : GRN,
+                  c: qtyColor(item.quantity, item.minQuantity, item.maxQuantity),
                 }]}
                 onClick={() => setTileOpen(item.id)}
               />
