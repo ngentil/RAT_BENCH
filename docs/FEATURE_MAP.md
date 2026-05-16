@@ -200,8 +200,9 @@ Stripe
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
 | Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
 | **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql | Free |
-| All-to-all cross-assignment (any type → any type) | ✅ | asset_assignments, LoadoutSection | Free |
+| All-to-all cross-assignment (vehicle/tool/equipment/consumable/part) | ✅ | asset_assignments, LoadoutSection | Free |
 | Forward loadout panel (Assigned Items + picker) | ✅ | LoadoutSection, VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab | Free |
+| Parts (inventory items) assignable via Loadout picker | ✅ | getInventoryItems() wrapper, LoadoutSection | Free |
 | Reverse lookup panel (Assigned To) | ✅ | getAssignedIn(), LoadoutSection | Free |
 | Unassign items from loadout | ✅ | unassignAsset(), LoadoutSection | Free |
 | **consumables** table + RLS | ✅ | asset_permissions | Free |
@@ -215,7 +216,7 @@ Stripe
 | Shared UI (StockItemTab) with Parts tab | ✅ | StockItemTab.jsx, tableType="consumable" | Free |
 | Stock alerts on Reminders tab (LOW/OVER/OUT) | ✅ | ServiceReminders.jsx, getConsumables() | Free |
 | Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
-| Assign team member (driver) to vehicle | 📋 | asset_assignments driver support | Team+ |
+| Assign org member to vehicle (VehicleMemberSection) | ✅ | getCompanyMembers(), assignAsset child_type='member', company prop | Team+ |
 
 ---
 
@@ -275,7 +276,7 @@ Stripe
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
 | Asset provisioning UI in CompanySettings | 📋 | Tables exist, UI panel not built yet |
-| Assign driver to vehicle | 📋 | asset_assignments driver support |
+| Assign driver/member to vehicle | ✅ | Shipped: VehicleMemberSection in VehiclesTab |
 | Workshop tab visibility stored in profiles (cross-device sync) | 📋 | Currently localStorage only — needs profiles column migration |
 | Photo migration → Supabase Storage | 📋 | Currently base64 in DB rows — expensive |
 | Push notifications (service due) | 📋 | Needs FCM or similar |
