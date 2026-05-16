@@ -242,7 +242,8 @@ Stripe
 | Cover photo selection (☆ Cover sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab, MachineCard | Free |
 | Photos for consumables (add via form, thumbnail in card, cover selection) | ✅ | ConsumablesTab, consumables table photos column | Free |
 | Machine card collapsed header shows cover photo thumbnail | ✅ | MachineCard | Free |
-| Low-stock / out-of-stock badge | ✅ | qtyLabel(), min_quantity threshold | Free |
+| Low-stock / out-of-stock badge + overstock badge | ✅ | qtyLabel(), min_quantity / max_quantity thresholds | Free |
+| Configurable min par (reorder point) and max par (ceiling) | ✅ | consumables.min_quantity, consumables.max_quantity | Free |
 | Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
 | Assign team member (driver) to vehicle | 📋 | asset_assignments driver support | Team+ |
 
