@@ -931,6 +931,82 @@ const STATUS_COLOR = {
   "Complete": MUT,
 };
 
+function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, session, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
+  const [open, setOpen] = useState(false);
+
+  const totalSecs = (m.timeLog||[]).reduce((s, e) => s + (e.seconds||0), 0);
+  const partsCount = (m.parts||[]).length;
+  const due = m.dueDate ? new Date(m.dueDate) : null;
+  const isOverdue = due && due < new Date();
+  const isRunning = m.jobTimer?.status === "running";
+
+  return (
+    <div style={{ background: "#0d0d0d", border: "1px solid " + (timerLocked ? "#1a1a1a" : "#252525"), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden", opacity: timerLocked ? 0.65 : 1 }}>
+      {/* Collapsed header — always visible */}
+      <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer" }}>
+        {m.photos?.[0]
+          ? <img src={m.photos[0]} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 2, border: "1px solid #252525", flexShrink: 0 }} />
+          : <span style={{ fontSize: 18, flexShrink: 0, width: 36, textAlign: "center" }}>{mIcon(m.type)}</span>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</span>
+            {m.priority && (
+              <span style={{ fontSize: 7, fontWeight: 700, padding: "2px 5px", borderRadius: 2, letterSpacing: "0.08em",
+                background: m.priority === "High" ? RED+"18" : m.priority === "Medium" ? ACC+"18" : MUT+"18",
+                color:      m.priority === "High" ? RED      : m.priority === "Medium" ? ACC      : MUT }}>
+                {m.priority}
+              </span>
+            )}
+            {isRunning && <span style={{ fontSize: 7, fontWeight: 700, color: GRN, letterSpacing: "0.08em" }}>● RUNNING</span>}
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 8, color: MUT }}>{[m.source, m.make, m.model].filter(Boolean).join(" · ")}</span>
+            {m.clientId && clientMap[m.clientId] && <span style={{ fontSize: 8, color: ACC }}>👤 {clientMap[m.clientId]}</span>}
+            {due && <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", color: isOverdue ? "#e87a0a" : "#4a9eff" }}>{isOverdue ? "OVERDUE" : "DUE"} {due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>}
+          </div>
+        </div>
+        <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+          {totalSecs > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtDuration(totalSecs)}</span>}
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {partsCount > 0 && <span style={{ fontSize: 7, color: MUT }}>{partsCount} part{partsCount !== 1 ? "s" : ""}</span>}
+            <span style={{ fontSize: 9, color: MUT }}>{open ? "▲" : "▼"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded body */}
+      {open && (
+        <div style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
+          <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; onUpdate(u); await upsertMachine(u); }} />
+          {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
+          {!timerLocked && <TimeLogSection machine={m} company={company} clients={[]} userId={session?.user?.id} onUpdate={onUpdate} />}
+          {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
+          {timerLocked && (
+            <div style={{ marginTop: 10, fontSize: 9, color: MUT, fontStyle: "italic" }}>
+              🔒 Timer &amp; parts unlock on Enthusiast —{" "}
+              <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade</span>
+            </div>
+          )}
+          <Divider />
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {STATUSES.filter(s => s !== status).map(s => (
+              <button key={s} onClick={() => onUpdateStatus(m, s)} style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
+                → {s}
+              </button>
+            ))}
+          </div>
+          {(m.timeLog?.length >= 5) && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Rage Factor</div>
+              <SkullRating value={m.rage || 0} onChange={r => onUpdateRage(m, r)} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function JobBoard({ machines, setMachines, profile, company, session, clients, onGoToBilling }) {
   const tier = effectiveTier(profile, company);
   const isFree = tier === "free";
@@ -958,7 +1034,6 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const updateRage = async (m, rage) => { const u = { ...m, rage }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
   const groups = STATUSES.map(s => ({ status: s, items: visibleMachines.filter(m => (m.status || "Active") === s) }));
 
-  // For free tier: cap to 3 machines total, track flat index for feature access
   const orderedAll = groups.flatMap(g => g.items);
   const cappedIds = isFree ? new Set(orderedAll.slice(0, FREE_LIMIT).map(m => m.id)) : null;
   const freeIdxMap = isFree ? Object.fromEntries(orderedAll.slice(0, FREE_LIMIT).map((m, i) => [m.id, i])) : {};
@@ -971,24 +1046,23 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
   const rate         = company?.hourly_rate || 0;
   const labourRevAll = totalHrsAll * rate;
-  const activeCount  = machines.filter(m => (m.status||"Active") === "Active").length;
   const runningTimer = machines.find(m => m.jobTimer?.status === "running");
 
   return (
-    <div style={{ padding: 16, flex: 1 }}>
+    <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <SL t="Job Board" />
         {machines.length > 0 && (
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             {runningTimer && (
-              <span className="loading-rat" style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4 }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 4px " + GRN, display: "inline-block" }} />
-                TIMER RUNNING
+                RUNNING
               </span>
             )}
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>{totalHrsAll.toFixed(1)}h</div>
-              <div style={{ fontSize: 7, color: MUT, letterSpacing: "0.06em" }}>TOTAL LOGGED</div>
+              <div style={{ fontSize: 7, color: MUT, letterSpacing: "0.06em" }}>LOGGED</div>
             </div>
             {(labourRevAll > 0 || totalRevAll > 0) && (
               <div style={{ textAlign: "right" }}>
@@ -1013,22 +1087,14 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
             {["", ...STATUSES].map((s, i, arr) => {
               const isActive = statusFilter === s;
               return (
-                <button
-                  key={s || "all"}
-                  onClick={() => setStatusFilter(s)}
-                  style={{
-                    ...btnG,
-                    ...sm,
-                    borderRadius: i === 0 ? "2px 0 0 2px" : i === arr.length - 1 ? "0 2px 2px 0" : "0",
-                    borderRight: i < arr.length - 1 ? "none" : "1px solid " + BRD,
-                    background: isActive ? (s ? STATUS_COLOR[s] + "22" : ACC + "18") : "none",
-                    color: isActive ? (s ? STATUS_COLOR[s] : ACC) : MUT,
-                    borderColor: isActive ? (s ? STATUS_COLOR[s] + "66" : ACC + "66") : BRD,
-                    borderTopWidth: "1px",
-                    borderBottomWidth: "1px",
-                    borderLeftWidth: "1px",
-                  }}
-                >
+                <button key={s || "all"} onClick={() => setStatusFilter(s)} style={{ ...btnG, ...sm,
+                  borderRadius: i === 0 ? "2px 0 0 2px" : i === arr.length - 1 ? "0 2px 2px 0" : "0",
+                  borderRight: i < arr.length - 1 ? "none" : "1px solid " + BRD,
+                  background: isActive ? (s ? STATUS_COLOR[s] + "22" : ACC + "18") : "none",
+                  color: isActive ? (s ? STATUS_COLOR[s] : ACC) : MUT,
+                  borderColor: isActive ? (s ? STATUS_COLOR[s] + "66" : ACC + "66") : BRD,
+                  borderTopWidth: "1px", borderBottomWidth: "1px", borderLeftWidth: "1px",
+                }}>
                   {s || "All"}
                 </button>
               );
@@ -1047,86 +1113,19 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
       )}
       {cappedGroups.map(({ status, items }) => items.length === 0 ? null : (
         <div key={status} style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <StatusBadge status={status} />
             <span style={{ fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700 }}>{status}</span>
-            <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em" }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
+            <span style={{ fontSize: 9, color: MUT }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
           </div>
           {items.map(m => {
             const freeIdx = isFree ? (freeIdxMap[m.id] ?? 0) : -1;
-            const timerLocked = isFree && freeIdx > 0;
-            const partsLocked = isFree && freeIdx > 0;
+            const locked = isFree && freeIdx > 0;
             return (
-            <div key={m.id} style={{ background: SURF, border: "1px solid " + (timerLocked ? "#1e1e1e" : BRD), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 3, marginBottom: 8, padding: "13px 14px", overflow: "hidden", opacity: timerLocked ? 0.7 : 1 }}>
-              <div style={{ display: "flex", gap: 10 }}>
-                {m.photos?.[0]
-                  ? <img src={m.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 2, border: "1px solid " + BRD, flexShrink: 0 }} />
-                  : <span style={{ fontSize: 17, width: 44, textAlign: "center", lineHeight: "44px", flexShrink: 0 }}>{mIcon(m.type)}</span>}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 2 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</div>
-                      {m.priority && (
-                        <span style={{
-                          background: m.priority === "High" ? RED + "18" : m.priority === "Medium" ? ACC + "18" : MUT + "18",
-                          color: m.priority === "High" ? RED : m.priority === "Medium" ? ACC : MUT,
-                          fontSize: 8,
-                          padding: "2px 6px",
-                          borderRadius: 2,
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}>
-                          {m.priority}
-                        </span>
-                      )}
-                    </div>
-                    {(m.timeLog?.length > 0) && (() => {
-                      const totalSecs = m.timeLog.reduce((s, e) => s + (e.seconds || 0), 0);
-                      return (
-                        <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 8 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>{fmtDuration(totalSecs)}</div>
-                          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.06em", marginTop: 2 }}>TIME LOGGED</div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div style={{ fontSize: 9, color: MUT, marginBottom: (m.dueDate || m.clientId) ? 2 : 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
-                  {m.clientId && clientMap[m.clientId] && <div style={{ fontSize: 8, color: ACC, marginBottom: m.dueDate ? 2 : 8 }}>👤 {clientMap[m.clientId]}</div>}
-                  {m.dueDate && (() => {
-                    const due = new Date(m.dueDate);
-                    const isOverdue = due < new Date();
-                    const dueColor = isOverdue ? "#e87a0a" : "#4a9eff";
-                    return <div style={{ fontSize: 8, color: dueColor, marginBottom: 8, fontWeight: 700, letterSpacing: "0.06em" }}>
-                      {isOverdue ? "OVERDUE — " : "DUE "}{due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </div>;
-                  })()}
-                  <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; updateM(u); await upsertMachine(u); }} />
-                  {!timerLocked && <JobTimer machine={m} onUpdate={updateM} locked={false} onGoToBilling={onGoToBilling} />}
-                  {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={updateM} />}
-                  {!partsLocked && <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />}
-                  {timerLocked && (
-                    <div style={{ marginTop: 8, fontSize: 9, color: MUT, fontStyle: "italic" }}>
-                      🔒 Timer &amp; parts unlocked on Enthusiast —{" "}
-                      <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade</span>
-                    </div>
-                  )}
-                  <Divider />
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {STATUSES.filter(s => s !== status).map(s => (
-                      <button key={s} onClick={() => updateStatus(m, s)} style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
-                        → {s}
-                      </button>
-                    ))}
-                  </div>
-                  {(m.timeLog?.length >= 5) && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Rage Factor</div>
-                      <SkullRating value={m.rage || 0} onChange={r => updateRage(m, r)} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+              <JobCard key={m.id} m={m} status={status} timerLocked={locked} partsLocked={locked}
+                clientMap={clientMap} company={company} session={session}
+                onUpdate={updateM} onUpdateStatus={updateStatus} onUpdateRage={updateRage}
+                onGoToBilling={onGoToBilling} />
             );
           })}
         </div>
