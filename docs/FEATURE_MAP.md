@@ -310,6 +310,9 @@ Stripe
 | Users tab moved into Settings (team/business only) | ✅ | SettingsPage, UsersTab | Team+ |
 | localStorage migration (old flat tab IDs → workshop sub-tabs) | ✅ | App.jsx init state | Free |
 | Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
+| Per-account tab reordering (main nav, workshop, settings) | ✅ | profiles.tab_order JSONB, applyTabOrder(), TabOrderSettings.jsx | Free |
+| Tab order UI under Settings → ⇅ Tabs (↑/↓ reorder + reset) | ✅ | TabOrderSettings.jsx | Free |
+| Tab order persists across sessions and devices | ✅ | Supabase profiles.tab_order, loaded on profile fetch | Free |
 
 ---
 
