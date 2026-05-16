@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
+import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
 import { getNextInvoiceNumber } from '../../lib/db/invoices';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
@@ -264,9 +265,9 @@ ${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to
 }
 
 const timerSel = {
-  width: "100%", background: "#111", border: "1px solid #333", borderRadius: 2,
+  width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2,
   color: TXT, fontSize: 10, padding: "5px 6px", fontFamily: "'IBM Plex Mono',monospace",
-  cursor: "pointer",
+  cursor: "pointer", outline: "none",
 };
 
 const BILL_STATUS = {
@@ -378,7 +379,7 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
                   <div style={{ marginTop: 4 }}>
                     <textarea
                       autoFocus
-                      style={{ width: "100%", background: "#111", border: "1px solid #333", color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, padding: "5px 7px", borderRadius: 2, resize: "vertical", minHeight: 48, boxSizing: "border-box", outline: "none", lineHeight: 1.5 }}
+                      style={{ width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, padding: "5px 7px", borderRadius: 2, resize: "vertical", minHeight: 48, boxSizing: "border-box", outline: "none", lineHeight: 1.5 }}
                       value={noteDraft}
                       onChange={e => setNoteDraft(e.target.value)}
                       placeholder="What was done this session…"
@@ -407,14 +408,18 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
 }
 
 function PartsSection({ machine, onUpdate, userId }) {
-  const [mode, setMode]     = useState(null); // null | "inv" | "standalone"
-  const [inv, setInv]       = useState([]);
-  const [search, setSearch] = useState("");
+  const [mode, setMode]           = useState(null); // null | "inv" | "standalone"
+  const [pickerSource, setPickerSource] = useState("part"); // "part" | "consumable"
+  const [inv, setInv]             = useState([]);
+  const [cons, setCons]           = useState([]);
+  const [search, setSearch]       = useState("");
 
   useEffect(() => { getInventory(userId).then(setInv); }, [userId]);
-  const [selected, setSelected] = useState(null); // inventory item
-  const [qty, setQty]       = useState("1");
-  const [saForm, setSaForm] = useState({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
+  useEffect(() => { getConsumables().then(setCons); }, []);
+
+  const [selected, setSelected]   = useState(null);
+  const [qty, setQty]             = useState("1");
+  const [saForm, setSaForm]       = useState({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" });
   const [saSuggestions, setSaSuggestions] = useState([]);
   const [saMatchedInvId, setSaMatchedInvId] = useState(null);
   const parts = machine.parts || [];
@@ -425,6 +430,14 @@ function PartsSection({ machine, onUpdate, userId }) {
   const inpS = { background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, outline:"none", boxSizing:"border-box", width:"100%" };
   const L = ({ t }) => <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{t}</div>;
 
+  // Combined search list for the picker
+  const pickerList = pickerSource === "part" ? inv : cons;
+  const filteredPickerList = pickerList.filter(i =>
+    !search || i.name.toLowerCase().includes(search.toLowerCase()) ||
+    (i.partNumber||"").toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Legacy: also search inv for standalone suggestions
   const filteredInv = inv.filter(i =>
     !search || i.name.toLowerCase().includes(search.toLowerCase()) ||
     (i.partNumber||"").toLowerCase().includes(search.toLowerCase())
@@ -435,7 +448,8 @@ function PartsSection({ machine, onUpdate, userId }) {
     const useQty = Math.max(1, parseInt(qty) || 1);
     const entry = {
       id: crypto.randomUUID(),
-      inventoryId: selected.id,
+      sourceType: pickerSource,
+      ...(pickerSource === "part" ? { inventoryId: selected.id } : { consumableId: selected.id }),
       name: selected.name,
       partNumber: selected.partNumber || "",
       brand: selected.brand || "",
@@ -447,14 +461,19 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: [...parts, entry] };
     onUpdate(updated);
     await upsertMachine(updated);
-    setInv(await adjustStock(userId, selected.id, -useQty));
+    if (pickerSource === "part") {
+      setInv(await adjustStock(userId, selected.id, -useQty));
+    } else {
+      const updatedItem = await adjustConsumableQty(selected.id, -useQty);
+      setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+    }
     setMode(null); setSelected(null); setQty("1"); setSearch("");
   };
 
   const addStandalone = async () => {
     if (!saForm.name.trim()) return;
     const entry = { ...saForm, id: crypto.randomUUID(), qty: parseInt(saForm.qty)||1, buyPrice: parseFloat(saForm.buyPrice)||0, sellPrice: parseFloat(saForm.sellPrice)||0, usedAt: new Date().toISOString() };
-    if (saMatchedInvId) entry.inventoryId = saMatchedInvId;
+    if (saMatchedInvId) { entry.inventoryId = saMatchedInvId; entry.sourceType = "part"; }
     const updated = { ...machine, parts: [...parts, entry] };
     onUpdate(updated);
     await upsertMachine(updated);
@@ -482,51 +501,67 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: parts.filter((_,i) => i !== idx) };
     onUpdate(updated);
     await upsertMachine(updated);
-    if (p.inventoryId) setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+    const sourceType = p.sourceType || (p.inventoryId ? "part" : null);
+    if (sourceType === "consumable" && p.consumableId) {
+      const updatedItem = await adjustConsumableQty(p.consumableId, Number(p.qty) || 1);
+      setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+    } else if (p.inventoryId) {
+      setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+    }
   };
 
   return (
     <div style={{ marginTop:8 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
         <div style={{ fontSize:9, color:ACC, letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
-          Parts Used {parts.length > 0 && `(${parts.length})`}
+          Parts &amp; Consumables {parts.length > 0 && `(${parts.length})`}
           {totalRevenue > 0 && <span style={{ color:GRN, marginLeft:8 }}>${totalRevenue.toFixed(2)}</span>}
           {totalCost > 0 && totalRevenue > 0 && <span style={{ color:MUT, marginLeft:4, fontSize:8 }}>cost ${totalCost.toFixed(2)}</span>}
         </div>
         {!mode && (
           <div style={{ display:"flex", gap:5 }}>
-            {inv.length > 0 && <button onClick={() => setMode("inv")} style={{ ...btnA, ...sm, fontSize:8 }}>Use from Inventory</button>}
+            {(inv.length > 0 || cons.length > 0) && <button onClick={() => { setMode("inv"); setSearch(""); setSelected(null); }} style={{ ...btnA, ...sm, fontSize:8 }}>Use from Stock</button>}
             <button onClick={() => setMode("standalone")} style={{ ...btnG, ...sm, fontSize:8 }}>+ One-off</button>
           </div>
         )}
       </div>
 
-      {/* Inventory picker */}
+      {/* Stock picker */}
       {mode === "inv" && (
         <div style={{ background:"#0a0f0a", border:"1px solid "+ACC+"44", borderRadius:2, padding:"10px 12px", marginBottom:8 }}>
-          <div style={{ fontSize:9, color:ACC, letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700, marginBottom:8 }}>Use from Inventory</div>
-          <input style={{ ...inpS, marginBottom:8 }} placeholder="Search inventory…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <div style={{ fontSize:9, color:ACC, letterSpacing:"0.1em", textTransform:"uppercase", fontWeight:700 }}>Use from Stock</div>
+            <div style={{ display:"flex", gap:0 }}>
+              {[["part","🔩 Parts"],["consumable","📦 Consumables"]].map(([v,l], i) => (
+                <button key={v} onClick={() => { setPickerSource(v); setSearch(""); setSelected(null); }}
+                  style={{ ...btnG, ...sm, fontSize:8, borderRadius: i===0?"2px 0 0 2px":"0 2px 2px 0", borderRight: i===0?"none":undefined, ...(pickerSource===v?{background:ACC+"18",color:ACC}:{}) }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <input style={{ ...inpS, marginBottom:8 }} placeholder={pickerSource==="part"?"Search parts…":"Search consumables…"} value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
           <div style={{ maxHeight:160, overflowY:"auto", marginBottom:8 }}>
-            {filteredInv.map(i => {
-              const stockQty = Number(i.stockQty) || 0;
+            {filteredPickerList.map(i => {
+              const stockQty = pickerSource === "part" ? (Number(i.stockQty) || 0) : (Number(i.quantity) || 0);
               return (
                 <div key={i.id} onClick={() => { setSelected(i); setSearch(""); }}
                   style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 8px", borderRadius:2, cursor:"pointer", background: selected?.id===i.id ? ACC+"22" : "transparent", border:"1px solid "+(selected?.id===i.id ? ACC+"55" : "transparent"), marginBottom:3 }}>
                   <div>
                     <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
-                    <div style={{ fontSize:8, color:MUT }}>{[i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
+                    <div style={{ fontSize:8, color:MUT }}>{[i.category, i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
                   </div>
                   <div style={{ textAlign:"right", flexShrink:0 }}>
-                    <div style={{ fontSize:10, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} in stock</div>
+                    <div style={{ fontSize:10, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} {pickerSource==="part"?"in stock":i.unit||"in stock"}</div>
                     {i.sellPrice && <div style={{ fontSize:8, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
                   </div>
                 </div>
               );
             })}
-            {filteredInv.length === 0 && <div style={{ fontSize:9, color:MUT, padding:8 }}>No matching items.</div>}
+            {filteredPickerList.length === 0 && <div style={{ fontSize:9, color:MUT, padding:8 }}>No matching items.</div>}
           </div>
           {selected && (
-            <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px", background:"#111", borderRadius:2, marginBottom:8 }}>
+            <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px", background:"#0a0a0a", borderRadius:2, marginBottom:8 }}>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{selected.name}</div>
                 <div style={{ fontSize:8, color:MUT }}>Cost ${(parseFloat(selected.buyPrice)||0).toFixed(2)} · Sell ${(parseFloat(selected.sellPrice)||0).toFixed(2)}</div>
@@ -539,7 +574,7 @@ function PartsSection({ machine, onUpdate, userId }) {
           )}
           <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
             <button onClick={() => { setMode(null); setSelected(null); setSearch(""); }} style={{ ...btnG, ...sm }}>Cancel</button>
-            <button onClick={useFromInventory} disabled={!selected} style={{ ...btnA, ...sm, opacity: selected?1:0.4 }}>Use Part</button>
+            <button onClick={useFromInventory} disabled={!selected} style={{ ...btnA, ...sm, opacity: selected?1:0.4 }}>Use {pickerSource === "part" ? "Part" : "Consumable"}</button>
           </div>
         </div>
       )}
@@ -555,12 +590,12 @@ function PartsSection({ machine, onUpdate, userId }) {
                 <input style={inpS} value={saForm.name} onChange={e=>onSaNameChange(e.target.value)} placeholder="e.g. Air filter" autoFocus onBlur={()=>setTimeout(()=>setSaSuggestions([]),150)}/>
                 {saMatchedInvId && (() => { const i=inv.find(x=>x.id===saMatchedInvId); const s=Number(i?.stockQty)||0; return i ? <span style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",fontSize:8,color:s>0?GRN:RED,letterSpacing:"0.06em",pointerEvents:"none"}}>{s} in stock</span> : null; })()}
                 {saSuggestions.length > 0 && (
-                  <div style={{ position:"absolute", top:"100%", left:0, right:0, background:"#111", border:"1px solid "+ACC+"55", borderRadius:2, zIndex:50, maxHeight:180, overflowY:"auto" }}>
+                  <div style={{ position:"absolute", top:"100%", left:0, right:0, background:SURF, border:"1px solid "+ACC+"55", borderRadius:2, zIndex:50, maxHeight:180, overflowY:"auto" }}>
                     {saSuggestions.map(i => {
                       const stockQty = Number(i.stockQty)||0;
                       return (
-                        <div key={i.id} onMouseDown={()=>pickSaSuggestion(i)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", cursor:"pointer", borderBottom:"1px solid #1a1a1a" }}
-                          onMouseEnter={e=>e.currentTarget.style.background="#1a1a1a"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <div key={i.id} onMouseDown={()=>pickSaSuggestion(i)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", cursor:"pointer", borderBottom:"1px solid " + BRD }}
+                          onMouseEnter={e=>e.currentTarget.style.background=BRD} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                           <div>
                             <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
                             {(i.brand||i.partNumber) && <div style={{ fontSize:8, color:MUT }}>{[i.brand,i.partNumber].filter(Boolean).join(" · ")}</div>}
@@ -609,8 +644,9 @@ function PartsSection({ machine, onUpdate, userId }) {
               <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                 <span style={{ fontSize:10, color:TXT, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
                 {Number(p.qty)>1 && <span style={{ fontSize:8, color:MUT, flexShrink:0 }}>×{p.qty}</span>}
-                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background:"#111", padding:"1px 4px", borderRadius:2 }}>{p.partNumber}</span>}
-                {p.inventoryId && <span style={{ fontSize:7, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
+                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background: SURF, padding:"1px 4px", borderRadius:2, border:"1px solid " + BRD }}>{p.partNumber}</span>}
+                {(p.sourceType === "consumable" || p.consumableId) && <span style={{ fontSize:7, color:"#3a7bd5", letterSpacing:"0.06em" }}>CONS</span>}
+                {(p.sourceType === "part" || (!p.sourceType && p.inventoryId)) && <span style={{ fontSize:7, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
               </div>
               {(rev > 0 || cost > 0) && (
                 <div style={{ fontSize:8, color:MUT }}>
@@ -628,10 +664,8 @@ function PartsSection({ machine, onUpdate, userId }) {
   );
 }
 
-// Renders one active timer entry from machine.jobTimers
-function TimerEntry({ timer, onSave, onFinish, onRemove, currentUserId }) {
-  const t = timer;
-  const lockedByOther = t.status === "running" && t.startedBy?.userId && t.startedBy.userId !== currentUserId;
+function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
+  const t = machine.jobTimer || { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" };
 
   const getElapsed = () => {
     if (t.status === "running" && t.startedAt) {
@@ -641,6 +675,16 @@ function TimerEntry({ timer, onSave, onFinish, onRemove, currentUserId }) {
   };
 
   const [display, setDisplay] = useState(getElapsed);
+  const [hours, setHours] = useState("");
+  const [mins, setMins] = useState("");
+  const [jobLabel, setJobLabel] = useState(t.jobLabel || "");
+  const [customLabel, setCustomLabel] = useState("");
+  const [mode, setMode] = useState("countdown");
+  const [manualDate, setManualDate] = useState(() => new Date().toISOString().slice(0, 10));
+
+  const jobOptions = getJobOptions(machine);
+  const isCustom = jobLabel === "__custom__";
+  const effectiveLabel = isCustom ? customLabel : jobLabel;
 
   useEffect(() => {
     const clamp = (e) => t.duration > 0 ? Math.min(e, t.duration) : e;
@@ -648,176 +692,103 @@ function TimerEntry({ timer, onSave, onFinish, onRemove, currentUserId }) {
     if (t.status !== "running") return;
     const iv = setInterval(() => {
       const e = getElapsed();
-      if (t.duration > 0 && e >= t.duration) { setDisplay(t.duration); clearInterval(iv); }
-      else setDisplay(e);
+      if (t.duration > 0 && e >= t.duration) {
+        setDisplay(t.duration);
+        clearInterval(iv);
+      } else {
+        setDisplay(e);
+      }
     }, 1000);
     return () => clearInterval(iv);
   }, [t.status, t.startedAt, t.elapsed, t.duration]);
 
-  const handlePause  = async () => { await onSave({ elapsed: getElapsed(), startedAt: null, status: "paused" }); };
-  const handleResume = async () => { await onSave({ startedAt: new Date().toISOString(), status: "running" }); };
-  const handleStop   = async () => { await onRemove(); };
-  const handleFinish = async () => {
-    await onFinish({ id: crypto.randomUUID(), jobLabel: t.jobLabel || "", seconds: getElapsed(), completedAt: new Date().toISOString() });
+  const save = async (updates) => {
+    const updated = { ...machine, jobTimer: { ...t, ...updates } };
+    onUpdate(updated);
+    await upsertMachine(updated);
   };
-  const handleLogAndReset = async () => {
-    await onFinish({ id: crypto.randomUUID(), jobLabel: t.jobLabel || "", seconds: t.elapsed || 0, completedAt: new Date().toISOString() });
-  };
-
-  // Legacy "done" state
-  if (t.status === "done") {
-    return (
-      <div style={{ marginTop: 8, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${GRN}44`, borderRadius: 2 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>Completed</div>
-          <div style={{ fontSize: 11, color: GRN, fontWeight: 700, letterSpacing: "0.08em" }}>✓ JOB COMPLETE</div>
-        </div>
-        {t.jobLabel && <div style={{ fontSize: 9, color: ACC, marginBottom: 8 }}>{t.jobLabel}</div>}
-        <button onClick={handleLogAndReset} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>Log time & reset</button>
-      </div>
-    );
-  }
-
-  // Read-only view — timer started by another member
-  if (lockedByOther) {
-    return (
-      <div style={{ marginTop: 8, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <div style={{ fontSize: 9, color: MUT, display: "flex", alignItems: "center", gap: 5 }}>
-            🔒 <span style={{ color: TXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>{t.jobLabel || "Job"}</span>
-          </div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", textShadow: `0 0 10px ${GRN}88` }}>
-            {fmt(display)}
-          </div>
-        </div>
-        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em" }}>Running — {t.startedBy.name}</div>
-      </div>
-    );
-  }
-
-  const remaining    = t.duration > 0 ? Math.max(0, t.duration - display) : 0;
-  const pct          = t.duration > 0 ? remaining / t.duration : 1;
-  const isExpired    = t.duration > 0 && display >= t.duration && t.status === "running";
-  const glowColor    = pct > 0.5 ? GRN : pct > 0.2 ? ORANGE : RED;
-  const isCountUp    = t.duration === 0;
-  const displayColor = isCountUp ? GRN : (isExpired ? RED : glowColor);
-
-  return (
-    <div style={{ marginTop: 8, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${displayColor}44`, borderRadius: 2, boxShadow: `0 0 10px ${displayColor}22` }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: t.jobLabel ? 2 : 8 }}>
-        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-          {t.status === "paused" ? "Paused" : isCountUp ? "Elapsed" : isExpired ? "Time Up — Finish Job" : "Time Remaining"}
-        </div>
-        <div style={{ fontSize: 26, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace", color: displayColor, textShadow: `0 0 10px ${displayColor}88` }}>
-          {isCountUp ? fmt(display) : fmt(remaining)}
-        </div>
-      </div>
-      {t.jobLabel && (
-        <div style={{ fontSize: 9, color: ACC, letterSpacing: "0.06em", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {t.jobLabel}
-        </div>
-      )}
-      {!isCountUp && t.duration > 0 && (
-        <div style={{ height: 3, background: "#1a1a1a", borderRadius: 2, marginBottom: 10, overflow: "hidden" }}>
-          <div style={{ height: "100%", borderRadius: 2, width: `${Math.max(0, Math.min(100, (remaining / t.duration) * 100))}%`, background: glowColor, boxShadow: `0 0 6px ${glowColor}`, transition: "width 1s linear, background 0.5s" }} />
-        </div>
-      )}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {t.status === "running" && <button onClick={handlePause}  style={{ ...btnG, ...sm }}>⏸ Pause</button>}
-        {t.status === "paused"  && <button onClick={handleResume} style={{ ...btnA, ...sm }}>▶ Resume</button>}
-        <button onClick={handleStop}   style={{ ...btnG, ...sm }}>⏹ Reset</button>
-        <button onClick={handleFinish} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>✓ Finish Job</button>
-      </div>
-    </div>
-  );
-}
-
-// New-timer setup form (idle state / add another timer)
-function NewTimerSetup({ machine, onStart, currentUserId, currentUserName, hasActive }) {
-  const [expanded, setExpanded] = useState(!hasActive);
-  const [hours, setHours] = useState("");
-  const [mins, setMins] = useState("");
-  const [jobLabel, setJobLabel] = useState("");
-  const [customLabel, setCustomLabel] = useState("");
-  const [mode, setMode] = useState("countdown");
-
-  const jobOptions = getJobOptions(machine);
-  const isCustom = jobLabel === "__custom__";
-  const effectiveLabel = isCustom ? customLabel : jobLabel;
-
-  useEffect(() => { if (hasActive) setExpanded(false); }, [hasActive]);
 
   const handleStart = async () => {
-    const dur = mode === "countdown" ? parseDuration(hours, mins) : 0;
-    if (mode === "countdown" && !dur) return;
-    await onStart({
-      id: crypto.randomUUID(),
-      jobLabel: effectiveLabel,
-      duration: dur,
-      elapsed: 0,
-      startedAt: new Date().toISOString(),
-      status: "running",
-      startedBy: { userId: currentUserId, name: currentUserName },
-    });
-    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
-    if (hasActive) setExpanded(false);
+    if (t.status === "idle" && !t.duration) {
+      if (mode === "countup") {
+        await save({ duration: 0, elapsed: 0, startedAt: new Date().toISOString(), status: "running", jobLabel: effectiveLabel });
+      } else {
+        const dur = parseDuration(hours, mins);
+        if (!dur) return;
+        await save({ duration: dur, elapsed: 0, startedAt: new Date().toISOString(), status: "running", jobLabel: effectiveLabel });
+      }
+    } else {
+      await save({ startedAt: new Date().toISOString(), status: "running" });
+    }
   };
 
-  if (hasActive && !expanded) {
-    return (
-      <button onClick={() => setExpanded(true)} style={{ ...btnG, ...sm, marginTop: 8, fontSize: 8, width: "100%", textAlign: "center" }}>+ Start another timer</button>
-    );
-  }
+  const handlePause = async () => {
+    await save({ elapsed: getElapsed(), startedAt: null, status: "paused" });
+  };
 
-  const tabStyle = (active) => ({
-    padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em",
-    textTransform: "uppercase", cursor: "pointer", border: "1px solid #333", fontFamily: "'IBM Plex Mono',monospace",
-    background: active ? ACC : "none", color: active ? "#000" : MUT,
-  });
+  const handleStop = async () => {
+    await save({ duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" });
+    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+  };
 
-  return (
-    <div style={{ marginTop: hasActive ? 8 : 0, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>
-          {hasActive ? "New Timer" : "Job Timer"}
-        </div>
-        {hasActive && <button onClick={() => setExpanded(false)} style={{ background: "none", border: "none", cursor: "pointer", color: MUT, fontSize: 11, lineHeight: 1 }}>✕</button>}
-        <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>↓ Countdown</button>
-        <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0 2px 2px 0" }}>↑ Count Up</button>
-      </div>
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
-        <select style={timerSel} value={jobLabel} onChange={e => setJobLabel(e.target.value)}>
-          <option value="">— select or leave blank —</option>
-          {jobOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          <option value="__custom__">✏️ Custom…</option>
-        </select>
-        {isCustom && (
-          <input style={{ ...timerSel, marginTop: 4 }} placeholder="Describe the job…" value={customLabel} onChange={e => setCustomLabel(e.target.value)} />
-        )}
-      </div>
-      {mode === "countdown" ? (
-        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
-              style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }} />
-            <span style={{ fontSize: 9, color: MUT }}>h</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
-              style={{ width: 44, background: "#111", border: "1px solid #333", borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center" }} />
-            <span style={{ fontSize: 9, color: MUT }}>m</span>
-          </div>
-          <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
-        </div>
-      ) : (
-        <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Start</button>
-      )}
-    </div>
-  );
-}
+  const handleManualLog = async () => {
+    const secs = parseDuration(hours, mins);
+    if (!secs) return;
+    const newEntry = {
+      id: crypto.randomUUID(),
+      jobLabel: effectiveLabel,
+      seconds: secs,
+      completedAt: manualDate ? new Date(manualDate + "T12:00:00").toISOString() : new Date().toISOString(),
+      manual: true,
+    };
+    const updated = { ...machine, timeLog: [...(machine.timeLog || []), newEntry] };
+    onUpdate(updated);
+    await upsertMachine(updated);
+    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+    setManualDate(new Date().toISOString().slice(0, 10));
+  };
 
-function JobTimer({ machine, onUpdate, locked, onGoToBilling, currentUserId, currentUserName }) {
+  const handleFinish = async () => {
+    const elapsed = getElapsed();
+    const newEntry = {
+      id: crypto.randomUUID(),
+      jobLabel: t.jobLabel || "",
+      seconds: elapsed,
+      completedAt: new Date().toISOString(),
+    };
+    const updated = {
+      ...machine,
+      status: "Complete",
+      timeLog: [...(machine.timeLog || []), newEntry],
+      jobTimer: { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" },
+    };
+    onUpdate(updated);
+    await upsertMachine(updated);
+    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+  };
+
+  // Migrate legacy "done" state: allow logging the saved elapsed time
+  const handleLogAndReset = async () => {
+    const newEntry = {
+      id: crypto.randomUUID(),
+      jobLabel: t.jobLabel || "",
+      seconds: t.elapsed || 0,
+      completedAt: new Date().toISOString(),
+    };
+    const updated = {
+      ...machine,
+      timeLog: [...(machine.timeLog || []), newEntry],
+      jobTimer: { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" },
+    };
+    onUpdate(updated);
+    await upsertMachine(updated);
+  };
+
+  const remaining = t.duration > 0 ? Math.max(0, t.duration - display) : 0;
+  const pct = t.duration > 0 ? remaining / t.duration : 1;
+  const isExpired = t.duration > 0 && display >= t.duration && t.status === "running";
+  const glowColor = t.status === "done" ? GRN : pct > 0.5 ? GRN : pct > 0.2 ? ORANGE : RED;
+
   if (locked) {
     return (
       <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
@@ -828,57 +799,139 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling, currentUserId, cur
     );
   }
 
-  const timers = machine.jobTimers || [];
-  const activeTimers = timers.filter(t => t.status !== "idle");
+  // Legacy "done" state — show log + reset prompt
+  if (t.status === "done") {
+    return (
+      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${GRN}44`, borderRadius: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>Completed</div>
+          <div style={{ fontSize: 11, color: GRN, fontWeight: 700, letterSpacing: "0.08em" }}>✓ JOB COMPLETE</div>
+        </div>
+        {t.jobLabel && <div style={{ fontSize: 9, color: ACC, marginBottom: 8 }}>{t.jobLabel}</div>}
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={handleLogAndReset} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>Log time & reset</button>
+        </div>
+      </div>
+    );
+  }
 
-  const saveTimer = async (timerId, updates) => {
-    const updated = { ...machine, jobTimers: timers.map(t => t.id === timerId ? { ...t, ...updates } : t) };
-    onUpdate(updated);
-    await upsertMachine(updated);
-  };
+  if (t.status === "idle" && !t.duration) {
+    const tabStyle = (active) => ({
+      padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em",
+      textTransform: "uppercase", cursor: "pointer", border: "1px solid #333", fontFamily: "'IBM Plex Mono',monospace",
+      background: active ? ACC : "none", color: active ? "#000" : MUT,
+    });
+    return (
+      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>Job Timer</div>
+          <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>↓ Countdown</button>
+          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0", borderRight: "none" }}>↑ Count Up</button>
+          <button onClick={() => setMode("manual")}    style={{ ...tabStyle(mode === "manual"),    borderRadius: "0 2px 2px 0" }}>✎ Log</button>
+        </div>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
+          <select style={timerSel} value={jobLabel} onChange={e => setJobLabel(e.target.value)}>
+            <option value="">— select or leave blank —</option>
+            {jobOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+            <option value="__custom__">✏️ Custom…</option>
+          </select>
+          {isCustom && (
+            <input
+              style={{ ...timerSel, marginTop: 4 }}
+              placeholder="Describe the job…"
+              value={customLabel}
+              onChange={e => setCustomLabel(e.target.value)}
+            />
+          )}
+        </div>
+        {mode === "manual" ? (
+          <div>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 6 }}>LOG TIME WITHOUT TIMER</div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
+                  style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 9, color: MUT }}>h</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
+                  style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 9, color: MUT }}>m</span>
+              </div>
+              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
+                style={{ background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: MUT, fontSize: 10, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", outline: "none" }} />
+              <button onClick={handleManualLog} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>+ Log Time</button>
+            </div>
+          </div>
+        ) : mode === "countdown" ? (
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <input
+                type="number" min="0" max="99" placeholder="0"
+                value={hours} onChange={e => setHours(e.target.value)}
+                style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }}
+              />
+              <span style={{ fontSize: 9, color: MUT }}>h</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <input
+                type="number" min="0" max="59" placeholder="0"
+                value={mins} onChange={e => setMins(e.target.value)}
+                style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }}
+              />
+              <span style={{ fontSize: 9, color: MUT }}>m</span>
+            </div>
+            <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
+          </div>
+        ) : (
+          <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Start</button>
+        )}
+      </div>
+    );
+  }
 
-  const finishTimer = async (timerId, logEntry) => {
-    const updated = {
-      ...machine,
-      status: "Complete",
-      jobTimers: timers.filter(t => t.id !== timerId),
-      timeLog: [...(machine.timeLog || []), logEntry],
-    };
-    onUpdate(updated);
-    await upsertMachine(updated);
-  };
-
-  const removeTimer = async (timerId) => {
-    const updated = { ...machine, jobTimers: timers.filter(t => t.id !== timerId) };
-    onUpdate(updated);
-    await upsertMachine(updated);
-  };
-
-  const addTimer = async (newTimer) => {
-    const updated = { ...machine, jobTimers: [...timers, newTimer] };
-    onUpdate(updated);
-    await upsertMachine(updated);
-  };
+  const isCountUp = t.duration === 0;
+  const displayColor = isCountUp ? GRN : (isExpired ? RED : glowColor);
 
   return (
-    <div style={{ marginTop: 10 }}>
-      {activeTimers.map(t => (
-        <TimerEntry
-          key={t.id}
-          timer={t}
-          onSave={(updates) => saveTimer(t.id, updates)}
-          onFinish={(logEntry) => finishTimer(t.id, logEntry)}
-          onRemove={() => removeTimer(t.id)}
-          currentUserId={currentUserId}
-        />
-      ))}
-      <NewTimerSetup
-        machine={machine}
-        onStart={addTimer}
-        currentUserId={currentUserId}
-        currentUserName={currentUserName}
-        hasActive={activeTimers.length > 0}
-      />
+    <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: `1px solid ${displayColor}44`, borderRadius: 2, boxShadow: `0 0 10px ${displayColor}22` }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: t.jobLabel ? 2 : 8 }}>
+        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          {t.status === "paused" ? "Paused" : isCountUp ? "Elapsed" : isExpired ? "Time Up — Finish Job" : "Time Remaining"}
+        </div>
+        <div style={{
+          fontSize: 26, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace",
+          color: displayColor,
+          textShadow: `0 0 10px ${displayColor}88`,
+        }}>
+          {isCountUp ? fmt(display) : fmt(remaining)}
+        </div>
+      </div>
+      {t.jobLabel && (
+        <div style={{ fontSize: 9, color: ACC, letterSpacing: "0.06em", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {t.jobLabel}
+        </div>
+      )}
+      {!isCountUp && t.duration > 0 && (
+        <div style={{ height: 3, background: BRD, borderRadius: 2, marginBottom: 10, overflow: "hidden" }}>
+          <div style={{
+            height: "100%", borderRadius: 2,
+            width: `${Math.max(0, Math.min(100, (remaining / t.duration) * 100))}%`,
+            background: glowColor,
+            boxShadow: `0 0 6px ${glowColor}`,
+            transition: "width 1s linear, background 0.5s",
+          }} />
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {t.status === "running" && <button onClick={handlePause} style={{ ...btnG, ...sm }}>⏸ Pause</button>}
+        {t.status === "paused"  && <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Resume</button>}
+        <button onClick={handleStop} style={{ ...btnG, ...sm }}>⏹ Reset</button>
+        <button onClick={handleFinish} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>✓ Finish Job</button>
+      </div>
     </div>
   );
 }
@@ -902,8 +955,104 @@ function MachineNotes({ machine, onSave }) {
   return (
     <div style={{ marginBottom: 8 }}>
       {machine.notes
-        ? <div style={{ fontSize: 11, color: "#777", lineHeight: 1.5, cursor: "pointer" }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
+        ? <div style={{ fontSize: 11, color: TXT, lineHeight: 1.5, cursor: "pointer", opacity: 0.7 }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
         : <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9, color: MUT, padding: 0, fontFamily: "'IBM Plex Mono',monospace", fontStyle: "italic" }}>+ job notes</button>}
+    </div>
+  );
+}
+
+const STATUS_COLOR = {
+  "Active": ACC,
+  "Queued": GRN,
+  "Complete": MUT,
+};
+
+function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, session, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
+  const [open, setOpen] = useState(false);
+
+  const totalSecs   = (m.timeLog||[]).reduce((s, e) => s + (e.seconds||0), 0);
+  const partsCount  = (m.parts||[]).length;
+  const due         = m.dueDate ? new Date(m.dueDate) : null;
+  const isOverdue   = due && due < new Date();
+  const isRunning   = m.jobTimer?.status === "running";
+  const hourlyRate  = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
+  const partsTotal  = (m.parts||[]).reduce((s,p) => s + (parseFloat(p.sellPrice)||0)*(Number(p.qty)||1), 0);
+  const labourTotal = hourlyRate ? (totalSecs / 3600) * hourlyRate : null;
+  const grandTotal  = partsTotal + (labourTotal || 0);
+
+  return (
+    <div style={{ background: "#0d0d0d", border: "1px solid " + (timerLocked ? "#1a1a1a" : "#252525"), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden", opacity: timerLocked ? 0.65 : 1 }}>
+      {/* Collapsed header — always visible */}
+      <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer" }}>
+        {m.photos?.[0]
+          ? <img src={m.photos[0]} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 2, border: "1px solid #252525", flexShrink: 0 }} />
+          : <span style={{ fontSize: 18, flexShrink: 0, width: 36, textAlign: "center" }}>{mIcon(m.type)}</span>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</span>
+            {m.priority && (
+              <span style={{ fontSize: 7, fontWeight: 700, padding: "2px 5px", borderRadius: 2, letterSpacing: "0.08em",
+                background: m.priority === "High" ? RED+"18" : m.priority === "Medium" ? ACC+"18" : MUT+"18",
+                color:      m.priority === "High" ? RED      : m.priority === "Medium" ? ACC      : MUT }}>
+                {m.priority}
+              </span>
+            )}
+            {isRunning && <span style={{ fontSize: 7, fontWeight: 700, color: GRN, letterSpacing: "0.08em" }}>● RUNNING</span>}
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 8, color: MUT }}>{[m.source, m.make, m.model].filter(Boolean).join(" · ")}</span>
+            {m.clientId && clientMap[m.clientId] && <span style={{ fontSize: 8, color: ACC }}>👤 {clientMap[m.clientId]}</span>}
+            {due && <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", color: isOverdue ? "#e87a0a" : "#4a9eff" }}>{isOverdue ? "OVERDUE" : "DUE"} {due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>}
+          </div>
+        </div>
+        <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+          {totalSecs > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtDuration(totalSecs)}</span>}
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            {grandTotal > 0 && <span style={{ fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>${grandTotal.toFixed(0)}</span>}
+            {partsCount > 0 && <span style={{ fontSize: 7, color: MUT }}>{partsCount} item{partsCount !== 1 ? "s" : ""}</span>}
+            <span style={{ fontSize: 9, color: MUT }}>{open ? "▲" : "▼"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded body */}
+      {open && (
+        <div style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
+          <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; onUpdate(u); await upsertMachine(u); }} />
+          {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
+          {!timerLocked && <TimeLogSection machine={m} company={company} clients={[]} userId={session?.user?.id} onUpdate={onUpdate} />}
+          {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
+          {timerLocked && (
+            <div style={{ marginTop: 10, fontSize: 9, color: MUT, fontStyle: "italic" }}>
+              🔒 Timer &amp; parts unlock on Enthusiast —{" "}
+              <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade</span>
+            </div>
+          )}
+          {grandTotal > 0 && (
+            <div style={{ marginTop: 10, padding: "8px 10px", background: "#0a0f0a", border: "1px solid #1e2e1e", borderRadius: 2, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>Cost Summary</span>
+              {labourTotal != null && <span style={{ fontSize: 9, color: MUT }}>Labour <span style={{ color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>${labourTotal.toFixed(0)}</span></span>}
+              {labourTotal == null && totalSecs > 0 && <span style={{ fontSize: 9, color: MUT }}>Labour <span style={{ color: MUT }}>—</span></span>}
+              {partsTotal > 0 && <span style={{ fontSize: 9, color: MUT }}>Stock <span style={{ color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>${partsTotal.toFixed(0)}</span></span>}
+              <span style={{ fontSize: 10, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", marginLeft: "auto" }}>Total ${grandTotal.toFixed(0)}</span>
+            </div>
+          )}
+          <Divider />
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {STATUSES.filter(s => s !== status).map(s => (
+              <button key={s} onClick={() => onUpdateStatus(m, s)} style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
+                → {s}
+              </button>
+            ))}
+          </div>
+          {(m.timeLog?.length >= 5) && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Rage Factor</div>
+              <SkullRating value={m.rage || 0} onChange={r => onUpdateRage(m, r)} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -913,26 +1062,28 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const isFree = tier === "free";
   const FREE_LIMIT = 3;
   const [jobSearch, setJobSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
 
   const visibleMachines = useMemo(() => {
-    if (!jobSearch.trim()) return machines;
+    let list = machines;
+    if (statusFilter) list = list.filter(m => (m.status || "Active") === statusFilter);
+    if (!jobSearch.trim()) return list;
     const q = jobSearch.toLowerCase();
-    return machines.filter(m =>
+    return list.filter(m =>
       (m.name||"").toLowerCase().includes(q) ||
       (m.make||"").toLowerCase().includes(q) ||
       (m.model||"").toLowerCase().includes(q) ||
       (m.clientId && (clientMap[m.clientId]||"").toLowerCase().includes(q))
     );
-  }, [machines, jobSearch, clientMap]);
+  }, [machines, jobSearch, statusFilter, clientMap]);
 
   const updateM = (updated) => setMachines(prev => prev.map(x => x.id === updated.id ? updated : x));
   const updateStatus = async (m, status) => { const u = { ...m, status }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
   const updateRage = async (m, rage) => { const u = { ...m, rage }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
   const groups = STATUSES.map(s => ({ status: s, items: visibleMachines.filter(m => (m.status || "Active") === s) }));
 
-  // For free tier: cap to 3 machines total, track flat index for feature access
   const orderedAll = groups.flatMap(g => g.items);
   const cappedIds = isFree ? new Set(orderedAll.slice(0, FREE_LIMIT).map(m => m.id)) : null;
   const freeIdxMap = isFree ? Object.fromEntries(orderedAll.slice(0, FREE_LIMIT).map((m, i) => [m.id, i])) : {};
@@ -945,11 +1096,10 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
   const rate         = company?.hourly_rate || 0;
   const labourRevAll = totalHrsAll * rate;
-  const activeCount  = machines.filter(m => (m.status||"Active") === "Active").length;
-  const runningTimer = machines.find(m => (m.jobTimers || []).some(t => t.status === "running"));
+  const runningTimer = machines.find(m => m.jobTimer?.status === "running");
 
   return (
-    <div style={{ padding: 16, flex: 1 }}>
+    <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <SL t="Job Board" />
         {machines.length > 0 && (
@@ -957,12 +1107,12 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
             {runningTimer && (
               <span style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4 }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 4px " + GRN, display: "inline-block" }} />
-                TIMER RUNNING
+                RUNNING
               </span>
             )}
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>{totalHrsAll.toFixed(1)}h</div>
-              <div style={{ fontSize: 7, color: MUT, letterSpacing: "0.06em" }}>TOTAL LOGGED</div>
+              <div style={{ fontSize: 7, color: MUT, letterSpacing: "0.06em" }}>LOGGED</div>
             </div>
             {(labourRevAll > 0 || totalRevAll > 0) && (
               <div style={{ textAlign: "right" }}>
@@ -973,8 +1123,35 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           </div>
         )}
       </div>
-      {machines.length === 0 && <Empty icon="🗂" t="No machines yet" sub="Add machines from the Tracker tab, then manage their jobs, parts, and timers here." />}
-      {machines.length > 5 && <input style={{ ...inp, marginBottom: 12, fontSize: 11 }} placeholder="Filter by machine name, make, or client…" value={jobSearch} onChange={e => setJobSearch(e.target.value)} />}
+      {machines.length === 0 && (
+        <div style={{ textAlign: "center", padding: "40px 24px" }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
+          <div style={{ fontSize: 12, color: ACC, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>No machines yet</div>
+          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Add machines from the Tracker tab, then manage their jobs, parts, and timers here.</div>
+        </div>
+      )}
+      {machines.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <input style={{ ...inp, marginBottom: 8, fontSize: 11 }} placeholder="Filter by machine name, make, or client…" value={jobSearch} onChange={e => setJobSearch(e.target.value)} />
+          <div style={{ display: "flex", gap: 0 }}>
+            {["", ...STATUSES].map((s, i, arr) => {
+              const isActive = statusFilter === s;
+              return (
+                <button key={s || "all"} onClick={() => setStatusFilter(s)} style={{ ...btnG, ...sm,
+                  borderRadius: i === 0 ? "2px 0 0 2px" : i === arr.length - 1 ? "0 2px 2px 0" : "0",
+                  borderRight: i < arr.length - 1 ? "none" : "1px solid " + BRD,
+                  background: isActive ? (s ? STATUS_COLOR[s] + "22" : ACC + "18") : "none",
+                  color: isActive ? (s ? STATUS_COLOR[s] : ACC) : MUT,
+                  borderColor: isActive ? (s ? STATUS_COLOR[s] + "66" : ACC + "66") : BRD,
+                  borderTopWidth: "1px", borderBottomWidth: "1px", borderLeftWidth: "1px",
+                }}>
+                  {s || "All"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {isFree && machines.length > 0 && (
         <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div>
@@ -986,73 +1163,19 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
       )}
       {cappedGroups.map(({ status, items }) => items.length === 0 ? null : (
         <div key={status} style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <StatusBadge status={status} />
-            <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em" }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
+            <span style={{ fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700 }}>{status}</span>
+            <span style={{ fontSize: 9, color: MUT }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
           </div>
           {items.map(m => {
             const freeIdx = isFree ? (freeIdxMap[m.id] ?? 0) : -1;
-            const timerLocked = isFree && freeIdx > 0;
-            const partsLocked = isFree && freeIdx > 0;
+            const locked = isFree && freeIdx > 0;
             return (
-            <div key={m.id} style={{ background: SURF, border: "1px solid " + (timerLocked ? "#1e1e1e" : BRD), borderRadius: 3, marginBottom: 8, padding: "13px 14px", overflow: "hidden", opacity: timerLocked ? 0.7 : 1 }}>
-              <div style={{ display: "flex", gap: 10 }}>
-                {m.photos?.[0]
-                  ? <img src={m.photos[0]} alt="" style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 2, border: "1px solid " + BRD, flexShrink: 0 }} />
-                  : <span style={{ fontSize: 17, width: 44, textAlign: "center", lineHeight: "44px", flexShrink: 0 }}>{mIcon(m.type)}</span>}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 2 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</div>
-                      {m.userId !== session?.user?.id && <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", background: "#0a1a2a", color: "#4a9eff", border: "1px solid #4a9eff55", borderRadius: 2, padding: "1px 5px" }}>Shared</span>}
-                    </div>
-                    {(m.timeLog?.length > 0) && (() => {
-                      const totalSecs = m.timeLog.reduce((s, e) => s + (e.seconds || 0), 0);
-                      return (
-                        <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 8 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>{fmtDuration(totalSecs)}</div>
-                          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.06em", marginTop: 2 }}>TIME LOGGED</div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div style={{ fontSize: 9, color: MUT, marginBottom: (m.dueDate || m.clientId) ? 2 : 8 }}>{[m.source, m.make, m.model].filter(Boolean).join("  ·  ")}</div>
-                  {m.clientId && clientMap[m.clientId] && <div style={{ fontSize: 8, color: ACC, marginBottom: m.dueDate ? 2 : 8 }}>👤 {clientMap[m.clientId]}</div>}
-                  {m.dueDate && (() => {
-                    const due = new Date(m.dueDate);
-                    const isOverdue = due < new Date();
-                    const dueColor = isOverdue ? "#e87a0a" : "#4a9eff";
-                    return <div style={{ fontSize: 8, color: dueColor, marginBottom: 8, fontWeight: 700, letterSpacing: "0.06em" }}>
-                      {isOverdue ? "OVERDUE — " : "DUE "}{due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </div>;
-                  })()}
-                  <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; updateM(u); await upsertMachine(u); }} />
-                  {!timerLocked && <JobTimer machine={m} onUpdate={updateM} locked={false} onGoToBilling={onGoToBilling} currentUserId={session?.user?.id} currentUserName={profile?.display_name || profile?.username || session?.user?.email} />}
-                  {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={updateM} />}
-                  {!partsLocked && <PartsSection machine={m} onUpdate={updateM} userId={session?.user?.id} />}
-                  {timerLocked && (
-                    <div style={{ marginTop: 8, fontSize: 9, color: MUT, fontStyle: "italic" }}>
-                      🔒 Timer &amp; parts unlocked on Enthusiast —{" "}
-                      <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade</span>
-                    </div>
-                  )}
-                  <Divider />
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {STATUSES.filter(s => s !== status).map(s => (
-                      <button key={s} onClick={() => updateStatus(m, s)} style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
-                        → {s}
-                      </button>
-                    ))}
-                  </div>
-                  {(m.timeLog?.length >= 5) && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Rage Factor</div>
-                      <SkullRating value={m.rage || 0} onChange={r => updateRage(m, r)} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+              <JobCard key={m.id} m={m} status={status} timerLocked={locked} partsLocked={locked}
+                clientMap={clientMap} company={company} session={session}
+                onUpdate={updateM} onUpdateStatus={updateStatus} onUpdateRage={updateRage}
+                onGoToBilling={onGoToBilling} />
             );
           })}
         </div>
