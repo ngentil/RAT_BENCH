@@ -59,6 +59,12 @@ function toDb(userId, item) {
   };
 }
 
+export async function getInventoryItems() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) return [];
+  return getInventory(user.id);
+}
+
 export async function getInventory(userId) {
   if (!userId) return [];
   try {
