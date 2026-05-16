@@ -132,6 +132,7 @@ Stripe
 | Tile badge: accrued fees (orange) | ✅ | getStorageStatus(), MachineCard | Enthusiast+ |
 | Tile badge: ⚠ FOR SALE escalation (red + glow) | ✅ | getStorageStatus(), MachineCard | Enthusiast+ |
 | ServiceReminders: escalation + billing alerts | ✅ | getAllActiveBookings(), getStorageStatus() | Enthusiast+ |
+| ServiceReminders: consumable stock alerts (LOW / OUT / OVER) | ✅ | getConsumables(), ServiceReminders.jsx | Free |
 | Invoice: storage fees line item | ✅ | getActiveBooking(), exportClientInvoice() | Enthusiast+ |
 | Storage Settings tab (toggle + tier reference table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
 | Booking history per machine | ✅ | getBookingHistory(), machine_bookings | Enthusiast+ |
