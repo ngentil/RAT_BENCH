@@ -4,36 +4,57 @@ const lsKey = uid => `rat_inventory_${uid}`;
 
 function fromDb(r) {
   const p = r.payload || {};
+  const stockQty = p.stockQty != null ? Number(p.stockQty) : 0;
+  const minQty   = p.minQuantity != null ? Number(p.minQuantity) : (p.minStock != null ? Number(p.minStock) : null);
   return {
-    id:         r.id,
-    name:       p.name       || '',
-    brand:      p.brand      || '',
-    supplier:   p.supplier   || '',
-    partNumber: p.partNumber || '',
-    location:   p.location   || '',
-    buyPrice:   p.buyPrice  != null ? String(p.buyPrice)  : '',
-    sellPrice:  p.sellPrice != null ? String(p.sellPrice) : '',
-    stockQty:   p.stockQty  != null ? String(p.stockQty)  : '',
-    minStock:   p.minStock  != null ? String(p.minStock)  : '',
-    notes:      p.notes      || '',
-    createdAt:  r.created_at,
+    id:          r.id,
+    name:        p.name        || '',
+    brand:       p.brand       || '',
+    supplier:    p.supplier    || '',
+    partNumber:  p.partNumber  || '',
+    location:    p.location    || '',
+    buyPrice:    p.buyPrice    != null ? parseFloat(p.buyPrice)  : null,
+    sellPrice:   p.sellPrice   != null ? parseFloat(p.sellPrice) : null,
+    stockQty:    String(stockQty),
+    minStock:    minQty != null ? String(minQty) : '',
+    quantity:    stockQty,
+    unit:        p.unit        || 'pcs',
+    category:    p.category    || '',
+    spec:        p.spec        || {},
+    minQuantity: minQty,
+    maxQuantity: p.maxQuantity != null ? Number(p.maxQuantity) : null,
+    notes:       p.notes       || '',
+    photos:      p.photos      || [],
+    createdAt:   r.created_at,
   };
 }
 
 function toDb(userId, item) {
+  const qty     = item.quantity    != null ? Number(item.quantity)    : (item.stockQty  !== '' ? parseInt(item.stockQty)  || 0 : 0);
+  const minQty  = item.minQuantity != null ? Number(item.minQuantity) : (item.minStock   !== '' ? parseFloat(item.minStock) || null : null);
+  const maxQty  = item.maxQuantity != null ? Number(item.maxQuantity) : null;
+  const buyP    = item.buyPrice    != null && item.buyPrice !== '' ? parseFloat(item.buyPrice)  || null : null;
+  const sellP   = item.sellPrice   != null && item.sellPrice !== '' ? parseFloat(item.sellPrice) || null : null;
   return {
     user_id: userId,
     payload: {
-      name:       item.name,
-      brand:      item.brand      || null,
-      supplier:   item.supplier   || null,
-      partNumber: item.partNumber || null,
-      location:   item.location   || null,
-      buyPrice:   item.buyPrice  !== '' ? parseFloat(item.buyPrice)  || null : null,
-      sellPrice:  item.sellPrice !== '' ? parseFloat(item.sellPrice) || null : null,
-      stockQty:   item.stockQty  !== '' ? parseInt(item.stockQty)   || 0    : 0,
-      minStock:   item.minStock  !== '' ? parseInt(item.minStock)   || null : null,
-      notes:      item.notes      || null,
+      name:        item.name,
+      brand:       item.brand       || null,
+      supplier:    item.supplier    || null,
+      partNumber:  item.partNumber  || null,
+      location:    item.location    || null,
+      buyPrice:    buyP,
+      sellPrice:   sellP,
+      stockQty:    qty,
+      minStock:    minQty,
+      quantity:    qty,
+      unit:        item.unit        || 'pcs',
+      category:    item.category    || null,
+      spec:        item.spec        || {},
+      minQuantity: minQty,
+      maxQuantity: maxQty,
+      notes:       item.notes       || null,
+      photos:      item.photos      || [],
     },
   };
 }
@@ -94,6 +115,38 @@ export async function adjustStock(userId, itemId, delta) {
       .eq('user_id', userId);
   } catch (e) { console.warn('adjustStock Supabase failed:', e); }
   return getInventory(userId);
+}
+
+// ── Permissions ──────────────────────────────────────────────────────────────
+
+export async function getInventoryPermissions(itemId) {
+  const { data, error } = await supabase
+    .from('asset_permissions')
+    .select('*')
+    .eq('asset_type', 'consumable')
+    .eq('asset_id', itemId);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function upsertInventoryPermission(itemId, userId, companyId, canEdit) {
+  const { error } = await supabase.from('asset_permissions').upsert({
+    asset_type: 'consumable',
+    asset_id:   itemId,
+    user_id:    userId,
+    company_id: companyId,
+    can_edit:   canEdit,
+  }, { onConflict: 'asset_type,asset_id,user_id' });
+  if (error) throw error;
+}
+
+export async function revokeInventoryPermission(itemId, userId) {
+  const { error } = await supabase.from('asset_permissions')
+    .delete()
+    .eq('asset_type', 'consumable')
+    .eq('asset_id', itemId)
+    .eq('user_id', userId);
+  if (error) throw error;
 }
 
 export async function migrateLocalInventory(userId) {
