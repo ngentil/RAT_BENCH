@@ -4,7 +4,7 @@ import WikiEntryPage from './WikiEntryPage';
 import { effectiveTier } from '../../lib/gates';
 import { MUT, btnA, sm } from '../../lib/styles';
 
-function WikiTab({ profile, company, onGoToBilling }) {
+function WikiTab({ session, profile, company, onGoToBilling }) {
   const [currentSlug, setCurrentSlug] = useState(null);
   const isFree = effectiveTier(profile, company) === "free";
 
@@ -12,6 +12,7 @@ function WikiTab({ profile, company, onGoToBilling }) {
     return (
       <WikiEntryPage
         slug={currentSlug}
+        session={session}
         profile={profile}
         onBack={() => setCurrentSlug(null)}
         embedded

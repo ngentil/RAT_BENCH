@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
-import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount } from '../../lib/wiki';
+import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry } from '../../lib/wiki';
+
+const ADMIN_EMAIL = 'ratbenchadmin@gmail.com';
 
 export function WikiHeader({ title, subtitle, backHref, backLabel }) {
   return (
@@ -15,7 +17,8 @@ export function WikiHeader({ title, subtitle, backHref, backLabel }) {
   );
 }
 
-function WikiEntryPage({ slug, profile, onBack, embedded = false }) {
+function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
+  const isAdmin = session?.user?.email === ADMIN_EMAIL;
   const [entry, setEntry] = useState(null);
   const [revData, setRevData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -110,6 +113,16 @@ function WikiEntryPage({ slug, profile, onBack, embedded = false }) {
               : <a href={"/" + slug + "/history"} style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History</a>
             }
             {!profile && <span style={{ fontSize: 9, color: MUT }}>Log in to edit</span>}
+            {isAdmin && (
+              <button
+                onClick={async () => {
+                  if (!confirm(`Delete wiki entry "${entry.make} ${entry.model}"? This cannot be undone.`)) return;
+                  await deleteWikiEntry(entry.id);
+                  onBack();
+                }}
+                style={{ fontSize: 9, color: RED, border: '1px solid ' + RED + '55', background: RED + '11', padding: '4px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}
+              >🗑 Delete Entry</button>
+            )}
           </div>
         </div>
 
