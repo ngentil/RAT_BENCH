@@ -1,5 +1,5 @@
 import { MACHINE_TYPES } from './constants';
-import { STORAGE_TIERS } from './storageTiers';
+import { DEFAULT_STORAGE_TIERS } from './storageTiers';
 // ── helpers ───────────────────────────────────────────────────────────────────
 export const uid  = () => crypto.randomUUID();
 export const nowL = () => { const n = new Date(); return new Date(n - n.getTimezoneOffset()*60000).toISOString().slice(0,16); };
@@ -63,11 +63,12 @@ export function getMachineServiceStatus(machine) {
   return { overdue, dueSoon };
 }
 
-export function getStorageStatus(booking) {
+export function getStorageStatus(booking, tiers) {
   if (!booking || !booking.storage_enabled || booking.collected_at) {
     return { active: false, daysIn: 0, freeDaysLeft: 0, billableDays: 0, accrued: 0, escalated: false };
   }
-  const tier = STORAGE_TIERS[booking.storage_tier] ?? STORAGE_TIERS.Bench;
+  const T = tiers ?? DEFAULT_STORAGE_TIERS;
+  const tier = T[booking.storage_tier] ?? T.Bench ?? DEFAULT_STORAGE_TIERS.Bench;
   const dailyRate = booking.storage_fee_override ?? tier.dailyRate;
   const daysIn = Math.floor((Date.now() - new Date(booking.received_at)) / 86400000);
   const freeDaysLeft = Math.max(0, (tier.freeDays ?? 0) - daysIn);
@@ -77,9 +78,10 @@ export function getStorageStatus(booking) {
   return { active: true, daysIn, freeDaysLeft, billableDays, accrued, escalated, dailyRate, tier };
 }
 
-export function getClosedBookingFee(booking) {
+export function getClosedBookingFee(booking, tiers) {
   if (!booking || !booking.storage_enabled || !booking.collected_at) return 0;
-  const tier = STORAGE_TIERS[booking.storage_tier] ?? STORAGE_TIERS.Bench;
+  const T = tiers ?? DEFAULT_STORAGE_TIERS;
+  const tier = T[booking.storage_tier] ?? T.Bench ?? DEFAULT_STORAGE_TIERS.Bench;
   const dailyRate = booking.storage_fee_override ?? tier.dailyRate;
   const daysIn = Math.floor((new Date(booking.collected_at) - new Date(booking.received_at)) / 86400000);
   const billableDays = Math.max(0, daysIn - (tier.freeDays ?? 0));

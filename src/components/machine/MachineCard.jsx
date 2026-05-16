@@ -7,7 +7,7 @@ import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '
 import { mIcon, fmtDT, getMachineServiceStatus, getStorageStatus } from '../../lib/helpers';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { canUse, effectiveTier } from '../../lib/gates';
-import { STORAGE_TIERS, TIER_NAMES } from '../../lib/storageTiers';
+import { getTiers, TIER_NAMES } from '../../lib/storageTiers';
 import { getActiveBooking, createBooking, collectMachine, updateBooking } from '../../lib/db/bookings';
 import PdfExportModal from '../pdf/PdfExportModal';
 import ServiceModal from '../ui/ServiceModal';
@@ -51,7 +51,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
     getActiveBooking(m.id).then(b=>{setBooking(b);setBookingLoaded(true);});
   },[storagePolicyEnabled,m.id]);
 
-  const storageStatus = useMemo(()=>booking?getStorageStatus(booking):null,[booking]);
+  const activeTiers = useMemo(()=>getTiers(profile?.storage_tiers),[profile?.storage_tiers]);
+  const storageStatus = useMemo(()=>booking?getStorageStatus(booking,activeTiers):null,[booking,activeTiers]);
 
   const doBookIn = async () => {
     setBookSaving(true); setBookErr("");
@@ -361,7 +362,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
                     <div>
                       <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Storage Tier</div>
                       <select value={bookForm.storageTier} onChange={e=>setBookForm(f=>({...f,storageTier:e.target.value}))} style={{...inp,fontSize:11,padding:"6px 8px"}}>
-                        {TIER_NAMES.map(t=><option key={t} value={t}>{t}{STORAGE_TIERS[t].dailyRate!=null?" — $"+STORAGE_TIERS[t].dailyRate+"/day after "+STORAGE_TIERS[t].freeDays+"d free":""}</option>)}
+                        {TIER_NAMES.map(t=><option key={t} value={t}>{t}{activeTiers[t]?.dailyRate!=null?" — $"+activeTiers[t].dailyRate+"/day after "+activeTiers[t].freeDays+"d free":""}</option>)}
                       </select>
                     </div>
                     <div>

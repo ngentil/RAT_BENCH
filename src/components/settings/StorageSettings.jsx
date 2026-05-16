@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, GRN, RED, inp, btnA, btnG, sm } from '../../lib/styles';
 import { canUse } from '../../lib/gates';
-import { STORAGE_TIERS, TIER_NAMES } from '../../lib/storageTiers';
+import { DEFAULT_STORAGE_TIERS, TIER_NAMES } from '../../lib/storageTiers';
 
 const secHd = { borderLeft: "2px solid " + ACC, paddingLeft: 8, fontSize: 10, color: TXT, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 };
 
@@ -24,12 +24,40 @@ function Toggle({ checked, onChange, disabled }) {
   );
 }
 
+const FIELDS = [
+  { k: 'freeDays',     label: 'Free Days',   suffix: 'd',    type: 'int' },
+  { k: 'dailyRate',    label: 'Daily Rate',  prefix: '$',    type: 'float' },
+  { k: 'escalateDays', label: 'Escalate At', suffix: 'd',    type: 'int' },
+  { k: 'minFee',       label: 'Min Fee',     prefix: '$',    type: 'float' },
+];
+
 function StorageSettings({ profile, setProfile, company }) {
   const canAccess = canUse('storage_policy', profile, company);
   const [saving, setSaving] = useState(false);
+  const [tierSaving, setTierSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [tierErr, setTierErr] = useState("");
+  const [tierSaved, setTierSaved] = useState(false);
 
   const enabled = profile?.storage_policy_enabled ?? false;
+
+  // Local editable overrides — start from saved or defaults
+  const [overrides, setOverrides] = useState(() => {
+    const saved = profile?.storage_tiers ?? {};
+    const init = {};
+    for (const name of TIER_NAMES) {
+      if (name === 'Custom') continue;
+      const def = DEFAULT_STORAGE_TIERS[name];
+      const ov  = saved[name] ?? {};
+      init[name] = {
+        freeDays:     ov.freeDays     !== undefined ? String(ov.freeDays)     : '',
+        dailyRate:    ov.dailyRate    !== undefined ? String(ov.dailyRate)    : '',
+        escalateDays: ov.escalateDays !== undefined ? String(ov.escalateDays) : '',
+        minFee:       ov.minFee       !== undefined ? String(ov.minFee)       : '',
+      };
+    }
+    return init;
+  });
 
   const toggle = async () => {
     if (!canAccess) return;
@@ -42,6 +70,48 @@ function StorageSettings({ profile, setProfile, company }) {
     if (error) { setErr(error.message); setSaving(false); return; }
     setProfile(prev => ({ ...prev, storage_policy_enabled: next }));
     setSaving(false);
+  };
+
+  const setField = (tierName, field, val) => {
+    setOverrides(prev => ({ ...prev, [tierName]: { ...prev[tierName], [field]: val } }));
+    setTierSaved(false);
+  };
+
+  const saveTiers = async () => {
+    setTierSaving(true); setTierErr("");
+    // Build clean overrides object: only store values that differ from defaults
+    const toSave = {};
+    for (const name of TIER_NAMES) {
+      if (name === 'Custom') continue;
+      const def = DEFAULT_STORAGE_TIERS[name];
+      const ov  = overrides[name] ?? {};
+      const entry = {};
+      for (const { k, type } of FIELDS) {
+        const raw = ov[k];
+        if (raw === '' || raw === undefined) continue;
+        const parsed = type === 'int' ? parseInt(raw) : parseFloat(raw);
+        if (!isNaN(parsed) && parsed !== def[k]) entry[k] = parsed;
+      }
+      if (Object.keys(entry).length > 0) toSave[name] = entry;
+    }
+    const { error } = await supabase
+      .from('profiles')
+      .update({ storage_tiers: toSave })
+      .eq('id', profile.id);
+    if (error) { setTierErr(error.message); setTierSaving(false); return; }
+    setProfile(prev => ({ ...prev, storage_tiers: toSave }));
+    setTierSaved(true);
+    setTierSaving(false);
+  };
+
+  const resetTiers = () => {
+    const init = {};
+    for (const name of TIER_NAMES) {
+      if (name === 'Custom') continue;
+      init[name] = { freeDays: '', dailyRate: '', escalateDays: '', minFee: '' };
+    }
+    setOverrides(init);
+    setTierSaved(false);
   };
 
   if (!canAccess) {
@@ -71,29 +141,56 @@ function StorageSettings({ profile, setProfile, company }) {
         {err && <div style={{ fontSize: 9, color: RED, marginTop: 8 }}>{err}</div>}
       </div>
 
-      <div style={secHd}>Storage Tiers</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={secHd}>Storage Tiers</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={resetTiers} style={{ ...btnG, ...sm, fontSize: 8 }}>Reset to defaults</button>
+          <button onClick={saveTiers} disabled={tierSaving} style={{ ...btnA, ...sm, fontSize: 8, opacity: tierSaving ? 0.6 : 1 }}>
+            {tierSaving ? "Saving…" : "Save Tiers"}
+          </button>
+        </div>
+      </div>
+
       <div style={{ border: "1px solid " + BRD, borderRadius: 2, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", background: ACC + "15", borderBottom: "1px solid " + BRD }}>
-          {["Tier", "Free Days", "Daily Rate", "Escalate At", "Min Fee"].map(h => (
+        {/* Header */}
+        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 1fr 1fr 1fr", background: ACC + "15", borderBottom: "1px solid " + BRD }}>
+          {["Tier", ...FIELDS.map(f => f.label)].map(h => (
             <div key={h} style={{ fontSize: 8, color: ACC, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "7px 10px" }}>{h}</div>
           ))}
         </div>
-        {TIER_NAMES.filter(t => t !== "Custom").map((name, i) => {
-          const t = STORAGE_TIERS[name];
+        {/* Editable rows */}
+        {TIER_NAMES.filter(n => n !== 'Custom').map((name, i) => {
+          const def = DEFAULT_STORAGE_TIERS[name];
+          const ov  = overrides[name] ?? {};
           return (
-            <div key={name} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", borderBottom: i < TIER_NAMES.length - 2 ? "1px solid " + BRD : "none", background: i % 2 === 0 ? "transparent" : SURF }}>
-              <div style={{ fontSize: 10, color: TXT, fontWeight: 700, padding: "8px 10px" }}>{name}</div>
-              <div style={{ fontSize: 10, color: MUT, padding: "8px 10px" }}>{t.freeDays}d</div>
-              <div style={{ fontSize: 10, color: ACC, padding: "8px 10px" }}>${t.dailyRate}/day</div>
-              <div style={{ fontSize: 10, color: MUT, padding: "8px 10px" }}>{t.escalateDays}d</div>
-              <div style={{ fontSize: 10, color: MUT, padding: "8px 10px" }}>${t.minFee}</div>
+            <div key={name} style={{ display: "grid", gridTemplateColumns: "100px 1fr 1fr 1fr 1fr", borderBottom: i < TIER_NAMES.length - 2 ? "1px solid " + BRD : "none", background: i % 2 === 0 ? "transparent" : SURF, alignItems: "center" }}>
+              <div style={{ fontSize: 10, color: TXT, fontWeight: 700, padding: "6px 10px" }}>{name}</div>
+              {FIELDS.map(({ k, prefix, suffix, type }) => (
+                <div key={k} style={{ padding: "4px 6px", display: "flex", alignItems: "center", gap: 2 }}>
+                  {prefix && <span style={{ fontSize: 9, color: MUT }}>{prefix}</span>}
+                  <input
+                    type="number"
+                    min="0"
+                    step={type === 'float' ? '0.5' : '1'}
+                    value={ov[k] ?? ''}
+                    placeholder={String(def[k] ?? '')}
+                    onChange={e => setField(name, k, e.target.value)}
+                    style={{ ...inp, fontSize: 9, padding: "3px 5px", width: "100%", minWidth: 0 }}
+                  />
+                  {suffix && <span style={{ fontSize: 9, color: MUT }}>{suffix}</span>}
+                </div>
+              ))}
             </div>
           );
         })}
       </div>
+
+      {tierErr && <div style={{ fontSize: 9, color: RED, marginTop: 6 }}>{tierErr}</div>}
+      {tierSaved && <div style={{ fontSize: 9, color: GRN, marginTop: 6 }}>Tier rates saved.</div>}
+
       <div style={{ fontSize: 9, color: MUT, marginTop: 10, lineHeight: 1.6 }}>
-        Tiers are assigned per visit when you book a machine in. Custom tier requires manual fee entry.
-        Machines past the escalation day are flagged <span style={{ color: RED }}>for sale</span> in service reminders.
+        Leave a field blank to use the default value (shown as placeholder). Tiers are assigned per visit when you book a machine in.
+        Custom tier requires manual fee entry. Machines past the escalation day are flagged <span style={{ color: RED }}>for sale</span> in service reminders.
       </div>
     </div>
   );
