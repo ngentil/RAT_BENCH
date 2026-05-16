@@ -190,7 +190,9 @@ Stripe
 | Create / edit / delete parts | ✅ | inventory_items | Free |
 | Buy price / sell price / stock qty | ✅ | inventory_items.payload (jsonb) | Free |
 | Min par / max par levels with LOW/OVER badges | ✅ | inventory_items.payload minQuantity/maxQuantity | Free |
-| Category, unit, spec fields (parity with consumables) | ✅ | inventory_items.payload, consumableTypes.js | Free |
+| 20 workshop-specific part categories (Tyres, Filters, Spark Plugs, Fasteners, Engine Components, etc.) | ✅ | partsTypes.js, StockItemTab typeConfig | Free |
+| Category-specific spec fields per part type (gap/heat range for plugs, pitch/gauge for chains, ET/PCD for wheels, etc.) | ✅ | partsTypes.js PART_CATEGORY_SPECS | Free |
+| Part category groups filter bar (Tyres & Wheels, Engine, Fuel & Induction, Ignition, Drive Train, etc.) | ✅ | partsTypes.js PART_CATEGORY_GROUPS | Free |
 | QR code label generation + print | ✅ | inventory_items, qrcode library | Free |
 | Barcode scanner input | ✅ | keyboard detection | Free |
 | Stock adjustment (use / restock) | ✅ | inventory_items.payload | Free |
