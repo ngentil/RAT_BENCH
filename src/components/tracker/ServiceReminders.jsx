@@ -5,8 +5,11 @@ import { mIcon, getStorageStatus } from '../../lib/helpers';
 import { upsertMachine } from '../../lib/db';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { getAllActiveBookings } from '../../lib/db/bookings';
+import { getConsumables } from '../../lib/db/consumables';
+import { CATEGORY_ICON } from '../../lib/consumableTypes';
 
 const ORANGE = "#e8870a";
+const BLUE   = "#3a7bd5";
 
 function totalLoggedHours(machine) {
   return (machine.timeLog || []).reduce((s, e) => s + (e.seconds || 0), 0) / 3600;
@@ -103,6 +106,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
   const [filter,      setFilter]      = useState("all");
   const [servicingId, setServicingId] = useState(null);
   const [activeBookings, setActiveBookings] = useState([]);
+  const [consumables,   setConsumables]   = useState([]);
 
   const isFree = effectiveTier(profile, company) === "free";
   const storagePolicyEnabled = canUse('storage_policy', profile, company) && !!(profile?.storage_policy_enabled);
@@ -111,6 +115,29 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
     if (!storagePolicyEnabled) return;
     getAllActiveBookings().then(bs => setActiveBookings(bs || []));
   }, [storagePolicyEnabled]);
+
+  useEffect(() => {
+    getConsumables().then(d => setConsumables(d || []));
+  }, []);
+
+  const stockAlerts = useMemo(() =>
+    consumables
+      .filter(c =>
+        (c.minQuantity != null && c.quantity < c.minQuantity) ||
+        (c.maxQuantity != null && c.quantity > c.maxQuantity)
+      )
+      .map(c => ({
+        ...c,
+        isLow:   c.minQuantity != null && c.quantity < c.minQuantity,
+        isOver:  c.maxQuantity != null && c.quantity > c.maxQuantity,
+      })),
+  [consumables]);
+
+  const filteredStockAlerts = useMemo(() => {
+    if (filter === "overdue")  return stockAlerts.filter(a => a.isLow);
+    if (filter === "due_soon") return stockAlerts.filter(a => a.isLow || a.isOver);
+    return stockAlerts;
+  }, [stockAlerts, filter]);
 
   const bookingByMachineId = useMemo(() => {
     const map = {};
@@ -147,9 +174,13 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
   const hiddenMachines = isFree ? Math.max(0, filtered.length - 1) : 0;
   const hiddenItems    = isFree && filtered[0] ? Math.max(0, filtered[0].items.length - 1) : 0;
 
-  const overdueCount = machineData.filter(({ items }) => items.some(i => i.overdue)).length;
-  const dueSoonCount = machineData.filter(({ items }) => items.some(i => i.dueSoon)).length;
-  const okCount      = machineData.filter(({ items }) => !items.some(i => i.overdue || i.dueSoon)).length;
+  const machineOverdueCount = machineData.filter(({ items }) => items.some(i => i.overdue)).length;
+  const machineDueSoonCount = machineData.filter(({ items }) => items.some(i => i.dueSoon)).length;
+  const okCount             = machineData.filter(({ items }) => !items.some(i => i.overdue || i.dueSoon)).length;
+  const stockLowCount  = stockAlerts.filter(a => a.isLow).length;
+  const stockOverCount = stockAlerts.filter(a => a.isOver && !a.isLow).length;
+  const overdueCount   = machineOverdueCount + stockLowCount;
+  const dueSoonCount   = machineDueSoonCount + stockOverCount;
 
   const markServiced = async (machine, data) => {
     const updated = { ...machine, ...data };
@@ -174,7 +205,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
               {dueSoonCount} DUE SOON
             </span>
           )}
-          {okCount > 0 && !overdueCount && !dueSoonCount && (
+          {okCount > 0 && !overdueCount && !dueSoonCount && stockAlerts.length === 0 && (
             <span style={{ fontSize: 8, color: GRN, border: "1px solid " + GRN + "55", background: GRN + "11", padding: "2px 6px", borderRadius: 2, fontWeight: 700, letterSpacing: "0.1em" }}>
               ALL OK
             </span>
@@ -288,6 +319,44 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
 
       {filtered.length === 0 && machineData.length > 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>No machines match this filter.</div>
+      )}
+
+      {filteredStockAlerts.length > 0 && (
+        <div style={{ marginTop: cappedFiltered.length > 0 ? 20 : 0 }}>
+          <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
+            📦 Stock Alerts
+          </div>
+          {filteredStockAlerts.map(c => {
+            const icon  = CATEGORY_ICON[c.category] || '📦';
+            const color = c.isLow ? RED : BLUE;
+            const badge = c.quantity === 0 ? 'OUT' : c.isLow ? 'LOW' : 'OVER';
+            const parNote = c.isLow && c.minQuantity != null
+              ? `min ${c.minQuantity} ${c.unit}`
+              : c.isOver && c.maxQuantity != null
+              ? `max ${c.maxQuantity} ${c.unit}`
+              : '';
+            return (
+              <div key={c.id} style={{ background: SURF, border: "1px solid " + color + "33", borderLeft: "3px solid " + color, borderRadius: 2, padding: "10px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 16, flexShrink: 0 }}>{icon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{c.name}</span>
+                    <span style={{ fontSize: 7, color, border: "1px solid " + color + "55", borderRadius: 2, padding: "1px 4px", letterSpacing: "0.1em", fontWeight: 700 }}>{badge}</span>
+                  </div>
+                  <div style={{ fontSize: 8, color: MUT, marginTop: 2 }}>
+                    {c.category}{c.brand ? " · " + c.brand : ""}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "'IBM Plex Mono',monospace" }}>
+                    {Number(c.quantity).toLocaleString()} {c.unit}
+                  </div>
+                  {parNote && <div style={{ fontSize: 8, color: MUT }}>{parNote}</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
 
       <div style={{ marginTop: 16, fontSize: 9, color: MUT, lineHeight: 1.7 }}>
