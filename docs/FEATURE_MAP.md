@@ -124,7 +124,8 @@ Stripe
 |---------|--------|-----------|------|
 | machine_bookings table + RLS | ✅ | machines, auth.users | Enthusiast+ |
 | Global enable toggle (`profiles.storage_policy_enabled`) | ✅ | profiles | Enthusiast+ |
-| Storage tiers (Bench/Small/Medium/Large/Extra Large/Custom) | ✅ | storageTiers.js constants | Enthusiast+ |
+| Storage tiers (Bench/Small/Medium/Large/Extra Large/Custom) | ✅ | storageTiers.js DEFAULT_STORAGE_TIERS | Enthusiast+ |
+| Configurable tier rates (freeDays/dailyRate/escalateDays/minFee) | ✅ | profiles.storage_tiers JSONB, getTiers(), StorageSettings inline edit | Enthusiast+ |
 | Book In — create a booking with tier + received date | ✅ | machine_bookings, MachineCard | Enthusiast+ |
 | Per-visit storage toggle (charge/pause billing) | ✅ | machine_bookings.storage_enabled | Enthusiast+ |
 | Mark Collected — close booking, stop accrual | ✅ | collectMachine(), MachineCard | Enthusiast+ |
@@ -134,7 +135,7 @@ Stripe
 | ServiceReminders: escalation + billing alerts | ✅ | getAllActiveBookings(), getStorageStatus() | Enthusiast+ |
 | ServiceReminders: consumable stock alerts (LOW / OUT / OVER) | ✅ | getConsumables(), ServiceReminders.jsx | Free |
 | Invoice: storage fees line item | ✅ | getActiveBooking(), exportClientInvoice() | Enthusiast+ |
-| Storage Settings tab (toggle + tier reference table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
+| Storage Settings tab (toggle + editable tier table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
 | Booking history per machine | ✅ | getBookingHistory(), machine_bookings | Enthusiast+ |
 | Custom daily rate override per visit | ✅ | machine_bookings.storage_fee_override | Enthusiast+ |
 | Storage revenue in Revenue Dashboard | ✅ | getClosedBookings(), getClosedBookingFee(), RevenueDashboard | Enthusiast+ |
@@ -308,6 +309,7 @@ Stripe
 | Workshop preferences UI in Settings | ✅ | SettingsPage WorkshopPrefs component | Free |
 | Users tab moved into Settings (team/business only) | ✅ | SettingsPage, UsersTab | Team+ |
 | localStorage migration (old flat tab IDs → workshop sub-tabs) | ✅ | App.jsx init state | Free |
+| Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
 
 ---
 
