@@ -9,6 +9,7 @@ import { fromDb } from './lib/db/transforms';
 import { TABS, WORKSHOP_TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
+import { applyTabOrder } from './lib/tabOrder';
 
 const TIER_GLOW = {
   enthusiast: { color: "#e8670a", label: "Enthusiast" },
@@ -255,11 +256,15 @@ function App(){
   const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = machines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
   const timerRunning = machines.some(m => (m.jobTimers || []).some(t => t.status === "running"));
-  const visibleWorkshopTabs = WORKSHOP_TABS.filter(t=>{
-    if(t.enthusiastOnly&&tier==="free") return false;
-    if(workshopVisibleTabs&&!workshopVisibleTabs.includes(t.id)) return false;
-    return true;
-  });
+  const visibleWorkshopTabs = applyTabOrder(
+    WORKSHOP_TABS.filter(t=>{
+      if(t.enthusiastOnly&&tier==="free") return false;
+      if(workshopVisibleTabs&&!workshopVisibleTabs.includes(t.id)) return false;
+      return true;
+    }),
+    profile?.tab_order?.workshop
+  );
+  const orderedMainTabs = applyTabOrder(TABS, profile?.tab_order?.main);
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
@@ -307,7 +312,7 @@ function App(){
         </div>
       </div>
       <div className="tab-bar" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
-        {TABS.map(t=>{
+        {orderedMainTabs.map(t=>{
           const active=tab===t.id;
           const badge=
             t.id==="reminders"&&overdueCount>0?{n:overdueCount,c:RED}:
