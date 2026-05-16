@@ -10,7 +10,7 @@ import PhotoAdder from '../ui/PhotoAdder';
 import AssetTile from '../ui/AssetTile';
 import {
   CONSUMABLE_CATEGORIES, CATEGORY_GROUPS, CATEGORY_ICON, CATEGORY_COLOR,
-  CATEGORY_SPECS, CATEGORY_UNITS, COMMON_CONSUMABLES,
+  CATEGORY_SPECS, CATEGORY_UNITS,
 } from '../../lib/consumableTypes';
 
 const ORANGE = '#e8870a';
@@ -474,8 +474,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const [qrItem, setQrItem]     = useState(null);
   const [search, setSearch]     = useState('');
   const [groupFilter, setGroupFilter] = useState(null);
-  const [showPreset, setShowPreset]   = useState(false);
-  const [presetVal, setPresetVal]     = useState('');
+
   const [showSort, setShowSort]       = useState(false);
   const [sortBy, setSortBy]   = useState(() => localStorage.getItem(`${tableType}Sort`) || null);
   const [view, setView]       = useState(() => localStorage.getItem(`${tableType}View`) || 'list');
@@ -569,23 +568,6 @@ export default function StockItemTab({ tableType, label, machines, session, prof
       setItems(prev => prev.map(i => i.id === updatedItem.id ? updatedItem : i));
     }
   };
-
-  // ── Presets ─────────────────────────────────────────────────────────────────
-  const applyPreset = val => {
-    if (!val) return;
-    const preset = COMMON_CONSUMABLES[parseInt(val)];
-    if (!preset) return;
-    setPresetVal(''); setShowPreset(false);
-    setFormItem({ ...preset, quantity: 0, minQuantity: null, maxQuantity: null, notes: '' });
-  };
-  const presetGroups = useMemo(() => {
-    const map = {};
-    COMMON_CONSUMABLES.forEach((p, i) => {
-      if (!map[p.category]) map[p.category] = [];
-      map[p.category].push({ ...p, _idx: i });
-    });
-    return map;
-  }, []);
 
   // ── Usage stats from machines ───────────────────────────────────────────────
   const usageStats = useMemo(() => {
@@ -693,26 +675,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
             {view === 'list' ? '☰' : `⊞${cols}`}
           </button>
           {!atLimit && (
-            <>
-              <div style={{ position: 'relative' }}>
-                <button onClick={() => setShowPreset(p => !p)} style={{ ...btnG, ...sm, fontSize: 8 }}>▼ Quick Add</button>
-                {showPreset && (
-                  <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 50, background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: 8, minWidth: 280, boxShadow: '0 4px 16px #0008' }}>
-                    <div style={{ fontSize: 8, color: MUT, marginBottom: 6, letterSpacing: '0.08em' }}>SELECT A PRESET</div>
-                    <select style={{ ...sel, fontSize: 9 }} value={presetVal} onChange={e => applyPreset(e.target.value)}>
-                      <option value="">— choose a preset —</option>
-                      {Object.entries(presetGroups).map(([cat, presets]) => (
-                        <optgroup key={cat} label={cat}>
-                          {presets.map(p => <option key={p._idx} value={p._idx}>{p.name}</option>)}
-                        </optgroup>
-                      ))}
-                    </select>
-                    <button onClick={() => setShowPreset(false)} style={{ ...btnG, ...sm, fontSize: 8, marginTop: 6, width: '100%' }}>Close</button>
-                  </div>
-                )}
-              </div>
-              <button onClick={() => setFormItem({})} style={{ ...btnA, ...sm, fontSize: 8 }}>+ Add Custom</button>
-            </>
+            <button onClick={() => setFormItem({})} style={{ ...btnA, ...sm, fontSize: 8 }}>+ Add</button>
           )}
           {atLimit && onGoToBilling && (
             <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade for more</button>
@@ -776,7 +739,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
 
       {/* Loading / empty */}
       {loading && <div style={{ fontSize: 10, color: MUT, padding: '24px 0', textAlign: 'center' }}>Loading…</div>}
-      {!loading && items.length === 0 && <Empty icon={icon} t={`No ${label.toLowerCase()} yet`} sub={`Track your ${label.toLowerCase()} — use Quick Add for common presets or add a custom item.`} />}
+      {!loading && items.length === 0 && <Empty icon={icon} t={`No ${label.toLowerCase()} yet`} sub={`Track your ${label.toLowerCase()} — add items to monitor stock levels, pricing, and usage.`} />}
       {!loading && items.length > 0 && sorted.length === 0 && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>No items match your filter.</div>}
 
       {/* Content — list or grid */}
