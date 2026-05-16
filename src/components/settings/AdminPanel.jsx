@@ -478,7 +478,7 @@ export default function AdminPanel() {
   const [tab, setTab] = useState('Overview');
   return (
     <div>
-      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid #252525' }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid #252525', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {ADMIN_TABS.map((t, i, arr) => (
           <button key={t} onClick={() => setTab(t)} className="tab-btn" style={{
             background: 'none', border: 'none',
@@ -486,7 +486,7 @@ export default function AdminPanel() {
             borderRadius: 0, color: tab === t ? ACC : MUT,
             fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
             padding: '8px 12px', cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace",
-            marginBottom: -1,
+            marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0,
           }}>{t}</button>
         ))}
       </div>
