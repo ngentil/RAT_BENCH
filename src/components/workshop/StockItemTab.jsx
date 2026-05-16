@@ -12,6 +12,10 @@ import {
   CONSUMABLE_CATEGORIES, CATEGORY_GROUPS, CATEGORY_ICON, CATEGORY_COLOR,
   CATEGORY_SPECS, CATEGORY_UNITS,
 } from '../../lib/consumableTypes';
+import {
+  PART_CATEGORIES, PART_CATEGORY_GROUPS, PART_CATEGORY_ICON,
+  PART_CATEGORY_COLOR, PART_CATEGORY_SPECS, PART_CATEGORY_UNITS,
+} from '../../lib/partsTypes';
 
 const ORANGE = '#e8870a';
 const BLUE   = '#3a7bd5';
@@ -60,8 +64,8 @@ function qtyLabel(qty, minQty, maxQty) {
 }
 
 // ── Spec chips ────────────────────────────────────────────────────────────────
-function SpecChips({ category, spec }) {
-  const chips = (CATEGORY_SPECS[category] || []).filter(f => spec[f.key]);
+function SpecChips({ category, spec, typeConfig }) {
+  const chips = ((typeConfig?.specs || CATEGORY_SPECS)[category] || []).filter(f => spec[f.key]);
   if (!chips.length) return null;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
@@ -136,7 +140,7 @@ const EMPTY_FORM = {
   minQuantity: '', maxQuantity: '', spec: {}, notes: '',
 };
 
-function ItemForm({ item, tableType, onSave, onCancel }) {
+function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
   const isEdit = !!item?.id;
   const initF = item?.id ? {
     name:        item.name        || '',
@@ -161,8 +165,10 @@ function ItemForm({ item, tableType, onSave, onCancel }) {
   const s = (k, v) => setF(p => ({ ...p, [k]: v }));
   const fld = { background: '#0a0a0a', border: '1px solid #252525', color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: '6px 8px', borderRadius: 2, outline: 'none', boxSizing: 'border-box', width: '100%' };
 
+  const tc = typeConfig || { categories: CONSUMABLE_CATEGORIES, specs: CATEGORY_SPECS, units: CATEGORY_UNITS };
+
   const onCategoryChange = cat => {
-    const ud = (CATEGORY_UNITS[cat] || FALLBACK_UNITS).default;
+    const ud = (tc.units[cat] || FALLBACK_UNITS).default;
     setF(p => ({ ...p, category: cat, unit: ud, spec: {} }));
   };
 
@@ -170,8 +176,8 @@ function ItemForm({ item, tableType, onSave, onCancel }) {
     ? (((parseFloat(f.sellPrice) - parseFloat(f.buyPrice)) / parseFloat(f.sellPrice)) * 100).toFixed(0)
     : null;
 
-  const specFields  = CATEGORY_SPECS[f.category]  || [];
-  const unitOptions = (CATEGORY_UNITS[f.category] || FALLBACK_UNITS).options;
+  const specFields  = tc.specs[f.category]  || [];
+  const unitOptions = (tc.units[f.category] || FALLBACK_UNITS).options;
   const canSave     = f.name.trim() && !saving;
 
   const save = async () => {
@@ -207,7 +213,7 @@ function ItemForm({ item, tableType, onSave, onCancel }) {
             <FL t="Category" />
             <select style={sel} value={f.category} onChange={e => onCategoryChange(e.target.value)}>
               <option value="">— no category —</option>
-              {CONSUMABLE_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              {tc.categories.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div style={{ gridColumn: '1/-1' }}>
@@ -304,7 +310,7 @@ function ItemForm({ item, tableType, onSave, onCancel }) {
 }
 
 // ── Stock card ────────────────────────────────────────────────────────────────
-function StockCard({ item, tableType, onEdit, onDelete, onQR, onQtyChange, onUpdate, isShared, usageStat }) {
+function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyChange, onUpdate, isShared, usageStat }) {
   const [open, setOpen]     = useState(false);
   const [adjusting, setAdj] = useState(false);
   const [delta, setDelta]   = useState('');
@@ -312,8 +318,9 @@ function StockCard({ item, tableType, onEdit, onDelete, onQR, onQtyChange, onUpd
   const [setMode, setSetMode] = useState(false);
   const [setVal, setSetVal] = useState('');
 
-  const catColor = CATEGORY_COLOR[item.category] || MUT;
-  const catIcon  = CATEGORY_ICON[item.category]  || (tableType === 'part' ? '🔩' : '📦');
+  const tc2 = typeConfig || { icon: CATEGORY_ICON, color: CATEGORY_COLOR };
+  const catColor = tc2.color[item.category] || MUT;
+  const catIcon  = tc2.icon[item.category]  || (tableType === 'part' ? '🔩' : '📦');
   const qColor   = qtyColor(item.quantity, item.minQuantity, item.maxQuantity);
   const badge    = qtyLabel(item.quantity, item.minQuantity, item.maxQuantity);
   const margin   = item.buyPrice != null && item.sellPrice != null
@@ -350,7 +357,7 @@ function StockCard({ item, tableType, onEdit, onDelete, onQR, onQtyChange, onUpd
             {item.category && <span style={{ fontSize: 7, color: catColor || ACC, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>{item.category}</span>}
             {item.brand && <span style={{ fontSize: 7, color: MUT }}>· {item.brand}</span>}
           </div>
-          {!open && <SpecChips category={item.category} spec={item.spec || {}} />}
+          {!open && <SpecChips category={item.category} spec={item.spec || {}} typeConfig={typeConfig} />}
         </div>
         <div style={{ flexShrink: 0, textAlign: 'right' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: qColor, fontFamily: "'IBM Plex Mono',monospace" }}>{Number(item.quantity).toLocaleString()}</div>
@@ -375,7 +382,7 @@ function StockCard({ item, tableType, onEdit, onDelete, onQR, onQtyChange, onUpd
               ))}
             </div>
           )}
-          <SpecChips category={item.category} spec={item.spec || {}} />
+          <SpecChips category={item.category} spec={item.spec || {}} typeConfig={typeConfig} />
 
           {/* Stock */}
           <div style={{ marginTop: 12 }}>
@@ -467,6 +474,22 @@ function StockCard({ item, tableType, onEdit, onDelete, onQR, onQtyChange, onUpd
 
 // ── Main tab ──────────────────────────────────────────────────────────────────
 export default function StockItemTab({ tableType, label, machines, session, profile, company, onGoToBilling }) {
+  const typeConfig = tableType === 'part' ? {
+    categories: PART_CATEGORIES,
+    groups:     PART_CATEGORY_GROUPS,
+    icon:       PART_CATEGORY_ICON,
+    color:      PART_CATEGORY_COLOR,
+    specs:      PART_CATEGORY_SPECS,
+    units:      PART_CATEGORY_UNITS,
+  } : {
+    categories: CONSUMABLE_CATEGORIES,
+    groups:     CATEGORY_GROUPS,
+    icon:       CATEGORY_ICON,
+    color:      CATEGORY_COLOR,
+    specs:      CATEGORY_SPECS,
+    units:      CATEGORY_UNITS,
+  };
+
   const userId = session?.user?.id;
   const [items, setItems]       = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -598,7 +621,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const filtered = useMemo(() => {
     let r = items;
     if (groupFilter) {
-      const grp = CATEGORY_GROUPS.find(g => g.label === groupFilter);
+      const grp = typeConfig.groups.find(g => g.label === groupFilter);
       if (grp) r = r.filter(i => grp.categories.includes(i.category));
     }
     if (search.trim()) {
@@ -705,7 +728,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
           style={{ fontSize: 8, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", border: '1px solid ' + ACC + '55', background: !groupFilter ? ACC + '22' : 'transparent', color: !groupFilter ? ACC : MUT }}>
           All
         </button>
-        {CATEGORY_GROUPS.map(g => (
+        {typeConfig.groups.map(g => (
           <button key={g.label} onClick={() => setGroupFilter(groupFilter === g.label ? null : g.label)}
             style={{ fontSize: 8, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", border: '1px solid ' + ACC + '55', background: groupFilter === g.label ? ACC + '22' : 'transparent', color: groupFilter === g.label ? ACC : MUT }}>
             {g.label}
@@ -750,8 +773,8 @@ export default function StockItemTab({ tableType, label, machines, session, prof
               <AssetTile
                 key={item.id}
                 photo={item.photos?.[0]}
-                icon={CATEGORY_ICON[item.category] || icon}
-                accentColor={CATEGORY_COLOR[item.category] || ACC}
+                icon={typeConfig.icon[item.category] || icon}
+                accentColor={typeConfig.color[item.category] || ACC}
                 name={item.name}
                 sub={(item.category || '') + (item.brand ? ' · ' + item.brand : '')}
                 badges={[{ l: (item.quantity || 0) + ' ' + (item.unit || 'pcs'), c: qtyColor(item.quantity, item.minQuantity, item.maxQuantity) }]}
@@ -766,7 +789,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
                 onClick={e => { if (e.target === e.currentTarget) setTileOpen(null); }}>
                 <div style={{ maxWidth: 640, margin: '24px auto', padding: '0 8px' }}>
                   <StockCard
-                    item={item} tableType={tableType} isShared={false}
+                    item={item} tableType={tableType} typeConfig={typeConfig} isShared={false}
                     usageStat={usageStats[item.id]}
                     onEdit={() => { setFormItem(item); setTileOpen(null); }}
                     onDelete={() => { remove(item); setTileOpen(null); }}
@@ -783,7 +806,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
       ) : (
         capped.map(item => (
           <StockCard
-            key={item.id} item={item} tableType={tableType}
+            key={item.id} item={item} tableType={tableType} typeConfig={typeConfig}
             isShared={false}
             usageStat={usageStats[item.id]}
             onEdit={() => setFormItem(item)}
@@ -836,7 +859,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
 
       {/* Item form modal */}
       {formItem !== null && (
-        <ItemForm item={formItem?.id ? formItem : formItem} tableType={tableType} onSave={save} onCancel={() => setFormItem(null)} />
+        <ItemForm item={formItem?.id ? formItem : formItem} tableType={tableType} typeConfig={typeConfig} onSave={save} onCancel={() => setFormItem(null)} />
       )}
 
       {/* QR modal */}
