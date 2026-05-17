@@ -82,7 +82,6 @@ function AllocationCard({ feature, fromLog }) {
             {sub && <span style={{ fontSize: 8, color: MUT }}>{sub}</span>}
             {sub && <span style={{ fontSize: 8, color: '#333' }}>·</span>}
             <span style={{ fontSize: 8, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>#{eventId}</span>
-            {created && <span style={{ fontSize: 8, color: '#444' }}>· {timeAgo(created)}</span>}
           </div>
           {!open && (
             <div style={{ marginTop: 3, display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -195,6 +194,7 @@ export default function TowAllocationsTab() {
       const data = await res.json();
       const all  = data.data?.features || data.features || [];
       const live = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
+      if (live[0]) console.log('[TowFeed] sample TowAllocation props:', JSON.stringify(live[0].properties).slice(0, 600));
       setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
       logAllocations(live).catch(e => console.warn('logAllocations:', e));
       setAllFeatures(prev => mergeFeatures(live, prev));
