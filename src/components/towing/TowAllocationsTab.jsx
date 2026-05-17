@@ -135,8 +135,6 @@ export default function TowAllocationsTab() {
   const [lastFetch,    setLastFetch]    = useState(null);
   const [countdown,    setCountdown]    = useState(POLL_MS / 1000);
 
-  const [rawCount,     setRawCount]     = useState(null);
-  const [sourceNames,  setSourceNames]  = useState([]);
 
   // Merge helper — live features win over logged ones for same eventId
   const mergeFeatures = (live, logged) => {
@@ -163,46 +161,14 @@ export default function TowAllocationsTab() {
 
   // Poll live API, log to Supabase, merge into display
   const fetchAllocations = useCallback(async () => {
-    console.log('[TowFeed] fetchAllocations called, url:', API_URL);
     try {
-      console.log('[TowFeed] fetching…');
       const res = await fetch(API_URL, { headers: { KeyID: API_KEY } });
-      console.log('[TowFeed] response status:', res.status, res.ok);
       if (!res.ok) throw new Error(`API returned ${res.status}`);
-      const text = await res.text();
-      console.log('[TowFeed] raw text (first 800):', text.slice(0, 800));
-      let data;
-      try { data = JSON.parse(text); } catch { throw new Error('API response is not JSON: ' + text.slice(0, 120)); }
-      console.log('[TowFeed] top-level keys:', Object.keys(data));
-
-      // Try every known response shape — log shows what key was used
-      let all = [];
-      if (Array.isArray(data))                              { all = data; }
-      else if (Array.isArray(data.features))                { all = data.features; }
-      else if (Array.isArray(data.data?.features))          { all = data.data.features; }
-      else if (Array.isArray(data.data))                    { all = data.data; }
-      else if (Array.isArray(data.disruptions))             { all = data.disruptions; }
-      else if (Array.isArray(data.response))                { all = data.response; }
-      else if (Array.isArray(data.response?.features))      { all = data.response.features; }
-      else if (Array.isArray(data.response?.disruptions))   { all = data.response.disruptions; }
-      else if (Array.isArray(data.items))                   { all = data.items; }
-      else if (Array.isArray(data.result))                  { all = data.result; }
-      console.log('[TowFeed] resolved features count:', all.length, '— sample[0]:', JSON.stringify(all[0]).slice(0, 200));
-
-      setRawCount(all.length);
-      const topKeys = Object.keys(data);
-      const names = [...new Set(all.map(f =>
-        f.properties?.source?.sourceName || f.sourceName || f.source || ''
-      ).filter(Boolean))].sort();
-      setSourceNames([...topKeys, ...(names.length ? ['|', ...names] : [])]);
-
-      // Filter for towing — try multiple sourceName variants
-      const TOW_SOURCES = ['TowAllocation', 'Tow Allocation', 'tow_allocation', 'TOWALLOCATION'];
-      const live = all.filter(f => {
-        const sn = f.properties?.source?.sourceName || f.sourceName || '';
-        return TOW_SOURCES.some(v => sn.toLowerCase() === v.toLowerCase());
-      });
-      setLiveIds(new Set(live.map(f => String(f.properties?.eventId || f.eventId))));
+      const data = await res.json();
+      // Response shape: { meta, data: { type: 'FeatureCollection', features: [...] }, links }
+      const all = data.data?.features || data.features || [];
+      const live = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
+      setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
       // Persist to Supabase log (fire-and-forget)
       logAllocations(live).catch(e => console.warn('logAllocations:', e));
       setAllFeatures(prev => mergeFeatures(live, prev));
@@ -270,34 +236,6 @@ export default function TowAllocationsTab() {
         </div>
       )}
 
-      {/* Debug strip */}
-      {rawCount !== null && (
-        <div style={{ marginBottom: 10, fontSize: 8, padding: '6px 10px', borderRadius: 2, background: '#0a0a0a', border: '1px solid #1e1e1e', color: MUT, lineHeight: 1.9, fontFamily: "'IBM Plex Mono',monospace" }}>
-          <span style={{ color: '#444' }}>API raw features: </span>
-          <span style={{ color: rawCount > 0 ? TXT : '#c94040' }}>{rawCount}</span>
-          <span style={{ color: '#333', margin: '0 6px' }}>·</span>
-          <span style={{ color: '#444' }}>tow filter matched: </span>
-          <span style={{ color: liveIds.size > 0 ? TXT : '#c94040' }}>{liveIds.size}</span>
-          {sourceNames.length > 0 && (
-            <>
-              <br />
-              {sourceNames.includes('|')
-                ? <>
-                    <span style={{ color: '#444' }}>response keys: </span>
-                    <span style={{ color: TXT }}>{sourceNames.slice(0, sourceNames.indexOf('|')).join(', ')}</span>
-                    <span style={{ color: '#333', margin: '0 6px' }}>·</span>
-                    <span style={{ color: '#444' }}>sourceNames: </span>
-                    <span style={{ color: TXT }}>{sourceNames.slice(sourceNames.indexOf('|') + 1).join(', ')}</span>
-                  </>
-                : <>
-                    <span style={{ color: '#444' }}>response keys: </span>
-                    <span style={{ color: TXT }}>{sourceNames.join(', ')}</span>
-                  </>
-              }
-            </>
-          )}
-        </div>
-      )}
 
       {err && (
         <div style={{ marginBottom: 12, fontSize: 9, padding: '8px 12px', borderRadius: 2, color: ORANGE, background: ORANGE + '11', border: `1px solid ${ORANGE}44`, lineHeight: 1.6 }}>
