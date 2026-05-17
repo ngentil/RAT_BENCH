@@ -73,17 +73,26 @@ function StatusBadge({ live }) {
 
 function AllocationCard({ feature, fromLog }) {
   const [open, setOpen] = useState(false);
-  const p       = feature.properties || {};
-  const road    = p.closedRoadName || '—';
-  const sub     = suburb(feature);
-  const eventId = p.eventId || '—';
-  const desc    = p.description || '';
-  const lanes   = p.numberLanesImpacted;
-  const impact  = p.impact?.impactType || '';
-  const created = p.lastUpdated;
-  const logMeta = feature._logMeta;
-  const elapsed = timeIn(logMeta?.firstSeen || p.lastUpdated);
-  const isLive  = !fromLog;
+  const p          = feature.properties || {};
+  const road       = p.closedRoadName || '—';
+  const sub        = suburb(feature);
+  const crossSt    = p.reference?.startIntersectionRoadName || '';
+  const eventId    = p.eventId || '—';
+  const desc       = p.description || '';
+  const lanes      = p.numberLanesImpacted;
+  const impact     = p.impact?.impactType || '';
+  const subType    = p.eventSubType || '';
+  const eventType  = p.eventType || '';
+  const melway     = p.melway || '';
+  const created    = p.lastUpdated;
+  const coords     = feature.geometry?.coordinates; // [lng, lat]
+  const logMeta    = feature._logMeta;
+  const elapsed    = timeIn(logMeta?.firstSeen || p.lastUpdated);
+  const isLive     = !fromLog;
+
+  const mapsUrl = coords
+    ? `https://www.google.com/maps?q=${coords[1]},${coords[0]}`
+    : null;
 
   return (
     <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${isLive ? GRN : '#333'}`, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
@@ -93,11 +102,18 @@ function AllocationCard({ feature, fromLog }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{road}</span>
             <StatusBadge live={isLive} />
+            {subType && (
+              <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.08em', padding: '1px 5px', border: '1px solid #3a3a2a', borderRadius: 2, color: '#c8a84b', background: '#c8a84b11', textTransform: 'uppercase' }}>
+                {subType}
+              </span>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
             {sub && <span style={{ fontSize: 8, color: MUT }}>{sub}</span>}
-            {sub && <span style={{ fontSize: 8, color: '#333' }}>·</span>}
+            {crossSt && <><span style={{ fontSize: 8, color: '#333' }}>@</span><span style={{ fontSize: 8, color: MUT }}>{crossSt}</span></>}
+            {(sub || crossSt) && <span style={{ fontSize: 8, color: '#333' }}>·</span>}
             <span style={{ fontSize: 8, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>#{eventId}</span>
+            {melway && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 7, color: '#5a7a9a', fontFamily: "'IBM Plex Mono',monospace" }}>Mel {melway}</span></>}
           </div>
           {!open && (
             <div style={{ marginTop: 3, display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -135,14 +151,19 @@ function AllocationCard({ feature, fromLog }) {
             {[
               ['AAC Job ID',     `#${eventId}`],
               ['Status',         isLive ? 'Active' : 'Cleared'],
+              ['Event Type',     eventType || '—'],
+              ['Incident Type',  subType   || '—'],
               ['Lanes Impacted', lanes != null ? `${lanes} lane${lanes !== 1 ? 's' : ''}` : '—'],
-              ['Impact Type',    impact || '—'],
-              ['Time In',        elapsed || '—'],
+              ['Impact Type',    impact    || '—'],
+              ['Cross Street',   crossSt   || '—'],
+              ['Melway',         melway    || '—'],
+              ['Time In',        elapsed   || '—'],
               ['Last Updated',   fmt(created)],
               ...(logMeta ? [
                 ['First Seen', fmt(logMeta.firstSeen)],
                 ['Last Seen',  fmt(logMeta.lastSeen)],
               ] : []),
+              ...(coords ? [['Coordinates', `${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`]] : []),
             ].map(([label, val]) => (
               <div key={label} style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '6px 8px' }}>
                 <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
@@ -150,6 +171,13 @@ function AllocationCard({ feature, fromLog }) {
               </div>
             ))}
           </div>
+          {mapsUrl && (
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 8, color: '#5a7a9a', border: '1px solid #1e2e3e', borderRadius: 2, padding: '4px 8px', textDecoration: 'none', background: '#0a1520' }}>
+              📍 Open in Google Maps
+            </a>
+          )}
           <div style={{ marginTop: 10, padding: '8px 10px', border: '1px dashed #2a2a2a', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 14 }}>🚛</span>
             <div>
@@ -211,8 +239,7 @@ export default function TowAllocationsTab() {
       const data = await res.json();
       const all  = data.data?.features || data.features || [];
       const live = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
-      if (live[0]) console.log('[TowFeed] FULL FEATURE DUMP', JSON.stringify(live[0], null, 2));
-      setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
+setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
       logAllocations(live).catch(e => console.warn('logAllocations:', e));
       setAllFeatures(prev => mergeFeatures(live, prev));
       setErr('');
