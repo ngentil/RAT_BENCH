@@ -113,7 +113,6 @@ function AllocationCard({ feature, fromLog }) {
             {crossSt && <><span style={{ fontSize: 8, color: '#333' }}>@</span><span style={{ fontSize: 8, color: MUT }}>{crossSt}</span></>}
             {(sub || crossSt) && <span style={{ fontSize: 8, color: '#333' }}>·</span>}
             <span style={{ fontSize: 8, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>#{eventId}</span>
-            {melway && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 7, color: '#5a7a9a', fontFamily: "'IBM Plex Mono',monospace" }}>Mel {melway}</span></>}
           </div>
           {!open && (
             <div style={{ marginTop: 3, display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
