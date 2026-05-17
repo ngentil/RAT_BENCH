@@ -25,14 +25,18 @@ function fmt(iso) {
   });
 }
 
-function timeAgo(iso) {
-  if (!iso) return '';
+function timeIn(iso) {
+  if (!iso) return null;
   const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 0) return null;
   const m = Math.floor(diff / 60000);
-  if (m < 60)  return `${m}m ago`;
+  if (m < 60)  return `${m}m`;
   const h = Math.floor(m / 60);
-  if (h < 24)  return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  const rm = m % 60;
+  if (h < 24)  return rm > 0 ? `${h}h ${rm}m` : `${h}h`;
+  const d = Math.floor(h / 24);
+  const rh = h % 24;
+  return rh > 0 ? `${d}d ${rh}h` : `${d}d`;
 }
 
 function StatusBadge({ status }) {
@@ -58,6 +62,7 @@ function AllocationCard({ feature, fromLog }) {
   const created = p.created;
   const nextDue = p.nextUpdateDue;
   const logMeta = feature._logMeta;
+  const elapsed = timeIn(created);
 
   const borderColor = status?.toLowerCase() === 'active' ? GRN : '#333';
 
@@ -79,11 +84,18 @@ function AllocationCard({ feature, fromLog }) {
             <span style={{ fontSize: 8, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>#{eventId}</span>
             {created && <span style={{ fontSize: 8, color: '#444' }}>· {timeAgo(created)}</span>}
           </div>
-          {!open && lanes != null && (
-            <div style={{ marginTop: 3, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 7, color: ORANGE, border: `1px solid ${ORANGE}44`, borderRadius: 2, padding: '1px 4px' }}>
-                {lanes} lane{lanes !== 1 ? 's' : ''} impacted
-              </span>
+          {!open && (
+            <div style={{ marginTop: 3, display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+              {elapsed && (
+                <span style={{ fontSize: 7, color: ORANGE, border: `1px solid ${ORANGE}44`, borderRadius: 2, padding: '1px 4px', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>
+                  ⏱ {elapsed}
+                </span>
+              )}
+              {lanes != null && (
+                <span style={{ fontSize: 7, color: MUT, border: '1px solid #2a2a2a', borderRadius: 2, padding: '1px 4px' }}>
+                  {lanes} lane{lanes !== 1 ? 's' : ''} impacted
+                </span>
+              )}
               {impact && <span style={{ fontSize: 7, color: MUT, border: '1px solid #252525', borderRadius: 2, padding: '1px 4px' }}>{impact}</span>}
             </div>
           )}
@@ -110,6 +122,7 @@ function AllocationCard({ feature, fromLog }) {
               ['Status',           status || '—'],
               ['Lanes Impacted',   lanes != null ? `${lanes} lane${lanes !== 1 ? 's' : ''}` : '—'],
               ['Impact Type',      impact || '—'],
+              ['Time In',          elapsed || '—'],
               ['Time Logged',      fmt(created)],
               ['Next Update Due',  fmt(nextDue)],
               ...(logMeta ? [
