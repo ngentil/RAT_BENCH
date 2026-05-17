@@ -163,8 +163,11 @@ export default function TowAllocationsTab() {
 
   // Poll live API, log to Supabase, merge into display
   const fetchAllocations = useCallback(async () => {
+    console.log('[TowFeed] fetchAllocations called, url:', API_URL);
     try {
+      console.log('[TowFeed] fetching…');
       const res = await fetch(API_URL, { headers: { KeyId: API_KEY } });
+      console.log('[TowFeed] response status:', res.status, res.ok);
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const text = await res.text();
       console.log('[TowFeed] raw text (first 800):', text.slice(0, 800));
