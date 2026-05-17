@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { ACC, MUT, BRD, SURF } from '../../lib/styles';
 import TowAllocationsTab from './TowAllocationsTab';
+import TowAnalyticsTab from './TowAnalyticsTab';
 import FleetTab from './FleetTab';
 
 const TABS = [
   { id: 'allocations', label: '🚦 Tow Allocations' },
+  { id: 'analytics',   label: '📊 Analytics' },
   { id: 'fleet',       label: '🚛 Fleet' },
 ];
 
@@ -23,6 +25,7 @@ export default function TowingSection() {
       </div>
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {tab === 'allocations' && <TowAllocationsTab />}
+        {tab === 'analytics'   && <TowAnalyticsTab />}
         {tab === 'fleet'       && <FleetTab />}
       </div>
     </div>

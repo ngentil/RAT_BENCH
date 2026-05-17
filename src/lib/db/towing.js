@@ -95,6 +95,17 @@ export async function logAllocations(features) {
   if (error) console.warn('logAllocations failed:', error.message);
 }
 
+export async function getAllocationsForAnalytics(days = 30) {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('tow_allocation_log')
+    .select('event_id, road_name, suburb, data, event_created_at, first_seen, last_seen')
+    .gte('last_seen', since)
+    .order('first_seen', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
 export async function getRecentAllocations(hours = 24) {
   const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
