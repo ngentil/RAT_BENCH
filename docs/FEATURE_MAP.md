@@ -329,6 +329,7 @@ Stripe
 | Allocation cards (road, suburb, eventId, status badge, lanes, timestamps) | ✅ | TowAllocationsTab.jsx AllocationCard | Admin only |
 | Active / Inactive grouping with counts | ✅ | TowAllocationsTab.jsx | Admin only |
 | Live countdown + manual refresh button | ✅ | TowAllocationsTab.jsx | Admin only |
+| Sort picker (Most Recent, Oldest, Road Name, Suburb, Lanes, Event ID) | ✅ | TowAllocationsTab.jsx SORT_OPTIONS | Admin only |
 | Assign Truck stub (Phase 2 placeholder) | ✅ | TowAllocationsTab.jsx — disabled button, ready for wiring | Admin only |
 | Fleet tab — depots CRUD | ✅ | depots table + RLS, FleetTab.jsx | Admin only |
 | Fleet tab — tow trucks CRUD grouped by depot | ✅ | tow_trucks table + RLS, FleetTab.jsx | Admin only |
