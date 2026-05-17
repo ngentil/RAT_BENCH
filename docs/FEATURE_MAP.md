@@ -343,6 +343,11 @@ Stripe
 | LOG purge cron job — deletes entries older than 365 days (daily at 03:00 UTC) | ✅ | tow_log_cleanup_cron.sql, pg_cron | Admin only |
 | LOG badge on historical-only cards (not in current live feed) | ✅ | fromLog prop, AllocationCard | Admin only |
 | PDF export with selectable period (15 min → 31 days) — A4 report with summary boxes + table | ✅ | TowAllocationsTab.jsx handleExport(), jsPDF, getRecentAllocations() | Admin only |
+| Incident type badge on card header (eventSubType: "Stationary vehicle" etc.) | ✅ | TowAllocationsTab.jsx AllocationCard, p.eventSubType | Admin only |
+| Cross street shown on card (startIntersectionRoadName @ suburb) | ✅ | TowAllocationsTab.jsx AllocationCard, p.reference.startIntersectionRoadName | Admin only |
+| Melway grid reference on card (e.g. Mel 2E B1) | ✅ | TowAllocationsTab.jsx AllocationCard, p.melway | Admin only |
+| Google Maps link in expanded card view (from geometry coordinates) | ✅ | TowAllocationsTab.jsx AllocationCard, feature.geometry.coordinates | Admin only |
+| Expanded detail grid: Event Type, Incident Type, Cross Street, Melway, Coordinates | ✅ | TowAllocationsTab.jsx AllocationCard expanded section | Admin only |
 
 ---
 
