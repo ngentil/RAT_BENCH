@@ -211,6 +211,7 @@ export default function TowAllocationsTab() {
       const data = await res.json();
       const all  = data.data?.features || data.features || [];
       const live = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
+      if (live[0]) console.log('[TowFeed] FULL FEATURE DUMP', JSON.stringify(live[0], null, 2));
       setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
       logAllocations(live).catch(e => console.warn('logAllocations:', e));
       setAllFeatures(prev => mergeFeatures(live, prev));
