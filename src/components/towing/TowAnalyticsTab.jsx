@@ -116,13 +116,16 @@ function HeatMap({ points }) {
         attributionControl: false,
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png', {
-        subdomains: 'abcd',
+      const tilePane = map.getPanes().tilePane;
+      tilePane.style.filter = 'invert(100%) hue-rotate(180deg) brightness(90%) contrast(90%) saturate(60%)';
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        subdomains: 'abc',
         maxZoom: 19,
       }).addTo(map);
 
       L.control.attribution({ prefix: false })
-        .addAttribution('© <a href="https://carto.com" style="color:#666">CARTO</a> © <a href="https://openstreetmap.org" style="color:#666">OSM</a>')
+        .addAttribution('© <a href="https://openstreetmap.org" style="color:#666">OpenStreetMap</a>')
         .addTo(map);
 
       points.forEach(([lat, lng]) => {
