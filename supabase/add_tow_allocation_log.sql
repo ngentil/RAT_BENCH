@@ -20,3 +20,5 @@ CREATE POLICY "tow_log_admin_only" ON tow_allocation_log
   WITH CHECK (auth.email() = 'ratbenchadmin@gmail.com');
 
 CREATE INDEX IF NOT EXISTS tow_allocation_log_event_created ON tow_allocation_log (event_created_at DESC);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON tow_allocation_log TO authenticated;

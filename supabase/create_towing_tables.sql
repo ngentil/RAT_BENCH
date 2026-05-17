@@ -30,3 +30,7 @@ ALTER TABLE tow_trucks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "tow_trucks_admin_only" ON tow_trucks
   FOR ALL USING (auth.email() = 'ratbenchadmin@gmail.com')
   WITH CHECK (auth.email() = 'ratbenchadmin@gmail.com');
+
+-- Grant table access to authenticated role (RLS handles restriction)
+GRANT SELECT, INSERT, UPDATE, DELETE ON depots     TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON tow_trucks TO authenticated;
