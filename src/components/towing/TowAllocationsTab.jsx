@@ -1,11 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { ACC, MUT, BRD, TXT, GRN, RED, SURF } from '../../lib/styles';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ACC, MUT, BRD, TXT, GRN, SURF } from '../../lib/styles';
 import { logAllocations, getRecentAllocations } from '../../lib/db/towing';
 
 const API_URL = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
 const API_KEY = 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
 const POLL_MS = 60_000;
 const ORANGE  = '#e8870a';
+
+const suburb = f => f.properties?.reference?.startIntersectionLocality || '';
+
+const SORT_OPTIONS = [
+  { key: 'recent',  label: 'Most Recent',     fn: (a, b) => new Date(b.properties?.created || 0) - new Date(a.properties?.created || 0) },
+  { key: 'oldest',  label: 'Oldest First',    fn: (a, b) => new Date(a.properties?.created || 0) - new Date(b.properties?.created || 0) },
+  { key: 'road',    label: 'Road Name (A–Z)', fn: (a, b) => (a.properties?.closedRoadName || '').localeCompare(b.properties?.closedRoadName || '') },
+  { key: 'suburb',  label: 'Suburb (A–Z)',    fn: (a, b) => suburb(a).localeCompare(suburb(b)) },
+  { key: 'lanes',   label: 'Lanes Impacted',  fn: (a, b) => (b.properties?.numberLanesImpacted || 0) - (a.properties?.numberLanesImpacted || 0) },
+  { key: 'eventId', label: 'Event ID',        fn: (a, b) => Number(a.properties?.eventId || 0) - Number(b.properties?.eventId || 0) },
+];
 
 function fmt(iso) {
   if (!iso) return '—';
@@ -38,7 +49,7 @@ function AllocationCard({ feature, fromLog }) {
   const [open, setOpen] = useState(false);
   const p       = feature.properties || {};
   const road    = p.closedRoadName || '—';
-  const suburb  = p.reference?.startIntersectionLocality || '';
+  const sub     = suburb(feature);
   const eventId = p.eventId || '—';
   const status  = p.status || '';
   const desc    = p.description || '';
@@ -63,8 +74,8 @@ function AllocationCard({ feature, fromLog }) {
             )}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
-            {suburb && <span style={{ fontSize: 8, color: MUT }}>{suburb}</span>}
-            {suburb && <span style={{ fontSize: 8, color: '#333' }}>·</span>}
+            {sub && <span style={{ fontSize: 8, color: MUT }}>{sub}</span>}
+            {sub && <span style={{ fontSize: 8, color: '#333' }}>·</span>}
             <span style={{ fontSize: 8, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>#{eventId}</span>
             {created && <span style={{ fontSize: 8, color: '#444' }}>· {timeAgo(created)}</span>}
           </div>
@@ -127,26 +138,31 @@ function AllocationCard({ feature, fromLog }) {
 
 // ── Main tab ──────────────────────────────────────────────────────────────────
 export default function TowAllocationsTab() {
-  // allFeatures = merged live + log, keyed by eventId
   const [allFeatures,  setAllFeatures]  = useState([]);
   const [liveIds,      setLiveIds]      = useState(new Set());
   const [loading,      setLoading]      = useState(true);
   const [err,          setErr]          = useState('');
   const [lastFetch,    setLastFetch]    = useState(null);
   const [countdown,    setCountdown]    = useState(POLL_MS / 1000);
+  const [sortBy,       setSortBy]       = useState('recent');
+  const [showSort,     setShowSort]     = useState(false);
+  const sortRef = useRef(null);
 
+  // Close sort dropdown on outside click
+  useEffect(() => {
+    const handler = e => { if (sortRef.current && !sortRef.current.contains(e.target)) setShowSort(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-  // Merge helper — live features win over logged ones for same eventId
+  // Merge helper — live features win over logged ones for same eventId; no sort (sort state handles it)
   const mergeFeatures = (live, logged) => {
     const map = new Map();
     logged.forEach(f => { if (f.properties?.eventId) map.set(String(f.properties.eventId), f); });
     live.forEach(f   => { if (f.properties?.eventId) map.set(String(f.properties.eventId), f); });
-    return [...map.values()].sort((a, b) =>
-      new Date(b.properties?.created || 0) - new Date(a.properties?.created || 0)
-    );
+    return [...map.values()];
   };
 
-  // Load 24hr history from Supabase on mount
   useEffect(() => {
     getRecentAllocations(24)
       .then(logged => {
@@ -159,17 +175,14 @@ export default function TowAllocationsTab() {
       });
   }, []);
 
-  // Poll live API, log to Supabase, merge into display
   const fetchAllocations = useCallback(async () => {
     try {
       const res = await fetch(API_URL, { headers: { KeyID: API_KEY } });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
-      // Response shape: { meta, data: { type: 'FeatureCollection', features: [...] }, links }
-      const all = data.data?.features || data.features || [];
+      const all  = data.data?.features || data.features || [];
       const live = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
       setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
-      // Persist to Supabase log (fire-and-forget)
       logAllocations(live).catch(e => console.warn('logAllocations:', e));
       setAllFeatures(prev => mergeFeatures(live, prev));
       setErr('');
@@ -186,14 +199,16 @@ export default function TowAllocationsTab() {
     return () => clearInterval(poll);
   }, [fetchAllocations]);
 
-  // Countdown ticker
   useEffect(() => {
     const t = setInterval(() => setCountdown(c => (c > 0 ? c - 1 : POLL_MS / 1000)), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const active   = allFeatures.filter(f => f.properties?.status?.toLowerCase() === 'active');
-  const inactive = allFeatures.filter(f => f.properties?.status?.toLowerCase() !== 'active');
+  const sortFn      = SORT_OPTIONS.find(o => o.key === sortBy)?.fn;
+  const sorted      = [...allFeatures].sort(sortFn);
+  const active      = sorted.filter(f => f.properties?.status?.toLowerCase() === 'active');
+  const inactive    = sorted.filter(f => f.properties?.status?.toLowerCase() !== 'active');
+  const currentSort = SORT_OPTIONS.find(o => o.key === sortBy);
 
   return (
     <div style={{ padding: 16, flex: 1, overflowY: 'auto' }}>
@@ -206,13 +221,33 @@ export default function TowAllocationsTab() {
             {active.length > 0 && <span style={{ color: GRN, marginLeft: 8 }}>· {active.length} active</span>}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {lastFetch && (
             <span style={{ fontSize: 8, color: MUT }}>
               Live {lastFetch.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
               {' · '}next in {countdown}s
             </span>
           )}
+
+          {/* Sort picker */}
+          <div ref={sortRef} style={{ position: 'relative' }}>
+            <button onClick={() => setShowSort(s => !s)}
+              style={{ fontSize: 8, color: showSort ? ACC : MUT, border: `1px solid ${showSort ? ACC + '66' : '#2a2a2a'}`, background: showSort ? ACC + '11' : '#0d0d0d', padding: '3px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+              ⇅ {currentSort?.label}
+            </button>
+            {showSort && (
+              <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', zIndex: 50, background: '#111', border: '1px solid #2a2a2a', borderRadius: 2, minWidth: 160, boxShadow: '0 4px 16px #000a' }}>
+                {SORT_OPTIONS.map(opt => (
+                  <div key={opt.key} onClick={() => { setSortBy(opt.key); setShowSort(false); }}
+                    style={{ padding: '7px 12px', fontSize: 9, color: opt.key === sortBy ? ACC : TXT, background: opt.key === sortBy ? ACC + '11' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid #1a1a1a', fontFamily: "'IBM Plex Mono',monospace" }}>
+                    <span style={{ color: opt.key === sortBy ? ACC : '#333', width: 8 }}>{opt.key === sortBy ? '✓' : ''}</span>
+                    {opt.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button onClick={fetchAllocations}
             style={{ fontSize: 8, color: ACC, border: `1px solid ${ACC}44`, background: ACC + '11', padding: '3px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>
             ↻ Refresh
@@ -236,12 +271,11 @@ export default function TowAllocationsTab() {
         </div>
       )}
 
-
       {err && (
         <div style={{ marginBottom: 12, fontSize: 9, padding: '8px 12px', borderRadius: 2, color: ORANGE, background: ORANGE + '11', border: `1px solid ${ORANGE}44`, lineHeight: 1.6 }}>
           ⚠ Live feed error: {err}
           <br />
-          <span style={{ color: MUT }}>Showing logged history. CORS may require a server-side proxy.</span>
+          <span style={{ color: MUT }}>Showing logged history. Feed updates every 60 seconds.</span>
         </div>
       )}
 
