@@ -166,7 +166,7 @@ export default function TowAllocationsTab() {
     console.log('[TowFeed] fetchAllocations called, url:', API_URL);
     try {
       console.log('[TowFeed] fetching…');
-      const res = await fetch(API_URL, { headers: { Authorization: `Bearer ${API_KEY}` } });
+      const res = await fetch(API_URL, { headers: { Authorization: API_KEY } });
       console.log('[TowFeed] response status:', res.status, res.ok);
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const text = await res.text();
