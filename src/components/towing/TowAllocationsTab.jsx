@@ -10,8 +10,8 @@ const ORANGE  = '#e8870a';
 const suburb = f => f.properties?.reference?.startIntersectionLocality || '';
 
 const SORT_OPTIONS = [
-  { key: 'recent',  label: 'Most Recent',     fn: (a, b) => new Date(b.properties?.created || 0) - new Date(a.properties?.created || 0) },
-  { key: 'oldest',  label: 'Oldest First',    fn: (a, b) => new Date(a.properties?.created || 0) - new Date(b.properties?.created || 0) },
+  { key: 'recent',  label: 'Most Recent',     fn: (a, b) => new Date(b.properties?.lastUpdated || 0) - new Date(a.properties?.lastUpdated || 0) },
+  { key: 'oldest',  label: 'Oldest First',    fn: (a, b) => new Date(a.properties?.lastUpdated || 0) - new Date(b.properties?.lastUpdated || 0) },
   { key: 'road',    label: 'Road Name (A–Z)', fn: (a, b) => (a.properties?.closedRoadName || '').localeCompare(b.properties?.closedRoadName || '') },
   { key: 'suburb',  label: 'Suburb (A–Z)',    fn: (a, b) => suburb(a).localeCompare(suburb(b)) },
   { key: 'lanes',   label: 'Lanes Impacted',  fn: (a, b) => (b.properties?.numberLanesImpacted || 0) - (a.properties?.numberLanesImpacted || 0) },
@@ -59,10 +59,9 @@ function AllocationCard({ feature, fromLog }) {
   const desc    = p.description || '';
   const lanes   = p.numberLanesImpacted;
   const impact  = p.impact?.impactType || '';
-  const created = p.created;
-  const nextDue = p.nextUpdateDue;
+  const created = p.lastUpdated;
   const logMeta = feature._logMeta;
-  const elapsed = timeIn(created);
+  const elapsed = timeIn(logMeta?.firstSeen || p.lastUpdated);
 
   const borderColor = status?.toLowerCase() === 'active' ? GRN : '#333';
 
@@ -122,8 +121,7 @@ function AllocationCard({ feature, fromLog }) {
               ['Lanes Impacted',   lanes != null ? `${lanes} lane${lanes !== 1 ? 's' : ''}` : '—'],
               ['Impact Type',      impact || '—'],
               ['Time In',          elapsed || '—'],
-              ['Time Logged',      fmt(created)],
-              ['Next Update Due',  fmt(nextDue)],
+              ['Last Updated',     fmt(created)],
               ...(logMeta ? [
                 ['First Seen',  fmt(logMeta.firstSeen)],
                 ['Last Seen',   fmt(logMeta.lastSeen)],
@@ -194,7 +192,6 @@ export default function TowAllocationsTab() {
       const data = await res.json();
       const all  = data.data?.features || data.features || [];
       const live = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
-      if (live[0]) console.log('[TowFeed] sample TowAllocation props:', JSON.stringify(live[0].properties).slice(0, 600));
       setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
       logAllocations(live).catch(e => console.warn('logAllocations:', e));
       setAllFeatures(prev => mergeFeatures(live, prev));

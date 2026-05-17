@@ -85,7 +85,7 @@ export async function logAllocations(features) {
       status:           p.status || null,
       description:      p.description || null,
       data:             f,
-      event_created_at: p.created || null,
+      event_created_at: p.lastUpdated || p.created || null,
       last_seen:        now,
     };
   });
@@ -100,8 +100,8 @@ export async function getRecentAllocations(hours = 24) {
   const { data, error } = await supabase
     .from('tow_allocation_log')
     .select('*')
-    .gte('event_created_at', since)
-    .order('event_created_at', { ascending: false });
+    .gte('last_seen', since)
+    .order('last_seen', { ascending: false });
   if (error) throw error;
   return (data || []).map(r => ({ ...r.data, _logMeta: { firstSeen: r.first_seen, lastSeen: r.last_seen } }));
 }
