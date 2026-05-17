@@ -338,8 +338,10 @@ Stripe
 | Truck status badges (available / on job / unavailable) | ✅ | FleetTab.jsx statusColor() | Admin only |
 | tow_trucks.assigned_event_id column (Phase 2 ready) | ✅ | create_towing_tables.sql | Admin only |
 | Truck driver details — DA Number, Driver Name fields on truck form | ✅ | FleetTab.jsx TruckForm, add_truck_schedule.sql | Admin only |
-| Truck weekly availability schedule — Days (Mon–Sun) + Nights (Mon–Sun) checkboxes | ✅ | FleetTab.jsx TruckForm DayGrid, tow_trucks.schedule JSONB | Admin only |
-| Schedule display on truck row — compact M T W T F S S grid (orange=days, blue=nights) | ✅ | FleetTab.jsx ScheduleChips, TruckRow | Admin only |
+| Truck availability roster — interactive 5-week calendar (tap to cycle off/day/night/both) | ✅ | RosterCalendar.jsx RosterCalendar, tow_trucks.schedule JSONB date-keyed | Admin only |
+| Roster quick-fill buttons — Mon–Fri day/night, every weekend, alternating weekend A/B | ✅ | RosterCalendar.jsx QUICK fills, ISO week alternation | Admin only |
+| 14-day colour strip on truck row — orange=day, blue=night, split=both (MiniRoster) | ✅ | RosterCalendar.jsx MiniRoster, TruckRow | Admin only |
+| Relief driver roster calendar — same RosterCalendar in AvailabilityModal relief section | ✅ | RosterCalendar.jsx, AvailabilityModal | Admin only |
 | Availability override modal (📅 button) — mark truck temporarily unavailable with reason + return date | ✅ | FleetTab.jsx AvailabilityModal, add_truck_override.sql | Admin only |
 | Relief driver assignment — alternate driver name, DA number, and day/night schedule per truck | ✅ | FleetTab.jsx AvailabilityModal relief section, tow_trucks.relief_* columns | Admin only |
 | TruckRow override states — red/AWAY badge (unavailable, no cover), yellow/RELIEF badge (relief driver active) | ✅ | FleetTab.jsx TruckRow, override_active + relief_driver_name | Admin only |
