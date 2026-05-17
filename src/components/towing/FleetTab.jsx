@@ -4,8 +4,56 @@ import { FL } from '../ui/shared';
 import { getDepots, upsertDepot, deleteDepot, getTrucks, upsertTruck, deleteTruck } from '../../lib/db/towing';
 
 const ORANGE = '#e8870a';
+const BLUE   = '#5a7a9a';
 
 const STATUS_OPTIONS = ['available', 'on job', 'unavailable'];
+
+const DAYS      = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const DAY_SHORT = ['M',   'T',   'W',   'T',   'F',   'S',   'S'  ];
+const DAY_LABEL = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ];
+
+const EMPTY_SCHEDULE = { days: {}, nights: {} };
+
+function scheduleToText(schedule) {
+  if (!schedule) return null;
+  const days   = DAYS.filter(d => schedule.days?.[d]);
+  const nights = DAYS.filter(d => schedule.nights?.[d]);
+  const parts  = [];
+  if (days.length)   parts.push(`Days: ${days.map(d => DAY_LABEL[DAYS.indexOf(d)]).join(', ')}`);
+  if (nights.length) parts.push(`Nights: ${nights.map(d => DAY_LABEL[DAYS.indexOf(d)]).join(', ')}`);
+  return parts.length ? parts.join(' · ') : null;
+}
+
+function ScheduleChips({ schedule }) {
+  if (!schedule) return null;
+  const hasDays   = DAYS.some(d => schedule.days?.[d]);
+  const hasNights = DAYS.some(d => schedule.nights?.[d]);
+  if (!hasDays && !hasNights) return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
+      {hasDays && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <span style={{ fontSize: 7, color: MUT, width: 34, flexShrink: 0 }}>Days</span>
+          {DAYS.map((d, i) => (
+            <span key={d} style={{ fontSize: 7, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace", width: 14, textAlign: 'center', color: schedule.days?.[d] ? ORANGE : '#2a2a2a' }}>
+              {DAY_SHORT[i]}
+            </span>
+          ))}
+        </div>
+      )}
+      {hasNights && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <span style={{ fontSize: 7, color: MUT, width: 34, flexShrink: 0 }}>Nights</span>
+          {DAYS.map((d, i) => (
+            <span key={d} style={{ fontSize: 7, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace", width: 14, textAlign: 'center', color: schedule.nights?.[d] ? BLUE : '#2a2a2a' }}>
+              {DAY_SHORT[i]}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function statusColor(s) {
   if (s === 'available')   return GRN;
@@ -64,53 +112,119 @@ function DepotForm({ depot, onSave, onCancel }) {
 
 // ── Truck form modal ──────────────────────────────────────────────────────────
 function TruckForm({ truck, depots, onSave, onCancel }) {
-  const [plate,   setPlate]   = useState(truck?.plate   || '');
-  const [depotId, setDepotId] = useState(truck?.depot_id || (depots[0]?.id || ''));
-  const [status,  setStatus]  = useState(truck?.status  || 'available');
-  const [notes,   setNotes]   = useState(truck?.notes   || '');
-  const [saving,  setSaving]  = useState(false);
-  const [err,     setErr]     = useState('');
+  const [plate,      setPlate]      = useState(truck?.plate       || '');
+  const [daNumber,   setDaNumber]   = useState(truck?.da_number   || '');
+  const [driverName, setDriverName] = useState(truck?.driver_name || '');
+  const [depotId,    setDepotId]    = useState(truck?.depot_id    || (depots[0]?.id || ''));
+  const [status,     setStatus]     = useState(truck?.status      || 'available');
+  const [notes,      setNotes]      = useState(truck?.notes       || '');
+  const [schedule,   setSchedule]   = useState(truck?.schedule    || EMPTY_SCHEDULE);
+  const [saving,     setSaving]     = useState(false);
+  const [err,        setErr]        = useState('');
+
   const fld = { background: '#0a0a0a', border: '1px solid #252525', color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: '6px 8px', borderRadius: 2, outline: 'none', boxSizing: 'border-box', width: '100%' };
+
+  const toggle = (type, day) => setSchedule(s => ({
+    ...s,
+    [type]: { ...s[type], [day]: !s[type]?.[day] },
+  }));
 
   const save = async () => {
     if (!plate.trim()) { setErr('Plate required'); return; }
     if (!depotId)      { setErr('Select a depot'); return; }
     setSaving(true); setErr('');
     try {
-      await onSave({ ...truck, plate: plate.trim().toUpperCase(), depot_id: depotId, status, notes: notes.trim() || null });
+      await onSave({
+        ...truck,
+        plate:       plate.trim().toUpperCase(),
+        da_number:   daNumber.trim()   || null,
+        driver_name: driverName.trim() || null,
+        depot_id:    depotId,
+        status,
+        notes:       notes.trim() || null,
+        schedule,
+      });
     } catch (e) { setErr(e.message); }
     setSaving(false);
   };
 
+  const DayGrid = ({ type, color }) => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginTop: 6 }}>
+      {DAYS.map((d, i) => {
+        const active = !!schedule[type]?.[d];
+        return (
+          <label key={d} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 2, border: `1px solid ${active ? color : '#2a2a2a'}`, background: active ? color + '22' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+              {active && <span style={{ fontSize: 10, color, fontWeight: 700 }}>✓</span>}
+            </div>
+            <span style={{ fontSize: 7, color: active ? color : '#444', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>{DAY_LABEL[i]}</span>
+            <input type="checkbox" checked={active} onChange={() => toggle(type, d)} style={{ display: 'none' }} />
+          </label>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div style={ovly} onClick={e => e.target === e.currentTarget && onCancel()}>
-      <div style={{ ...mdl, maxWidth: 440 }}>
+      <div style={{ ...mdl, maxWidth: 480, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={mdlH}>
           <b style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{truck?.id ? 'Edit Truck' : 'Add Truck'}</b>
           <button style={{ ...btnG, ...sm }} onClick={onCancel}>✕</button>
         </div>
         <div style={{ ...mdlB, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div>
-            <FL t="Plate *" />
-            <input style={fld} value={plate} onChange={e => setPlate(e.target.value)} placeholder="TOW XXX" autoFocus />
+
+          {/* Truck details */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <FL t="Tow Plate *" />
+              <input style={fld} value={plate} onChange={e => setPlate(e.target.value)} placeholder="TOW XXX" autoFocus />
+            </div>
+            <div>
+              <FL t="DA Number" />
+              <input style={fld} value={daNumber} onChange={e => setDaNumber(e.target.value)} placeholder="e.g. 12345" />
+            </div>
           </div>
+
           <div>
-            <FL t="Depot *" />
-            <select style={{ ...sel, width: '100%' }} value={depotId} onChange={e => setDepotId(e.target.value)}>
-              <option value="">— select depot —</option>
-              {depots.map(d => <option key={d.id} value={d.id}>{d.name}{d.suburb ? ` — ${d.suburb}` : ''}</option>)}
-            </select>
+            <FL t="Driver Name" />
+            <input style={fld} value={driverName} onChange={e => setDriverName(e.target.value)} placeholder="e.g. John Smith" />
           </div>
-          <div>
-            <FL t="Status" />
-            <select style={{ ...sel, width: '100%' }} value={status} onChange={e => setStatus(e.target.value)}>
-              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <FL t="Depot *" />
+              <select style={{ ...sel, width: '100%' }} value={depotId} onChange={e => setDepotId(e.target.value)}>
+                <option value="">— select depot —</option>
+                {depots.map(d => <option key={d.id} value={d.id}>{d.name}{d.suburb ? ` — ${d.suburb}` : ''}</option>)}
+              </select>
+            </div>
+            <div>
+              <FL t="Status" />
+              <select style={{ ...sel, width: '100%' }} value={status} onChange={e => setStatus(e.target.value)}>
+                {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
           </div>
+
+          {/* Schedule */}
+          <div style={{ borderTop: '1px solid #1a1a1a', paddingTop: 10 }}>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 2 }}>Days Available</div>
+            <div style={{ fontSize: 8, color: '#444' }}>Regular day shift hours</div>
+            <DayGrid type="days" color={ORANGE} />
+          </div>
+
+          <div style={{ borderTop: '1px solid #1a1a1a', paddingTop: 10 }}>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 2 }}>Nights Available</div>
+            <div style={{ fontSize: 8, color: '#444' }}>On-call overnight</div>
+            <DayGrid type="nights" color={BLUE} />
+          </div>
+
           <div>
             <FL t="Notes" />
-            <textarea style={{ ...txa, minHeight: 56 }} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional notes…" />
+            <textarea style={{ ...txa, minHeight: 56 }} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Every second weekend on call day and night…" />
           </div>
+
           {err && <div style={{ fontSize: 9, color: RED }}>{err}</div>}
         </div>
         <div style={mdlF}>
@@ -284,18 +398,31 @@ export default function FleetTab() {
 function TruckRow({ truck, onEdit, onDelete }) {
   const sc = statusColor(truck.status);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${sc}`, borderRadius: 2, marginBottom: 4 }}>
-      <span style={{ fontSize: 14, flexShrink: 0 }}>🚛</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>{truck.plate}</span>
-          <StatusBadge status={truck.status} />
+    <div style={{ padding: '8px 10px', background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${sc}`, borderRadius: 2, marginBottom: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 14, flexShrink: 0 }}>🚛</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>{truck.plate}</span>
+            <StatusBadge status={truck.status} />
+            {truck.da_number && (
+              <span style={{ fontSize: 7, color: MUT, fontFamily: "'IBM Plex Mono',monospace", border: '1px solid #2a2a2a', borderRadius: 2, padding: '1px 4px' }}>
+                DA {truck.da_number}
+              </span>
+            )}
+          </div>
+          {truck.driver_name && (
+            <div style={{ fontSize: 9, color: TXT, marginTop: 2 }}>{truck.driver_name}</div>
+          )}
+          {truck.notes && (
+            <div style={{ fontSize: 8, color: MUT, marginTop: 2 }}>{truck.notes}</div>
+          )}
+          <ScheduleChips schedule={truck.schedule} />
         </div>
-        {truck.notes && <div style={{ fontSize: 8, color: MUT, marginTop: 2 }}>{truck.notes}</div>}
-      </div>
-      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-        <button onClick={onEdit}   style={{ ...btnG, ...sm, fontSize: 8 }}>Edit</button>
-        <button onClick={onDelete} style={{ ...btnD, ...sm, fontSize: 8 }}>Delete</button>
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
+          <button onClick={onEdit}   style={{ ...btnG, ...sm, fontSize: 8 }}>Edit</button>
+          <button onClick={onDelete} style={{ ...btnD, ...sm, fontSize: 8 }}>Delete</button>
+        </div>
       </div>
     </div>
   );
