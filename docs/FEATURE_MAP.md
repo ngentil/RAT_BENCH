@@ -319,7 +319,25 @@ Stripe
 ---
 
 
-## 13. Queued Features
+## 13. Towing Allocations (Admin Only)
+
+| Feature | Status | Depends on | Tier |
+|---------|--------|-----------|------|
+| Towing section — admin-gated (`ratbenchadmin@gmail.com` only) | ✅ | session.user.email check, App.jsx | Admin only |
+| Tow Allocations tab — polls VicRoads disruptions API every 60s | ✅ | TowAllocationsTab.jsx, fetch + setInterval | Admin only |
+| Filter feed to TowAllocation source only | ✅ | properties.source.sourceName === 'TowAllocation' | Admin only |
+| Allocation cards (road, suburb, eventId, status badge, lanes, timestamps) | ✅ | TowAllocationsTab.jsx AllocationCard | Admin only |
+| Active / Inactive grouping with counts | ✅ | TowAllocationsTab.jsx | Admin only |
+| Live countdown + manual refresh button | ✅ | TowAllocationsTab.jsx | Admin only |
+| Assign Truck stub (Phase 2 placeholder) | ✅ | TowAllocationsTab.jsx — disabled button, ready for wiring | Admin only |
+| Fleet tab — depots CRUD | ✅ | depots table + RLS, FleetTab.jsx | Admin only |
+| Fleet tab — tow trucks CRUD grouped by depot | ✅ | tow_trucks table + RLS, FleetTab.jsx | Admin only |
+| Truck status badges (available / on job / unavailable) | ✅ | FleetTab.jsx statusColor() | Admin only |
+| tow_trucks.assigned_event_id column (Phase 2 ready) | ✅ | create_towing_tables.sql | Admin only |
+
+---
+
+## 14. Queued Features
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
