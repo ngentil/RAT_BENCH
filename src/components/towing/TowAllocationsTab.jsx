@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF } from '../../lib/styles';
+import { logAllocations, getRecentAllocations } from '../../lib/db/towing';
 
 const API_URL = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
 const API_KEY = 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
 const POLL_MS = 60_000;
-
-const ORANGE = '#e8870a';
+const ORANGE  = '#e8870a';
 
 function fmt(iso) {
   if (!iso) return '—';
@@ -14,23 +14,29 @@ function fmt(iso) {
   });
 }
 
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60)  return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24)  return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 function StatusBadge({ status }) {
   const isActive = status?.toLowerCase() === 'active';
   const color = isActive ? GRN : '#555';
   return (
-    <span style={{
-      fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', padding: '1px 5px',
-      border: `1px solid ${color}55`, borderRadius: 2, color,
-      background: color + '15', textTransform: 'uppercase',
-    }}>
+    <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', padding: '1px 5px', border: `1px solid ${color}55`, borderRadius: 2, color, background: color + '15', textTransform: 'uppercase' }}>
       {status || 'Unknown'}
     </span>
   );
 }
 
-function AllocationCard({ feature }) {
+function AllocationCard({ feature, fromLog }) {
   const [open, setOpen] = useState(false);
-  const p = feature.properties || {};
+  const p       = feature.properties || {};
   const road    = p.closedRoadName || '—';
   const suburb  = p.reference?.startIntersectionLocality || '';
   const eventId = p.eventId || '—';
@@ -40,27 +46,27 @@ function AllocationCard({ feature }) {
   const impact  = p.impact?.impactType || '';
   const created = p.created;
   const nextDue = p.nextUpdateDue;
+  const logMeta = feature._logMeta;
 
-  const borderColor = status?.toLowerCase() === 'active' ? GRN : '#444';
+  const borderColor = status?.toLowerCase() === 'active' ? GRN : '#333';
 
   return (
-    <div style={{
-      background: '#0d0d0d', border: '1px solid #252525',
-      borderLeft: `3px solid ${borderColor}`,
-      borderRadius: 2, marginBottom: 6, overflow: 'hidden',
-    }}>
-      <div onClick={() => setOpen(o => !o)}
-        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }}>
+    <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${borderColor}`, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
+      <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>🚛</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{road}</span>
             <StatusBadge status={status} />
+            {fromLog && status?.toLowerCase() !== 'active' && (
+              <span style={{ fontSize: 7, color: MUT, border: '1px solid #2a2a2a', borderRadius: 2, padding: '1px 4px' }}>LOG</span>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
             {suburb && <span style={{ fontSize: 8, color: MUT }}>{suburb}</span>}
-            {suburb && eventId && <span style={{ fontSize: 8, color: '#333' }}>·</span>}
+            {suburb && <span style={{ fontSize: 8, color: '#333' }}>·</span>}
             <span style={{ fontSize: 8, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>#{eventId}</span>
+            {created && <span style={{ fontSize: 8, color: '#444' }}>· {timeAgo(created)}</span>}
           </div>
           {!open && lanes != null && (
             <div style={{ marginTop: 3, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
@@ -72,16 +78,8 @@ function AllocationCard({ feature }) {
           )}
         </div>
         <div style={{ flexShrink: 0, textAlign: 'right' }}>
-          {/* Assign Truck stub — Phase 2 */}
-          <button
-            disabled
-            title="Coming in Phase 2"
-            style={{
-              background: '#111', border: '1px dashed #333', borderRadius: 2,
-              color: '#444', fontSize: 8, padding: '3px 7px', cursor: 'not-allowed',
-              fontFamily: "'IBM Plex Mono',monospace", letterSpacing: '0.06em',
-              display: 'block', marginBottom: 4,
-            }}>
+          <button disabled title="Coming in Phase 2"
+            style={{ background: '#111', border: '1px dashed #333', borderRadius: 2, color: '#444', fontSize: 8, padding: '3px 7px', cursor: 'not-allowed', fontFamily: "'IBM Plex Mono',monospace", letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>
             🚛 Assign Truck
           </button>
           <span style={{ fontSize: 8, color: MUT }}>{open ? '▲' : '▼'}</span>
@@ -95,15 +93,18 @@ function AllocationCard({ feature }) {
               {desc}
             </div>
           )}
-
           <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {[
-              ['AAC Job ID', `#${eventId}`],
-              ['Status', status || '—'],
-              ['Lanes Impacted', lanes != null ? `${lanes} lane${lanes !== 1 ? 's' : ''}` : '—'],
-              ['Impact Type', impact || '—'],
-              ['Time Logged', fmt(created)],
-              ['Next Update Due', fmt(nextDue)],
+              ['AAC Job ID',       `#${eventId}`],
+              ['Status',           status || '—'],
+              ['Lanes Impacted',   lanes != null ? `${lanes} lane${lanes !== 1 ? 's' : ''}` : '—'],
+              ['Impact Type',      impact || '—'],
+              ['Time Logged',      fmt(created)],
+              ['Next Update Due',  fmt(nextDue)],
+              ...(logMeta ? [
+                ['First Seen',  fmt(logMeta.firstSeen)],
+                ['Last Seen',   fmt(logMeta.lastSeen)],
+              ] : []),
             ].map(([label, val]) => (
               <div key={label} style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '6px 8px' }}>
                 <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>{label}</div>
@@ -111,7 +112,6 @@ function AllocationCard({ feature }) {
               </div>
             ))}
           </div>
-
           <div style={{ marginTop: 10, padding: '8px 10px', border: '1px dashed #2a2a2a', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 14 }}>🚛</span>
             <div>
@@ -125,29 +125,57 @@ function AllocationCard({ feature }) {
   );
 }
 
+// ── Main tab ──────────────────────────────────────────────────────────────────
 export default function TowAllocationsTab() {
-  const [features, setFeatures] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [err, setErr]           = useState('');
-  const [lastFetch, setLastFetch] = useState(null);
-  const [countdown, setCountdown] = useState(POLL_MS / 1000);
+  // allFeatures = merged live + log, keyed by eventId
+  const [allFeatures,  setAllFeatures]  = useState([]);
+  const [liveIds,      setLiveIds]      = useState(new Set());
+  const [loading,      setLoading]      = useState(true);
+  const [err,          setErr]          = useState('');
+  const [lastFetch,    setLastFetch]    = useState(null);
+  const [countdown,    setCountdown]    = useState(POLL_MS / 1000);
 
+  // Merge helper — live features win over logged ones for same eventId
+  const mergeFeatures = (live, logged) => {
+    const map = new Map();
+    logged.forEach(f => { if (f.properties?.eventId) map.set(String(f.properties.eventId), f); });
+    live.forEach(f   => { if (f.properties?.eventId) map.set(String(f.properties.eventId), f); });
+    return [...map.values()].sort((a, b) =>
+      new Date(b.properties?.created || 0) - new Date(a.properties?.created || 0)
+    );
+  };
+
+  // Load 24hr history from Supabase on mount
+  useEffect(() => {
+    getRecentAllocations(24)
+      .then(logged => {
+        setAllFeatures(prev => mergeFeatures([], [...prev, ...logged]));
+        setLoading(false);
+      })
+      .catch(e => {
+        console.warn('getRecentAllocations:', e.message);
+        setLoading(false);
+      });
+  }, []);
+
+  // Poll live API, log to Supabase, merge into display
   const fetchAllocations = useCallback(async () => {
     try {
       const res = await fetch(API_URL, { headers: { KeyId: API_KEY } });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
-      const filtered = (data.features || []).filter(
+      const live = (data.features || []).filter(
         f => f.properties?.source?.sourceName === 'TowAllocation'
       );
-      setFeatures(filtered);
+      setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
+      // Persist to Supabase log (fire-and-forget)
+      logAllocations(live).catch(e => console.warn('logAllocations:', e));
+      setAllFeatures(prev => mergeFeatures(live, prev));
       setErr('');
       setLastFetch(new Date());
       setCountdown(POLL_MS / 1000);
     } catch (e) {
       setErr(e.message);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -157,14 +185,14 @@ export default function TowAllocationsTab() {
     return () => clearInterval(poll);
   }, [fetchAllocations]);
 
-  // countdown ticker
+  // Countdown ticker
   useEffect(() => {
     const t = setInterval(() => setCountdown(c => (c > 0 ? c - 1 : POLL_MS / 1000)), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const active   = features.filter(f => f.properties?.status?.toLowerCase() === 'active');
-  const inactive = features.filter(f => f.properties?.status?.toLowerCase() !== 'active');
+  const active   = allFeatures.filter(f => f.properties?.status?.toLowerCase() === 'active');
+  const inactive = allFeatures.filter(f => f.properties?.status?.toLowerCase() !== 'active');
 
   return (
     <div style={{ padding: 16, flex: 1, overflowY: 'auto' }}>
@@ -173,19 +201,18 @@ export default function TowAllocationsTab() {
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🚛 Tow Allocations</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
-            VicRoads feed · {features.length} allocation{features.length !== 1 ? 's' : ''}
+            VicRoads feed · last 24 hrs · {allFeatures.length} allocation{allFeatures.length !== 1 ? 's' : ''}
             {active.length > 0 && <span style={{ color: GRN, marginLeft: 8 }}>· {active.length} active</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {lastFetch && (
             <span style={{ fontSize: 8, color: MUT }}>
-              Updated {lastFetch.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+              Live {lastFetch.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
               {' · '}next in {countdown}s
             </span>
           )}
-          <button
-            onClick={fetchAllocations}
+          <button onClick={fetchAllocations}
             style={{ fontSize: 8, color: ACC, border: `1px solid ${ACC}44`, background: ACC + '11', padding: '3px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>
             ↻ Refresh
           </button>
@@ -193,12 +220,12 @@ export default function TowAllocationsTab() {
       </div>
 
       {/* Summary strip */}
-      {features.length > 0 && (
+      {allFeatures.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
           {[
-            ['Total', features.length, TXT],
-            ['Active', active.length, GRN],
-            ['Inactive', inactive.length, MUT],
+            ['24h Total', allFeatures.length, TXT],
+            ['Active',    active.length,      GRN],
+            ['Inactive',  inactive.length,    MUT],
           ].map(([l, v, c]) => (
             <div key={l} style={{ background: SURF, border: '1px solid ' + BRD, borderTop: `2px solid ${c}`, borderRadius: 2, padding: '8px 10px', textAlign: 'center' }}>
               <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>{l}</div>
@@ -210,19 +237,19 @@ export default function TowAllocationsTab() {
 
       {err && (
         <div style={{ marginBottom: 12, fontSize: 9, padding: '8px 12px', borderRadius: 2, color: ORANGE, background: ORANGE + '11', border: `1px solid ${ORANGE}44`, lineHeight: 1.6 }}>
-          ⚠ Feed error: {err}
+          ⚠ Live feed error: {err}
           <br />
-          <span style={{ color: MUT }}>Check browser console — CORS may require a proxy for cross-origin requests.</span>
+          <span style={{ color: MUT }}>Showing logged history. CORS may require a server-side proxy.</span>
         </div>
       )}
 
-      {loading && !err && (
-        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading feed…</div>
+      {loading && allFeatures.length === 0 && (
+        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading…</div>
       )}
 
-      {!loading && !err && features.length === 0 && (
+      {!loading && allFeatures.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0', lineHeight: 1.8 }}>
-          No tow allocations in the feed.<br />
+          No tow allocations in the last 24 hours.<br />
           <span style={{ fontSize: 8 }}>Feed updates every 60 seconds.</span>
         </div>
       )}
@@ -232,7 +259,9 @@ export default function TowAllocationsTab() {
           <div style={{ fontSize: 8, color: GRN, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6, borderLeft: `2px solid ${GRN}`, paddingLeft: 6 }}>
             Active ({active.length})
           </div>
-          {active.map((f, i) => <AllocationCard key={f.properties?.eventId || i} feature={f} />)}
+          {active.map((f, i) => (
+            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={!liveIds.has(String(f.properties?.eventId))} />
+          ))}
           {inactive.length > 0 && <div style={{ marginTop: 12 }} />}
         </>
       )}
@@ -240,9 +269,11 @@ export default function TowAllocationsTab() {
       {inactive.length > 0 && (
         <>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6, borderLeft: '2px solid #444', paddingLeft: 6 }}>
-            Inactive ({inactive.length})
+            Inactive / Historical ({inactive.length})
           </div>
-          {inactive.map((f, i) => <AllocationCard key={f.properties?.eventId || i} feature={f} />)}
+          {inactive.map((f, i) => (
+            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={!liveIds.has(String(f.properties?.eventId))} />
+          ))}
         </>
       )}
     </div>
