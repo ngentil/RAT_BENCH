@@ -39,12 +39,11 @@ function timeIn(iso) {
   return rh > 0 ? `${d}d ${rh}h` : `${d}d`;
 }
 
-function StatusBadge({ status }) {
-  const isActive = status?.toLowerCase() === 'active';
-  const color = isActive ? GRN : '#555';
+function StatusBadge({ live }) {
+  const color = live ? GRN : '#555';
   return (
     <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', padding: '1px 5px', border: `1px solid ${color}55`, borderRadius: 2, color, background: color + '15', textTransform: 'uppercase' }}>
-      {status || 'Unknown'}
+      {live ? 'Active' : 'Cleared'}
     </span>
   );
 }
@@ -63,19 +62,16 @@ function AllocationCard({ feature, fromLog }) {
   const logMeta = feature._logMeta;
   const elapsed = timeIn(logMeta?.firstSeen || p.lastUpdated);
 
-  const borderColor = status?.toLowerCase() === 'active' ? GRN : '#333';
+  const isLive = !fromLog;
 
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${borderColor}`, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
+    <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${isLive ? GRN : '#333'}`, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>🚛</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{road}</span>
-            <StatusBadge status={status} />
-            {fromLog && status?.toLowerCase() !== 'active' && (
-              <span style={{ fontSize: 7, color: MUT, border: '1px solid #2a2a2a', borderRadius: 2, padding: '1px 4px' }}>LOG</span>
-            )}
+            <StatusBadge live={isLive} />
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, flexWrap: 'wrap' }}>
             {sub && <span style={{ fontSize: 8, color: MUT }}>{sub}</span>}
@@ -117,7 +113,7 @@ function AllocationCard({ feature, fromLog }) {
           <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {[
               ['AAC Job ID',       `#${eventId}`],
-              ['Status',           status || '—'],
+              ['Status',           isLive ? 'Active' : 'Cleared'],
               ['Lanes Impacted',   lanes != null ? `${lanes} lane${lanes !== 1 ? 's' : ''}` : '—'],
               ['Impact Type',      impact || '—'],
               ['Time In',          elapsed || '—'],
@@ -216,8 +212,8 @@ export default function TowAllocationsTab() {
 
   const sortFn      = SORT_OPTIONS.find(o => o.key === sortBy)?.fn;
   const sorted      = [...allFeatures].sort(sortFn);
-  const active      = sorted.filter(f => f.properties?.status?.toLowerCase() === 'active');
-  const inactive    = sorted.filter(f => f.properties?.status?.toLowerCase() !== 'active');
+  const active      = sorted.filter(f => liveIds.has(String(f.properties?.eventId)));
+  const cleared     = sorted.filter(f => !liveIds.has(String(f.properties?.eventId)));
   const currentSort = SORT_OPTIONS.find(o => o.key === sortBy);
 
   return (
@@ -228,7 +224,7 @@ export default function TowAllocationsTab() {
           <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🚛 Tow Allocations</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             VicRoads feed · last 24 hrs · {allFeatures.length} allocation{allFeatures.length !== 1 ? 's' : ''}
-            {active.length > 0 && <span style={{ color: GRN, marginLeft: 8 }}>· {active.length} active</span>}
+            {active.length > 0 && <span style={{ color: GRN, marginLeft: 8 }}>· {active.length} active · {cleared.length} cleared</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -271,7 +267,7 @@ export default function TowAllocationsTab() {
           {[
             ['24h Total', allFeatures.length, TXT],
             ['Active',    active.length,      GRN],
-            ['Inactive',  inactive.length,    MUT],
+            ['Cleared',   cleared.length,     MUT],
           ].map(([l, v, c]) => (
             <div key={l} style={{ background: SURF, border: '1px solid ' + BRD, borderTop: `2px solid ${c}`, borderRadius: 2, padding: '8px 10px', textAlign: 'center' }}>
               <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>{l}</div>
@@ -306,19 +302,19 @@ export default function TowAllocationsTab() {
             Active ({active.length})
           </div>
           {active.map((f, i) => (
-            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={!liveIds.has(String(f.properties?.eventId))} />
+            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={false} />
           ))}
-          {inactive.length > 0 && <div style={{ marginTop: 12 }} />}
+          {cleared.length > 0 && <div style={{ marginTop: 12 }} />}
         </>
       )}
 
-      {inactive.length > 0 && (
+      {cleared.length > 0 && (
         <>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6, borderLeft: '2px solid #444', paddingLeft: 6 }}>
-            Inactive / Historical ({inactive.length})
+            Cleared ({cleared.length})
           </div>
-          {inactive.map((f, i) => (
-            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={!liveIds.has(String(f.properties?.eventId))} />
+          {cleared.map((f, i) => (
+            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={true} />
           ))}
         </>
       )}
