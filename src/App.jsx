@@ -33,6 +33,9 @@ import ToolsTab from './components/tools/ToolsTab';
 import VehiclesTab from './components/vehicles/VehiclesTab';
 import EquipmentTab from './components/equipment/EquipmentTab';
 import ConsumablesTab from './components/consumables/ConsumablesTab';
+import TowingSection from './components/towing/TowingSection';
+
+const ADMIN_EMAIL = 'ratbenchadmin@gmail.com';
 function App(){
   const [tab,setTab]=useState(()=>{
     const stored=localStorage.getItem("rat_tab")||"tracker";
@@ -147,7 +150,7 @@ function App(){
 
   useEffect(()=>{
     if(!profile) return;
-    const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings"]));
+    const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings","towing"]));
     if(!validTopIds.has(tab)) setTab("tracker");
     const tier=effectiveTier(profile,company);
     const wsDef=WORKSHOP_TABS.find(t=>t.id===workshopTab);
@@ -266,7 +269,11 @@ function App(){
     }),
     profile?.tab_order?.workshop
   );
+  const isAdmin = session?.user?.email === ADMIN_EMAIL;
   const orderedMainTabs = applyTabOrder(TABS, profile?.tab_order?.main);
+  const mainTabsToShow = isAdmin
+    ? [...orderedMainTabs, { id: 'towing', label: '🚦 Towing' }]
+    : orderedMainTabs;
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
@@ -314,7 +321,7 @@ function App(){
         </div>
       </div>
       <div className="tab-bar" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
-        {orderedMainTabs.map(t=>{
+        {mainTabsToShow.map(t=>{
           const active=tab===t.id;
           const badge=
             t.id==="reminders"&&overdueCount>0?{n:overdueCount,c:RED}:
@@ -357,6 +364,7 @@ function App(){
       <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/></div>
+      {tab==="towing"&&isAdmin&&<TowingSection session={session}/>}
     </div>
   );
 }
