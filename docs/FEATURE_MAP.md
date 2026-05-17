@@ -334,6 +334,10 @@ Stripe
 | Fleet tab — tow trucks CRUD grouped by depot | ✅ | tow_trucks table + RLS, FleetTab.jsx | Admin only |
 | Truck status badges (available / on job / unavailable) | ✅ | FleetTab.jsx statusColor() | Admin only |
 | tow_trucks.assigned_event_id column (Phase 2 ready) | ✅ | create_towing_tables.sql | Admin only |
+| tow_allocation_log table — persists every polled allocation by event_id | ✅ | add_tow_allocation_log.sql, logAllocations() | Admin only |
+| 24hr history loaded from log on mount (before first live poll) | ✅ | getRecentAllocations(24), TowAllocationsTab.jsx | Admin only |
+| Live + log merged by eventId — live wins on conflict | ✅ | mergeFeatures(), TowAllocationsTab.jsx | Admin only |
+| LOG badge on historical-only cards (not in current live feed) | ✅ | fromLog prop, AllocationCard | Admin only |
 
 ---
 
