@@ -135,6 +135,9 @@ export default function TowAllocationsTab() {
   const [lastFetch,    setLastFetch]    = useState(null);
   const [countdown,    setCountdown]    = useState(POLL_MS / 1000);
 
+  const [rawCount,     setRawCount]     = useState(null);
+  const [sourceNames,  setSourceNames]  = useState([]);
+
   // Merge helper — live features win over logged ones for same eventId
   const mergeFeatures = (live, logged) => {
     const map = new Map();
@@ -164,9 +167,11 @@ export default function TowAllocationsTab() {
       const res = await fetch(API_URL, { headers: { KeyId: API_KEY } });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
-      const live = (data.features || []).filter(
-        f => f.properties?.source?.sourceName === 'TowAllocation'
-      );
+      const all  = data.features || [];
+      setRawCount(all.length);
+      const names = [...new Set(all.map(f => f.properties?.source?.sourceName).filter(Boolean))].sort();
+      setSourceNames(names);
+      const live = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
       setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
       // Persist to Supabase log (fire-and-forget)
       logAllocations(live).catch(e => console.warn('logAllocations:', e));
@@ -232,6 +237,22 @@ export default function TowAllocationsTab() {
               <div style={{ fontSize: 14, fontWeight: 700, color: c, fontFamily: "'IBM Plex Mono',monospace" }}>{v}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Debug strip — shows raw API counts + sourceNames to confirm correct filter */}
+      {rawCount !== null && (
+        <div style={{ marginBottom: 10, fontSize: 8, padding: '6px 10px', borderRadius: 2, background: '#0a0a0a', border: '1px solid #1e1e1e', color: MUT, lineHeight: 1.8, fontFamily: "'IBM Plex Mono',monospace" }}>
+          <span style={{ color: '#444' }}>API raw: </span><span style={{ color: TXT }}>{rawCount} features</span>
+          <span style={{ color: '#333', margin: '0 6px' }}>·</span>
+          <span style={{ color: '#444' }}>TowAllocation filter matched: </span><span style={{ color: liveIds.size > 0 ? TXT : '#c94040' }}>{liveIds.size}</span>
+          {sourceNames.length > 0 && (
+            <>
+              <br />
+              <span style={{ color: '#444' }}>sourceNames in feed: </span>
+              <span style={{ color: TXT }}>{sourceNames.join(', ')}</span>
+            </>
+          )}
         </div>
       )}
 
