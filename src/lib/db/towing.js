@@ -68,7 +68,15 @@ export async function deleteTruck(id) {
 export async function logAllocations(features) {
   if (!features.length) return;
   const now = new Date().toISOString();
-  const rows = features.map(f => {
+  // Dedupe by event_id — feed occasionally returns the same event twice
+  const seen = new Set();
+  const unique = features.filter(f => {
+    const id = String(f.properties?.eventId);
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+  const rows = unique.map(f => {
     const p = f.properties || {};
     return {
       event_id:         String(p.eventId),
