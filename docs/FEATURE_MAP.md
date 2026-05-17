@@ -348,6 +348,13 @@ Stripe
 | Melway grid reference on card (e.g. Mel 2E B1) | ✅ | TowAllocationsTab.jsx AllocationCard, p.melway | Admin only |
 | Google Maps link in expanded card view (from geometry coordinates) | ✅ | TowAllocationsTab.jsx AllocationCard, feature.geometry.coordinates | Admin only |
 | Expanded detail grid: Event Type, Incident Type, Cross Street, Melway, Coordinates | ✅ | TowAllocationsTab.jsx AllocationCard expanded section | Admin only |
+| Analytics tab — KPI row (total jobs, avg/day, peak hour, top suburb, avg duration) | ✅ | TowAnalyticsTab.jsx, getAllocationsForAnalytics() | Admin only |
+| Analytics — incident heat map (Leaflet + CartoDB dark tiles, coordinate blobs) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
+| Analytics — jobs by hour of day chart (24-bar) | ✅ | TowAnalyticsTab.jsx HourChart | Admin only |
+| Analytics — jobs by day of week chart | ✅ | TowAnalyticsTab.jsx DowChart | Admin only |
+| Analytics — hot suburbs + hot roads ranked bar lists | ✅ | TowAnalyticsTab.jsx BarList | Admin only |
+| Analytics — incident type + impact type breakdowns | ✅ | TowAnalyticsTab.jsx BarList | Admin only |
+| Analytics — period selector (7d / 30d / 90d / 1yr) | ✅ | TowAnalyticsTab.jsx PERIODS, getAllocationsForAnalytics(days) | Admin only |
 
 ---
 
