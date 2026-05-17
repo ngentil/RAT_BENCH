@@ -14,14 +14,11 @@ const DAY_LABEL = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ];
 
 const EMPTY_SCHEDULE = { days: {}, nights: {} };
 
-function scheduleToText(schedule) {
-  if (!schedule) return null;
-  const days   = DAYS.filter(d => schedule.days?.[d]);
-  const nights = DAYS.filter(d => schedule.nights?.[d]);
-  const parts  = [];
-  if (days.length)   parts.push(`Days: ${days.map(d => DAY_LABEL[DAYS.indexOf(d)]).join(', ')}`);
-  if (nights.length) parts.push(`Nights: ${nights.map(d => DAY_LABEL[DAYS.indexOf(d)]).join(', ')}`);
-  return parts.length ? parts.join(' · ') : null;
+const OVERRIDE_REASONS = ['Holiday', 'Sick Leave', 'Truck in Service', 'Suspended', 'Other'];
+
+function fmtDate(iso) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function ScheduleChips({ schedule }) {
@@ -238,6 +235,176 @@ function TruckForm({ truck, depots, onSave, onCancel }) {
   );
 }
 
+// ── Availability override modal ───────────────────────────────────────────────
+function AvailabilityModal({ truck, onSave, onCancel }) {
+  const hasRelief = !!(truck.relief_driver_name || truck.relief_da_number);
+
+  const [unavailable,  setUnavailable]  = useState(!!truck.override_active);
+  const [reason,       setReason]       = useState(truck.override_reason      || OVERRIDE_REASONS[0]);
+  const [returnDate,   setReturnDate]   = useState(truck.override_return_date || '');
+  const [reliefName,   setReliefName]   = useState(truck.relief_driver_name   || '');
+  const [reliefDA,     setReliefDA]     = useState(truck.relief_da_number     || '');
+  const [reliefSched,  setReliefSched]  = useState(truck.relief_schedule      || EMPTY_SCHEDULE);
+  const [showRelief,   setShowRelief]   = useState(hasRelief);
+  const [saving,       setSaving]       = useState(false);
+  const [err,          setErr]          = useState('');
+
+  const fld = { background: '#0a0a0a', border: '1px solid #252525', color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: '6px 8px', borderRadius: 2, outline: 'none', boxSizing: 'border-box', width: '100%' };
+
+  const toggleRelief = (type, day) => setReliefSched(s => ({
+    ...s,
+    [type]: { ...s[type], [day]: !s[type]?.[day] },
+  }));
+
+  const handleClear = async () => {
+    setSaving(true);
+    try {
+      await onSave({
+        ...truck,
+        override_active:      false,
+        override_reason:      null,
+        override_return_date: null,
+        relief_driver_name:   null,
+        relief_da_number:     null,
+        relief_schedule:      {},
+        status: 'available',
+      });
+    } catch (e) { setErr(e.message); setSaving(false); }
+  };
+
+  const handleSave = async () => {
+    setSaving(true); setErr('');
+    try {
+      await onSave({
+        ...truck,
+        override_active:      unavailable,
+        override_reason:      unavailable ? reason : null,
+        override_return_date: unavailable && returnDate ? returnDate : null,
+        relief_driver_name:   showRelief && reliefName.trim() ? reliefName.trim() : null,
+        relief_da_number:     showRelief && reliefDA.trim()   ? reliefDA.trim()   : null,
+        relief_schedule:      showRelief ? reliefSched : {},
+        status:               unavailable && !showRelief ? 'unavailable' : truck.status,
+      });
+    } catch (e) { setErr(e.message); setSaving(false); }
+  };
+
+  const DayGrid = ({ type, color }) => (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginTop: 6 }}>
+      {DAYS.map((d, i) => {
+        const active = !!reliefSched[type]?.[d];
+        return (
+          <label key={d} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 2, border: `1px solid ${active ? color : '#2a2a2a'}`, background: active ? color + '22' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {active && <span style={{ fontSize: 10, color, fontWeight: 700 }}>✓</span>}
+            </div>
+            <span style={{ fontSize: 7, color: active ? color : '#444', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>{DAY_LABEL[i]}</span>
+            <input type="checkbox" checked={active} onChange={() => toggleRelief(type, d)} style={{ display: 'none' }} />
+          </label>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div style={ovly} onClick={e => e.target === e.currentTarget && onCancel()}>
+      <div style={{ ...mdl, maxWidth: 480, maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={mdlH}>
+          <div>
+            <b style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Availability — {truck.plate}</b>
+            {truck.driver_name && <div style={{ fontSize: 8, color: MUT, marginTop: 2 }}>{truck.driver_name}{truck.da_number ? ` · DA ${truck.da_number}` : ''}</div>}
+          </div>
+          <button style={{ ...btnG, ...sm }} onClick={onCancel}>✕</button>
+        </div>
+
+        <div style={{ ...mdlB, display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+          {/* Unavailable toggle */}
+          <div style={{ background: unavailable ? RED + '11' : '#0a0a0a', border: `1px solid ${unavailable ? RED + '44' : '#252525'}`, borderRadius: 2, padding: '10px 12px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              <div
+                onClick={() => setUnavailable(u => !u)}
+                style={{ width: 36, height: 20, borderRadius: 10, background: unavailable ? RED : '#2a2a2a', position: 'relative', flexShrink: 0, transition: 'background 0.2s', cursor: 'pointer' }}>
+                <div style={{ width: 14, height: 14, borderRadius: 7, background: '#fff', position: 'absolute', top: 3, left: unavailable ? 19 : 3, transition: 'left 0.2s' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: unavailable ? RED : TXT }}>Temporarily Unavailable</div>
+                <div style={{ fontSize: 8, color: MUT, marginTop: 1 }}>Holiday, sick leave, truck in service, etc.</div>
+              </div>
+            </label>
+
+            {unavailable && (
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div>
+                    <FL t="Reason" />
+                    <select style={{ ...sel, width: '100%' }} value={reason} onChange={e => setReason(e.target.value)}>
+                      {OVERRIDE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <FL t="Return Date (optional)" />
+                    <input type="date" style={fld} value={returnDate} onChange={e => setReturnDate(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Relief driver */}
+          <div style={{ border: '1px solid #252525', borderRadius: 2, overflow: 'hidden' }}>
+            <div
+              onClick={() => setShowRelief(s => !s)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: showRelief ? ACC + '11' : '#0a0a0a', cursor: 'pointer', borderBottom: showRelief ? '1px solid #1a1a1a' : 'none' }}>
+              <div>
+                <span style={{ fontSize: 10, fontWeight: 700, color: showRelief ? ACC : TXT }}>Relief Driver</span>
+                <span style={{ fontSize: 8, color: MUT, marginLeft: 8 }}>Different driver covering this truck</span>
+              </div>
+              <span style={{ fontSize: 9, color: MUT }}>{showRelief ? '▲' : '▼'}</span>
+            </div>
+
+            {showRelief && (
+              <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  <div>
+                    <FL t="Driver Name" />
+                    <input style={fld} value={reliefName} onChange={e => setReliefName(e.target.value)} placeholder="e.g. Jane Smith" />
+                  </div>
+                  <div>
+                    <FL t="DA Number" />
+                    <input style={fld} value={reliefDA} onChange={e => setReliefDA(e.target.value)} placeholder="e.g. 99999" />
+                  </div>
+                </div>
+                <div>
+                  <FL t="Days Available" />
+                  <DayGrid type="days" color={ORANGE} />
+                </div>
+                <div>
+                  <FL t="Nights Available" />
+                  <DayGrid type="nights" color={BLUE} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {err && <div style={{ fontSize: 9, color: RED }}>{err}</div>}
+        </div>
+
+        <div style={mdlF}>
+          {(truck.override_active || truck.relief_driver_name) && (
+            <button style={{ ...btnD, marginRight: 'auto' }} onClick={handleClear} disabled={saving}>
+              Clear Override
+            </button>
+          )}
+          <button style={btnG} onClick={onCancel}>Cancel</button>
+          <button style={{ ...btnA, opacity: saving ? 0.4 : 1 }} disabled={saving} onClick={handleSave}>
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Fleet tab ────────────────────────────────────────────────────────────
 export default function FleetTab() {
   const [depots,  setDepots]  = useState([]);
@@ -245,8 +412,9 @@ export default function FleetTab() {
   const [loading, setLoading] = useState(true);
   const [err,     setErr]     = useState('');
 
-  const [depotForm, setDepotForm] = useState(null); // null | {} | depot obj
-  const [truckForm, setTruckForm] = useState(null); // null | {} | truck obj
+  const [depotForm,  setDepotForm]  = useState(null);
+  const [truckForm,  setTruckForm]  = useState(null);
+  const [availModal, setAvailModal] = useState(null); // truck obj being edited
 
   const load = useCallback(async () => {
     try {
@@ -355,7 +523,7 @@ export default function FleetTab() {
             </div>
           )}
           {dTrucks.map(truck => (
-            <TruckRow key={truck.id} truck={truck} onEdit={() => setTruckForm(truck)} onDelete={() => handleDeleteTruck(truck)} />
+            <TruckRow key={truck.id} truck={truck} onEdit={() => setTruckForm(truck)} onDelete={() => handleDeleteTruck(truck)} onAvail={() => setAvailModal(truck)} />
           ))}
 
           <button
@@ -370,7 +538,7 @@ export default function FleetTab() {
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, borderLeft: '2px solid #444', paddingLeft: 8 }}>Unassigned ({unassigned.length})</div>
           {unassigned.map(truck => (
-            <TruckRow key={truck.id} truck={truck} onEdit={() => setTruckForm(truck)} onDelete={() => handleDeleteTruck(truck)} />
+            <TruckRow key={truck.id} truck={truck} onEdit={() => setTruckForm(truck)} onDelete={() => handleDeleteTruck(truck)} onAvail={() => setAvailModal(truck)} />
           ))}
         </div>
       )}
@@ -391,35 +559,71 @@ export default function FleetTab() {
           onCancel={() => setTruckForm(null)}
         />
       )}
+
+      {availModal !== null && (
+        <AvailabilityModal
+          truck={availModal}
+          onSave={async (updated) => { await handleSaveTruck(updated); setAvailModal(null); }}
+          onCancel={() => setAvailModal(null)}
+        />
+      )}
     </div>
   );
 }
 
-function TruckRow({ truck, onEdit, onDelete }) {
-  const sc = statusColor(truck.status);
+function TruckRow({ truck, onEdit, onDelete, onAvail }) {
+  const hasOverride = truck.override_active;
+  const hasRelief   = !!(truck.relief_driver_name || truck.relief_da_number);
+  const sc = hasOverride && !hasRelief ? RED : statusColor(truck.status);
+
+  const activeDriver   = hasRelief ? truck.relief_driver_name : truck.driver_name;
+  const activeDA       = hasRelief ? truck.relief_da_number   : truck.da_number;
+  const activeSched    = hasRelief ? truck.relief_schedule     : truck.schedule;
+
   return (
-    <div style={{ padding: '8px 10px', background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${sc}`, borderRadius: 2, marginBottom: 4 }}>
+    <div style={{ padding: '8px 10px', background: '#0d0d0d', border: `1px solid ${hasOverride ? (hasRelief ? '#3a3a1a' : '#2a1a1a') : '#252525'}`, borderLeft: `3px solid ${sc}`, borderRadius: 2, marginBottom: 4 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 14, flexShrink: 0 }}>🚛</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>{truck.plate}</span>
-            <StatusBadge status={truck.status} />
-            {truck.da_number && (
-              <span style={{ fontSize: 7, color: MUT, fontFamily: "'IBM Plex Mono',monospace", border: '1px solid #2a2a2a', borderRadius: 2, padding: '1px 4px' }}>
-                DA {truck.da_number}
+            <StatusBadge status={hasOverride && !hasRelief ? 'unavailable' : truck.status} />
+            {hasOverride && !hasRelief && (
+              <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', padding: '1px 5px', border: `1px solid ${RED}55`, borderRadius: 2, color: RED, background: RED + '15', textTransform: 'uppercase' }}>
+                {truck.override_reason || 'Away'}
+              </span>
+            )}
+            {hasRelief && (
+              <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', padding: '1px 5px', border: '1px solid #6a6a1a', borderRadius: 2, color: '#cccc44', background: '#cccc4411', textTransform: 'uppercase' }}>
+                Relief
+              </span>
+            )}
+            {activeDA && (
+              <span style={{ fontSize: 7, color: hasRelief ? '#cccc44' : MUT, fontFamily: "'IBM Plex Mono',monospace", border: `1px solid ${hasRelief ? '#5a5a14' : '#2a2a2a'}`, borderRadius: 2, padding: '1px 4px' }}>
+                DA {activeDA}
               </span>
             )}
           </div>
-          {truck.driver_name && (
-            <div style={{ fontSize: 9, color: TXT, marginTop: 2 }}>{truck.driver_name}</div>
+
+          {activeDriver && (
+            <div style={{ fontSize: 9, color: hasRelief ? '#cccc44' : TXT, marginTop: 2 }}>{activeDriver}</div>
           )}
-          {truck.notes && (
+
+          {hasOverride && truck.override_return_date && (
+            <div style={{ fontSize: 8, color: MUT, marginTop: 2 }}>
+              Returns {fmtDate(truck.override_return_date)}
+            </div>
+          )}
+
+          {truck.notes && !hasOverride && (
             <div style={{ fontSize: 8, color: MUT, marginTop: 2 }}>{truck.notes}</div>
           )}
-          <ScheduleChips schedule={truck.schedule} />
+
+          <ScheduleChips schedule={activeSched} />
         </div>
+
         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
+          <button onClick={onAvail}  style={{ ...btnG, ...sm, fontSize: 8, color: hasOverride ? '#cccc44' : MUT, borderColor: hasOverride ? '#5a5a14' : undefined }}>📅</button>
           <button onClick={onEdit}   style={{ ...btnG, ...sm, fontSize: 8 }}>Edit</button>
           <button onClick={onDelete} style={{ ...btnD, ...sm, fontSize: 8 }}>Delete</button>
         </div>
