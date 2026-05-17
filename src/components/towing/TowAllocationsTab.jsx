@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { jsPDF } from 'jspdf';
 import { ACC, MUT, BRD, TXT, GRN, SURF } from '../../lib/styles';
 import { logAllocations, getRecentAllocations } from '../../lib/db/towing';
 
@@ -18,7 +19,29 @@ const SORT_OPTIONS = [
   { key: 'eventId', label: 'Event ID',        fn: (a, b) => Number(a.properties?.eventId || 0) - Number(b.properties?.eventId || 0) },
 ];
 
+const EXPORT_PERIODS = [
+  { label: 'Last 15 min',  hours: 0.25 },
+  { label: 'Last 30 min',  hours: 0.5  },
+  { label: 'Last 1 hour',  hours: 1    },
+  { label: 'Last 2 hours', hours: 2    },
+  { label: 'Last 4 hours', hours: 4    },
+  { label: 'Last 8 hours', hours: 8    },
+  { label: 'Last 12 hours',hours: 12   },
+  { label: 'Last 24 hours',hours: 24   },
+  { label: 'Last 2 days',  hours: 48   },
+  { label: 'Last 7 days',  hours: 168  },
+  { label: 'Last 14 days', hours: 336  },
+  { label: 'Last 31 days', hours: 744  },
+];
+
 function fmt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-AU', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true,
+  });
+}
+
+function fmtShort(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('en-AU', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true,
@@ -54,15 +77,13 @@ function AllocationCard({ feature, fromLog }) {
   const road    = p.closedRoadName || '—';
   const sub     = suburb(feature);
   const eventId = p.eventId || '—';
-  const status  = p.status || '';
   const desc    = p.description || '';
   const lanes   = p.numberLanesImpacted;
   const impact  = p.impact?.impactType || '';
   const created = p.lastUpdated;
   const logMeta = feature._logMeta;
   const elapsed = timeIn(logMeta?.firstSeen || p.lastUpdated);
-
-  const isLive = !fromLog;
+  const isLive  = !fromLog;
 
   return (
     <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${isLive ? GRN : '#333'}`, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
@@ -112,15 +133,15 @@ function AllocationCard({ feature, fromLog }) {
           )}
           <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             {[
-              ['AAC Job ID',       `#${eventId}`],
-              ['Status',           isLive ? 'Active' : 'Cleared'],
-              ['Lanes Impacted',   lanes != null ? `${lanes} lane${lanes !== 1 ? 's' : ''}` : '—'],
-              ['Impact Type',      impact || '—'],
-              ['Time In',          elapsed || '—'],
-              ['Last Updated',     fmt(created)],
+              ['AAC Job ID',     `#${eventId}`],
+              ['Status',         isLive ? 'Active' : 'Cleared'],
+              ['Lanes Impacted', lanes != null ? `${lanes} lane${lanes !== 1 ? 's' : ''}` : '—'],
+              ['Impact Type',    impact || '—'],
+              ['Time In',        elapsed || '—'],
+              ['Last Updated',   fmt(created)],
               ...(logMeta ? [
-                ['First Seen',  fmt(logMeta.firstSeen)],
-                ['Last Seen',   fmt(logMeta.lastSeen)],
+                ['First Seen', fmt(logMeta.firstSeen)],
+                ['Last Seen',  fmt(logMeta.lastSeen)],
               ] : []),
             ].map(([label, val]) => (
               <div key={label} style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '6px 8px' }}>
@@ -152,16 +173,21 @@ export default function TowAllocationsTab() {
   const [countdown,    setCountdown]    = useState(POLL_MS / 1000);
   const [sortBy,       setSortBy]       = useState('recent');
   const [showSort,     setShowSort]     = useState(false);
-  const sortRef = useRef(null);
+  const [showExport,   setShowExport]   = useState(false);
+  const [exportHours,  setExportHours]  = useState(24);
+  const [exporting,    setExporting]    = useState(false);
+  const sortRef   = useRef(null);
+  const exportRef = useRef(null);
 
-  // Close sort dropdown on outside click
   useEffect(() => {
-    const handler = e => { if (sortRef.current && !sortRef.current.contains(e.target)) setShowSort(false); };
+    const handler = e => {
+      if (sortRef.current   && !sortRef.current.contains(e.target))   setShowSort(false);
+      if (exportRef.current && !exportRef.current.contains(e.target)) setShowExport(false);
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Merge helper — live features win over logged ones for same eventId; no sort (sort state handles it)
   const mergeFeatures = (live, logged) => {
     const map = new Map();
     logged.forEach(f => { if (f.properties?.eventId) map.set(String(f.properties.eventId), f); });
@@ -175,15 +201,12 @@ export default function TowAllocationsTab() {
         setAllFeatures(prev => mergeFeatures([], [...prev, ...logged]));
         setLoading(false);
       })
-      .catch(e => {
-        console.warn('getRecentAllocations:', e.message);
-        setLoading(false);
-      });
+      .catch(e => { console.warn('getRecentAllocations:', e.message); setLoading(false); });
   }, []);
 
   const fetchAllocations = useCallback(async () => {
     try {
-      const res = await fetch(API_URL, { headers: { KeyID: API_KEY } });
+      const res  = await fetch(API_URL, { headers: { KeyID: API_KEY } });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
       const all  = data.data?.features || data.features || [];
@@ -194,9 +217,7 @@ export default function TowAllocationsTab() {
       setErr('');
       setLastFetch(new Date());
       setCountdown(POLL_MS / 1000);
-    } catch (e) {
-      setErr(e.message);
-    }
+    } catch (e) { setErr(e.message); }
   }, []);
 
   useEffect(() => {
@@ -210,9 +231,150 @@ export default function TowAllocationsTab() {
     return () => clearInterval(t);
   }, []);
 
+  // ── PDF Export ───────────────────────────────────────────────────────────────
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      const period   = EXPORT_PERIODS.find(p => p.hours === exportHours);
+      const features = await getRecentAllocations(exportHours);
+      features.sort((a, b) => new Date(b.properties?.lastUpdated || 0) - new Date(a.properties?.lastUpdated || 0));
+
+      const doc   = new jsPDF({ format: 'a4', unit: 'mm', orientation: 'portrait' });
+      const W     = 210, ML = 12, CW = 186;
+      const now   = new Date();
+      const liveSet     = liveIds;
+      const activeCount  = features.filter(f => liveSet.has(String(f.properties?.eventId))).length;
+      const clearedCount = features.length - activeCount;
+
+      const clip = (text, maxW) => {
+        const lines = doc.splitTextToSize(String(text || '—'), maxW);
+        return lines.length > 1 ? lines[0].replace(/.$/, '…') : lines[0];
+      };
+
+      // ── Page header ──────────────────────────────────
+      doc.setFillColor(15, 15, 15);
+      doc.rect(0, 0, W, 30, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(255, 255, 255);
+      doc.text('TOW ALLOCATION REPORT', ML, 12);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(160, 160, 160);
+      doc.text(`${period.label}  ·  ${features.length} allocation${features.length !== 1 ? 's' : ''}`, ML, 19);
+      doc.text(
+        `Generated: ${now.toLocaleString('en-AU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}`,
+        ML, 25,
+      );
+
+      // ── Summary boxes ────────────────────────────────
+      let y = 35;
+      const bw = CW / 3 - 2;
+      [
+        ['TOTAL',   String(features.length),  [60,  60,  60]],
+        ['ACTIVE',  String(activeCount),       [50,  160, 100]],
+        ['CLEARED', String(clearedCount),      [100, 100, 100]],
+      ].forEach(([lbl, val, rgb], i) => {
+        const bx = ML + i * (bw + 3);
+        doc.setFillColor(247, 247, 247);
+        doc.rect(bx, y, bw, 14, 'F');
+        doc.setDrawColor(220, 220, 220);
+        doc.rect(bx, y, bw, 14, 'S');
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6);
+        doc.setTextColor(140, 140, 140);
+        doc.text(lbl, bx + bw / 2, y + 5, { align: 'center' });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(...rgb);
+        doc.text(val, bx + bw / 2, y + 11.5, { align: 'center' });
+      });
+      y += 18;
+
+      // ── Table ────────────────────────────────────────
+      const COLS = [
+        { label: 'ROAD NAME',    w: 50 },
+        { label: 'SUBURB',       w: 38 },
+        { label: 'STATUS',       w: 18 },
+        { label: 'EVENT ID',     w: 22 },
+        { label: 'LANES',        w: 13 },
+        { label: 'LAST UPDATED', w: 45 },
+      ];
+      // compute x offsets
+      let cx = ML;
+      COLS.forEach(c => { c.x = cx; cx += c.w; });
+      const ROW_H = 7;
+
+      const drawHeader = (yy) => {
+        doc.setFillColor(25, 25, 25);
+        doc.rect(ML, yy, CW, ROW_H, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6);
+        doc.setTextColor(180, 180, 180);
+        COLS.forEach(c => doc.text(c.label, c.x + 2, yy + 4.5));
+      };
+
+      drawHeader(y);
+      y += ROW_H;
+
+      features.forEach((f, i) => {
+        if (y + ROW_H > 283) {
+          doc.addPage();
+          y = 15;
+          drawHeader(y);
+          y += ROW_H;
+        }
+
+        const p      = f.properties || {};
+        const isLive = liveSet.has(String(p.eventId));
+
+        if (i % 2 === 0) { doc.setFillColor(250, 250, 250); doc.rect(ML, y, CW, ROW_H, 'F'); }
+        doc.setDrawColor(230, 230, 230);
+        doc.line(ML, y + ROW_H, ML + CW, y + ROW_H);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(30, 30, 30);
+        doc.text(clip(p.closedRoadName, COLS[0].w - 4), COLS[0].x + 2, y + 4.5);
+        doc.text(clip(suburb(f),        COLS[1].w - 4), COLS[1].x + 2, y + 4.5);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...(isLive ? [50, 160, 100] : [110, 110, 110]));
+        doc.text(isLive ? 'Active' : 'Cleared', COLS[2].x + 2, y + 4.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(30, 30, 30);
+        doc.text(String(p.eventId || '—'),                       COLS[3].x + 2, y + 4.5);
+        doc.text(p.numberLanesImpacted != null ? String(p.numberLanesImpacted) : '—', COLS[4].x + 2, y + 4.5);
+        doc.text(fmtShort(p.lastUpdated),                        COLS[5].x + 2, y + 4.5);
+
+        y += ROW_H;
+      });
+
+      // ── Footer on every page ─────────────────────────
+      const pages = doc.getNumberOfPages();
+      for (let pg = 1; pg <= pages; pg++) {
+        doc.setPage(pg);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(6);
+        doc.setTextColor(170, 170, 170);
+        doc.text(`RatBench · Tow Allocation Report · Page ${pg} of ${pages}`, W / 2, 293, { align: 'center' });
+      }
+
+      const filename = `tow-allocations-${period.label.replace(/\s+/g, '-').toLowerCase()}-${now.toISOString().slice(0, 10)}.pdf`;
+      doc.save(filename);
+      setShowExport(false);
+    } catch (e) {
+      console.error('exportPDF failed:', e);
+    } finally {
+      setExporting(false);
+    }
+  }, [exportHours, liveIds]);
+
+  // ── Render ───────────────────────────────────────────────────────────────────
   const sortFn      = SORT_OPTIONS.find(o => o.key === sortBy)?.fn;
   const sorted      = [...allFeatures].sort(sortFn);
-  const active      = sorted.filter(f => liveIds.has(String(f.properties?.eventId)));
+  const active      = sorted.filter(f =>  liveIds.has(String(f.properties?.eventId)));
   const cleared     = sorted.filter(f => !liveIds.has(String(f.properties?.eventId)));
   const currentSort = SORT_OPTIONS.find(o => o.key === sortBy);
 
@@ -250,6 +412,34 @@ export default function TowAllocationsTab() {
                     {opt.label}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Export PDF picker */}
+          <div ref={exportRef} style={{ position: 'relative' }}>
+            <button onClick={() => setShowExport(s => !s)}
+              style={{ fontSize: 8, color: showExport ? ACC : MUT, border: `1px solid ${showExport ? ACC + '66' : '#2a2a2a'}`, background: showExport ? ACC + '11' : '#0d0d0d', padding: '3px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>
+              ⬇ Export PDF
+            </button>
+            {showExport && (
+              <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', zIndex: 50, background: '#111', border: '1px solid #2a2a2a', borderRadius: 2, minWidth: 180, boxShadow: '0 4px 16px #000a' }}>
+                <div style={{ padding: '8px 12px 6px', fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', borderBottom: '1px solid #1a1a1a' }}>
+                  Select period
+                </div>
+                {EXPORT_PERIODS.map(p => (
+                  <div key={p.hours} onClick={() => setExportHours(p.hours)}
+                    style={{ padding: '6px 12px', fontSize: 9, color: p.hours === exportHours ? ACC : TXT, background: p.hours === exportHours ? ACC + '11' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid #1a1a1a', fontFamily: "'IBM Plex Mono',monospace" }}>
+                    <span style={{ color: p.hours === exportHours ? ACC : '#333', width: 8 }}>{p.hours === exportHours ? '✓' : ''}</span>
+                    {p.label}
+                  </div>
+                ))}
+                <div style={{ padding: '8px 12px' }}>
+                  <button onClick={handleExport} disabled={exporting}
+                    style={{ width: '100%', padding: '5px 0', fontSize: 9, fontWeight: 700, color: exporting ? MUT : '#000', background: exporting ? '#222' : ACC, border: 'none', borderRadius: 2, cursor: exporting ? 'not-allowed' : 'pointer', fontFamily: "'IBM Plex Mono',monospace", letterSpacing: '0.06em' }}>
+                    {exporting ? 'Generating…' : '⬇ Generate PDF'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
