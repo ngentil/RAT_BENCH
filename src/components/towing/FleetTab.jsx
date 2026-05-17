@@ -2,54 +2,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { FL } from '../ui/shared';
 import { getDepots, upsertDepot, deleteDepot, getTrucks, upsertTruck, deleteTruck } from '../../lib/db/towing';
+import { RosterCalendar, MiniRoster } from './RosterCalendar';
 
 const ORANGE = '#e8870a';
 const BLUE   = '#5a7a9a';
 
 const STATUS_OPTIONS = ['available', 'on job', 'unavailable'];
 
-const DAYS      = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-const DAY_SHORT = ['M',   'T',   'W',   'T',   'F',   'S',   'S'  ];
-const DAY_LABEL = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ];
-
-const EMPTY_SCHEDULE = { days: {}, nights: {} };
+const DAY_LABEL = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const OVERRIDE_REASONS = ['Holiday', 'Sick Leave', 'Truck in Service', 'Suspended', 'Other'];
 
 function fmtDate(iso) {
   if (!iso) return null;
   return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function ScheduleChips({ schedule }) {
-  if (!schedule) return null;
-  const hasDays   = DAYS.some(d => schedule.days?.[d]);
-  const hasNights = DAYS.some(d => schedule.nights?.[d]);
-  if (!hasDays && !hasNights) return null;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 4 }}>
-      {hasDays && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <span style={{ fontSize: 7, color: MUT, width: 34, flexShrink: 0 }}>Days</span>
-          {DAYS.map((d, i) => (
-            <span key={d} style={{ fontSize: 7, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace", width: 14, textAlign: 'center', color: schedule.days?.[d] ? ORANGE : '#2a2a2a' }}>
-              {DAY_SHORT[i]}
-            </span>
-          ))}
-        </div>
-      )}
-      {hasNights && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <span style={{ fontSize: 7, color: MUT, width: 34, flexShrink: 0 }}>Nights</span>
-          {DAYS.map((d, i) => (
-            <span key={d} style={{ fontSize: 7, fontWeight: 700, fontFamily: "'IBM Plex Mono',monospace", width: 14, textAlign: 'center', color: schedule.nights?.[d] ? BLUE : '#2a2a2a' }}>
-              {DAY_SHORT[i]}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function statusColor(s) {
@@ -115,16 +81,11 @@ function TruckForm({ truck, depots, onSave, onCancel }) {
   const [depotId,    setDepotId]    = useState(truck?.depot_id    || (depots[0]?.id || ''));
   const [status,     setStatus]     = useState(truck?.status      || 'available');
   const [notes,      setNotes]      = useState(truck?.notes       || '');
-  const [schedule,   setSchedule]   = useState(truck?.schedule    || EMPTY_SCHEDULE);
+  const [schedule,   setSchedule]   = useState(truck?.schedule    || {});
   const [saving,     setSaving]     = useState(false);
   const [err,        setErr]        = useState('');
 
   const fld = { background: '#0a0a0a', border: '1px solid #252525', color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: '6px 8px', borderRadius: 2, outline: 'none', boxSizing: 'border-box', width: '100%' };
-
-  const toggle = (type, day) => setSchedule(s => ({
-    ...s,
-    [type]: { ...s[type], [day]: !s[type]?.[day] },
-  }));
 
   const save = async () => {
     if (!plate.trim()) { setErr('Plate required'); return; }
@@ -206,15 +167,8 @@ function TruckForm({ truck, depots, onSave, onCancel }) {
 
           {/* Schedule */}
           <div style={{ borderTop: '1px solid #1a1a1a', paddingTop: 10 }}>
-            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 2 }}>Days Available</div>
-            <div style={{ fontSize: 8, color: '#444' }}>Regular day shift hours</div>
-            <DayGrid type="days" color={ORANGE} />
-          </div>
-
-          <div style={{ borderTop: '1px solid #1a1a1a', paddingTop: 10 }}>
-            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 2 }}>Nights Available</div>
-            <div style={{ fontSize: 8, color: '#444' }}>On-call overnight</div>
-            <DayGrid type="nights" color={BLUE} />
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>Availability Roster</div>
+            <RosterCalendar value={schedule} onChange={setSchedule} />
           </div>
 
           <div>
@@ -244,17 +198,12 @@ function AvailabilityModal({ truck, onSave, onCancel }) {
   const [returnDate,   setReturnDate]   = useState(truck.override_return_date || '');
   const [reliefName,   setReliefName]   = useState(truck.relief_driver_name   || '');
   const [reliefDA,     setReliefDA]     = useState(truck.relief_da_number     || '');
-  const [reliefSched,  setReliefSched]  = useState(truck.relief_schedule      || EMPTY_SCHEDULE);
+  const [reliefSched,  setReliefSched]  = useState(truck.relief_schedule      || {});
   const [showRelief,   setShowRelief]   = useState(hasRelief);
   const [saving,       setSaving]       = useState(false);
   const [err,          setErr]          = useState('');
 
   const fld = { background: '#0a0a0a', border: '1px solid #252525', color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: '6px 8px', borderRadius: 2, outline: 'none', boxSizing: 'border-box', width: '100%' };
-
-  const toggleRelief = (type, day) => setReliefSched(s => ({
-    ...s,
-    [type]: { ...s[type], [day]: !s[type]?.[day] },
-  }));
 
   const handleClear = async () => {
     setSaving(true);
@@ -287,23 +236,6 @@ function AvailabilityModal({ truck, onSave, onCancel }) {
       });
     } catch (e) { setErr(e.message); setSaving(false); }
   };
-
-  const DayGrid = ({ type, color }) => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginTop: 6 }}>
-      {DAYS.map((d, i) => {
-        const active = !!reliefSched[type]?.[d];
-        return (
-          <label key={d} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
-            <div style={{ width: 28, height: 28, borderRadius: 2, border: `1px solid ${active ? color : '#2a2a2a'}`, background: active ? color + '22' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {active && <span style={{ fontSize: 10, color, fontWeight: 700 }}>✓</span>}
-            </div>
-            <span style={{ fontSize: 7, color: active ? color : '#444', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>{DAY_LABEL[i]}</span>
-            <input type="checkbox" checked={active} onChange={() => toggleRelief(type, d)} style={{ display: 'none' }} />
-          </label>
-        );
-      })}
-    </div>
-  );
 
   return (
     <div style={ovly} onClick={e => e.target === e.currentTarget && onCancel()}>
@@ -375,12 +307,8 @@ function AvailabilityModal({ truck, onSave, onCancel }) {
                   </div>
                 </div>
                 <div>
-                  <FL t="Days Available" />
-                  <DayGrid type="days" color={ORANGE} />
-                </div>
-                <div>
-                  <FL t="Nights Available" />
-                  <DayGrid type="nights" color={BLUE} />
+                  <FL t="Availability Roster" />
+                  <RosterCalendar value={reliefSched} onChange={setReliefSched} />
                 </div>
               </div>
             )}
@@ -619,7 +547,7 @@ function TruckRow({ truck, onEdit, onDelete, onAvail }) {
             <div style={{ fontSize: 8, color: MUT, marginTop: 2 }}>{truck.notes}</div>
           )}
 
-          <ScheduleChips schedule={activeSched} />
+          <MiniRoster schedule={activeSched} />
         </div>
 
         <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignSelf: 'flex-start' }}>
