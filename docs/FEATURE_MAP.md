@@ -342,6 +342,7 @@ Stripe
 | Live + log merged by eventId — live wins on conflict | ✅ | mergeFeatures(), TowAllocationsTab.jsx | Admin only |
 | LOG purge cron job — deletes entries older than 365 days (daily at 03:00 UTC) | ✅ | tow_log_cleanup_cron.sql, pg_cron | Admin only |
 | LOG badge on historical-only cards (not in current live feed) | ✅ | fromLog prop, AllocationCard | Admin only |
+| PDF export with selectable period (15 min → 31 days) — A4 report with summary boxes + table | ✅ | TowAllocationsTab.jsx handleExport(), jsPDF, getRecentAllocations() | Admin only |
 
 ---
 
