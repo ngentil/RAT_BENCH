@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS tow_allocation_log (
 ALTER TABLE tow_allocation_log ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "tow_log_admin_only" ON tow_allocation_log
-  FOR ALL USING ((auth.jwt() ->> 'email') = 'ratbenchadmin@gmail.com')
-  WITH CHECK ((auth.jwt() ->> 'email') = 'ratbenchadmin@gmail.com');
+  FOR ALL USING (auth.email() = 'ratbenchadmin@gmail.com')
+  WITH CHECK (auth.email() = 'ratbenchadmin@gmail.com');
 
 CREATE INDEX IF NOT EXISTS tow_allocation_log_event_created ON tow_allocation_log (event_created_at DESC);
