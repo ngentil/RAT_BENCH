@@ -340,6 +340,10 @@ Stripe
 | Truck driver details — DA Number, Driver Name fields on truck form | ✅ | FleetTab.jsx TruckForm, add_truck_schedule.sql | Admin only |
 | Truck weekly availability schedule — Days (Mon–Sun) + Nights (Mon–Sun) checkboxes | ✅ | FleetTab.jsx TruckForm DayGrid, tow_trucks.schedule JSONB | Admin only |
 | Schedule display on truck row — compact M T W T F S S grid (orange=days, blue=nights) | ✅ | FleetTab.jsx ScheduleChips, TruckRow | Admin only |
+| Availability override modal (📅 button) — mark truck temporarily unavailable with reason + return date | ✅ | FleetTab.jsx AvailabilityModal, add_truck_override.sql | Admin only |
+| Relief driver assignment — alternate driver name, DA number, and day/night schedule per truck | ✅ | FleetTab.jsx AvailabilityModal relief section, tow_trucks.relief_* columns | Admin only |
+| TruckRow override states — red/AWAY badge (unavailable, no cover), yellow/RELIEF badge (relief driver active) | ✅ | FleetTab.jsx TruckRow, override_active + relief_driver_name | Admin only |
+| Clear Override button — one-click restore to normal driver/schedule/available status | ✅ | FleetTab.jsx AvailabilityModal handleClear | Admin only |
 | tow_allocation_log table — persists every polled allocation by event_id | ✅ | add_tow_allocation_log.sql, logAllocations() | Admin only |
 | 24hr history loaded from log on mount (before first live poll) | ✅ | getRecentAllocations(24), TowAllocationsTab.jsx | Admin only |
 | Live + log merged by eventId — live wins on conflict | ✅ | mergeFeatures(), TowAllocationsTab.jsx | Admin only |
