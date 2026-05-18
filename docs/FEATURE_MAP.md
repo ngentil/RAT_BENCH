@@ -294,7 +294,7 @@ Stripe
 | Full revision history | ✅ | wiki_revisions | Enthusiast+ |
 | Submit machine specs to wiki | ✅ | machines → wiki_entries | Enthusiast+ |
 | Author attribution | ✅ | wiki_revisions.author_id | Enthusiast+ |
-| Admin delete any wiki entry | ✅ | ADMIN_EMAIL check in WikiEntryPage, deleteWikiEntry() | Admin only |
+| Admin delete any wiki entry | ✅ | VITE_ADMIN_EMAIL env var check in WikiEntryPage, deleteWikiEntry() | Admin only |
 
 ---
 
@@ -323,8 +323,8 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| Towing section — admin-gated (`ratbenchadmin@gmail.com` only) | ✅ | session.user.email check, App.jsx | Admin only |
-| Tow Allocations tab — polls VicRoads disruptions API every 60s | ✅ | TowAllocationsTab.jsx, fetch + setInterval | Admin only |
+| Towing section — admin-gated (VITE_ADMIN_EMAIL) | ✅ | session.user.email check, App.jsx | Admin only |
+| Tow Allocations tab — polls VicRoads disruptions API every 60s | ✅ | TowAllocationsTab.jsx, fetch + setInterval, VITE_VICROADS_KEY | Admin only |
 | Filter feed to TowAllocation source only | ✅ | properties.source.sourceName === 'TowAllocation' | Admin only |
 | Allocation cards (road, suburb, eventId, status badge, lanes, timestamps) | ✅ | TowAllocationsTab.jsx AllocationCard | Admin only |
 | Active / Inactive grouping with counts | ✅ | TowAllocationsTab.jsx | Admin only |
@@ -378,8 +378,9 @@ Stripe
 | Push notifications (service due) | 📋 | Needs FCM or similar |
 | Smart Mode cascade calculations | 📋 | Needs multiple sections complete |
 | Invoice / Quote PDF (separate from spec PDF) | 📋 | Currently HTML export only |
-| General Terms of Service page | 📋 | Required before going fully public |
-| API access (Business tier) | 📋 | Listed in billing but not built |
+| General Terms of Service page | ✅ | TermsPage.jsx — linked from AuthScreen footer + signup consent |
+| Privacy Policy page | ✅ | PrivacyPage.jsx — linked from AuthScreen footer + signup consent |
+| API access (Business tier) | ❌ | Removed from billing copy — not being built |
 | Firebase migration | 📋 | Long-term — after features stable |
 
 ---
