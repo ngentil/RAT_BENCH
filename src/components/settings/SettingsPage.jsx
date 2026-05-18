@@ -10,7 +10,7 @@ import StorageSettings from './StorageSettings';
 import TabOrderSettings from './TabOrderSettings';
 import UsersTab from '../users/UsersTab';
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
 
 function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,vehicles,equipment,tools}){
   const isAdmin = session?.user?.email === ADMIN_EMAIL;
