@@ -6,6 +6,7 @@ export async function getNextInvoiceNumber(userId) {
     if (error) throw error;
     return data;
   } catch {
+    console.warn('[invoices] RPC unavailable — using local fallback. Invoice numbers may not be unique across devices.');
     const key = `rat_inv_seq_${userId}`;
     const n = (parseInt(localStorage.getItem(key) || '0') || 0) + 1;
     localStorage.setItem(key, String(n));

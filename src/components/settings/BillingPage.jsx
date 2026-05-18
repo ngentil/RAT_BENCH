@@ -67,7 +67,7 @@ const PLANS = [
     label: "Business",
     price: "$99",
     period: "/mo",
-    features: ["Everything in Team","Parts tracker","API access (coming soon)"],
+    features: ["Everything in Team","Parts tracker"],
     personal: false,
   },
 ];

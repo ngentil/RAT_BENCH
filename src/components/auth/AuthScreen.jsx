@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, BG, TXT, GRN, RED, inp, btnA, btnG } from '../../lib/styles';
+import TermsPage from '../legal/TermsPage';
+import PrivacyPage from '../legal/PrivacyPage';
 function AuthScreen(){
   const [mode,setMode]=useState("login"); // login | signup | forgot
   const [email,setEmail]=useState("");
@@ -9,6 +11,7 @@ function AuthScreen(){
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
+  const [legal,setLegal]=useState(null); // "terms" | "privacy" | null
 
   // Reset loading if browser restores page from bfcache after OAuth redirect
   useEffect(()=>{
@@ -142,6 +145,12 @@ function AuthScreen(){
               style={{...btnA,width:"100%",marginTop:16,padding:"11px 0",fontSize:10,opacity:loading?0.6:1,letterSpacing:"0.1em"}}>
               {loading?"Please wait...":(mode==="login"?"Sign In":mode==="signup"?"Create Account":"Send Reset Link")}
             </button>
+            {mode==="signup"&&<div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:10,lineHeight:1.7}}>
+              By creating an account you agree to our{" "}
+              <button onClick={()=>setLegal("terms")} style={{background:"none",border:"none",color:ACC,fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,textDecoration:"underline"}}>Terms of Service</button>
+              {" "}and{" "}
+              <button onClick={()=>setLegal("privacy")} style={{background:"none",border:"none",color:ACC,fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,textDecoration:"underline"}}>Privacy Policy</button>.
+            </div>}
 
             {/* Forgot password */}
             {mode==="login"&&<div style={{textAlign:"center",marginTop:14}}>
@@ -166,11 +175,17 @@ function AuthScreen(){
 
           </div>
 
-          <div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:24}}>
+          <div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:24,lineHeight:2}}>
             ratbench.net
+            <span style={{margin:"0 6px"}}>·</span>
+            <button onClick={()=>setLegal("terms")} style={{background:"none",border:"none",color:MUT,fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline",padding:0}}>Terms</button>
+            <span style={{margin:"0 6px"}}>·</span>
+            <button onClick={()=>setLegal("privacy")} style={{background:"none",border:"none",color:MUT,fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline",padding:0}}>Privacy</button>
           </div>
         </div>
       </div>
+      {legal === "terms"   && <TermsPage   onClose={() => setLegal(null)} />}
+      {legal === "privacy" && <PrivacyPage onClose={() => setLegal(null)} />}
     </div>
   );
 }

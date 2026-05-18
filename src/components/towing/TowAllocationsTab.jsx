@@ -4,7 +4,7 @@ import { ACC, MUT, BRD, TXT, GRN, SURF } from '../../lib/styles';
 import { logAllocations, getRecentAllocations } from '../../lib/db/towing';
 
 const API_URL = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
-const API_KEY = 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
+const API_KEY = import.meta.env.VITE_VICROADS_KEY || 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
 const POLL_MS = 60_000;
 const ORANGE  = '#e8870a';
 

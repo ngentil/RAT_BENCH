@@ -35,7 +35,7 @@ import EquipmentTab from './components/equipment/EquipmentTab';
 import ConsumablesTab from './components/consumables/ConsumablesTab';
 import TowingSection from './components/towing/TowingSection';
 
-const ADMIN_EMAIL = 'ratbenchadmin@gmail.com';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
 function App(){
   const [tab,setTab]=useState(()=>{
     const stored=localStorage.getItem("rat_tab")||"tracker";
@@ -112,27 +112,29 @@ function App(){
     } catch(e){ if(first) setProfile(null); }
     setProfileChecked(true);
     setAuthChecked(true);
+    const loadErrs = [];
     try {
       const ms = await getMachines();
       setMachines(Array.isArray(ms)?ms:[]);
-    } catch(e){ if(first) setError("Could not load machines."); }
+    } catch(e){ loadErrs.push("machines"); }
     try {
       await migrateLocalClients(session.user.id);
       const cs = await getClients();
       setClients(Array.isArray(cs)?cs:[]);
-    } catch(e){ console.error("Could not load clients:", e); }
+    } catch(e){ loadErrs.push("clients"); }
     try {
       const vs = await getVehicles();
       setVehicles(Array.isArray(vs)?vs:[]);
-    } catch(e){ console.error("Could not load vehicles:", e); }
+    } catch(e){ loadErrs.push("vehicles"); }
     try {
       const eq = await getEquipment();
       setEquipment(Array.isArray(eq)?eq:[]);
-    } catch(e){ console.error("Could not load equipment:", e); }
+    } catch(e){ loadErrs.push("equipment"); }
     try {
       const ts = await getTools();
       setTools(Array.isArray(ts)?ts:[]);
-    } catch(e){ console.error("Could not load tools:", e); }
+    } catch(e){ loadErrs.push("tools"); }
+    if(first && loadErrs.length) setError(`Could not load: ${loadErrs.join(", ")}. Check your connection and refresh.`);
     try {
       const userTier=profileData?.tier||"free";
       const{data:anns}=await supabase.from("announcements").select("*")
