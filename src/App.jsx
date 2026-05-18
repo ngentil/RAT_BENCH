@@ -35,7 +35,7 @@ import EquipmentTab from './components/equipment/EquipmentTab';
 import ConsumablesTab from './components/consumables/ConsumablesTab';
 import TowingSection from './components/towing/TowingSection';
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
 function App(){
   const [tab,setTab]=useState(()=>{
     const stored=localStorage.getItem("rat_tab")||"tracker";
