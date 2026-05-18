@@ -175,7 +175,7 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | Revenue totals (labour, parts & consumables, profit) | ✅ | time_log, inventory, consumables, company.hourly_rate | Enthusiast+ |
-| Date filters (week / month / all / custom) | ✅ | time_log.completedAt | Enthusiast+ |
+| Date filters (week / month / all / custom) | ✅ | time_log.completedAt, machine.parts[].usedAt | Enthusiast+ |
 | Per-machine breakdown | ✅ | time_log, machines | Enthusiast+ |
 | Tax deduction display | ✅ | companies.tax_rate | Team+ |
 | Currency formatting | ✅ | companies.currency | Team+ |
