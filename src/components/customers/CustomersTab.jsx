@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { SL, FL } from '../ui/shared';
+import { SL, FL, Empty } from '../ui/shared';
 import { mIcon, getStorageStatus } from '../../lib/helpers';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
 import { effectiveTier, canUse } from '../../lib/gates';
@@ -218,11 +218,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
       )}
 
       {clients.length === 0 && (
-        <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7, padding: "32px 0", textAlign: "center" }}>
-          <div style={{ fontSize: 22, marginBottom: 10 }}>👤</div>
-          No clients yet.<br />
-          Add clients and link machines to track work history per customer.
-        </div>
+        <Empty icon="👤" t="No clients yet" sub="Add clients and link machines to track work history per customer." />
       )}
 
       {filtered.map(client => {

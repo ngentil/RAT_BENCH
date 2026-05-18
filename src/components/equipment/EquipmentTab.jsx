@@ -264,6 +264,7 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
 
 export default function EquipmentTab({ equipment, setEquipment, session, profile, company, onGoToBilling }) {
   const [loading, setLoading] = useState(!equipment?.length);
+  const [err, setErr] = useState('');
   const [formItem, setFormItem] = useState(null);
   const [search, setSearch]    = useState('');
   const [typeFilter, setTypeFilter] = useState(null);
@@ -284,7 +285,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
 
   useEffect(() => {
     setLoading(true);
-    getEquipment().then(items => { setEquipment(items); setLoading(false); }).catch(() => setLoading(false));
+    getEquipment().then(items => { setEquipment(items); setLoading(false); }).catch(() => { setErr('Failed to load equipment. Refresh to try again.'); setLoading(false); });
   }, [userId]);
 
   const activeTypes = useMemo(() => {
@@ -408,6 +409,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
         </div>
       )}
 
+      {err && <div style={{ fontSize: 10, color: RED, padding: '12px 0', textAlign: 'center' }}>{err}</div>}
       {loading && <div style={{ fontSize: 10, color: MUT, padding: '24px 0', textAlign: 'center' }}>Loading…</div>}
 
       {!loading && (equipment || []).length === 0 && (
