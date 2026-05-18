@@ -79,12 +79,16 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
         const now = new Date();
         if (period === "week"  && (now - d) > 7 * 86400000) return;
         if (period === "month" && (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear())) return;
+        if (period === "custom") {
+          if (customFrom && d < new Date(customFrom)) return;
+          if (customTo   && d > new Date(customTo + "T23:59:59")) return;
+        }
         rev  += (parseFloat(p.sellPrice) || 0) * (Number(p.qty) || 1);
         cost += (parseFloat(p.buyPrice)  || 0) * (Number(p.qty) || 1);
       });
     });
     return { partsRev: rev, partsCost: cost };
-  }, [machines, period, isFree]);
+  }, [machines, period, customFrom, customTo, isFree]);
 
   const filteredBookings = useMemo(() => {
     if (isFree || !storagePolicyEnabled) return [];
