@@ -1,0 +1,241 @@
+import React, { useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
+import { TIERS, effectiveTier } from '../../lib/gates';
+
+function GlowBtn({ onClick, disabled, style, glow, children }) {
+  const [hov, setHov] = useState(false);
+  const [active, setActive] = useState(false);
+  const glowColor = glow || ACC;
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => { setHov(false); setActive(false); }}
+      onMouseDown={() => setActive(true)}
+      onMouseUp={() => setActive(false)}
+      style={{
+        ...style,
+        boxShadow: hov ? `0 0 14px ${glowColor}77, 0 0 5px ${glowColor}55` : "none",
+        transform: active ? "scale(0.95)" : "scale(1)",
+        transition: "box-shadow 0.15s ease, transform 0.1s ease",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const PRICE_IDS = {
+  enthusiast_monthly: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_MONTHLY,
+  enthusiast_yearly:  import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_YEARLY,
+  team:               import.meta.env.VITE_STRIPE_PRICE_TEAM,
+  business:           import.meta.env.VITE_STRIPE_PRICE_BUSINESS,
+};
+
+const PLANS = [
+  {
+    id: "free",
+    label: "Free",
+    price: "$0",
+    period: "",
+    features: ["Up to 30 machines","Up to 5 tools / vehicles / equipment","Wiki access","Job tracker","Community support"],
+    personal: true,
+  },
+  {
+    id: "enthusiast",
+    label: "Enthusiast",
+    priceMonthly: "$4.99",
+    priceYearly: "$12",
+    period: "/mo",
+    periodYearly: "/yr",
+    features: ["Unlimited machines","Unlimited tools, vehicles & equipment","Storage policy — automated fee tracking","Escalation alerts for long-stay machines","Everything in Free","Early access to new features"],
+    personal: true,
+    highlight: true,
+  },
+  {
+    id: "team",
+    label: "Team",
+    price: "$29",
+    period: "/mo",
+    features: ["Unlimited machines","Organisation / multi-user","Access control (ACL)","Provision assets to team members","Shared machine library","Everything in Enthusiast"],
+    personal: false,
+  },
+  {
+    id: "business",
+    label: "Business",
+    price: "$99",
+    period: "/mo",
+    features: ["Everything in Team","Parts tracker"],
+    personal: false,
+  },
+];
+
+function PlanCard({ plan, current, billing, onUpgrade, onManage, loading }) {
+  const isCurrent = plan.id === current;
+  const price = plan.id === "enthusiast" && billing === "yearly"
+    ? plan.priceYearly + plan.periodYearly
+    : (plan.price || plan.priceMonthly) + (plan.period || "");
+  const isLoading = loading === plan.id;
+
+  const accentColor = isCurrent ? GRN : plan.highlight ? ACC : BRD;
+  const glowShadow  = isCurrent ? `0 0 18px ${GRN}33, 0 0 4px ${GRN}22`
+                    : plan.highlight ? `0 0 18px ${ACC}33, 0 0 4px ${ACC}22`
+                    : "none";
+
+  return (
+    <div className="plan-card" style={{
+      background: SURF,
+      border: "1px solid " + accentColor,
+      borderTop: "2px solid " + accentColor,
+      borderRadius: 3,
+      padding: "20px 14px 14px",
+      position: "relative",
+      boxShadow: glowShadow,
+    }}>
+      {plan.highlight && !isCurrent && (
+        <div style={{ position: "absolute", top: -11, left: 12, background: ACC, color: "#000", fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", padding: "2px 8px", borderRadius: 2 }}>
+          POPULAR
+        </div>
+      )}
+      {isCurrent && (
+        <div style={{ position: "absolute", top: -11, left: 12, background: GRN, color: "#000", fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", padding: "2px 8px", borderRadius: 2 }}>
+          ✓ CURRENT
+        </div>
+      )}
+      <div style={{ fontSize: 9, color: accentColor, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 8 }}>{plan.label}</div>
+      <div style={{ marginBottom: 14 }}>
+        <span style={{ fontSize: 26, fontWeight: 700, color: TXT, letterSpacing: "-0.02em" }}>{price?.split("/")[0] || "$0"}</span>
+        {price?.includes("/") && <span style={{ fontSize: 10, color: MUT, marginLeft: 2 }}>/{price.split("/")[1]}</span>}
+        {!price && <span style={{ fontSize: 10, color: MUT }}> free forever</span>}
+      </div>
+      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 12px", fontSize: 10, lineHeight: 2 }}>
+        {plan.features.map(f => (
+          <li key={f} style={{ display: "flex", gap: 6, alignItems: "flex-start", color: MUT }}>
+            <span style={{ color: plan.id === "free" ? MUT : GRN, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
+          </li>
+        ))}
+      </ul>
+      {!plan.personal && !isCurrent && (
+        <div style={{ fontSize: 8, color: MUT, marginBottom: 10, letterSpacing: "0.06em", borderTop: "1px solid #252525", paddingTop: 8 }}>
+          Requires an organisation
+        </div>
+      )}
+      {!isCurrent && plan.id !== "free" && (
+        <GlowBtn
+          onClick={() => onUpgrade(plan.id)}
+          disabled={isLoading}
+          glow={ACC}
+          style={{ ...btnA, ...sm, width: "100%", opacity: isLoading ? 0.6 : 1 }}
+        >
+          {isLoading ? "Redirecting…" : "Upgrade →"}
+        </GlowBtn>
+      )}
+      {isCurrent && plan.id !== "free" && (
+        <GlowBtn
+          onClick={() => onManage(plan.id)}
+          disabled={isLoading}
+          glow={RED}
+          style={{ ...btnG, ...sm, width: "100%", opacity: isLoading ? 0.6 : 1 }}
+        >
+          {isLoading ? "Redirecting…" : "Manage / Cancel"}
+        </GlowBtn>
+      )}
+    </div>
+  );
+}
+
+function BillingPage({ profile, company, session }) {
+  const [billing, setBilling] = useState("monthly");
+  const [loading, setLoading] = useState(null);
+  const [err, setErr] = useState("");
+  const tier = effectiveTier(profile, company);
+
+  const handleUpgrade = async (planId) => {
+    setLoading(planId); setErr("");
+    try {
+      const priceKey = planId === "enthusiast"
+        ? (billing === "yearly" ? "enthusiast_yearly" : "enthusiast_monthly")
+        : planId;
+      const price_id = PRICE_IDS[priceKey];
+      const isOrgPlan = ["team","business"].includes(planId);
+
+      const base = window.location.origin;
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          price_id,
+          user_id: session.user.id,
+          company_id: isOrgPlan && company ? company.id : null,
+          success_url: base + "/?billing=success",
+          cancel_url: base + "/?billing=cancelled",
+        },
+      });
+      if (error || !data?.url) throw new Error(error?.message || "Failed to create checkout session");
+      window.location.href = data.url;
+    } catch (e) {
+      setErr(e.message);
+      setLoading(null);
+    }
+  };
+
+  const handleManage = async () => {
+    setLoading("manage"); setErr("");
+    try {
+      const base = window.location.origin;
+      const isOrgPlan = ["team","business"].includes(tier);
+      const { data, error } = await supabase.functions.invoke("create-portal", {
+        body: {
+          user_id: session.user.id,
+          company_id: isOrgPlan && company ? company.id : null,
+          return_url: base + "/?billing=managed",
+        },
+      });
+      if (error || !data?.url) throw new Error(error?.message || "Failed to open billing portal");
+      window.location.href = data.url;
+    } catch (e) {
+      setErr(e.message);
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 9, color: MUT, marginBottom: 16, lineHeight: 1.7 }}>
+        {["team","business"].includes(tier)
+          ? `Your organisation is on the ${TIERS[tier]?.label} plan.`
+          : `Your account is on the ${TIERS[tier]?.label} plan.`}
+      </div>
+
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, alignItems: "center" }}>
+        <button onClick={() => setBilling("monthly")} style={{ ...btnG, ...sm, borderRadius: "2px 0 0 2px", borderRight: "none", ...(billing === "monthly" ? { background: ACC, color: "#000", border: "1px solid " + ACC } : {}) }}>Monthly</button>
+        <button onClick={() => setBilling("yearly")} style={{ ...btnG, ...sm, borderRadius: "0 2px 2px 0", ...(billing === "yearly" ? { background: ACC, color: "#000", border: "1px solid " + ACC } : {}) }}>Yearly</button>
+        {billing === "yearly" && (
+          <span style={{ marginLeft: 10, fontSize: 8, color: GRN, background: GRN+"18", border: "1px solid "+GRN+"44", borderRadius: 2, padding: "2px 7px", fontWeight: 700, letterSpacing: "0.08em" }}>~80% OFF</span>
+        )}
+      </div>
+
+      {err && <div style={{ fontSize: 10, color: RED, marginBottom: 12 }}>{err}</div>}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        {PLANS.map(plan => (
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            current={tier}
+            billing={billing}
+            onManage={handleManage}
+            onUpgrade={handleUpgrade}
+            loading={loading}
+          />
+        ))}
+      </div>
+
+      <div style={{ fontSize: 9, color: MUT, textAlign: "center", lineHeight: 1.7, borderTop: "1px solid " + BRD, paddingTop: 16 }}>
+        Payments secured by Stripe. Cancel anytime.
+      </div>
+    </div>
+  );
+}
+
+export default BillingPage;

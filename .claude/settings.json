@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__github__list_branches"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"REMINDER: A git commit was just made. Check if docs/FEATURE_MAP.md needs updating to reflect any new or changed features in this commit. Update it if needed before moving on.\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
