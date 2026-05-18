@@ -344,6 +344,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const userId = session?.user?.id;
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
   const [formTool, setFormTool] = useState(null);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState(null);
@@ -365,7 +366,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    getTools().then(ts => { setTools(ts); setLoading(false); }).catch(() => setLoading(false));
+    getTools().then(ts => { setTools(ts); setLoading(false); }).catch(() => { setErr("Failed to load tools. Refresh to try again."); setLoading(false); });
   }, [userId]);
 
   const totalValue  = useMemo(() => tools.reduce((s, t) => s + (t.purchasePrice || 0), 0), [tools]);
@@ -501,6 +502,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
         </div>
       )}
 
+      {err && <div style={{ fontSize: 10, color: RED, padding: "12px 0", textAlign: "center" }}>{err}</div>}
       {loading && <div style={{ fontSize: 10, color: MUT, padding: "24px 0", textAlign: "center" }}>Loading…</div>}
 
       {!loading && tools.length === 0 && (
