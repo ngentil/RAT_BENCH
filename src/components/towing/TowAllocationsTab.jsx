@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import { ACC, MUT, BRD, TXT, GRN, SURF } from '../../lib/styles';
-import { logAllocations, getRecentAllocations } from '../../lib/db/towing';
+import { logAllocations, getRecentAllocations, logTrafficEvents, getTrafficSignals } from '../../lib/db/towing';
 
 const API_URL = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
 const API_KEY = import.meta.env.VITE_VICROADS_KEY || 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
@@ -71,7 +71,7 @@ function StatusBadge({ live }) {
   );
 }
 
-export function AllocationCard({ feature, fromLog }) {
+export function AllocationCard({ feature, fromLog, trafficSignal }) {
   const [open, setOpen] = useState(false);
   const p          = feature.properties || {};
   const road       = p.closedRoadName || '—';
@@ -89,6 +89,15 @@ export function AllocationCard({ feature, fromLog }) {
   const logMeta    = feature._logMeta;
   const elapsed    = timeIn(logMeta?.firstSeen || p.lastUpdated);
   const isLive     = !fromLog;
+
+  // Traffic signal: gap between traffic feed first-seen and tow dispatch
+  const trafficFirstSeen = trafficSignal?.first_seen_at ? new Date(trafficSignal.first_seen_at) : null;
+  const towFirstSeen     = logMeta?.firstSeen            ? new Date(logMeta.firstSeen)           : null;
+  const gapMs   = (trafficFirstSeen && towFirstSeen) ? towFirstSeen - trafficFirstSeen : null;
+  const gapMins = (gapMs !== null && gapMs >= 0)     ? Math.floor(gapMs / 60000)       : null;
+  const gapLabel = gapMins !== null
+    ? (gapMins < 60 ? `+${gapMins}m` : `+${Math.floor(gapMins / 60)}h ${gapMins % 60}m`)
+    : null;
 
   const mapsUrl = coords
     ? `https://www.google.com/maps?q=${coords[1]},${coords[0]}`
@@ -119,6 +128,16 @@ export function AllocationCard({ feature, fromLog }) {
               {elapsed && (
                 <span style={{ fontSize: 7, color: ORANGE, border: `1px solid ${ORANGE}44`, borderRadius: 2, padding: '1px 4px', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>
                   ⏱ {elapsed}
+                </span>
+              )}
+              {trafficSignal && gapLabel && (
+                <span style={{ fontSize: 7, color: '#5aaa7a', border: '1px solid #1a4a2a', borderRadius: 2, padding: '1px 4px', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>
+                  🚦 {gapLabel}
+                </span>
+              )}
+              {trafficSignal && !gapLabel && (
+                <span style={{ fontSize: 7, color: '#5aaa7a', border: '1px solid #1a4a2a', borderRadius: 2, padding: '1px 4px', fontFamily: "'IBM Plex Mono',monospace" }}>
+                  🚦 in traffic feed
                 </span>
               )}
               {lanes != null && (
@@ -170,6 +189,28 @@ export function AllocationCard({ feature, fromLog }) {
               </div>
             ))}
           </div>
+          {trafficSignal && (
+            <div style={{ marginTop: 10, padding: '8px 10px', background: '#06100a', border: '1px solid #1a3a22', borderRadius: 2 }}>
+              <div style={{ fontSize: 7, color: '#5aaa7a', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 5 }}>
+                🚦 Traffic Signal
+              </div>
+              <div style={{ fontSize: 9, color: MUT, lineHeight: 1.7 }}>
+                <span style={{ color: TXT }}>First in feed:</span> {fmt(trafficSignal.first_seen_at)}
+                {trafficSignal.sub_type && <span style={{ color: '#666' }}> · {trafficSignal.sub_type}</span>}
+              </div>
+              {towFirstSeen && trafficFirstSeen && (
+                <div style={{ fontSize: 9, color: MUT, lineHeight: 1.7 }}>
+                  <span style={{ color: TXT }}>Tow dispatched:</span> {fmt(logMeta.firstSeen)}
+                  {gapLabel && (
+                    <span style={{ color: '#5aaa7a', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}> ({gapLabel} later)</span>
+                  )}
+                </div>
+              )}
+              {!towFirstSeen && trafficFirstSeen && (
+                <div style={{ fontSize: 8, color: '#444', marginTop: 2 }}>Tow dispatch time not yet logged — will appear after first poll</div>
+              )}
+            </div>
+          )}
           {mapsUrl && (
             <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
@@ -194,6 +235,7 @@ export function AllocationCard({ feature, fromLog }) {
 export default function TowAllocationsTab() {
   const [allFeatures,  setAllFeatures]  = useState([]);
   const [liveIds,      setLiveIds]      = useState(new Set());
+  const [trafficMap,   setTrafficMap]   = useState({});
   const [loading,      setLoading]      = useState(true);
   const [err,          setErr]          = useState('');
   const [lastFetch,    setLastFetch]    = useState(null);
@@ -236,10 +278,22 @@ export default function TowAllocationsTab() {
       const res  = await fetch(API_URL, { headers: { KeyID: API_KEY } });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
-      const all  = data.data?.features || data.features || [];
-      const live = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
-setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
+      const all     = data.data?.features || data.features || [];
+      const live    = all.filter(f => f.properties?.source?.sourceName === 'TowAllocation');
+      const nonTow  = all.filter(f => f.properties?.source?.sourceName !== 'TowAllocation');
+
+      setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
       logAllocations(live).catch(e => console.warn('logAllocations:', e));
+      logTrafficEvents(nonTow).catch(() => {});
+
+      // Fetch traffic signal data for current tow allocations
+      const towIds = live.map(f => String(f.properties?.eventId)).filter(Boolean);
+      getTrafficSignals(towIds).then(signals => {
+        const map = {};
+        signals.forEach(s => { map[s.event_id] = s; });
+        setTrafficMap(map);
+      }).catch(() => {});
+
       setAllFeatures(prev => mergeFeatures(live, prev));
       setErr('');
       setLastFetch(new Date());
@@ -519,7 +573,7 @@ setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
             Active ({active.length})
           </div>
           {active.map((f, i) => (
-            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={false} />
+            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={false} trafficSignal={trafficMap[String(f.properties?.eventId)]} />
           ))}
           {cleared.length > 0 && <div style={{ marginTop: 12 }} />}
         </>
@@ -531,7 +585,7 @@ setLiveIds(new Set(live.map(f => String(f.properties?.eventId))));
             Cleared ({cleared.length})
           </div>
           {cleared.map((f, i) => (
-            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={true} />
+            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={true} trafficSignal={trafficMap[String(f.properties?.eventId)]} />
           ))}
         </>
       )}
