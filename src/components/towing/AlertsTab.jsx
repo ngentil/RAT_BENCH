@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF } from '../../lib/styles';
 
-// VicEmergency public JSON feed — covers CFA fire, Ambulance Vic, SES, storm, flood
-// No authentication required; updates every ~1 minute
-const FEED_URL  = 'https://data.emergency.vic.gov.au/Show?pageId=getIncidentJSON';
+// Proxied through Netlify function to avoid CORS block (VicEmergency doesn't allow browser cross-origin)
+const FEED_URL  = '/.netlify/functions/vic-emergency';
 const REFRESH_MS = 120_000;
 
 const FILTERS = [
