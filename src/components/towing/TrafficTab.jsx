@@ -1,38 +1,37 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ACC, MUT, BRD, TXT, RED, SURF } from '../../lib/styles';
 
-// Proxied through Netlify function to avoid CORS block
-const FEED_URL   = '/.netlify/functions/vic-emergency';
-const REFRESH_MS = 60_000;
+const API_URL  = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
+const API_KEY  = import.meta.env.VITE_VICROADS_KEY || 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
+const REFRESH_MS  = 60_000;
+const WINDOW_MS   = 24 * 60 * 60 * 1000;
 
 const FILTERS = [
-  { id: 'all',     label: 'All' },
-  { id: 'fire',    label: '🔥 Fire' },
-  { id: 'medical', label: '🚑 Medical' },
-  { id: 'rescue',  label: '⛑ Rescue' },
-  { id: 'storm',   label: '🌩 Storm' },
-  { id: 'other',   label: '⚠️ Other' },
+  { id: 'all',       label: 'All' },
+  { id: 'accident',  label: '💥 Accident' },
+  { id: 'breakdown', label: '🚗 Breakdown' },
+  { id: 'flood',     label: '🌊 Flooding' },
+  { id: 'damage',    label: '🛣 Road Damage' },
+  { id: 'other',     label: '⚠️ Other' },
 ];
 
 const STATUS_COLOR = {
-  'Emergency Warning': RED,
-  'Watch and Act':     '#e8870a',
-  'Advice':            '#c8a84b',
-  'Under Control':     '#444',
-  'Safe':              '#444',
+  ACTIVE:   '#e8870a',
+  REOPENED: '#c8a84b',
+  CLOSED:   '#444',
 };
 
-function toFilter(cat1 = '') {
-  const c = cat1.toLowerCase();
-  if (c.includes('fire'))    return 'fire';
-  if (c.includes('medic') || c.includes('ambulance')) return 'medical';
-  if (c.includes('rescue') || c.includes('ses'))  return 'rescue';
-  if (c.includes('storm') || c.includes('flood') || c.includes('wind')) return 'storm';
+function toFilter(sub = '') {
+  const s = sub.toLowerCase();
+  if (s.includes('accident') || s.includes('collision')) return 'accident';
+  if (s.includes('breakdown') || s.includes('stationary')) return 'breakdown';
+  if (s.includes('flood')) return 'flood';
+  if (s.includes('damage')) return 'damage';
   return 'other';
 }
 
-function incidentIcon(cat1 = '') {
-  return { fire: '🔥', medical: '🚑', rescue: '⛑', storm: '🌩' }[toFilter(cat1)] || '⚠️';
+function incidentIcon(sub = '') {
+  return { accident: '💥', breakdown: '🚗', flood: '🌊', damage: '🛣' }[toFilter(sub)] || '⚠️';
 }
 
 function timeAgo(iso) {
@@ -42,61 +41,39 @@ function timeAgo(iso) {
   const ms = Date.now() - d.getTime();
   if (ms < 0) return null;
   const m = Math.floor(ms / 60000);
-  if (m < 60)  return `${m}m ago`;
+  if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   return `${h}h ${m % 60}m ago`;
 }
 
-function normalise(raw) {
-  if (raw.type === 'Feature' && raw.properties) {
-    const p = raw.properties;
-    return {
-      id:        raw.id || p.id,
-      category1: p.category1 || p.feedType || '',
-      category2: p.category2 || p.eventType || '',
-      title:     p.title || p.name || p.headline || '',
-      location:  p.location || p.description || '',
-      status:    p.status || '',
-      created:   p.pubDate || p.created || p.updated || null,
-      updated:   p.updated || p.pubDate || null,
-      geometry:  raw.geometry,
-    };
-  }
-  const lat = raw.latitude  ? parseFloat(raw.latitude)  : null;
-  const lng = raw.longitude ? parseFloat(raw.longitude) : null;
+function normalise(f) {
+  const p = f.properties || {};
+  const coords = f.geometry?.type === 'Point'
+    ? f.geometry.coordinates
+    : (f.geometry?.coordinates?.[0]?.[0] || null);
   return {
-    id:        String(raw.incidentNo || raw.id || Math.random()),
-    category1: raw.category1 || raw.feedType || '',
-    category2: raw.category2 || raw.incidentType || raw.eventType || '',
-    title:     raw.name || raw.title || raw.headline || raw.sourceTitle || '',
-    location:  raw.incidentLocation || (typeof raw.location === 'string' ? raw.location : (raw.location?.suburb || '')),
-    status:    raw.incidentStatus || raw.status || '',
-    created:   raw.originDateTime || raw.createdDt || raw.created || null,
-    updated:   raw.lastUpdateDateTime || raw.lastUpdatedDt || raw.updated || null,
-    geometry:  raw.geometry || (lat && lng ? { type: 'Point', coordinates: [lng, lat] } : null),
+    id:       String(p.eventId || f.id || ''),
+    subType:  p.eventSubType || p.eventType || '',
+    title:    p.closedRoadName || p.description || 'Road Disruption',
+    location: p.reference?.startIntersectionLocality || p.startIntersection || '',
+    status:   p.status || '',
+    updated:  p.lastUpdated || null,
+    geometry: coords ? { type: 'Point', coordinates: coords } : null,
   };
 }
 
-function parseFeed(data) {
-  if (data?.features)  return data.features.map(normalise);
-  if (data?.results)   return (Array.isArray(data.results)   ? data.results   : Object.values(data.results)).map(normalise);
-  if (Array.isArray(data)) return data.map(normalise);
-  if (data?.incidents) return (Array.isArray(data.incidents) ? data.incidents : Object.values(data.incidents)).map(normalise);
-  return [];
-}
-
-function AlertCard({ inc }) {
+function IncidentCard({ inc }) {
   const [open, setOpen] = useState(false);
   const borderColor = STATUS_COLOR[inc.status] || '#333';
-  const ago = timeAgo(inc.created);
+  const ago = timeAgo(inc.updated);
 
   return (
     <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${borderColor}`, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 12px', cursor: 'pointer' }}>
-        <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>{incidentIcon(inc.category1)}</span>
+        <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>{incidentIcon(inc.subType)}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{inc.title || inc.category1 || 'Incident'}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{inc.title}</span>
             {inc.status && (
               <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', padding: '1px 5px', border: `1px solid ${borderColor}55`, borderRadius: 2, color: borderColor, textTransform: 'uppercase' }}>
                 {inc.status}
@@ -105,7 +82,7 @@ function AlertCard({ inc }) {
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 2 }}>
             {inc.location && <span style={{ fontSize: 8, color: MUT }}>{inc.location}</span>}
-            {inc.category2 && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 8, color: MUT }}>{inc.category2}</span></>}
+            {inc.subType && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 8, color: MUT }}>{inc.subType}</span></>}
             {ago && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 8, color: '#7a7a7a' }}>{ago}</span></>}
           </div>
         </div>
@@ -116,11 +93,9 @@ function AlertCard({ inc }) {
         <div style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
           <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
             {[
-              ['Category',  inc.category1 || '—'],
-              ['Type',      inc.category2 || '—'],
-              ['Status',    inc.status    || '—'],
-              ['Reported',  inc.created ? new Date(inc.created).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'],
-              ...(inc.updated && inc.updated !== inc.created ? [['Updated', new Date(inc.updated).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })]] : []),
+              ['Type',    inc.subType || '—'],
+              ['Status',  inc.status  || '—'],
+              ['Updated', inc.updated ? new Date(inc.updated).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'],
               ...(inc.geometry?.coordinates ? [['Coordinates', `${inc.geometry.coordinates[1]?.toFixed(4)}, ${inc.geometry.coordinates[0]?.toFixed(4)}`]] : []),
             ].map(([label, val]) => (
               <div key={label} style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '5px 8px' }}>
@@ -145,57 +120,65 @@ function AlertCard({ inc }) {
   );
 }
 
-export default function AlertsTab() {
+export default function TrafficTab() {
   const [incidents,  setIncidents]  = useState([]);
-  const [rawDebug,   setRawDebug]   = useState('');
   const [loading,    setLoading]    = useState(true);
   const [err,        setErr]        = useState('');
-  const [errDetail,  setErrDetail]  = useState('');
   const [filter,     setFilter]     = useState('all');
   const [lastFetch,  setLastFetch]  = useState(null);
   const [countdown,  setCountdown]  = useState(REFRESH_MS / 1000);
   const timerRef = useRef(null);
 
-  const fetchAlerts = useCallback(async () => {
+  const fetchTraffic = useCallback(async () => {
     try {
-      const res = await fetch(FEED_URL);
-      const rawText = await res.text();
+      const res = await fetch(API_URL, { headers: { KeyID: API_KEY } });
       if (!res.ok) {
-        setErr(`HTTP ${res.status} from proxy`);
-        setErrDetail(rawText.slice(0, 300));
+        setErr(`HTTP ${res.status} from VicRoads`);
         setLoading(false);
         return;
       }
-      let data;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        setErr('Response was not valid JSON');
-        setErrDetail(rawText.slice(0, 300));
-        setLoading(false);
-        return;
+      const data = await res.json();
+      const features = data?.data?.features || data?.features || [];
+      const cutoff = Date.now() - WINDOW_MS;
+
+      // Deduplicate by eventId, keep most-recently-updated feature per event
+      const byId = new Map();
+      for (const f of features) {
+        const inc = normalise(f);
+        const t = inc.updated ? new Date(inc.updated).getTime() : 0;
+        const existing = byId.get(inc.id);
+        const et = existing?.updated ? new Date(existing.updated).getTime() : 0;
+        if (!existing || t > et) byId.set(inc.id, inc);
       }
-      const parsed = parseFeed(data);
-      const firstItem = data.features?.[0] || data.results?.[0] || data.incidents?.[0] || (Array.isArray(data) ? data[0] : null);
-      setRawDebug(`keys:[${Object.keys(data).join(',')}] count:${parsed.length} cat1:"${firstItem?.category1}" status:"${firstItem?.incidentStatus}"`);
-      setIncidents(parsed);
+
+      const all = [...byId.values()]
+        .filter(inc => {
+          if (!inc.updated) return true;
+          const t = new Date(inc.updated).getTime();
+          return isNaN(t) || t > cutoff;
+        })
+        .sort((a, b) => {
+          const ta = a.updated ? new Date(a.updated).getTime() : 0;
+          const tb = b.updated ? new Date(b.updated).getTime() : 0;
+          return tb - ta;
+        });
+
+      setIncidents(all);
       setErr('');
-      setErrDetail('');
       setLastFetch(new Date());
       setCountdown(REFRESH_MS / 1000);
     } catch (e) {
       setErr(e.message);
-      setErrDetail('');
     } finally {
       setLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    fetchAlerts();
-    const poll = setInterval(fetchAlerts, REFRESH_MS);
+    fetchTraffic();
+    const poll = setInterval(fetchTraffic, REFRESH_MS);
     return () => clearInterval(poll);
-  }, [fetchAlerts]);
+  }, [fetchTraffic]);
 
   useEffect(() => {
     timerRef.current = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
@@ -204,11 +187,11 @@ export default function AlertsTab() {
 
   const visible = filter === 'all'
     ? incidents
-    : incidents.filter(inc => toFilter(inc.category1) === filter);
+    : incidents.filter(inc => toFilter(inc.subType) === filter);
 
   const counts = {};
   incidents.forEach(inc => {
-    const f = toFilter(inc.category1);
+    const f = toFilter(inc.subType);
     counts[f] = (counts[f] || 0) + 1;
   });
 
@@ -217,13 +200,13 @@ export default function AlertsTab() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🚨 Emergency Alerts</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🚦 Traffic Incidents</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {loading
               ? 'Loading…'
               : err
                 ? <span style={{ color: RED }}>{err}</span>
-                : `${incidents.length} active incident${incidents.length !== 1 ? 's' : ''} · VicEmergency`
+                : `${incidents.length} incident${incidents.length !== 1 ? 's' : ''} · last 24h · VicRoads`
             }
           </div>
         </div>
@@ -234,7 +217,7 @@ export default function AlertsTab() {
             </span>
           )}
           <button
-            onClick={fetchAlerts}
+            onClick={fetchTraffic}
             style={{ fontSize: 8, fontWeight: 700, padding: '3px 9px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", letterSpacing: '0.06em', border: '1px solid #2a2a2a', color: MUT, background: '#0d0d0d' }}
           >
             ↺ Refresh
@@ -260,35 +243,24 @@ export default function AlertsTab() {
         })}
       </div>
 
-      {loading && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading VicEmergency feed…</div>}
+      {loading && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading VicRoads feed…</div>}
       {!loading && err && (
         <div style={{ padding: '16px', background: '#1a0a0a', border: '1px solid #3a1a1a', borderRadius: 3, marginBottom: 12 }}>
-          <div style={{ fontSize: 10, color: RED, marginBottom: 6, fontWeight: 700 }}>Could not load alerts: {err}</div>
-          {errDetail && (
-            <div style={{ fontSize: 9, color: '#884040', fontFamily: "'IBM Plex Mono',monospace", wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: 1.5, background: '#0d0000', padding: '8px', borderRadius: 2, marginBottom: 6 }}>
-              {errDetail}
-            </div>
-          )}
-          <div style={{ fontSize: 9, color: MUT }}>Proxy: {FEED_URL}</div>
+          <div style={{ fontSize: 10, color: RED, fontWeight: 700 }}>Could not load traffic: {err}</div>
         </div>
       )}
       {!loading && !err && visible.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>
-          {filter === 'all' ? 'No active incidents in Victoria.' : `No ${filter} incidents right now.`}
-          {rawDebug && (
-            <div style={{ marginTop: 12, fontSize: 8, color: '#555', fontFamily: "'IBM Plex Mono',monospace", wordBreak: 'break-all', lineHeight: 1.6, background: '#111', border: '1px solid #222', borderRadius: 2, padding: '8px 10px', textAlign: 'left' }}>
-              {rawDebug}
-            </div>
-          )}
+          No {filter === 'all' ? '' : filter + ' '}traffic incidents in the last 24 hours.
         </div>
       )}
       {!loading && !err && visible.map((inc, i) => (
-        <AlertCard key={inc.id || i} inc={inc} />
+        <IncidentCard key={inc.id || i} inc={inc} />
       ))}
 
       {!loading && !err && (
         <div style={{ marginTop: 16, fontSize: 8, color: '#333', textAlign: 'center', lineHeight: 1.7 }}>
-          VicEmergency · State of Victoria · refreshes every 60s
+          VicRoads Open Data · last 24 hours · refreshes every 60s
         </div>
       )}
     </div>

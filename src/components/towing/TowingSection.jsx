@@ -4,12 +4,14 @@ import TowAllocationsTab from './TowAllocationsTab';
 import TowAnalyticsTab from './TowAnalyticsTab';
 import FleetTab from './FleetTab';
 import AlertsTab from './AlertsTab';
+import TrafficTab from './TrafficTab';
 
 const TABS = [
   { id: 'allocations', label: '🚦 Tow Allocations' },
   { id: 'analytics',   label: '📊 Analytics' },
   { id: 'fleet',       label: '🚛 Fleet' },
   { id: 'alerts',      label: '🚨 Alerts' },
+  { id: 'traffic',     label: '🗺 Traffic' },
 ];
 
 export default function TowingSection() {
@@ -30,6 +32,7 @@ export default function TowingSection() {
         {tab === 'analytics'   && <TowAnalyticsTab />}
         {tab === 'fleet'       && <FleetTab />}
         {tab === 'alerts'      && <AlertsTab />}
+        {tab === 'traffic'     && <TrafficTab />}
       </div>
     </div>
   );
