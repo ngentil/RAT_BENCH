@@ -81,7 +81,9 @@ function normalise(raw) {
 
 function parseFeed(data) {
   // GeoJSON FeatureCollection
-  if (data?.features) return data.features.map(normalise);
+  if (data?.features)  return data.features.map(normalise);
+  // VicEmergency wraps under 'results'
+  if (data?.results)   return (Array.isArray(data.results)   ? data.results   : Object.values(data.results)).map(normalise);
   // Array at root
   if (Array.isArray(data)) return data.map(normalise);
   // Wrapped under 'incidents'
@@ -186,7 +188,7 @@ export default function AlertsTab() {
       const parsed = parseFeed(data);
       // Debug: capture structure so it's visible on screen if parsing yields nothing
       const topKeys = Object.keys(data);
-      const firstItem = data.features?.[0] || data.incidents?.[0] || (Array.isArray(data) ? data[0] : null);
+      const firstItem = data.features?.[0] || data.results?.[0] || data.incidents?.[0] || (Array.isArray(data) ? data[0] : null);
       setRawDebug(`top keys: [${topKeys.join(', ')}] | count: ${parsed.length} | first item keys: [${firstItem ? Object.keys(firstItem).join(', ') : 'none'}]`);
       setIncidents(parsed);
       setErr('');
