@@ -155,6 +155,7 @@ function AlertCard({ inc }) {
 
 export default function AlertsTab() {
   const [incidents,  setIncidents]  = useState([]);
+  const [rawDebug,   setRawDebug]   = useState('');
   const [loading,    setLoading]    = useState(true);
   const [err,        setErr]        = useState('');
   const [errDetail,  setErrDetail]  = useState('');
@@ -183,6 +184,10 @@ export default function AlertsTab() {
         return;
       }
       const parsed = parseFeed(data);
+      // Debug: capture structure so it's visible on screen if parsing yields nothing
+      const topKeys = Object.keys(data);
+      const firstItem = data.features?.[0] || data.incidents?.[0] || (Array.isArray(data) ? data[0] : null);
+      setRawDebug(`top keys: [${topKeys.join(', ')}] | count: ${parsed.length} | first item keys: [${firstItem ? Object.keys(firstItem).join(', ') : 'none'}]`);
       setIncidents(parsed);
       setErr('');
       setErrDetail('');
@@ -284,8 +289,13 @@ export default function AlertsTab() {
         </div>
       )}
       {!loading && !err && visible.length === 0 && (
-        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>
+        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>
           {filter === 'all' ? 'No active incidents in Victoria.' : `No ${filter} incidents right now.`}
+          {rawDebug && (
+            <div style={{ marginTop: 12, fontSize: 8, color: '#555', fontFamily: "'IBM Plex Mono',monospace", wordBreak: 'break-all', lineHeight: 1.6, background: '#111', border: '1px solid #222', borderRadius: 2, padding: '8px 10px', textAlign: 'left' }}>
+              {rawDebug}
+            </div>
+          )}
         </div>
       )}
       {!loading && !err && visible.map((inc, i) => (
