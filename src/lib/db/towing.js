@@ -116,3 +116,38 @@ export async function getRecentAllocations(hours = 24) {
   if (error) throw error;
   return (data || []).map(r => ({ ...r.data, _logMeta: { firstSeen: r.first_seen, lastSeen: r.last_seen } }));
 }
+
+// ── Traffic event log ─────────────────────────────────────────────────────────
+
+export async function logTrafficEvents(features) {
+  if (!features.length) return;
+  const seen = new Set();
+  const rows = features
+    .filter(f => {
+      const id = String(f.properties?.eventId || '');
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    })
+    .map(f => {
+      const p = f.properties || {};
+      return {
+        event_id:  String(p.eventId),
+        sub_type:  p.eventSubType || null,
+        road_name: p.closedRoadName || null,
+        suburb:    p.reference?.startIntersectionLocality || null,
+      };
+    });
+  if (!rows.length) return;
+  // ignoreDuplicates: true preserves first_seen_at on conflict
+  await supabase.from('traffic_event_log').upsert(rows, { onConflict: 'event_id', ignoreDuplicates: true });
+}
+
+export async function getTrafficSignals(eventIds) {
+  if (!eventIds.length) return [];
+  const { data } = await supabase
+    .from('traffic_event_log')
+    .select('event_id, first_seen_at, sub_type')
+    .in('event_id', eventIds);
+  return data || [];
+}
