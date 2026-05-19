@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import 'leaflet/dist/leaflet.css';
-import { ACC, MUT, BRD, TXT, GRN, SURF } from '../../lib/styles';
-import { getAllocationsForAnalytics } from '../../lib/db/towing';
+import { ACC, MUT, BRD, TXT, GRN, SURF, btnG, sm } from '../../lib/styles';
+import { getAllocationsForAnalytics, getRecentAllocations } from '../../lib/db/towing';
+import { AllocationCard } from './TowAllocationsTab';
 
 const ORANGE = '#e8870a';
 const API_URL = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
@@ -99,7 +100,8 @@ function DowChart({ counts }) {
 
 // ── Map ───────────────────────────────────────────────────────────────────────
 
-function HeatMap({ hotspots, activePoints, showHotspots, showActive }) {
+// activePoints / clearedPoints: [{ pos: [lat, lng], feature }]
+function HeatMap({ hotspots, activePoints, clearedPoints, showHotspots, showActive, showCleared, onFeatureClick }) {
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
 
@@ -130,6 +132,13 @@ function HeatMap({ hotspots, activePoints, showHotspots, showActive }) {
         .addAttribution('© <a href="https://openstreetmap.org" style="color:#666">OpenStreetMap</a>')
         .addTo(map);
 
+      const addClickable = (markers, feature, fromLog) => {
+        markers.forEach(m => {
+          m.on('click', () => onFeatureClick.current({ feature, fromLog }));
+          m.addTo(map);
+        });
+      };
+
       if (showHotspots) {
         hotspots.forEach(([lat, lng]) => {
           L.circleMarker([lat, lng], { radius: 28, fillColor: ORANGE, fillOpacity: 0.07, stroke: false }).addTo(map);
@@ -139,16 +148,29 @@ function HeatMap({ hotspots, activePoints, showHotspots, showActive }) {
       }
 
       if (showActive) {
-        activePoints.forEach(([lat, lng]) => {
-          L.circleMarker([lat, lng], { radius: 18, fillColor: GRN, fillOpacity: 0.12, stroke: false }).addTo(map);
-          L.circleMarker([lat, lng], { radius: 7,  fillColor: GRN, fillOpacity: 0.45, stroke: false }).addTo(map);
-          L.circleMarker([lat, lng], { radius: 3,  fillColor: '#aaffaa', fillOpacity: 0.9,  stroke: false }).addTo(map);
+        activePoints.forEach(({ pos: [lat, lng], feature }) => {
+          addClickable([
+            L.circleMarker([lat, lng], { radius: 18, fillColor: GRN, fillOpacity: 0.12, stroke: false }),
+            L.circleMarker([lat, lng], { radius: 7,  fillColor: GRN, fillOpacity: 0.45, stroke: false }),
+            L.circleMarker([lat, lng], { radius: 3,  fillColor: '#aaffaa', fillOpacity: 0.9, stroke: false }),
+          ], feature, false);
+        });
+      }
+
+      if (showCleared) {
+        clearedPoints.forEach(({ pos: [lat, lng], feature }) => {
+          addClickable([
+            L.circleMarker([lat, lng], { radius: 14, fillColor: '#555', fillOpacity: 0.18, stroke: false }),
+            L.circleMarker([lat, lng], { radius: 5,  fillColor: '#888', fillOpacity: 0.55, stroke: false }),
+            L.circleMarker([lat, lng], { radius: 2,  fillColor: '#bbb', fillOpacity: 0.8,  stroke: false }),
+          ], feature, true);
         });
       }
 
       const allVisible = [
-        ...(showHotspots ? hotspots : []),
-        ...(showActive   ? activePoints : []),
+        ...(showHotspots ? hotspots                         : []),
+        ...(showActive   ? activePoints.map(p => p.pos)    : []),
+        ...(showCleared  ? clearedPoints.map(p => p.pos)   : []),
       ];
       if (allVisible.length > 0) {
         const lats = allVisible.map(p => p[0]);
@@ -163,7 +185,8 @@ function HeatMap({ hotspots, activePoints, showHotspots, showActive }) {
     });
 
     return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
-  }, [hotspots, activePoints, showHotspots, showActive]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hotspots, activePoints, clearedPoints, showHotspots, showActive, showCleared]);
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', borderRadius: 2 }} />
@@ -173,12 +196,17 @@ function HeatMap({ hotspots, activePoints, showHotspots, showActive }) {
 // ── Main tab ──────────────────────────────────────────────────────────────────
 
 export default function TowAnalyticsTab() {
-  const [days,         setDays]         = useState(30);
-  const [rows,         setRows]         = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [activeRaw,    setActiveRaw]    = useState([]);
-  const [showHotspots, setShowHotspots] = useState(true);
-  const [showActive,   setShowActive]   = useState(true);
+  const [days,            setDays]            = useState(30);
+  const [rows,            setRows]            = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [activeRaw,       setActiveRaw]       = useState([]);
+  const [clearedRaw,      setClearedRaw]      = useState([]);
+  const [showHotspots,    setShowHotspots]    = useState(true);
+  const [showActive,      setShowActive]      = useState(true);
+  const [showCleared,     setShowCleared]     = useState(true);
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  const onFeatureClick = useRef(null);
+  onFeatureClick.current = sel => setSelectedFeature(sel);
 
   useEffect(() => {
     setLoading(true);
@@ -194,6 +222,9 @@ export default function TowAnalyticsTab() {
         const all = d.data?.features || d.features || [];
         setActiveRaw(all.filter(f => f.properties?.source?.sourceName === 'TowAllocation'));
       })
+      .catch(() => {});
+    getRecentAllocations(1)
+      .then(setClearedRaw)
       .catch(() => {});
   }, []);
 
@@ -229,14 +260,20 @@ export default function TowAnalyticsTab() {
     ? durations.reduce((a, b) => a + b, 0) / durations.length
     : null;
 
-  const avgPerDay      = features.length ? (features.length / days).toFixed(1) : '0';
-  const topSuburb      = topSuburbs[0]?.[0] || '—';
-  const mapPoints      = features.filter(f => f.coords).map(f => [f.coords[1], f.coords[0]]);
+  const avgPerDay   = features.length ? (features.length / days).toFixed(1) : '0';
+  const topSuburb   = topSuburbs[0]?.[0] || '—';
+  const mapPoints   = features.filter(f => f.coords).map(f => [f.coords[1], f.coords[0]]);
+
+  const activeEventIds = new Set(activeRaw.map(f => String(f.properties?.eventId)));
   const activeMapPoints = activeRaw
     .filter(f => f.geometry?.coordinates)
-    .map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+    .map(f => ({ pos: [f.geometry.coordinates[1], f.geometry.coordinates[0]], feature: f }));
+  const clearedMapPoints = clearedRaw
+    .filter(f => f.geometry?.coordinates && !activeEventIds.has(String(f.properties?.eventId)))
+    .map(f => ({ pos: [f.geometry.coordinates[1], f.geometry.coordinates[0]], feature: f }));
 
   return (
+    <>
     <div style={{ padding: 16, flex: 1, overflowY: 'auto' }}>
 
       {/* Header */}
@@ -272,42 +309,42 @@ export default function TowAnalyticsTab() {
         {/* Heat map */}
         <div style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, overflow: 'hidden', minHeight: 340 }}>
           <div style={{ padding: '8px 12px', borderBottom: '1px solid ' + BRD, fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
-            Incident Map · {mapPoints.length} historical · {activeMapPoints.length} active
+            Incident Map · {mapPoints.length} historical · {activeMapPoints.length} active · {clearedMapPoints.length} cleared
           </div>
           <div style={{ height: 300, position: 'relative' }}>
             {loading
               ? <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 9, color: MUT }}>Loading…</div>
-              : (mapPoints.length === 0 && activeMapPoints.length === 0)
+              : (mapPoints.length === 0 && activeMapPoints.length === 0 && clearedMapPoints.length === 0)
                 ? <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 9, color: MUT }}>No coordinate data yet</div>
                 : <HeatMap
                     hotspots={mapPoints}
                     activePoints={activeMapPoints}
+                    clearedPoints={clearedMapPoints}
                     showHotspots={showHotspots}
                     showActive={showActive}
+                    showCleared={showCleared}
+                    onFeatureClick={onFeatureClick}
                   />
             }
             {/* Map legend */}
-            {!loading && (mapPoints.length > 0 || activeMapPoints.length > 0) && (
+            {!loading && (
               <div style={{
                 position: 'absolute', bottom: 10, left: 10, zIndex: 1000,
                 background: 'rgba(10,10,10,0.88)', border: '1px solid #2a2a2a', borderRadius: 3,
                 padding: '7px 10px', display: 'flex', flexDirection: 'column', gap: 5,
                 fontFamily: "'IBM Plex Mono',monospace", pointerEvents: 'auto',
               }}>
-                <button
-                  onClick={() => setShowHotspots(v => !v)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: showHotspots ? 1 : 0.35, transition: 'opacity 0.15s' }}
-                >
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: ORANGE, flexShrink: 0, boxShadow: showHotspots ? `0 0 6px ${ORANGE}88` : 'none' }} />
-                  <span style={{ fontSize: 8, color: MUT, letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>Hotspots ({mapPoints.length})</span>
-                </button>
-                <button
-                  onClick={() => setShowActive(v => !v)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: showActive ? 1 : 0.35, transition: 'opacity 0.15s' }}
-                >
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: GRN, flexShrink: 0, boxShadow: showActive ? `0 0 6px ${GRN}88` : 'none' }} />
-                  <span style={{ fontSize: 8, color: MUT, letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>Active Now ({activeMapPoints.length})</span>
-                </button>
+                {[
+                  { color: ORANGE, label: 'Hotspots',        count: mapPoints.length,       show: showHotspots, toggle: setShowHotspots },
+                  { color: GRN,    label: 'Active Now',       count: activeMapPoints.length, show: showActive,   toggle: setShowActive   },
+                  { color: '#777', label: 'Cleared (1hr)',    count: clearedMapPoints.length,show: showCleared,  toggle: setShowCleared  },
+                ].map(({ color, label, count, show, toggle }) => (
+                  <button key={label} onClick={() => toggle(v => !v)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: show ? 1 : 0.35, transition: 'opacity 0.15s' }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: show ? `0 0 6px ${color}88` : 'none' }} />
+                    <span style={{ fontSize: 8, color: MUT, letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{label} ({count})</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -351,5 +388,22 @@ export default function TowAnalyticsTab() {
       </div>
 
     </div>
+
+    {/* Allocation detail modal */}
+    {selectedFeature && (
+      <div
+        onClick={() => setSelectedFeature(null)}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: "'IBM Plex Mono',monospace" }}
+      >
+        <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Allocation Detail</div>
+            <button onClick={() => setSelectedFeature(null)} style={{ ...btnG, ...sm }}>✕ Close</button>
+          </div>
+          <AllocationCard feature={selectedFeature.feature} fromLog={selectedFeature.fromLog} />
+        </div>
+      </div>
+    )}
+    </>
   );
 }
