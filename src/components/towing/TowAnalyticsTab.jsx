@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { ACC, MUT, BRD, TXT, GRN, SURF } from '../../lib/styles';
 import { getAllocationsForAnalytics, getRecentAllocations } from '../../lib/db/towing';
