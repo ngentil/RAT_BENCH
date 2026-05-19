@@ -101,7 +101,7 @@ function DowChart({ counts }) {
 // ── Map ───────────────────────────────────────────────────────────────────────
 
 // activePoints / clearedPoints: [{ pos: [lat, lng], feature }]
-function HeatMap({ hotspots, activePoints, clearedPoints, showHotspots, showActive, showCleared, onFeatureClick }) {
+function HeatMap({ hotspots, activePoints, clearedPoints, showHotspots, showActive, showCleared, onFeatureClick, onMapReady }) {
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
 
@@ -135,8 +135,8 @@ function HeatMap({ hotspots, activePoints, clearedPoints, showHotspots, showActi
       const addClickable = (markers, feature, fromLog) => {
         markers.forEach(m => {
           m.on('click', (e) => {
-            const cw = mapRef.current?.getContainer()?.clientWidth || 600;
-            onFeatureClick.current({ feature, fromLog, x: e.containerPoint.x, y: e.containerPoint.y, cw });
+            L.DomEvent.stopPropagation(e);
+            onFeatureClick.current({ feature, fromLog, latlng: e.latlng });
           });
           m.addTo(map);
         });
@@ -185,9 +185,13 @@ function HeatMap({ hotspots, activePoints, clearedPoints, showHotspots, showActi
       }
 
       mapRef.current = map;
+      if (onMapReady) onMapReady(map);
     });
 
-    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
+    return () => {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+      if (onMapReady) onMapReady(null);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hotspots, activePoints, clearedPoints, showHotspots, showActive, showCleared]);
 
@@ -208,8 +212,28 @@ export default function TowAnalyticsTab() {
   const [showActive,      setShowActive]      = useState(true);
   const [showCleared,     setShowCleared]     = useState(true);
   const [selectedFeature, setSelectedFeature] = useState(null);
-  const onFeatureClick = useRef(null);
+  const [popupPos,        setPopupPos]        = useState(null);
+  const onFeatureClick  = useRef(null);
+  const mapInstanceRef  = useRef(null);
   onFeatureClick.current = sel => setSelectedFeature(sel);
+
+  const onMapReady = useCallback((map) => {
+    mapInstanceRef.current = map;
+  }, []);
+
+  // Recalculate popup pixel position whenever the map moves or the selected feature changes
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !selectedFeature?.latlng) { setPopupPos(null); return; }
+    const update = () => {
+      const pt = map.latLngToContainerPoint(selectedFeature.latlng);
+      const cw = map.getContainer().clientWidth;
+      setPopupPos({ x: pt.x, y: pt.y, cw });
+    };
+    update();
+    map.on('move', update);
+    return () => map.off('move', update);
+  }, [selectedFeature]);
 
   useEffect(() => {
     setLoading(true);
@@ -327,6 +351,7 @@ export default function TowAnalyticsTab() {
                     showActive={showActive}
                     showCleared={showCleared}
                     onFeatureClick={onFeatureClick}
+                    onMapReady={onMapReady}
                   />
             }
             {/* Map legend */}
@@ -351,7 +376,7 @@ export default function TowAnalyticsTab() {
               </div>
             )}
             {/* Inline popup — anchored to clicked marker, no screen dim */}
-            {selectedFeature && (
+            {selectedFeature && popupPos && (
               <div
                 onClick={e => e.stopPropagation()}
                 style={{
@@ -359,12 +384,12 @@ export default function TowAnalyticsTab() {
                   width: 280, maxHeight: 300, overflowY: 'auto',
                   background: '#0d0d0d', border: '1px solid #3a3a3a', borderRadius: 3,
                   fontFamily: "'IBM Plex Mono',monospace",
-                  ...(selectedFeature.x + 295 <= selectedFeature.cw
-                    ? { left: selectedFeature.x + 8 }
-                    : { right: selectedFeature.cw - selectedFeature.x + 8 }),
-                  ...(selectedFeature.y <= 180
-                    ? { top:    selectedFeature.y + 8 }
-                    : { bottom: 360 - selectedFeature.y + 8 }),
+                  ...(popupPos.x + 295 <= popupPos.cw
+                    ? { left: popupPos.x + 8 }
+                    : { right: popupPos.cw - popupPos.x + 8 }),
+                  ...(popupPos.y <= 180
+                    ? { top:    popupPos.y + 8 }
+                    : { bottom: 360 - popupPos.y + 8 }),
                 }}
               >
                 <button
