@@ -361,12 +361,15 @@ Stripe
 | Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
 | Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
 | Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
-| Alerts tab (🚨) — polls VicEmergency (proxied via Netlify fn) + VicRoads disruptions in parallel every 60s | ✅ | AlertsTab.jsx, netlify/functions/vic-emergency.js, VITE_VICROADS_KEY | Admin only |
-| Alerts — VicEmergency: CFA fire, Ambulance Vic, SES rescue, storm, flood incidents for Victoria | ✅ | AlertsTab.jsx normalise(), VicEmergency results[] flat-object format | Admin only |
-| Alerts — VicRoads traffic: all unplanned road disruptions (same API as Tow Allocations, no source filter) | ✅ | AlertsTab.jsx normaliseVicRoads(), VICROADS_URL | Admin only |
-| Alerts — filter pills (All / Fire / Medical / Rescue / Storm / Traffic / Other) with live counts | ✅ | AlertsTab.jsx FILTERS, toFilter() | Admin only |
+| Alerts tab (🚨) — polls VicEmergency (proxied via Netlify fn) every 60s; VicEmergency-only | ✅ | AlertsTab.jsx, netlify/functions/vic-emergency.js | Admin only |
+| Alerts — covers CFA fire, Ambulance Vic, SES rescue, storm, flood incidents for Victoria | ✅ | AlertsTab.jsx normalise(), VicEmergency results[] flat-object format | Admin only |
+| Alerts — filter pills (All / Fire / Medical / Rescue / Storm / Other) with live counts | ✅ | AlertsTab.jsx FILTERS, toFilter() | Admin only |
 | Alerts — expandable incident cards: status badge, left-border severity colour, location, time ago, Google Maps link | ✅ | AlertsTab.jsx AlertCard | Admin only |
 | Alerts — countdown timer + manual refresh button; auto-refresh every 60 seconds | ✅ | AlertsTab.jsx setInterval, countdown state | Admin only |
+| Traffic tab (🗺) — VicRoads unplanned disruptions, last 24h only, deduped by eventId, sorted newest-first | ✅ | TrafficTab.jsx, VITE_VICROADS_KEY, 24h cutoff filter | Admin only |
+| Traffic — filter pills (All / Accident / Breakdown / Flooding / Road Damage / Other) with live counts | ✅ | TrafficTab.jsx FILTERS, toFilter() | Admin only |
+| Traffic — expandable incident cards: status badge (ACTIVE/REOPENED/CLOSED), type, suburb, time ago, Google Maps link | ✅ | TrafficTab.jsx IncidentCard | Admin only |
+| Traffic — countdown timer + manual refresh; auto-refresh every 60 seconds | ✅ | TrafficTab.jsx setInterval, countdown state | Admin only |
 | Analytics — jobs by hour of day chart (24-bar) | ✅ | TowAnalyticsTab.jsx HourChart | Admin only |
 | Analytics — jobs by day of week chart | ✅ | TowAnalyticsTab.jsx DowChart | Admin only |
 | Analytics — hot suburbs + hot roads ranked bar lists | ✅ | TowAnalyticsTab.jsx BarList | Admin only |
