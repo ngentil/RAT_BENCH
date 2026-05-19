@@ -360,7 +360,7 @@ Stripe
 | Analytics tab — KPI row (total jobs, avg/day, peak hour, top suburb, avg duration) | ✅ | TowAnalyticsTab.jsx, getAllocationsForAnalytics() | Admin only |
 | Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
 | Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
-| Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
+| Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss; popup tracks dot during pan/zoom via latLngToContainerPoint on map 'move' event | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
 | Alerts tab (🚨) — polls VicEmergency (proxied via Netlify fn) every 60s; VicEmergency-only | ✅ | AlertsTab.jsx, netlify/functions/vic-emergency.js | Admin only |
 | Alerts — covers CFA fire, Ambulance Vic, SES rescue, storm, flood incidents for Victoria | ✅ | AlertsTab.jsx normalise(), VicEmergency results[] flat-object format | Admin only |
 | Alerts — filter pills (All / Fire / Medical / Rescue / Storm / Other) with live counts | ✅ | AlertsTab.jsx FILTERS, toFilter() | Admin only |
