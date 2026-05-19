@@ -135,7 +135,7 @@ function HeatMap({ hotspots, activePoints, clearedPoints, showHotspots, showActi
       const addClickable = (markers, feature, fromLog) => {
         markers.forEach(m => {
           m.on('click', (e) => {
-            L.DomEvent.stopPropagation(e);
+            e.originalEvent.stopPropagation();
             onFeatureClick.current({ feature, fromLog, latlng: e.latlng });
           });
           m.addTo(map);
@@ -256,11 +256,11 @@ export default function TowAnalyticsTab() {
   }, []);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
-  const features = rows.map(r => ({
+  const features = useMemo(() => rows.map(r => ({
     ...r,
     props:  r.data?.properties || {},
-    coords: r.data?.geometry?.coordinates, // [lng, lat]
-  }));
+    coords: r.data?.geometry?.coordinates,
+  })), [rows]);
 
   const hourCounts = Array(24).fill(0);
   const dowCounts  = Array(7).fill(0);
@@ -289,15 +289,27 @@ export default function TowAnalyticsTab() {
 
   const avgPerDay   = features.length ? (features.length / days).toFixed(1) : '0';
   const topSuburb   = topSuburbs[0]?.[0] || '—';
-  const mapPoints   = features.filter(f => f.coords).map(f => [f.coords[1], f.coords[0]]);
+  const mapPoints = useMemo(
+    () => features.filter(f => f.coords).map(f => [f.coords[1], f.coords[0]]),
+    [features],
+  );
 
-  const activeEventIds = new Set(activeRaw.map(f => String(f.properties?.eventId)));
-  const activeMapPoints = activeRaw
-    .filter(f => f.geometry?.coordinates)
-    .map(f => ({ pos: [f.geometry.coordinates[1], f.geometry.coordinates[0]], feature: f }));
-  const clearedMapPoints = clearedRaw
-    .filter(f => f.geometry?.coordinates && !activeEventIds.has(String(f.properties?.eventId)))
-    .map(f => ({ pos: [f.geometry.coordinates[1], f.geometry.coordinates[0]], feature: f }));
+  const activeEventIds = useMemo(
+    () => new Set(activeRaw.map(f => String(f.properties?.eventId))),
+    [activeRaw],
+  );
+  const activeMapPoints = useMemo(
+    () => activeRaw
+      .filter(f => f.geometry?.coordinates)
+      .map(f => ({ pos: [f.geometry.coordinates[1], f.geometry.coordinates[0]], feature: f })),
+    [activeRaw],
+  );
+  const clearedMapPoints = useMemo(
+    () => clearedRaw
+      .filter(f => f.geometry?.coordinates && !activeEventIds.has(String(f.properties?.eventId)))
+      .map(f => ({ pos: [f.geometry.coordinates[1], f.geometry.coordinates[0]], feature: f })),
+    [clearedRaw, activeEventIds],
+  );
 
   return (
     <>
