@@ -358,8 +358,9 @@ Stripe
 | Google Maps link in expanded card view (from geometry coordinates) | ✅ | TowAllocationsTab.jsx AllocationCard, feature.geometry.coordinates | Admin only |
 | Expanded detail grid: Event Type, Incident Type, Cross Street, Melway, Coordinates | ✅ | TowAllocationsTab.jsx AllocationCard expanded section | Admin only |
 | Analytics tab — KPI row (total jobs, avg/day, peak hour, top suburb, avg duration) | ✅ | TowAnalyticsTab.jsx, getAllocationsForAnalytics() | Admin only |
-| Analytics — incident map with dual layers: orange hotspot clusters (historical) + green active allocation markers (live VicRoads fetch) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
-| Analytics — map legend overlay (bottom-left) with click-to-toggle per layer; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
+| Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
+| Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
+| Analytics — click active/cleared map dot → allocation detail card modal (same card as Allocations tab, correct Active/Cleared badge) | ✅ | TowAnalyticsTab.jsx, AllocationCard exported from TowAllocationsTab | Admin only |
 | Analytics — jobs by hour of day chart (24-bar) | ✅ | TowAnalyticsTab.jsx HourChart | Admin only |
 | Analytics — jobs by day of week chart | ✅ | TowAnalyticsTab.jsx DowChart | Admin only |
 | Analytics — hot suburbs + hot roads ranked bar lists | ✅ | TowAnalyticsTab.jsx BarList | Admin only |
