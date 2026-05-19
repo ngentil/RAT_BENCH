@@ -325,6 +325,7 @@ Stripe
 |---------|--------|-----------|------|
 | Towing section — admin-gated (VITE_ADMIN_EMAIL) | ✅ | session.user.email check, App.jsx | Admin only |
 | Tow Allocations tab — polls VicRoads disruptions API every 60s | ✅ | TowAllocationsTab.jsx, fetch + setInterval, VITE_VICROADS_KEY | Admin only |
+| Traffic signal indicator on allocation cards — logs non-TowAllocation VicRoads events to traffic_event_log; shows 🚦 +Xm badge (time gap between traffic first-seen and tow dispatch) and full Traffic Signal section in expanded view | ✅ | TowAllocationsTab.jsx, towing.js logTrafficEvents/getTrafficSignals, supabase/add_traffic_event_log.sql | Admin only |
 | Filter feed to TowAllocation source only | ✅ | properties.source.sourceName === 'TowAllocation' | Admin only |
 | Allocation cards (road, suburb, eventId, status badge, lanes, timestamps) | ✅ | TowAllocationsTab.jsx AllocationCard | Admin only |
 | Active / Inactive grouping with counts | ✅ | TowAllocationsTab.jsx | Admin only |
