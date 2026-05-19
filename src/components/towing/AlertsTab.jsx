@@ -35,6 +35,13 @@ function incidentIcon(cat1 = '') {
   return { fire: '🔥', medical: '🚑', rescue: '⛑', storm: '🌩' }[toFilter(cat1)] || '⚠️';
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
 function timeAgo(iso) {
   if (!iso) return null;
   const d = new Date(iso);
@@ -119,8 +126,8 @@ function AlertCard({ inc }) {
               ['Category',  inc.category1 || '—'],
               ['Type',      inc.category2 || '—'],
               ['Status',    inc.status    || '—'],
-              ['Reported',  inc.created ? new Date(inc.created).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'],
-              ...(inc.updated && inc.updated !== inc.created ? [['Updated', new Date(inc.updated).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })]] : []),
+              ['Reported',  fmtDate(inc.created)],
+              ...(inc.updated && inc.updated !== inc.created ? [['Updated', fmtDate(inc.updated)]] : []),
               ...(inc.geometry?.coordinates ? [['Coordinates', `${inc.geometry.coordinates[1]?.toFixed(4)}, ${inc.geometry.coordinates[0]?.toFixed(4)}`]] : []),
             ].map(([label, val]) => (
               <div key={label} style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '5px 8px' }}>

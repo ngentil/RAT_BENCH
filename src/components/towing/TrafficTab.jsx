@@ -34,6 +34,13 @@ function incidentIcon(sub = '') {
   return { accident: '💥', breakdown: '🚗', flood: '🌊', damage: '🛣' }[toFilter(sub)] || '⚠️';
 }
 
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
 function timeAgo(iso) {
   if (!iso) return null;
   const d = new Date(iso);
@@ -95,7 +102,7 @@ function IncidentCard({ inc }) {
             {[
               ['Type',    inc.subType || '—'],
               ['Status',  inc.status  || '—'],
-              ['Updated', inc.updated ? new Date(inc.updated).toLocaleString('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'],
+              ['Updated', fmtDate(inc.updated)],
               ...(inc.geometry?.coordinates ? [['Coordinates', `${inc.geometry.coordinates[1]?.toFixed(4)}, ${inc.geometry.coordinates[0]?.toFixed(4)}`]] : []),
             ].map(([label, val]) => (
               <div key={label} style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '5px 8px' }}>
