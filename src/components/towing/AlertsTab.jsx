@@ -157,6 +157,7 @@ export default function AlertsTab() {
   const [incidents,  setIncidents]  = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [err,        setErr]        = useState('');
+  const [errDetail,  setErrDetail]  = useState('');
   const [filter,     setFilter]     = useState('all');
   const [lastFetch,  setLastFetch]  = useState(null);
   const [countdown,  setCountdown]  = useState(REFRESH_MS / 1000);
@@ -165,17 +166,31 @@ export default function AlertsTab() {
   const fetchAlerts = useCallback(async () => {
     try {
       const res = await fetch(FEED_URL);
-      if (!res.ok) throw new Error(`Feed returned ${res.status}`);
-      const data = await res.json();
-      // Log raw response once so field names can be verified in the console
-      if (!lastFetch) console.log('[AlertsTab] raw VicEmergency response:', data);
+      const rawText = await res.text();
+      if (!res.ok) {
+        setErr(`HTTP ${res.status} from proxy`);
+        setErrDetail(rawText.slice(0, 300));
+        setLoading(false);
+        return;
+      }
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        setErr('Response was not valid JSON');
+        setErrDetail(rawText.slice(0, 300));
+        setLoading(false);
+        return;
+      }
       const parsed = parseFeed(data);
       setIncidents(parsed);
       setErr('');
+      setErrDetail('');
       setLastFetch(new Date());
       setCountdown(REFRESH_MS / 1000);
     } catch (e) {
       setErr(e.message);
+      setErrDetail('');
     } finally {
       setLoading(false);
     }
@@ -258,9 +273,14 @@ export default function AlertsTab() {
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading VicEmergency feed…</div>
       )}
       {!loading && err && (
-        <div style={{ fontSize: 10, color: RED, textAlign: 'center', padding: '24px 0' }}>
-          Could not load alerts: {err}<br />
-          <span style={{ fontSize: 9, color: MUT }}>VicEmergency may be unavailable. Try refreshing.</span>
+        <div style={{ padding: '16px', background: '#1a0a0a', border: '1px solid #3a1a1a', borderRadius: 3, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, color: RED, marginBottom: 6, fontWeight: 700 }}>Could not load alerts: {err}</div>
+          {errDetail && (
+            <div style={{ fontSize: 9, color: '#884040', fontFamily: "'IBM Plex Mono',monospace", wordBreak: 'break-all', whiteSpace: 'pre-wrap', lineHeight: 1.5, background: '#0d0000', padding: '8px', borderRadius: 2, marginBottom: 6 }}>
+              {errDetail}
+            </div>
+          )}
+          <div style={{ fontSize: 9, color: MUT }}>Proxy: {FEED_URL}</div>
         </div>
       )}
       {!loading && !err && visible.length === 0 && (
