@@ -190,7 +190,10 @@ export default function TowAnalyticsTab() {
   useEffect(() => {
     fetch(API_URL, { headers: { KeyID: API_KEY } })
       .then(r => r.json())
-      .then(d => setActiveRaw(d.data?.features || d.features || []))
+      .then(d => {
+        const all = d.data?.features || d.features || [];
+        setActiveRaw(all.filter(f => f.properties?.source?.sourceName === 'TowAllocation'));
+      })
       .catch(() => {});
   }, []);
 
