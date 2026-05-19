@@ -188,9 +188,9 @@ export default function TowAnalyticsTab() {
   }, [days]);
 
   useEffect(() => {
-    fetch(`${API_URL}?apiKey=${API_KEY}`)
+    fetch(API_URL, { headers: { KeyID: API_KEY } })
       .then(r => r.json())
-      .then(d => setActiveRaw(d.features || []))
+      .then(d => setActiveRaw(d.data?.features || d.features || []))
       .catch(() => {});
   }, []);
 
