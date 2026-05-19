@@ -360,7 +360,11 @@ Stripe
 | Analytics tab — KPI row (total jobs, avg/day, peak hour, top suburb, avg duration) | ✅ | TowAnalyticsTab.jsx, getAllocationsForAnalytics() | Admin only |
 | Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
 | Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
-| Analytics — click active/cleared map dot → allocation detail card modal (same card as Allocations tab, correct Active/Cleared badge) | ✅ | TowAnalyticsTab.jsx, AllocationCard exported from TowAllocationsTab | Admin only |
+| Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
+| Alerts tab (🚨) — polls VicEmergency public JSON feed every 2 min; covers CFA fire, Ambulance Vic, SES rescue, storm, flood for Victoria | ✅ | AlertsTab.jsx, https://data.emergency.vic.gov.au/Show?pageId=getIncidentJSON | Admin only |
+| Alerts — filter pills (All / Fire / Medical / Rescue / Storm / Other) with live counts | ✅ | AlertsTab.jsx FILTERS, toFilter() | Admin only |
+| Alerts — expandable incident cards: status badge, left-border severity colour, location, time ago, Google Maps link | ✅ | AlertsTab.jsx AlertCard | Admin only |
+| Alerts — countdown timer + manual refresh button; auto-refresh every 2 minutes | ✅ | AlertsTab.jsx setInterval, countdown state | Admin only |
 | Analytics — jobs by hour of day chart (24-bar) | ✅ | TowAnalyticsTab.jsx HourChart | Admin only |
 | Analytics — jobs by day of week chart | ✅ | TowAnalyticsTab.jsx DowChart | Admin only |
 | Analytics — hot suburbs + hot roads ranked bar lists | ✅ | TowAnalyticsTab.jsx BarList | Admin only |
