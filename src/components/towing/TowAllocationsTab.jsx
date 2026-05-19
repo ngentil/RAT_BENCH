@@ -71,7 +71,7 @@ function StatusBadge({ live }) {
   );
 }
 
-function AllocationCard({ feature, fromLog }) {
+export function AllocationCard({ feature, fromLog }) {
   const [open, setOpen] = useState(false);
   const p          = feature.properties || {};
   const road       = p.closedRoadName || '—';
