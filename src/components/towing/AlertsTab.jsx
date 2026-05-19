@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF } from '../../lib/styles';
 
-// Proxied through Netlify function to avoid CORS block (VicEmergency doesn't allow browser cross-origin)
+// VicEmergency proxied through Netlify function to avoid CORS block
 const FEED_URL  = '/.netlify/functions/vic-emergency';
-const REFRESH_MS = 120_000;
+// VicRoads disruptions — CORS open, fetch directly
+const VICROADS_URL = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
+const VICROADS_KEY = import.meta.env.VITE_VICROADS_KEY || 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
+const REFRESH_MS = 60_000;
 
 const FILTERS = [
   { id: 'all',     label: 'All' },
@@ -11,6 +14,7 @@ const FILTERS = [
   { id: 'medical', label: '🚑 Medical' },
   { id: 'rescue',  label: '⛑ Rescue' },
   { id: 'storm',   label: '🌩 Storm' },
+  { id: 'traffic', label: '🚦 Traffic' },
   { id: 'other',   label: '⚠️ Other' },
 ];
 
@@ -26,16 +30,17 @@ const STATUS_COLOR = {
 // category1 → filter bucket
 function toFilter(cat1 = '') {
   const c = cat1.toLowerCase();
+  if (c.includes('traffic') || c === 'traffic') return 'traffic';
   if (c.includes('fire'))    return 'fire';
-  if (c.includes('medical') || c.includes('rescue') && c.includes('medical')) return 'medical';
-  if (c.includes('rescue'))  return 'rescue';
+  if (c.includes('medic') || c.includes('ambulance') || c === 'medi') return 'medical';
+  if (c.includes('rescue') || c.includes('ses'))  return 'rescue';
   if (c.includes('storm') || c.includes('flood') || c.includes('wind')) return 'storm';
   return 'other';
 }
 
 function incidentIcon(cat1 = '') {
   const f = toFilter(cat1);
-  return { fire: '🔥', medical: '🚑', rescue: '⛑', storm: '🌩' }[f] || '⚠️';
+  return { fire: '🔥', medical: '🚑', rescue: '⛑', storm: '🌩', traffic: '🚦' }[f] || '⚠️';
 }
 
 function timeAgo(iso) {
@@ -48,13 +53,13 @@ function timeAgo(iso) {
   return `${h}h ${m % 60}m ago`;
 }
 
-// Normalise a raw feature from either GeoJSON or flat-object format
+// Normalise VicEmergency flat object (results array items)
 function normalise(raw) {
   // GeoJSON feature
   if (raw.type === 'Feature' && raw.properties) {
     const p = raw.properties;
     return {
-      id:       raw.id || p.id,
+      id:        raw.id || p.id,
       category1: p.category1 || p.feedType || '',
       category2: p.category2 || p.eventType || '',
       title:     p.title || p.name || p.headline || '',
@@ -65,28 +70,45 @@ function normalise(raw) {
       geometry:  raw.geometry,
     };
   }
-  // Flat object (non-GeoJSON response)
+  // VicEmergency flat object
+  const lat = raw.latitude  ? parseFloat(raw.latitude)  : null;
+  const lng = raw.longitude ? parseFloat(raw.longitude) : null;
   return {
-    id:       raw.id,
+    id:        String(raw.incidentNo || raw.id || Math.random()),
     category1: raw.category1 || raw.feedType || '',
-    category2: raw.category2 || raw.eventType || '',
-    title:     raw.title || raw.name || raw.headline || raw.sourceTitle || '',
-    location:  typeof raw.location === 'string' ? raw.location : (raw.location?.suburb || raw.location?.description || ''),
-    status:    raw.status || '',
-    created:   raw.created || raw.pubDate || raw.updated || null,
-    updated:   raw.updated || raw.pubDate || null,
-    geometry:  raw.geometry || null,
+    category2: raw.category2 || raw.incidentType || raw.eventType || '',
+    title:     raw.name || raw.title || raw.headline || raw.sourceTitle || '',
+    location:  raw.incidentLocation || (typeof raw.location === 'string' ? raw.location : (raw.location?.suburb || '')),
+    status:    raw.incidentStatus || raw.status || '',
+    created:   raw.originDateTime || raw.createdDt || raw.created || null,
+    updated:   raw.lastUpdateDateTime || raw.lastUpdatedDt || raw.updated || null,
+    geometry:  raw.geometry || (lat && lng ? { type: 'Point', coordinates: [lng, lat] } : null),
+  };
+}
+
+// Normalise VicRoads GeoJSON feature into the same shape
+function normaliseVicRoads(f) {
+  const p = f.properties || {};
+  const coords = f.geometry?.type === 'Point'
+    ? f.geometry.coordinates
+    : (f.geometry?.coordinates?.[0]?.[0] || null);
+  return {
+    id:        String(p.eventId || f.id || Math.random()),
+    category1: 'Traffic',
+    category2: p.eventSubType || p.eventType || '',
+    title:     p.closedRoadName || p.description || 'Road Disruption',
+    location:  p.reference?.startIntersectionLocality || p.startIntersection || '',
+    status:    p.status || '',
+    created:   p.lastUpdated || p.created || null,
+    updated:   p.lastUpdated || null,
+    geometry:  coords ? { type: 'Point', coordinates: coords } : null,
   };
 }
 
 function parseFeed(data) {
-  // GeoJSON FeatureCollection
   if (data?.features)  return data.features.map(normalise);
-  // VicEmergency wraps under 'results'
   if (data?.results)   return (Array.isArray(data.results)   ? data.results   : Object.values(data.results)).map(normalise);
-  // Array at root
   if (Array.isArray(data)) return data.map(normalise);
-  // Wrapped under 'incidents'
   if (data?.incidents) return (Array.isArray(data.incidents) ? data.incidents : Object.values(data.incidents)).map(normalise);
   return [];
 }
@@ -168,29 +190,53 @@ export default function AlertsTab() {
 
   const fetchAlerts = useCallback(async () => {
     try {
-      const res = await fetch(FEED_URL);
-      const rawText = await res.text();
-      if (!res.ok) {
-        setErr(`HTTP ${res.status} from proxy`);
-        setErrDetail(rawText.slice(0, 300));
-        setLoading(false);
-        return;
+      // Fetch VicEmergency + VicRoads traffic in parallel
+      const [emergencyRes, roadsRes] = await Promise.allSettled([
+        fetch(FEED_URL),
+        fetch(VICROADS_URL, { headers: { KeyID: VICROADS_KEY } }),
+      ]);
+
+      let emergencyInc = [];
+      let debugInfo = '';
+
+      if (emergencyRes.status === 'fulfilled') {
+        const res = emergencyRes.value;
+        const rawText = await res.text();
+        if (res.ok) {
+          try {
+            const data = JSON.parse(rawText);
+            emergencyInc = parseFeed(data);
+            const topKeys = Object.keys(data);
+            const firstItem = data.features?.[0] || data.results?.[0] || data.incidents?.[0] || (Array.isArray(data) ? data[0] : null);
+            debugInfo = `emer: [${topKeys.join(', ')}] count:${emergencyInc.length} cat1:"${firstItem?.category1}" status:"${firstItem?.incidentStatus}"`;
+          } catch {
+            setErr('VicEmergency response was not valid JSON');
+            setErrDetail(rawText.slice(0, 300));
+            setLoading(false);
+            return;
+          }
+        } else {
+          debugInfo = `emer HTTP ${res.status}`;
+        }
+      } else {
+        debugInfo = `emer failed: ${emergencyRes.reason?.message}`;
       }
-      let data;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        setErr('Response was not valid JSON');
-        setErrDetail(rawText.slice(0, 300));
-        setLoading(false);
-        return;
+
+      let trafficInc = [];
+      if (roadsRes.status === 'fulfilled') {
+        const res = roadsRes.value;
+        if (res.ok) {
+          try {
+            const data = await res.json();
+            const features = data?.data?.features || data?.features || [];
+            trafficInc = features.map(normaliseVicRoads);
+          } catch { /* silent — traffic is bonus data */ }
+        }
       }
-      const parsed = parseFeed(data);
-      // Debug: capture structure so it's visible on screen if parsing yields nothing
-      const topKeys = Object.keys(data);
-      const firstItem = data.features?.[0] || data.results?.[0] || data.incidents?.[0] || (Array.isArray(data) ? data[0] : null);
-      setRawDebug(`top keys: [${topKeys.join(', ')}] | count: ${parsed.length} | first item keys: [${firstItem ? Object.keys(firstItem).join(', ') : 'none'}]`);
-      setIncidents(parsed);
+
+      const all = [...emergencyInc, ...trafficInc];
+      setRawDebug(debugInfo + ` | traffic:${trafficInc.length}`);
+      setIncidents(all);
       setErr('');
       setErrDetail('');
       setLastFetch(new Date());
@@ -225,6 +271,9 @@ export default function AlertsTab() {
     counts[f] = (counts[f] || 0) + 1;
   });
 
+  const emergencyCount = incidents.filter(inc => toFilter(inc.category1) !== 'traffic').length;
+  const trafficCount   = counts['traffic'] || 0;
+
   return (
     <div style={{ padding: 16, flex: 1, overflowY: 'auto' }}>
 
@@ -237,7 +286,7 @@ export default function AlertsTab() {
               ? 'Loading…'
               : err
                 ? <span style={{ color: RED }}>{err}</span>
-                : `${incidents.length} incident${incidents.length !== 1 ? 's' : ''} · VicEmergency`
+                : `${emergencyCount} emergency · ${trafficCount} traffic · VicEmergency + VicRoads`
             }
           </div>
         </div>
@@ -277,7 +326,7 @@ export default function AlertsTab() {
 
       {/* Incident list */}
       {loading && (
-        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading VicEmergency feed…</div>
+        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading alerts…</div>
       )}
       {!loading && err && (
         <div style={{ padding: '16px', background: '#1a0a0a', border: '1px solid #3a1a1a', borderRadius: 3, marginBottom: 12 }}>
@@ -307,7 +356,7 @@ export default function AlertsTab() {
       {/* Attribution */}
       {!loading && !err && (
         <div style={{ marginTop: 16, fontSize: 8, color: '#333', textAlign: 'center', lineHeight: 1.7 }}>
-          Data: State of Victoria, Australia — VicEmergency · updates every ~1 min
+          VicEmergency (State of Victoria) · VicRoads Open Data · refreshes every 60s
         </div>
       )}
     </div>
