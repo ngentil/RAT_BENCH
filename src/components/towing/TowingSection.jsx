@@ -3,11 +3,13 @@ import { ACC, MUT, BRD, SURF } from '../../lib/styles';
 import TowAllocationsTab from './TowAllocationsTab';
 import TowAnalyticsTab from './TowAnalyticsTab';
 import FleetTab from './FleetTab';
+import AlertsTab from './AlertsTab';
 
 const TABS = [
   { id: 'allocations', label: '🚦 Tow Allocations' },
   { id: 'analytics',   label: '📊 Analytics' },
   { id: 'fleet',       label: '🚛 Fleet' },
+  { id: 'alerts',      label: '🚨 Alerts' },
 ];
 
 export default function TowingSection() {
@@ -27,6 +29,7 @@ export default function TowingSection() {
         {tab === 'allocations' && <TowAllocationsTab />}
         {tab === 'analytics'   && <TowAnalyticsTab />}
         {tab === 'fleet'       && <FleetTab />}
+        {tab === 'alerts'      && <AlertsTab />}
       </div>
     </div>
   );

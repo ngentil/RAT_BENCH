@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import 'leaflet/dist/leaflet.css';
-import { ACC, MUT, BRD, TXT, GRN, SURF, btnG, sm } from '../../lib/styles';
+import { ACC, MUT, BRD, TXT, GRN, SURF } from '../../lib/styles';
 import { getAllocationsForAnalytics, getRecentAllocations } from '../../lib/db/towing';
 import { AllocationCard } from './TowAllocationsTab';
 
@@ -134,7 +134,10 @@ function HeatMap({ hotspots, activePoints, clearedPoints, showHotspots, showActi
 
       const addClickable = (markers, feature, fromLog) => {
         markers.forEach(m => {
-          m.on('click', () => onFeatureClick.current({ feature, fromLog }));
+          m.on('click', (e) => {
+            const cw = mapRef.current?.getContainer()?.clientWidth || 600;
+            onFeatureClick.current({ feature, fromLog, x: e.containerPoint.x, y: e.containerPoint.y, cw });
+          });
           m.addTo(map);
         });
       };
@@ -307,11 +310,11 @@ export default function TowAnalyticsTab() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 12, marginBottom: 14 }}>
 
         {/* Heat map */}
-        <div style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, overflow: 'hidden', minHeight: 340 }}>
+        <div style={{ background: SURF, border: '1px solid ' + BRD, borderRadius: 2, overflow: 'hidden', minHeight: 400 }}>
           <div style={{ padding: '8px 12px', borderBottom: '1px solid ' + BRD, fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
             Incident Map · {mapPoints.length} historical · {activeMapPoints.length} active · {clearedMapPoints.length} cleared
           </div>
-          <div style={{ height: 300, position: 'relative' }}>
+          <div style={{ height: 360, position: 'relative' }} onClick={() => setSelectedFeature(null)}>
             {loading
               ? <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 9, color: MUT }}>Loading…</div>
               : (mapPoints.length === 0 && activeMapPoints.length === 0 && clearedMapPoints.length === 0)
@@ -335,16 +338,40 @@ export default function TowAnalyticsTab() {
                 fontFamily: "'IBM Plex Mono',monospace", pointerEvents: 'auto',
               }}>
                 {[
-                  { color: ORANGE, label: 'Hotspots',        count: mapPoints.length,       show: showHotspots, toggle: setShowHotspots },
-                  { color: GRN,    label: 'Active Now',       count: activeMapPoints.length, show: showActive,   toggle: setShowActive   },
-                  { color: '#777', label: 'Cleared (1hr)',    count: clearedMapPoints.length,show: showCleared,  toggle: setShowCleared  },
+                  { color: ORANGE, label: 'Hotspots',     count: mapPoints.length,        show: showHotspots, toggle: setShowHotspots },
+                  { color: GRN,    label: 'Active Now',    count: activeMapPoints.length,  show: showActive,   toggle: setShowActive   },
+                  { color: '#777', label: 'Cleared (1hr)', count: clearedMapPoints.length, show: showCleared,  toggle: setShowCleared  },
                 ].map(({ color, label, count, show, toggle }) => (
-                  <button key={label} onClick={() => toggle(v => !v)}
+                  <button key={label} onClick={e => { e.stopPropagation(); toggle(v => !v); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: show ? 1 : 0.35, transition: 'opacity 0.15s' }}>
                     <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: show ? `0 0 6px ${color}88` : 'none' }} />
                     <span style={{ fontSize: 8, color: MUT, letterSpacing: '0.07em', whiteSpace: 'nowrap' }}>{label} ({count})</span>
                   </button>
                 ))}
+              </div>
+            )}
+            {/* Inline popup — anchored to clicked marker, no screen dim */}
+            {selectedFeature && (
+              <div
+                onClick={e => e.stopPropagation()}
+                style={{
+                  position: 'absolute', zIndex: 2000,
+                  width: 280, maxHeight: 300, overflowY: 'auto',
+                  background: '#0d0d0d', border: '1px solid #3a3a3a', borderRadius: 3,
+                  fontFamily: "'IBM Plex Mono',monospace",
+                  ...(selectedFeature.x + 295 <= selectedFeature.cw
+                    ? { left: selectedFeature.x + 8 }
+                    : { right: selectedFeature.cw - selectedFeature.x + 8 }),
+                  ...(selectedFeature.y <= 180
+                    ? { top:    selectedFeature.y + 8 }
+                    : { bottom: 360 - selectedFeature.y + 8 }),
+                }}
+              >
+                <button
+                  onClick={() => setSelectedFeature(null)}
+                  style={{ position: 'absolute', top: 5, right: 5, zIndex: 1, background: 'rgba(10,10,10,0.9)', border: '1px solid #333', color: MUT, cursor: 'pointer', fontSize: 9, lineHeight: 1, padding: '2px 5px', borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace" }}
+                >✕</button>
+                <AllocationCard feature={selectedFeature.feature} fromLog={selectedFeature.fromLog} />
               </div>
             )}
           </div>
@@ -388,22 +415,6 @@ export default function TowAnalyticsTab() {
       </div>
 
     </div>
-
-    {/* Allocation detail modal */}
-    {selectedFeature && (
-      <div
-        onClick={() => setSelectedFeature(null)}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: "'IBM Plex Mono',monospace" }}
-      >
-        <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Allocation Detail</div>
-            <button onClick={() => setSelectedFeature(null)} style={{ ...btnG, ...sm }}>✕ Close</button>
-          </div>
-          <AllocationCard feature={selectedFeature.feature} fromLog={selectedFeature.fromLog} />
-        </div>
-      </div>
-    )}
     </>
   );
 }
