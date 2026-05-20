@@ -362,14 +362,15 @@ Stripe
 | Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
 | Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
 | Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss; popup tracks dot during pan/zoom via latLngToContainerPoint on map 'move' event | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
-| Alerts tab (🚨) — polls VicEmergency (proxied via Netlify fn) every 60s; VicEmergency-only | ✅ | AlertsTab.jsx, netlify/functions/vic-emergency.js | Admin only |
-| Alerts — covers CFA fire, Ambulance Vic, SES rescue, storm, flood incidents for Victoria | ✅ | AlertsTab.jsx normalise(), VicEmergency results[] flat-object format | Admin only |
-| Alerts — filter pills (All / Fire / Medical / Rescue / Storm / Other) with live counts | ✅ | AlertsTab.jsx FILTERS, toFilter() | Admin only |
-| Alerts — expandable incident cards: status badge, left-border severity colour, location, time ago, Google Maps link | ✅ | AlertsTab.jsx AlertCard | Admin only |
-| Alerts — countdown timer + manual refresh button; auto-refresh every 60 seconds | ✅ | AlertsTab.jsx setInterval, countdown state | Admin only |
-| Traffic tab (🗺) — VicRoads unplanned disruptions, last 24h only, deduped by eventId, sorted newest-first | ✅ | TrafficTab.jsx, VITE_VICROADS_KEY, 24h cutoff filter | Admin only |
-| Traffic — filter pills (All / Accident / Breakdown / Flooding / Road Damage / Other) with live counts | ✅ | TrafficTab.jsx FILTERS, toFilter() | Admin only |
-| Traffic — expandable incident cards: status badge (ACTIVE/REOPENED/CLOSED), type, suburb, time ago, Google Maps link | ✅ | TrafficTab.jsx IncidentCard | Admin only |
+| Alerts tab (🚨) — reads Supabase radio_transcripts, last 2h, newest-first, polls every 30s | ✅ | AlertsTab.jsx, supabase radio_transcripts table | Admin only |
+| Alerts — filter pills (All / North/West / East / South) colour-coded by region, no source labels | ✅ | AlertsTab.jsx FILTERS, REGION_COLOR | Admin only |
+| Alerts — transcript cards: monospace text, time-ago, duration badge, region colour border | ✅ | AlertsTab.jsx TranscriptCard | Admin only |
+| Alerts — empty state until VPS transcription service is running | ✅ | AlertsTab.jsx | Admin only |
+| radio_transcripts table + RLS — service role insert (VPS), authenticated read (browser) | ✅ | supabase/add_radio_transcripts.sql | Admin only |
+| Traffic tab (🗺) — VicRoads unplanned disruptions + VicEmergency incidents merged, last 24h, deduped by eventId, sorted newest-first | ✅ | TrafficTab.jsx, VITE_VICROADS_KEY, EMERGENCY_URL, Promise.allSettled | Admin only |
+| Traffic — VicEmergency fetch non-fatal: VicRoads data still shows if emergency feed fails | ✅ | TrafficTab.jsx Promise.allSettled, try/catch parse | Admin only |
+| Traffic — filter pills (All / Accident / Breakdown / Flooding / Road Damage / Emergency / Other) with live counts | ✅ | TrafficTab.jsx FILTERS, toFilter(_emergency flag) | Admin only |
+| Traffic — expandable incident cards: status badge, type icon (🔥🚑⛑🌩🚨 for emergency), suburb, time ago, Google Maps link | ✅ | TrafficTab.jsx IncidentCard, incidentIcon(_emergency) | Admin only |
 | Traffic — countdown timer + manual refresh; auto-refresh every 60 seconds | ✅ | TrafficTab.jsx setInterval, countdown state | Admin only |
 | Analytics — jobs by hour of day chart (24-bar) | ✅ | TowAnalyticsTab.jsx HourChart | Admin only |
 | Analytics — jobs by day of week chart | ✅ | TowAnalyticsTab.jsx DowChart | Admin only |
@@ -386,6 +387,7 @@ Stripe
 | Asset provisioning UI in CompanySettings | ✅ | Ships with Machines + Vehicles + Equipment + Tools sections |
 | Assign driver/member to vehicle | ✅ | Shipped: VehicleMemberSection in VehiclesTab |
 | Workshop tab visibility stored in profiles (cross-device sync) | ✅ | Shipped: profiles.tab_order.workshop_visible, syncs via Supabase |
+| VPS radio transcription service — ffmpeg + silero-vad + faster-whisper large-v3 → Supabase radio_transcripts | 📋 | Needs Broadcastify Premium (or free stream URL); separate Python service, not in this repo |
 | Photo migration → Supabase Storage | 📋 | Currently base64 in DB rows — expensive |
 | Push notifications (service due) | 📋 | Needs FCM or similar |
 | Smart Mode cascade calculations | 📋 | Needs multiple sections complete |
