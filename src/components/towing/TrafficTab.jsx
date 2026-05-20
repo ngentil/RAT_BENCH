@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ACC, MUT, BRD, TXT, RED, SURF } from '../../lib/styles';
 
-const API_URL  = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
-const API_KEY  = import.meta.env.VITE_VICROADS_KEY || 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
-const REFRESH_MS  = 60_000;
-const WINDOW_MS   = 24 * 60 * 60 * 1000;
+const VICROADS_URL   = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
+const VICROADS_KEY   = import.meta.env.VITE_VICROADS_KEY || 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
+const EMERGENCY_URL  = '/.netlify/functions/vic-emergency';
+const REFRESH_MS     = 60_000;
+const WINDOW_MS      = 24 * 60 * 60 * 1000;
 
 const FILTERS = [
   { id: 'all',       label: 'All' },
@@ -12,16 +13,22 @@ const FILTERS = [
   { id: 'breakdown', label: '🚗 Breakdown' },
   { id: 'flood',     label: '🌊 Flooding' },
   { id: 'damage',    label: '🛣 Road Damage' },
+  { id: 'emergency', label: '🚨 Emergency' },
   { id: 'other',     label: '⚠️ Other' },
 ];
 
 const STATUS_COLOR = {
-  ACTIVE:   '#e8870a',
-  REOPENED: '#c8a84b',
-  CLOSED:   '#444',
+  ACTIVE:              '#e8870a',
+  REOPENED:            '#c8a84b',
+  CLOSED:              '#444',
+  'Emergency Warning': '#cc3333',
+  'Watch and Act':     '#e8870a',
+  'Advice':            '#c8a84b',
+  'Under Control':     '#444',
 };
 
-function toFilter(sub = '') {
+function toFilter(sub = '', emergency = false) {
+  if (emergency) return 'emergency';
   const s = sub.toLowerCase();
   if (s.includes('accident') || s.includes('collision')) return 'accident';
   if (s.includes('breakdown') || s.includes('stationary')) return 'breakdown';
@@ -30,7 +37,15 @@ function toFilter(sub = '') {
   return 'other';
 }
 
-function incidentIcon(sub = '') {
+function incidentIcon(sub = '', emergency = false) {
+  if (emergency) {
+    const s = sub.toLowerCase();
+    if (s.includes('fire'))   return '🔥';
+    if (s.includes('medic') || s.includes('ambulance')) return '🚑';
+    if (s.includes('rescue') || s.includes('ses'))      return '⛑';
+    if (s.includes('storm') || s.includes('flood') || s.includes('wind')) return '🌩';
+    return '🚨';
+  }
   return { accident: '💥', breakdown: '🚗', flood: '🌊', damage: '🛣' }[toFilter(sub)] || '⚠️';
 }
 
@@ -53,20 +68,57 @@ function timeAgo(iso) {
   return `${h}h ${m % 60}m ago`;
 }
 
-function normalise(f) {
+function normaliseVicRoads(f) {
   const p = f.properties || {};
   const coords = f.geometry?.type === 'Point'
     ? f.geometry.coordinates
     : (f.geometry?.coordinates?.[0]?.[0] || null);
   return {
-    id:       String(p.eventId || f.id || ''),
-    subType:  p.eventSubType || p.eventType || '',
-    title:    p.closedRoadName || p.description || 'Road Disruption',
-    location: p.reference?.startIntersectionLocality || p.startIntersection || '',
-    status:   p.status || '',
-    updated:  p.lastUpdated || null,
-    geometry: coords ? { type: 'Point', coordinates: coords } : null,
+    id:        String(p.eventId || f.id || ''),
+    subType:   p.eventSubType || p.eventType || '',
+    title:     p.closedRoadName || p.description || 'Road Disruption',
+    location:  p.reference?.startIntersectionLocality || p.startIntersection || '',
+    status:    p.status || '',
+    updated:   p.lastUpdated || null,
+    geometry:  coords ? { type: 'Point', coordinates: coords } : null,
+    _emergency: false,
   };
+}
+
+function normaliseEmergency(raw) {
+  if (raw.type === 'Feature' && raw.properties) {
+    const p = raw.properties;
+    return {
+      id:        String(raw.id || p.id || Math.random()),
+      subType:   p.category1 || 'Emergency',
+      title:     p.title || p.name || p.headline || 'Emergency Incident',
+      location:  p.location || p.description || '',
+      status:    p.status || '',
+      updated:   p.updated || p.pubDate || null,
+      geometry:  raw.geometry || null,
+      _emergency: true,
+    };
+  }
+  const lat = raw.latitude  ? parseFloat(raw.latitude)  : null;
+  const lng = raw.longitude ? parseFloat(raw.longitude) : null;
+  return {
+    id:        String(raw.incidentNo || raw.id || Math.random()),
+    subType:   raw.category1 || raw.feedType || 'Emergency',
+    title:     raw.name || raw.title || raw.headline || raw.sourceTitle || 'Emergency Incident',
+    location:  raw.incidentLocation || (typeof raw.location === 'string' ? raw.location : (raw.location?.suburb || '')),
+    status:    raw.incidentStatus || raw.status || '',
+    updated:   raw.lastUpdateDateTime || raw.lastUpdatedDt || raw.originDateTime || raw.createdDt || null,
+    geometry:  raw.geometry || (lat && lng ? { type: 'Point', coordinates: [lng, lat] } : null),
+    _emergency: true,
+  };
+}
+
+function parseEmergencyFeed(data) {
+  if (data?.features)  return data.features.map(normaliseEmergency);
+  if (data?.results)   return (Array.isArray(data.results) ? data.results : Object.values(data.results)).map(normaliseEmergency);
+  if (Array.isArray(data)) return data.map(normaliseEmergency);
+  if (data?.incidents) return (Array.isArray(data.incidents) ? data.incidents : Object.values(data.incidents)).map(normaliseEmergency);
+  return [];
 }
 
 function IncidentCard({ inc }) {
@@ -77,7 +129,7 @@ function IncidentCard({ inc }) {
   return (
     <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${borderColor}`, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 12px', cursor: 'pointer' }}>
-        <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>{incidentIcon(inc.subType)}</span>
+        <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>{incidentIcon(inc.subType, inc._emergency)}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{inc.title}</span>
@@ -89,8 +141,8 @@ function IncidentCard({ inc }) {
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 2 }}>
             {inc.location && <span style={{ fontSize: 8, color: MUT }}>{inc.location}</span>}
-            {inc.subType && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 8, color: MUT }}>{inc.subType}</span></>}
-            {ago && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 8, color: '#7a7a7a' }}>{ago}</span></>}
+            {inc.subType  && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 8, color: MUT }}>{inc.subType}</span></>}
+            {ago          && <><span style={{ fontSize: 8, color: '#333' }}>·</span><span style={{ fontSize: 8, color: '#7a7a7a' }}>{ago}</span></>}
           </div>
         </div>
         <span style={{ fontSize: 8, color: MUT, flexShrink: 0, marginTop: 2 }}>{open ? '▲' : '▼'}</span>
@@ -136,41 +188,56 @@ export default function TrafficTab() {
   const [countdown,  setCountdown]  = useState(REFRESH_MS / 1000);
   const timerRef = useRef(null);
 
-  const fetchTraffic = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      const res = await fetch(API_URL, { headers: { KeyID: API_KEY } });
-      if (!res.ok) {
-        setErr(`HTTP ${res.status} from VicRoads`);
-        setLoading(false);
-        return;
-      }
-      const data = await res.json();
-      const features = data?.data?.features || data?.features || [];
+      const [vicRoadsRes, emergencyRes] = await Promise.allSettled([
+        fetch(VICROADS_URL, { headers: { KeyID: VICROADS_KEY } }),
+        fetch(EMERGENCY_URL),
+      ]);
+
       const cutoff = Date.now() - WINDOW_MS;
 
-      // Deduplicate by eventId, keep most-recently-updated feature per event
-      const byId = new Map();
-      for (const f of features) {
-        const inc = normalise(f);
-        const t = inc.updated ? new Date(inc.updated).getTime() : 0;
-        const existing = byId.get(inc.id);
-        const et = existing?.updated ? new Date(existing.updated).getTime() : 0;
-        if (!existing || t > et) byId.set(inc.id, inc);
-      }
-
-      const all = [...byId.values()]
-        .filter(inc => {
+      // VicRoads — deduplicate by eventId, keep most-recently-updated
+      let vicRoadsItems = [];
+      if (vicRoadsRes.status === 'fulfilled' && vicRoadsRes.value.ok) {
+        const data = await vicRoadsRes.value.json();
+        const features = data?.data?.features || data?.features || [];
+        const byId = new Map();
+        for (const f of features) {
+          const inc = normaliseVicRoads(f);
+          const t = inc.updated ? new Date(inc.updated).getTime() : 0;
+          const existing = byId.get(inc.id);
+          const et = existing?.updated ? new Date(existing.updated).getTime() : 0;
+          if (!existing || t > et) byId.set(inc.id, inc);
+        }
+        vicRoadsItems = [...byId.values()].filter(inc => {
           if (!inc.updated) return true;
           const t = new Date(inc.updated).getTime();
           return isNaN(t) || t > cutoff;
-        })
-        .sort((a, b) => {
-          const ta = a.updated ? new Date(a.updated).getTime() : 0;
-          const tb = b.updated ? new Date(b.updated).getTime() : 0;
-          return tb - ta;
         });
+      }
 
-      setIncidents(all);
+      // VicEmergency — filter out test incidents
+      let emergencyItems = [];
+      if (emergencyRes.status === 'fulfilled' && emergencyRes.value.ok) {
+        const rawText = await emergencyRes.value.text();
+        try {
+          const data = JSON.parse(rawText);
+          emergencyItems = parseEmergencyFeed(data).filter(inc =>
+            !inc.title.toUpperCase().includes('TEST')
+          );
+        } catch {
+          // non-fatal — VicEmergency parse failure doesn't break the whole tab
+        }
+      }
+
+      const merged = [...vicRoadsItems, ...emergencyItems].sort((a, b) => {
+        const ta = a.updated ? new Date(a.updated).getTime() : 0;
+        const tb = b.updated ? new Date(b.updated).getTime() : 0;
+        return tb - ta;
+      });
+
+      setIncidents(merged);
       setErr('');
       setLastFetch(new Date());
       setCountdown(REFRESH_MS / 1000);
@@ -182,10 +249,10 @@ export default function TrafficTab() {
   }, []);
 
   useEffect(() => {
-    fetchTraffic();
-    const poll = setInterval(fetchTraffic, REFRESH_MS);
+    fetchAll();
+    const poll = setInterval(fetchAll, REFRESH_MS);
     return () => clearInterval(poll);
-  }, [fetchTraffic]);
+  }, [fetchAll]);
 
   useEffect(() => {
     timerRef.current = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
@@ -194,11 +261,11 @@ export default function TrafficTab() {
 
   const visible = filter === 'all'
     ? incidents
-    : incidents.filter(inc => toFilter(inc.subType) === filter);
+    : incidents.filter(inc => toFilter(inc.subType, inc._emergency) === filter);
 
   const counts = {};
   incidents.forEach(inc => {
-    const f = toFilter(inc.subType);
+    const f = toFilter(inc.subType, inc._emergency);
     counts[f] = (counts[f] || 0) + 1;
   });
 
@@ -207,13 +274,13 @@ export default function TrafficTab() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🚦 Traffic Incidents</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🗺 Traffic & Incidents</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {loading
               ? 'Loading…'
               : err
                 ? <span style={{ color: RED }}>{err}</span>
-                : `${incidents.length} incident${incidents.length !== 1 ? 's' : ''} · last 24h · VicRoads`
+                : `${incidents.length} incident${incidents.length !== 1 ? 's' : ''} · last 24h`
             }
           </div>
         </div>
@@ -224,7 +291,7 @@ export default function TrafficTab() {
             </span>
           )}
           <button
-            onClick={fetchTraffic}
+            onClick={fetchAll}
             style={{ fontSize: 8, fontWeight: 700, padding: '3px 9px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", letterSpacing: '0.06em', border: '1px solid #2a2a2a', color: MUT, background: '#0d0d0d' }}
           >
             ↺ Refresh
@@ -250,7 +317,7 @@ export default function TrafficTab() {
         })}
       </div>
 
-      {loading && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading VicRoads feed…</div>}
+      {loading && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '32px 0' }}>Loading…</div>}
       {!loading && err && (
         <div style={{ padding: '16px', background: '#1a0a0a', border: '1px solid #3a1a1a', borderRadius: 3, marginBottom: 12 }}>
           <div style={{ fontSize: 10, color: RED, fontWeight: 700 }}>Could not load traffic: {err}</div>
@@ -258,7 +325,7 @@ export default function TrafficTab() {
       )}
       {!loading && !err && visible.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>
-          No {filter === 'all' ? '' : filter + ' '}traffic incidents in the last 24 hours.
+          No {filter === 'all' ? '' : filter + ' '}incidents in the last 24 hours.
         </div>
       )}
       {!loading && !err && visible.map((inc, i) => (
@@ -267,7 +334,7 @@ export default function TrafficTab() {
 
       {!loading && !err && (
         <div style={{ marginTop: 16, fontSize: 8, color: '#333', textAlign: 'center', lineHeight: 1.7 }}>
-          VicRoads Open Data · last 24 hours · refreshes every 60s
+          Last 24 hours · refreshes every 60s
         </div>
       )}
     </div>
