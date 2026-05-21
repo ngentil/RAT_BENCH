@@ -62,6 +62,29 @@ function timeIn(iso) {
   return rh > 0 ? `${d}d ${rh}h` : `${d}d`;
 }
 
+const NEARBY_KM = 10;
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// Inject pulse-nearby keyframe once
+if (typeof document !== 'undefined' && !document.getElementById('pulse-nearby-style')) {
+  const s = document.createElement('style');
+  s.id = 'pulse-nearby-style';
+  s.textContent = `@keyframes pulse-nearby {
+    0%   { box-shadow: 0 0 0 0px rgba(220,50,50,0.55); border-color: rgba(220,50,50,0.9); }
+    60%  { box-shadow: 0 0 0 7px rgba(220,50,50,0);    border-color: rgba(220,50,50,0.3); }
+    100% { box-shadow: 0 0 0 0px rgba(220,50,50,0);    border-color: rgba(220,50,50,0.9); }
+  }`;
+  document.head.appendChild(s);
+}
+
 function StatusBadge({ live }) {
   const color = live ? GRN : '#555';
   return (
@@ -71,7 +94,7 @@ function StatusBadge({ live }) {
   );
 }
 
-export function AllocationCard({ feature, fromLog, trafficSignal }) {
+export function AllocationCard({ feature, fromLog, trafficSignal, userPos }) {
   const [open, setOpen] = useState(false);
   const p          = feature.properties || {};
   const road       = p.closedRoadName || '—';
@@ -103,8 +126,20 @@ export function AllocationCard({ feature, fromLog, trafficSignal }) {
     ? `https://www.google.com/maps?q=${coords[1]},${coords[0]}`
     : null;
 
+  const nearby = isLive && userPos && coords
+    ? haversineKm(userPos.lat, userPos.lng, coords[1], coords[0]) <= NEARBY_KM
+    : false;
+
   return (
-    <div style={{ background: '#0d0d0d', border: '1px solid #252525', borderLeft: `3px solid ${isLive ? GRN : '#333'}`, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
+    <div style={{
+      background: '#0d0d0d',
+      border: nearby ? '1px solid rgba(220,50,50,0.9)' : '1px solid #252525',
+      borderLeft: `3px solid ${isLive ? GRN : '#333'}`,
+      borderRadius: 2,
+      marginBottom: 6,
+      overflow: 'hidden',
+      animation: nearby ? 'pulse-nearby 2s ease-in-out infinite' : 'none',
+    }}>
       <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>🚛</span>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -245,6 +280,7 @@ export default function TowAllocationsTab() {
   const [showExport,   setShowExport]   = useState(false);
   const [exportHours,  setExportHours]  = useState(24);
   const [exporting,    setExporting]    = useState(false);
+  const [userPos,      setUserPos]      = useState(null);
   const sortRef   = useRef(null);
   const exportRef = useRef(null);
 
@@ -271,6 +307,16 @@ export default function TowAllocationsTab() {
         setLoading(false);
       })
       .catch(e => { console.warn('getRecentAllocations:', e.message); setLoading(false); });
+  }, []);
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      pos => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setUserPos(null),
+      { enableHighAccuracy: false, maximumAge: 30000 }
+    );
+    return () => navigator.geolocation.clearWatch(id);
   }, []);
 
   const fetchAllocations = useCallback(async () => {
@@ -573,7 +619,7 @@ export default function TowAllocationsTab() {
             Active ({active.length})
           </div>
           {active.map((f, i) => (
-            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={false} trafficSignal={trafficMap[String(f.properties?.eventId)]} />
+            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={false} trafficSignal={trafficMap[String(f.properties?.eventId)]} userPos={userPos} />
           ))}
           {cleared.length > 0 && <div style={{ marginTop: 12 }} />}
         </>
@@ -585,7 +631,7 @@ export default function TowAllocationsTab() {
             Cleared ({cleared.length})
           </div>
           {cleared.map((f, i) => (
-            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={true} trafficSignal={trafficMap[String(f.properties?.eventId)]} />
+            <AllocationCard key={f.properties?.eventId || i} feature={f} fromLog={true} trafficSignal={trafficMap[String(f.properties?.eventId)]} userPos={userPos} />
           ))}
         </>
       )}
