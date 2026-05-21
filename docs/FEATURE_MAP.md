@@ -324,6 +324,7 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | Towing section — admin-gated (VITE_ADMIN_EMAIL) | ✅ | session.user.email check, App.jsx | Admin only |
+| **3-tab layout: Allocations · Pager · Alerts** (Analytics/Fleet/Traffic components retained but hidden) | ✅ | TowingSection.jsx | Admin only |
 | Tow Allocations tab — polls VicRoads disruptions API every 60s | ✅ | TowAllocationsTab.jsx, fetch + setInterval, VITE_VICROADS_KEY | Admin only |
 | Traffic signal indicator on allocation cards — logs non-TowAllocation VicRoads events to traffic_event_log; shows 🚦 +Xm badge (time gap between traffic first-seen and tow dispatch) and full Traffic Signal section in expanded view | ✅ | TowAllocationsTab.jsx, towing.js logTrafficEvents/getTrafficSignals, supabase/add_traffic_event_log.sql | Admin only |
 | Filter feed to TowAllocation source only | ✅ | properties.source.sourceName === 'TowAllocation' | Admin only |
@@ -362,6 +363,11 @@ Stripe
 | Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
 | Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
 | Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss; popup tracks dot during pan/zoom via latLngToContainerPoint on map 'move' event | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
+| Pager tab (📟) — reads Supabase pager_messages, last 2h, newest-first, polls every 30s | ✅ | PagerTab.jsx, supabase pager_messages table | Admin only |
+| Pager — filter pills (All / CFS / MFS / SES / SAAS / MedStar) colour-coded by agency | ✅ | PagerTab.jsx AGENCY_COLOR, filters | Admin only |
+| Pager — message cards: agency badge, incident type, address, raw message, time-ago | ✅ | PagerTab.jsx PagerCard | Admin only |
+| Pager — empty state until Pi + multimon-ng pipeline is running | ✅ | PagerTab.jsx | Admin only |
+| pager_messages table + RLS — service role insert (Pi), authenticated read (browser) | ✅ | supabase/add_pager_messages.sql | Admin only |
 | Alerts tab (🚨) — reads Supabase radio_transcripts, last 2h, newest-first, polls every 30s | ✅ | AlertsTab.jsx, supabase radio_transcripts table | Admin only |
 | Alerts — filter pills (All / North/West / East / South) colour-coded by region, no source labels | ✅ | AlertsTab.jsx FILTERS, REGION_COLOR | Admin only |
 | Alerts — transcript cards: monospace text, time-ago, duration badge, region colour border | ✅ | AlertsTab.jsx TranscriptCard | Admin only |
