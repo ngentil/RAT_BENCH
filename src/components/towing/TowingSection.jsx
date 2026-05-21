@@ -10,7 +10,7 @@ import TrafficTab from './TrafficTab';
 const TABS = [
   { id: 'allocations', label: '🚦 Allocations' },
   { id: 'pager',       label: '📟 Pager' },
-  { id: 'alerts',      label: '🚨 Alerts' },
+  { id: 'alerts',      label: '🚗 Waze' },
   { id: 'traffic',     label: '🗺 Traffic' },
   { id: 'analytics',   label: '📊 Analytics' },
   { id: 'fleet',       label: '🚛 Fleet' },
