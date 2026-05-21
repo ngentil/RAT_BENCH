@@ -4,6 +4,7 @@ import { ACC, MUT, BRD, TXT, RED, SURF } from '../../lib/styles';
 const VICROADS_URL   = 'https://api.opendata.transport.vic.gov.au/api/opendata/roads/disruptions/unplanned/v3';
 const VICROADS_KEY   = import.meta.env.VITE_VICROADS_KEY || 'bb7fc352-3ce6-44d2-9628-63fefb64278d';
 const EMERGENCY_URL  = '/.netlify/functions/vic-emergency';
+const WAZE_URL       = '/.netlify/functions/waze-alerts';
 const REFRESH_MS     = 60_000;
 const WINDOW_MS      = 24 * 60 * 60 * 1000;
 
@@ -113,6 +114,25 @@ function normaliseEmergency(raw) {
   };
 }
 
+function normaliseWaze(alert) {
+  const loc = alert.location || {};
+  const subType = (alert.subtype || alert.type || 'HAZARD')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
+  const suburb = alert.city ? alert.city.split(',')[0].trim() : '';
+  return {
+    id:        `waze-${alert.uuid || Math.random()}`,
+    subType:   alert.subtype || alert.type || 'HAZARD',
+    title:     subType,
+    location:  [alert.street, suburb].filter(Boolean).join(', '),
+    status:    alert.reportRating > 0 ? `${alert.reportRating} confirms` : '',
+    updated:   alert.pubMillis ? new Date(alert.pubMillis).toISOString() : null,
+    geometry:  loc.x && loc.y ? { type: 'Point', coordinates: [loc.x, loc.y] } : null,
+    _emergency: false,
+  };
+}
+
 function parseEmergencyFeed(data) {
   if (data?.features)  return data.features.map(normaliseEmergency);
   if (data?.results)   return (Array.isArray(data.results) ? data.results : Object.values(data.results)).map(normaliseEmergency);
@@ -190,9 +210,10 @@ export default function TrafficTab() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [vicRoadsRes, emergencyRes] = await Promise.allSettled([
+      const [vicRoadsRes, emergencyRes, wazeRes] = await Promise.allSettled([
         fetch(VICROADS_URL, { headers: { KeyID: VICROADS_KEY } }),
         fetch(EMERGENCY_URL),
+        fetch(WAZE_URL),
       ]);
 
       const cutoff = Date.now() - WINDOW_MS;
@@ -231,7 +252,18 @@ export default function TrafficTab() {
         }
       }
 
-      const merged = [...vicRoadsItems, ...emergencyItems].sort((a, b) => {
+      // Waze — user-reported alerts, non-fatal if feed fails
+      let wazeItems = [];
+      if (wazeRes.status === 'fulfilled' && wazeRes.value.ok) {
+        try {
+          const data = await wazeRes.value.json();
+          wazeItems = (data?.alerts || []).map(normaliseWaze);
+        } catch {
+          // non-fatal
+        }
+      }
+
+      const merged = [...vicRoadsItems, ...emergencyItems, ...wazeItems].sort((a, b) => {
         const ta = a.updated ? new Date(a.updated).getTime() : 0;
         const tb = b.updated ? new Date(b.updated).getTime() : 0;
         return tb - ta;
