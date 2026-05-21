@@ -363,12 +363,12 @@ Stripe
 | Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
 | Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
 | Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss; popup tracks dot during pan/zoom via latLngToContainerPoint on map 'move' event | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
-| Pager tab (📟) — connects directly to sapaging.com via Socket.IO; receives SA GRN pager messages in real-time (no polling, no VPS needed) | ✅ | PagerTab.jsx, socket.io-client | Admin only |
-| Pager — emits follow_page_feed on connect; listens for newpage events; strips HTML; parses agency from text | ✅ | PagerTab.jsx, sapaging.com Socket.IO | Admin only |
-| Pager — live status indicator (● Live / Connecting… / Disconnected) with auto-reconnect | ✅ | PagerTab.jsx connect/disconnect/connect_error events | Admin only |
-| Pager — filter pills (All / CFS / MFS / SES / SAAS / MEDSTAR) colour-coded by agency | ✅ | PagerTab.jsx AGENCY_COLOR, parseAgency() | Admin only |
-| Pager — message cards: agency badge, message text, time-ago (refreshes every 30s) | ✅ | PagerTab.jsx PagerCard | Admin only |
-| pager_messages table + RLS — ready for future Pi/VPS pipeline if Socket.IO CORS blocked | ✅ | supabase/add_pager_messages.sql | Admin only |
+| Pager tab (📟) — polls Supabase pager_messages, last 2h, newest-first, every 30s | ✅ | PagerTab.jsx, pager_messages table | Admin only |
+| Pager — filter pills (All / CFS / MFS / SES / SAAS / MEDSTAR) colour-coded by agency | ✅ | PagerTab.jsx AGENCY_COLOR | Admin only |
+| Pager — message cards: agency badge, incident type, address, raw message, time-ago | ✅ | PagerTab.jsx PagerCard | Admin only |
+| Pager — empty state until VPS pipeline running (sapaging.com Socket.IO → Supabase) | ✅ | PagerTab.jsx | Admin only |
+| pager_messages table + RLS — service role insert (VPS), authenticated read (browser) | ✅ | supabase/add_pager_messages.sql | Admin only |
+| VPS pager service — connects to sapaging.com Socket.IO server-side (no CORS), writes to pager_messages | 📋 | Needs VPS; direct browser connection blocked by CORS | Admin only |
 | Alerts tab (🚨) — reads Supabase radio_transcripts, last 2h, newest-first, polls every 30s | ✅ | AlertsTab.jsx, supabase radio_transcripts table | Admin only |
 | Alerts — filter pills (All / North/West / East / South) colour-coded by region, no source labels | ✅ | AlertsTab.jsx FILTERS, REGION_COLOR | Admin only |
 | Alerts — transcript cards: monospace text, time-ago, duration badge, region colour border | ✅ | AlertsTab.jsx TranscriptCard | Admin only |
