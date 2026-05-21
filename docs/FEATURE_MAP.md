@@ -372,16 +372,14 @@ Stripe
 | Pager — VicEmergency data live immediately (no VPS needed); SA GRN messages populate once VPS pipeline is running | ✅ | PagerTab.jsx | Admin only |
 | pager_messages table + RLS — service role insert (VPS), authenticated read (browser) | ✅ | supabase/add_pager_messages.sql | Admin only |
 | VPS pager service — connects to sapaging.com Socket.IO server-side (no CORS), writes to pager_messages | 📋 | Needs VPS; direct browser connection blocked by CORS | Admin only |
-| Alerts tab (🚨) — reads Supabase radio_transcripts, last 2h, newest-first, polls every 30s | ✅ | AlertsTab.jsx, supabase radio_transcripts table | Admin only |
-| Alerts — filter pills (All / North/West / East / South) colour-coded by region, no source labels | ✅ | AlertsTab.jsx FILTERS, REGION_COLOR | Admin only |
-| Alerts — transcript cards: monospace text, time-ago, duration badge, region colour border | ✅ | AlertsTab.jsx TranscriptCard | Admin only |
-| Alerts — empty state until VPS transcription service is running | ✅ | AlertsTab.jsx | Admin only |
-| radio_transcripts table + RLS — service role insert (VPS), authenticated read (browser) | ✅ | supabase/add_radio_transcripts.sql | Admin only |
-| Traffic tab (🗺) — VicRoads unplanned disruptions + VicEmergency incidents + Waze user alerts merged, last 24h, sorted newest-first | ✅ | TrafficTab.jsx, VITE_VICROADS_KEY, EMERGENCY_URL, WAZE_URL, Promise.allSettled | Admin only |
-| Traffic — all three feeds non-fatal: remaining sources still show if any feed fails | ✅ | TrafficTab.jsx Promise.allSettled, try/catch per source | Admin only |
-| Traffic — Waze alerts proxied via /.netlify/functions/waze-alerts; Melbourne metro bounding box; user-reported accidents, hazards, road closures | ✅ | netlify/functions/waze-alerts.js, normaliseWaze() | Admin only |
-| Traffic — filter pills (All / Accident / Breakdown / Flooding / Road Damage / Emergency / Other) with live counts; Waze ACCIDENT type hits accident pill | ✅ | TrafficTab.jsx FILTERS, toFilter() | Admin only |
-| Traffic — expandable incident cards: status badge (Waze shows confirm count), type icon, suburb, time ago, Google Maps link | ✅ | TrafficTab.jsx IncidentCard, incidentIcon() | Admin only |
+| Waze tab (🚗) — dedicated Waze user-reported alerts feed; Melbourne metro bounding box; polls every 60s via /.netlify/functions/waze-alerts | ✅ | AlertsTab.jsx (renamed content), netlify/functions/waze-alerts.js | Admin only |
+| Waze — filter pills (All / 💥 Accident / ⚠️ Hazard / 🚗 Jam / 🚧 Road Closed) with live counts | ✅ | AlertsTab.jsx FILTERS, TYPE_COLOR | Admin only |
+| Waze — cards: type-coloured left border, confirm badge, street + suburb, time-ago; expandable with reliability score + Google Maps link | ✅ | AlertsTab.jsx WazeCard | Admin only |
+| radio_transcripts table + RLS — service role insert (VPS), authenticated read (browser); reserved for future VPS transcription pipeline | ✅ | supabase/add_radio_transcripts.sql | Admin only |
+| Traffic tab (🗺) — VicRoads unplanned disruptions + VicEmergency incidents merged, last 24h, sorted newest-first | ✅ | TrafficTab.jsx, VITE_VICROADS_KEY, EMERGENCY_URL, Promise.allSettled | Admin only |
+| Traffic — both feeds non-fatal: VicRoads still shows if VicEmergency fails and vice versa | ✅ | TrafficTab.jsx Promise.allSettled, try/catch per source | Admin only |
+| Traffic — filter pills (All / Accident / Breakdown / Flooding / Road Damage / Emergency / Other) with live counts | ✅ | TrafficTab.jsx FILTERS, toFilter() | Admin only |
+| Traffic — expandable incident cards: status badge, type icon, suburb, time ago, Google Maps link | ✅ | TrafficTab.jsx IncidentCard, incidentIcon() | Admin only |
 | Traffic — countdown timer + manual refresh; auto-refresh every 60 seconds | ✅ | TrafficTab.jsx setInterval, countdown state | Admin only |
 | Analytics — jobs by hour of day chart (24-bar) | ✅ | TowAnalyticsTab.jsx HourChart | Admin only |
 | Analytics — jobs by day of week chart | ✅ | TowAnalyticsTab.jsx DowChart | Admin only |
