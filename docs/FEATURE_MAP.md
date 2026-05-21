@@ -377,10 +377,11 @@ Stripe
 | Alerts — transcript cards: monospace text, time-ago, duration badge, region colour border | ✅ | AlertsTab.jsx TranscriptCard | Admin only |
 | Alerts — empty state until VPS transcription service is running | ✅ | AlertsTab.jsx | Admin only |
 | radio_transcripts table + RLS — service role insert (VPS), authenticated read (browser) | ✅ | supabase/add_radio_transcripts.sql | Admin only |
-| Traffic tab (🗺) — VicRoads unplanned disruptions + VicEmergency incidents merged, last 24h, deduped by eventId, sorted newest-first | ✅ | TrafficTab.jsx, VITE_VICROADS_KEY, EMERGENCY_URL, Promise.allSettled | Admin only |
-| Traffic — VicEmergency fetch non-fatal: VicRoads data still shows if emergency feed fails | ✅ | TrafficTab.jsx Promise.allSettled, try/catch parse | Admin only |
-| Traffic — filter pills (All / Accident / Breakdown / Flooding / Road Damage / Emergency / Other) with live counts | ✅ | TrafficTab.jsx FILTERS, toFilter(_emergency flag) | Admin only |
-| Traffic — expandable incident cards: status badge, type icon (🔥🚑⛑🌩🚨 for emergency), suburb, time ago, Google Maps link | ✅ | TrafficTab.jsx IncidentCard, incidentIcon(_emergency) | Admin only |
+| Traffic tab (🗺) — VicRoads unplanned disruptions + VicEmergency incidents + Waze user alerts merged, last 24h, sorted newest-first | ✅ | TrafficTab.jsx, VITE_VICROADS_KEY, EMERGENCY_URL, WAZE_URL, Promise.allSettled | Admin only |
+| Traffic — all three feeds non-fatal: remaining sources still show if any feed fails | ✅ | TrafficTab.jsx Promise.allSettled, try/catch per source | Admin only |
+| Traffic — Waze alerts proxied via /.netlify/functions/waze-alerts; Melbourne metro bounding box; user-reported accidents, hazards, road closures | ✅ | netlify/functions/waze-alerts.js, normaliseWaze() | Admin only |
+| Traffic — filter pills (All / Accident / Breakdown / Flooding / Road Damage / Emergency / Other) with live counts; Waze ACCIDENT type hits accident pill | ✅ | TrafficTab.jsx FILTERS, toFilter() | Admin only |
+| Traffic — expandable incident cards: status badge (Waze shows confirm count), type icon, suburb, time ago, Google Maps link | ✅ | TrafficTab.jsx IncidentCard, incidentIcon() | Admin only |
 | Traffic — countdown timer + manual refresh; auto-refresh every 60 seconds | ✅ | TrafficTab.jsx setInterval, countdown state | Admin only |
 | Analytics — jobs by hour of day chart (24-bar) | ✅ | TowAnalyticsTab.jsx HourChart | Admin only |
 | Analytics — jobs by day of week chart | ✅ | TowAnalyticsTab.jsx DowChart | Admin only |
