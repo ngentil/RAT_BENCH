@@ -324,7 +324,7 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | Towing section — admin-gated (VITE_ADMIN_EMAIL) | ✅ | session.user.email check, App.jsx | Admin only |
-| **3-tab layout: Allocations · Pager · Alerts** (Analytics/Fleet/Traffic components retained but hidden) | ✅ | TowingSection.jsx | Admin only |
+| **6-tab layout: Allocations · Pager · Alerts · Traffic · Analytics · Fleet** | ✅ | TowingSection.jsx | Admin only |
 | Tow Allocations tab — polls VicRoads disruptions API every 60s | ✅ | TowAllocationsTab.jsx, fetch + setInterval, VITE_VICROADS_KEY | Admin only |
 | Traffic signal indicator on allocation cards — logs non-TowAllocation VicRoads events to traffic_event_log; shows 🚦 +Xm badge (time gap between traffic first-seen and tow dispatch) and full Traffic Signal section in expanded view | ✅ | TowAllocationsTab.jsx, towing.js logTrafficEvents/getTrafficSignals, supabase/add_traffic_event_log.sql | Admin only |
 | Filter feed to TowAllocation source only | ✅ | properties.source.sourceName === 'TowAllocation' | Admin only |
@@ -364,10 +364,12 @@ Stripe
 | Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
 | Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
 | Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss; popup tracks dot during pan/zoom via latLngToContainerPoint on map 'move' event | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
-| Pager tab (📟) — polls Supabase pager_messages, last 2h, newest-first, every 30s | ✅ | PagerTab.jsx, pager_messages table | Admin only |
-| Pager — filter pills (All / CFS / MFS / SES / SAAS / MEDSTAR) colour-coded by agency | ✅ | PagerTab.jsx AGENCY_COLOR | Admin only |
-| Pager — message cards: agency badge, incident type, address, raw message, time-ago | ✅ | PagerTab.jsx PagerCard | Admin only |
-| Pager — empty state until VPS pipeline running (sapaging.com Socket.IO → Supabase) | ✅ | PagerTab.jsx | Admin only |
+| Pager tab (📟) — merges Supabase pager_messages (SA GRN) + VicEmergency CFA incidents in parallel via Promise.allSettled; last 2h, newest-first, polls every 60s | ✅ | PagerTab.jsx, pager_messages table, /.netlify/functions/vic-emergency | Admin only |
+| Pager — VicEmergency incidents filtered to feedType=incident or has category1; time-windowed to last 2h | ✅ | PagerTab.jsx normaliseEmergency(), fetchAll() | Admin only |
+| Pager — filter pills (All / 🔥 VIC / CFS / MFS / SES / SAAS / MEDSTAR) colour-coded by agency | ✅ | PagerTab.jsx AGENCY_COLOR, FILTERS | Admin only |
+| Pager — cards: 📟 icon for SA GRN messages, fire/rescue icons for VIC incidents; agency badge, incident type, address, raw message, time-ago | ✅ | PagerTab.jsx PagerCard, incidentIcon() | Admin only |
+| Pager — expandable card body: raw pager message text + Google Maps link (VIC incidents with geometry) | ✅ | PagerTab.jsx PagerCard expanded | Admin only |
+| Pager — VicEmergency data live immediately (no VPS needed); SA GRN messages populate once VPS pipeline is running | ✅ | PagerTab.jsx | Admin only |
 | pager_messages table + RLS — service role insert (VPS), authenticated read (browser) | ✅ | supabase/add_pager_messages.sql | Admin only |
 | VPS pager service — connects to sapaging.com Socket.IO server-side (no CORS), writes to pager_messages | 📋 | Needs VPS; direct browser connection blocked by CORS | Admin only |
 | Alerts tab (🚨) — reads Supabase radio_transcripts, last 2h, newest-first, polls every 30s | ✅ | AlertsTab.jsx, supabase radio_transcripts table | Admin only |
