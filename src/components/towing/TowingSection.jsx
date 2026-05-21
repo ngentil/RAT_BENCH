@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { ACC, MUT, BRD, SURF } from '../../lib/styles';
 import TowAllocationsTab from './TowAllocationsTab';
-import TowAnalyticsTab from './TowAnalyticsTab';
-import FleetTab from './FleetTab';
+import PagerTab from './PagerTab';
 import AlertsTab from './AlertsTab';
-import TrafficTab from './TrafficTab';
 
 const TABS = [
-  { id: 'allocations', label: '🚦 Tow Allocations' },
-  { id: 'analytics',   label: '📊 Analytics' },
-  { id: 'fleet',       label: '🚛 Fleet' },
+  { id: 'allocations', label: '🚦 Allocations' },
+  { id: 'pager',       label: '📟 Pager' },
   { id: 'alerts',      label: '🚨 Alerts' },
-  { id: 'traffic',     label: '🗺 Traffic' },
 ];
 
 export default function TowingSection() {
@@ -29,10 +25,8 @@ export default function TowingSection() {
       </div>
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         {tab === 'allocations' && <TowAllocationsTab />}
-        {tab === 'analytics'   && <TowAnalyticsTab />}
-        {tab === 'fleet'       && <FleetTab />}
+        {tab === 'pager'       && <PagerTab />}
         {tab === 'alerts'      && <AlertsTab />}
-        {tab === 'traffic'     && <TrafficTab />}
       </div>
     </div>
   );
