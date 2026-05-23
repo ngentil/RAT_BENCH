@@ -33,9 +33,8 @@ import ToolsTab from './components/tools/ToolsTab';
 import VehiclesTab from './components/vehicles/VehiclesTab';
 import EquipmentTab from './components/equipment/EquipmentTab';
 import ConsumablesTab from './components/consumables/ConsumablesTab';
-import TowingSection from './components/towing/TowingSection';
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
+
 function App(){
   const [tab,setTab]=useState(()=>{
     const stored=localStorage.getItem("rat_tab")||"tracker";
@@ -152,7 +151,7 @@ function App(){
 
   useEffect(()=>{
     if(!profile) return;
-    const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings","towing"]));
+    const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings"]));
     if(!validTopIds.has(tab)) setTab("tracker");
     const tier=effectiveTier(profile,company);
     const wsDef=WORKSHOP_TABS.find(t=>t.id===workshopTab);
@@ -271,11 +270,8 @@ function App(){
     }),
     profile?.tab_order?.workshop
   );
-  const isAdmin = session?.user?.email === ADMIN_EMAIL;
   const orderedMainTabs = applyTabOrder(TABS, profile?.tab_order?.main);
-  const mainTabsToShow = isAdmin
-    ? [...orderedMainTabs, { id: 'towing', label: '🚦 Towing' }]
-    : orderedMainTabs;
+  const mainTabsToShow = orderedMainTabs;
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
@@ -366,7 +362,6 @@ function App(){
       <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
       <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/></div>
-      {tab==="towing"&&isAdmin&&<TowingSection session={session}/>}
     </div>
   );
 }
