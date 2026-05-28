@@ -9,6 +9,10 @@ const supabase = createClient(
 );
 
 const PRICE_TO_TIER: Record<string, string> = {
+  // Current weekly prices
+  [Deno.env.get("PRICE_ENTHUSIAST")         || ""]: "enthusiast",
+  [Deno.env.get("PRICE_PRO")                || ""]: "team",
+  // Legacy — keep so existing subscribers' webhooks still resolve
   [Deno.env.get("PRICE_ENTHUSIAST_MONTHLY") || ""]: "enthusiast",
   [Deno.env.get("PRICE_ENTHUSIAST_YEARLY")  || ""]: "enthusiast",
   [Deno.env.get("PRICE_TEAM")               || ""]: "team",

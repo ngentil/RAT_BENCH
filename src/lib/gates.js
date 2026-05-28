@@ -1,9 +1,9 @@
 // Tier definitions
 export const TIERS = {
   free:        { label: "Free",        price: null,        machines: 30,       tools: 5,        vehicles: 5,        equipment: 5,        consumables: 10,       org: false, acl: false, support: false },
-  enthusiast:  { label: "Enthusiast",  price: "$1.65/mo",  machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: false, acl: false, support: false },
-  team:        { label: "Pro",         price: "$3.99/mo",  machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
-  business:    { label: "Pro",         price: "$3.99/mo",  machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
+  enthusiast:  { label: "Enthusiast",  price: "$3.50/wk",  machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: false, acl: false, support: false },
+  team:        { label: "Pro",         price: "$10/wk",    machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
+  business:    { label: "Pro",         price: "$10/wk",    machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
 };
 
 const TIER_RANK = { free: 0, enthusiast: 1, team: 2, business: 2 };
