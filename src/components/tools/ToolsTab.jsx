@@ -4,6 +4,7 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
+import { fmtDate, fmtMoney } from '../../lib/helpers';
 import LoadoutSection from '../ui/LoadoutSection';
 import AssetTile from '../ui/AssetTile';
 
@@ -25,13 +26,6 @@ const TOOL_SORT_OPTS = [
   { k: 'warranty', l: 'Warranty Expiry (Soonest)' },
 ];
 
-function fmtDate(s) {
-  if (!s) return null;
-  return new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-function fmtMoney(n) {
-  return "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);

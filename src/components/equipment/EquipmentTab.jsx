@@ -4,6 +4,7 @@ import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
+import { fmtDate } from '../../lib/helpers';
 import LoadoutSection from '../ui/LoadoutSection';
 import AssetTile from '../ui/AssetTile';
 
@@ -22,10 +23,7 @@ const EQUIP_SORT_OPTS = [
   { k: 'hours_hi',l: 'Hours (Highest)' },
 ];
 
-function fmtDate(s) {
-  if (!s) return null;
-  return new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-}
+
 
 const TYPE_ICONS = { Excavator:'⛏️', Loader:'🚜', 'Skid Steer':'🚜', Forklift:'🔧', Compressor:'💨', Generator:'⚡', 'Pressure Washer':'💧', Trailer:'🚛', Tractor:'🚜', 'Mower (Commercial)':'🌿', Chainsaw:'🪚', Chipper:'🌳', 'Stump Grinder':'🌱', Other:'⚙️' };
 
