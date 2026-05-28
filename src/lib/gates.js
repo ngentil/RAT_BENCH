@@ -1,12 +1,12 @@
 // Tier definitions
 export const TIERS = {
-  free:        { label: "Free",        price: null,       machines: 30,       tools: 5,        vehicles: 5,        equipment: 5,        consumables: 10,       org: false, acl: false, support: false },
-  enthusiast:  { label: "Enthusiast",  price: "$4.99/mo", machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: false, acl: false, support: false },
-  team:        { label: "Team",        price: "$29/mo",   machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: false },
-  business:    { label: "Business",    price: "$99/mo",   machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
+  free:        { label: "Free",        price: null,        machines: 30,       tools: 5,        vehicles: 5,        equipment: 5,        consumables: 10,       org: false, acl: false, support: false },
+  enthusiast:  { label: "Enthusiast",  price: "$1.65/mo",  machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: false, acl: false, support: false },
+  team:        { label: "Pro",         price: "$3.99/mo",  machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
+  business:    { label: "Pro",         price: "$3.99/mo",  machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
 };
 
-const TIER_RANK = { free: 0, enthusiast: 1, team: 2, business: 3 };
+const TIER_RANK = { free: 0, enthusiast: 1, team: 2, business: 2 };
 
 // Resolve the effective tier — returns whichever of profile or company is higher
 export function effectiveTier(profile, company) {
@@ -22,7 +22,7 @@ export function canUse(feature, profile, company) {
     case "unlimited_machines": return tier !== "free";
     case "org":                return ["team","business"].includes(tier);
     case "acl":                return ["team","business"].includes(tier);
-    case "priority_support":   return tier === "business";
+    case "priority_support":   return ["team","business"].includes(tier);
     case "storage_policy":     return tier !== "free";
     default:                   return true;
   }

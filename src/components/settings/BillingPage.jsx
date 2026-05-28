@@ -31,7 +31,6 @@ const PRICE_IDS = {
   enthusiast_monthly: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_MONTHLY,
   enthusiast_yearly:  import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_YEARLY,
   team:               import.meta.env.VITE_STRIPE_PRICE_TEAM,
-  business:           import.meta.env.VITE_STRIPE_PRICE_BUSINESS,
 };
 
 const PLANS = [
@@ -46,8 +45,8 @@ const PLANS = [
   {
     id: "enthusiast",
     label: "Enthusiast",
-    priceMonthly: "$4.99",
-    priceYearly: "$12",
+    priceMonthly: "$1.99",
+    priceYearly: "$19.80",
     period: "/mo",
     periodYearly: "/yr",
     features: ["Unlimited machines","Unlimited tools, vehicles & equipment","Storage policy — automated fee tracking","Escalation alerts for long-stay machines","Everything in Free","Early access to new features"],
@@ -56,18 +55,10 @@ const PLANS = [
   },
   {
     id: "team",
-    label: "Team",
-    price: "$29",
+    label: "Pro",
+    price: "$3.99",
     period: "/mo",
-    features: ["Unlimited machines","Organisation / multi-user","Access control (ACL)","Provision assets to team members","Shared machine library","Everything in Enthusiast"],
-    personal: false,
-  },
-  {
-    id: "business",
-    label: "Business",
-    price: "$99",
-    period: "/mo",
-    features: ["Everything in Team","Parts tracker"],
+    features: ["Unlimited machines","Organisation / multi-user","Access control (ACL)","Provision assets to team members","Shared machine library","Priority support","Everything in Enthusiast"],
     personal: false,
   },
 ];
@@ -211,13 +202,13 @@ function BillingPage({ profile, company, session }) {
         <button onClick={() => setBilling("monthly")} style={{ ...btnG, ...sm, borderRadius: "2px 0 0 2px", borderRight: "none", ...(billing === "monthly" ? { background: ACC, color: "#000", border: "1px solid " + ACC } : {}) }}>Monthly</button>
         <button onClick={() => setBilling("yearly")} style={{ ...btnG, ...sm, borderRadius: "0 2px 2px 0", ...(billing === "yearly" ? { background: ACC, color: "#000", border: "1px solid " + ACC } : {}) }}>Yearly</button>
         {billing === "yearly" && (
-          <span style={{ marginLeft: 10, fontSize: 8, color: GRN, background: GRN+"18", border: "1px solid "+GRN+"44", borderRadius: 2, padding: "2px 7px", fontWeight: 700, letterSpacing: "0.08em" }}>~80% OFF</span>
+          <span style={{ marginLeft: 10, fontSize: 8, color: GRN, background: GRN+"18", border: "1px solid "+GRN+"44", borderRadius: 2, padding: "2px 7px", fontWeight: 700, letterSpacing: "0.08em" }}>2 MONTHS FREE</span>
         )}
       </div>
 
       {err && <div style={{ fontSize: 10, color: RED, marginBottom: 12 }}>{err}</div>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
         {PLANS.map(plan => (
           <PlanCard
             key={plan.id}
