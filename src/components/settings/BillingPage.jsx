@@ -28,9 +28,8 @@ function GlowBtn({ onClick, disabled, style, glow, children }) {
 }
 
 const PRICE_IDS = {
-  enthusiast_monthly: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_MONTHLY,
-  enthusiast_yearly:  import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_YEARLY,
-  team:               import.meta.env.VITE_STRIPE_PRICE_TEAM,
+  enthusiast: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST,
+  team:       import.meta.env.VITE_STRIPE_PRICE_PRO,
 };
 
 const PLANS = [
@@ -45,10 +44,8 @@ const PLANS = [
   {
     id: "enthusiast",
     label: "Enthusiast",
-    priceMonthly: "$1.99",
-    priceYearly: "$19.80",
-    period: "/mo",
-    periodYearly: "/yr",
+    price: "$3.50",
+    period: "/wk",
     features: ["Unlimited machines","Unlimited tools, vehicles & equipment","Storage policy — automated fee tracking","Escalation alerts for long-stay machines","Everything in Free","Early access to new features"],
     personal: true,
     highlight: true,
@@ -56,18 +53,16 @@ const PLANS = [
   {
     id: "team",
     label: "Pro",
-    price: "$3.99",
-    period: "/mo",
+    price: "$10",
+    period: "/wk",
     features: ["Unlimited machines","Organisation / multi-user","Access control (ACL)","Provision assets to team members","Shared machine library","Priority support","Everything in Enthusiast"],
     personal: false,
   },
 ];
 
-function PlanCard({ plan, current, billing, onUpgrade, onManage, loading }) {
+function PlanCard({ plan, current, onUpgrade, onManage, loading }) {
   const isCurrent = plan.id === current;
-  const price = plan.id === "enthusiast" && billing === "yearly"
-    ? plan.priceYearly + plan.periodYearly
-    : (plan.price || plan.priceMonthly) + (plan.period || "");
+  const price = plan.price + (plan.period || "");
   const isLoading = loading === plan.id;
 
   const accentColor = isCurrent ? GRN : plan.highlight ? ACC : BRD;
@@ -138,7 +133,6 @@ function PlanCard({ plan, current, billing, onUpgrade, onManage, loading }) {
 }
 
 function BillingPage({ profile, company, session }) {
-  const [billing, setBilling] = useState("monthly");
   const [loading, setLoading] = useState(null);
   const [err, setErr] = useState("");
   const tier = effectiveTier(profile, company);
@@ -146,10 +140,7 @@ function BillingPage({ profile, company, session }) {
   const handleUpgrade = async (planId) => {
     setLoading(planId); setErr("");
     try {
-      const priceKey = planId === "enthusiast"
-        ? (billing === "yearly" ? "enthusiast_yearly" : "enthusiast_monthly")
-        : planId;
-      const price_id = PRICE_IDS[priceKey];
+      const price_id = PRICE_IDS[planId];
       const isOrgPlan = ["team","business"].includes(planId);
 
       const base = window.location.origin;
@@ -198,14 +189,6 @@ function BillingPage({ profile, company, session }) {
           : `Your account is on the ${TIERS[tier]?.label} plan.`}
       </div>
 
-      <div style={{ display: "flex", gap: 0, marginBottom: 20, alignItems: "center" }}>
-        <button onClick={() => setBilling("monthly")} style={{ ...btnG, ...sm, borderRadius: "2px 0 0 2px", borderRight: "none", ...(billing === "monthly" ? { background: ACC, color: "#000", border: "1px solid " + ACC } : {}) }}>Monthly</button>
-        <button onClick={() => setBilling("yearly")} style={{ ...btnG, ...sm, borderRadius: "0 2px 2px 0", ...(billing === "yearly" ? { background: ACC, color: "#000", border: "1px solid " + ACC } : {}) }}>Yearly</button>
-        {billing === "yearly" && (
-          <span style={{ marginLeft: 10, fontSize: 8, color: GRN, background: GRN+"18", border: "1px solid "+GRN+"44", borderRadius: 2, padding: "2px 7px", fontWeight: 700, letterSpacing: "0.08em" }}>2 MONTHS FREE</span>
-        )}
-      </div>
-
       {err && <div style={{ fontSize: 10, color: RED, marginBottom: 12 }}>{err}</div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
@@ -214,7 +197,6 @@ function BillingPage({ profile, company, session }) {
             key={plan.id}
             plan={plan}
             current={tier}
-            billing={billing}
             onManage={handleManage}
             onUpgrade={handleUpgrade}
             loading={loading}
