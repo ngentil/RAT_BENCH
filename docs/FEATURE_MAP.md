@@ -39,7 +39,7 @@ Stripe
 | Guest upgrade modal | ✅ | auth | Free |
 | Profiles table + RLS | ✅ | auth.users | Free |
 | Tier system (`gates.js`) | ✅ | profiles.tier | All |
-| Stripe Checkout (3 plans: Free / Enthusiast $1.65mo / Pro $3.99mo) | ✅ | Stripe, profiles | All |
+| Stripe Checkout (3 plans: Free / Enthusiast $3.50wk / Pro $10wk) | ✅ | Stripe, profiles | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
 | Announcements (in-app banners) | ✅ | profiles.tier | All |
