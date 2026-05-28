@@ -9,6 +9,13 @@ export const fmtDT = iso => {
   return d.toLocaleDateString("en-AU",{day:"2-digit",month:"short",year:"numeric"})
        + " " + d.toLocaleTimeString("en-AU",{hour:"2-digit",minute:"2-digit",hour12:true});
 };
+// Date only (no time) — shared across asset tabs
+export const fmtDate = s => {
+  if (!s) return null;
+  return new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+// Currency — shared across asset and customer tabs
+export const fmtMoney = n => "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 export const mIcon = t => MACHINE_TYPES.find(m => m.label === t)?.icon || "⚙️";
 
 export const resizeImg = (b64, maxW=1800) => new Promise(res => {

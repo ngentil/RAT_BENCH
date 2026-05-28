@@ -8,7 +8,7 @@ import { getAssignedTo, assignAsset, unassignAsset } from '../../lib/db/assetAss
 import { getCompanyMembers } from '../../lib/db/users';
 import LoadoutSection from '../ui/LoadoutSection';
 import ServiceModal from '../ui/ServiceModal';
-import { fmtDT } from '../../lib/helpers';
+import { fmtDT, fmtDate } from '../../lib/helpers';
 import AssetTile from '../ui/AssetTile';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
@@ -30,10 +30,6 @@ const VEHICLE_SORT_OPTS = [
   { k: 'odo_lo',  l: 'Odometer (Lowest)' },
 ];
 
-function fmtDate(s) {
-  if (!s) return null;
-  return new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 function fmtOdo(n, units) {
   if (n == null) return null;
   return Number(n).toLocaleString() + (units === 'imperial' ? ' mi' : ' km');

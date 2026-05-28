@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
-import { mIcon, getStorageStatus } from '../../lib/helpers';
+import { mIcon, getStorageStatus, fmtMoney } from '../../lib/helpers';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
 import { effectiveTier, canUse } from '../../lib/gates';
 import { getActiveBooking } from '../../lib/db/bookings';
@@ -21,7 +21,6 @@ function escHtml(s) {
   return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-function fmtMoney(n) { return "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
 
 async function exportClientInvoice(client, linked, company, storagePolicyEnabled) {
   const rate = company?.hourly_rate || 0;
