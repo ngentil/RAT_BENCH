@@ -39,7 +39,7 @@ Stripe
 | Guest upgrade modal | ✅ | auth | Free |
 | Profiles table + RLS | ✅ | auth.users | Free |
 | Tier system (`gates.js`) | ✅ | profiles.tier | All |
-| Stripe Checkout | ✅ | Stripe, profiles | All |
+| Stripe Checkout (3 plans: Free / Enthusiast $1.65mo / Pro $3.99mo) | ✅ | Stripe, profiles | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
 | Announcements (in-app banners) | ✅ | profiles.tier | All |
@@ -333,7 +333,7 @@ Stripe
 | Invoice / Quote PDF (separate from spec PDF) | 📋 | Currently HTML export only |
 | General Terms of Service page | ✅ | TermsPage.jsx — linked from AuthScreen footer + signup consent |
 | Privacy Policy page | ✅ | PrivacyPage.jsx — linked from AuthScreen footer + signup consent |
-| API access (Business tier) | ❌ | Removed from billing copy — not being built |
+| API access | ❌ | Not being built — removed from billing copy |
 | Firebase migration | 📋 | Long-term — after features stable |
 
 ---
