@@ -5,10 +5,13 @@ export async function getMachines() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: own, error } = await supabase.from("machines").select("*").order("created_at", { ascending: false });
+  // Fetch own machines and permission list in parallel
+  const [{ data: own, error }, { data: perms }] = await Promise.all([
+    supabase.from("machines").select("*").order("created_at", { ascending: false }).limit(500),
+    supabase.from("machine_permissions").select("machine_id").eq("user_id", user.id),
+  ]);
   if (error) { console.error("getMachines:", error); return []; }
 
-  const { data: perms } = await supabase.from("machine_permissions").select("machine_id").eq("user_id", user.id);
   let provisioned = [];
   if (perms?.length) {
     const ids = perms.map(p => p.machine_id);

@@ -26,6 +26,7 @@ serve(async (req) => {
     // Get or create Stripe customer
     let customerId: string | undefined;
 
+    // Resolve customer first so we can rate-check before hitting Stripe checkout
     if (company_id) {
       const { data: company } = await supabase.from("companies").select("stripe_customer_id, name").eq("id", company_id).single();
       customerId = company?.stripe_customer_id || undefined;
@@ -41,6 +42,18 @@ serve(async (req) => {
         const customer = await stripe.customers.create({ name: profile?.display_name || profile?.username, metadata: { user_id } });
         customerId = customer.id;
         await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user_id);
+      }
+    }
+
+    // Rate-limit: reject if this customer already has an open checkout session
+    // (prevents spam-clicking that floods Stripe with duplicate sessions)
+    if (customerId) {
+      const recent = await stripe.checkout.sessions.list({ customer: customerId, status: "open", limit: 1 });
+      if (recent.data.length > 0) {
+        return new Response(
+          JSON.stringify({ error: "A checkout is already in progress. Complete it or wait a moment before trying again." }),
+          { status: 429, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
       }
     }
 

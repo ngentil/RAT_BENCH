@@ -69,15 +69,12 @@ export async function getTools() {
 
   await migrateLocalTools(user.id);
 
-  const { data: own } = await supabase
-    .from('tools').select('*').eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  const { data: perms } = await supabase
-    .from('asset_permissions')
-    .select('asset_id')
-    .eq('user_id', user.id)
-    .eq('asset_type', 'tool');
+  const [{ data: own }, { data: perms }] = await Promise.all([
+    supabase.from('tools').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(500),
+    supabase.from('asset_permissions').select('asset_id')
+      .eq('user_id', user.id).eq('asset_type', 'tool'),
+  ]);
 
   let provisioned = [];
   if (perms?.length) {
