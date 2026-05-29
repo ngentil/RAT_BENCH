@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
@@ -178,11 +179,18 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
       {view==="grid"?(
         <>
-          <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8}}>
-            {sorted.map(m=>(
-              <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
-            ))}
-          </div>
+          {sorted.length > 0 && (
+            <Virtuoso
+              useWindowScroll
+              data={sorted}
+              style={{display:"grid"}}
+              itemContent={(_idx, m) => (
+                <div key={m.id} style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8,marginBottom:0}}>
+                  <MachineTile machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+                </div>
+              )}
+            />
+          )}
           {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
             <div style={{position:"fixed",inset:0,background:"#000a",zIndex:200,overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setTileOpen(null);}}>
               <div style={{maxWidth:640,margin:"24px auto",padding:"0 8px"}}>
@@ -192,19 +200,30 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
             </div>
           ):null;})()}
         </>
-      ):sorted.map((m,idx)=>(
-        <div
-          key={m.id}
-          draggable={!sortBy}
-          onDragStart={e=>!sortBy&&onDragStart(e,idx)}
-          onDragOver={e=>!sortBy&&onDragOver(e,idx)}
-          onDrop={e=>!sortBy&&onDrop(e,idx)}
-          onDragEnd={onDragEnd}
-          style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
-        >
-          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
-        </div>
-      ))}
+      ):sorted.length > 0 && (
+        // Virtuoso for sorted/filtered lists (no drag reorder); fall back to plain map only for manual-drag mode with small lists
+        sortBy || sorted.length > 30
+          ? <Virtuoso
+              useWindowScroll
+              data={sorted}
+              itemContent={(_idx, m) => (
+                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
+              )}
+            />
+          : sorted.map((m,idx)=>(
+              <div
+                key={m.id}
+                draggable
+                onDragStart={e=>onDragStart(e,idx)}
+                onDragOver={e=>onDragOver(e,idx)}
+                onDrop={e=>onDrop(e,idx)}
+                onDragEnd={onDragEnd}
+                style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
+              >
+                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
+              </div>
+            ))
+      )}
       {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
     </div>
   );

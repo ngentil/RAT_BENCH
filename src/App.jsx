@@ -87,9 +87,13 @@ function App(){
     }
     setSession(session);
     if(first) setProfileChecked(false);
+
+    // profileData declared here so it's in scope for the announcements fetch below
+    let profileData = null;
     try {
-      const {data:profileData} = await supabase
+      const {data} = await supabase
         .from("profiles").select("*").eq("id",session.user.id).single();
+      profileData = data;
       if(profileData){
         setProfile(profileData);
         if(profileData.company_id){
@@ -104,6 +108,7 @@ function App(){
           display_name:"Guest",
           account_type:"personal",
         },{onConflict:"id"}).select().single();
+        profileData = guest;
         setProfile(guest||null);
       } else {
         if(first) setProfile(null);
@@ -111,31 +116,30 @@ function App(){
     } catch(e){ if(first) setProfile(null); }
     setProfileChecked(true);
     setAuthChecked(true);
+
+    // All five data loads run in parallel — was sequential (up to ~2.5s), now ~one RTT
+    const [msR, csR, vsR, eqR, tsR] = await Promise.allSettled([
+      getMachines(),
+      (async () => { await migrateLocalClients(session.user.id); return getClients(); })(),
+      getVehicles(),
+      getEquipment(),
+      getTools(),
+    ]);
     const loadErrs = [];
-    try {
-      const ms = await getMachines();
-      setMachines(Array.isArray(ms)?ms:[]);
-    } catch(e){ loadErrs.push("machines"); }
-    try {
-      await migrateLocalClients(session.user.id);
-      const cs = await getClients();
-      setClients(Array.isArray(cs)?cs:[]);
-    } catch(e){ loadErrs.push("clients"); }
-    try {
-      const vs = await getVehicles();
-      setVehicles(Array.isArray(vs)?vs:[]);
-    } catch(e){ loadErrs.push("vehicles"); }
-    try {
-      const eq = await getEquipment();
-      setEquipment(Array.isArray(eq)?eq:[]);
-    } catch(e){ loadErrs.push("equipment"); }
-    try {
-      const ts = await getTools();
-      setTools(Array.isArray(ts)?ts:[]);
-    } catch(e){ loadErrs.push("tools"); }
+    if (msR.status === 'fulfilled') setMachines(Array.isArray(msR.value) ? msR.value : []);
+    else loadErrs.push("machines");
+    if (csR.status === 'fulfilled') setClients(Array.isArray(csR.value) ? csR.value : []);
+    else loadErrs.push("clients");
+    if (vsR.status === 'fulfilled') setVehicles(Array.isArray(vsR.value) ? vsR.value : []);
+    else loadErrs.push("vehicles");
+    if (eqR.status === 'fulfilled') setEquipment(Array.isArray(eqR.value) ? eqR.value : []);
+    else loadErrs.push("equipment");
+    if (tsR.status === 'fulfilled') setTools(Array.isArray(tsR.value) ? tsR.value : []);
+    else loadErrs.push("tools");
+
     if(first && loadErrs.length) setError(`Could not load: ${loadErrs.join(", ")}. Check your connection and refresh.`);
     try {
-      const userTier=profileData?.tier||"free";
+      const userTier = profileData?.tier || "free";
       const{data:anns}=await supabase.from("announcements").select("*")
         .eq("active",true).or(`tier_filter.eq.all,tier_filter.eq.${userTier}`);
       if(anns){
