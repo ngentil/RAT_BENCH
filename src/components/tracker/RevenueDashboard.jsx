@@ -158,10 +158,10 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
         <div style={{ fontSize: 28 }}>📊</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Revenue Dashboard</div>
         <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Track billable hours, revenue, and work sessions across all machines. Available on the Enthusiast plan and above.
+          Track your billable hours and see what you're actually making per machine. Worth it once you're charging for your time.
         </div>
         <button onClick={onGoToBilling} style={{ ...btnA, ...sm, color: "#fff" }}>
-          View Plans
+          Upgrade to Enthusiast →
         </button>
       </div>
     );

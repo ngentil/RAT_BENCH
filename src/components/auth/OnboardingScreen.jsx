@@ -39,7 +39,7 @@ function OnboardingScreen({session, onComplete}){
         <div style={{textAlign:"center",marginBottom:36}}>
           <div style={{fontSize:36,marginBottom:10}}>🐀</div>
           <div style={{fontSize:16,fontWeight:700,color:ACC,letterSpacing:"0.06em",textTransform:"uppercase"}}>Welcome to Rat Bench</div>
-          <div style={{fontSize:10,color:MUT,marginTop:8,lineHeight:1.6}}>Just a few quick details to get you set up.</div>
+          <div style={{fontSize:10,color:MUT,marginTop:8,lineHeight:1.6}}>Takes 30 seconds. You can change everything later.</div>
         </div>
 
         <div style={{background:SURF,border:"1px solid "+BRD,borderTop:"2px solid "+ACC,borderRadius:2,padding:20}}>
