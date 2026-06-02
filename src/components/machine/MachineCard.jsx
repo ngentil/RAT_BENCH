@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import PhotoViewer from '../ui/PhotoViewer';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
@@ -35,6 +35,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
   const [bookSaving,setBookSaving]=useState(false);
   const [bookErr,setBookErr]=useState("");
   const m=machine;
+  const openRef = useRef(false);
+  openRef.current = open;
 
   const clientName = useMemo(() => {
     if (!m.clientId || !clients?.length) return null;
@@ -51,6 +53,21 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
     if(!storagePolicyEnabled||bookingLoaded) return;
     getActiveBooking(m.id).then(b=>{setBooking(b);setBookingLoaded(true);});
   },[storagePolicyEnabled,m.id]);
+
+  // Android back button collapses this card when it's open.
+  // Pushing { cardOpen: id } means: back closes photo first (if open), then collapses card.
+  useEffect(()=>{
+    if(!open) return;
+    history.pushState({ cardOpen: m.id }, '');
+    const onPop = e => {
+      // If we landed on our own state somehow, ignore. Otherwise we were just popped.
+      if (!openRef.current) return;
+      if (e.state?.cardOpen === m.id) return;
+      setOpen(false);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  },[open]);
 
   const activeTiers = useMemo(()=>getTiers(profile?.storage_tiers),[profile?.storage_tiers]);
   const storageStatus = useMemo(()=>booking?getStorageStatus(booking,activeTiers):null,[booking,activeTiers]);

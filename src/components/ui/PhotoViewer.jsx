@@ -5,10 +5,9 @@ export default function PhotoViewer({ src, onClose }) {
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
-    // Push a history entry so the Android back button closes the viewer
     history.pushState({ photoOpen: true }, '');
+    // Android back button path — fires before component unmounts
     const onPop = () => onCloseRef.current();
-    const onKey = e => { if (e.key === 'Escape') history.back(); };
     window.addEventListener('popstate', onPop);
     window.addEventListener('keydown', onKey);
     return () => {
@@ -17,17 +16,25 @@ export default function PhotoViewer({ src, onClose }) {
     };
   }, []);
 
-  const close = () => history.back();
+  // X button / overlay / Escape: close immediately, then pop our history entry.
+  // React unmounts this component (removing the popstate listener) before the
+  // popstate macrotask fires, so history.back() here is just cleanup.
+  const manualClose = () => {
+    onCloseRef.current();
+    history.back();
+  };
+
+  const onKey = e => { if (e.key === 'Escape') manualClose(); };
 
   return (
-    <div onClick={close} style={{
+    <div onClick={manualClose} style={{
       position: 'fixed', inset: 0,
       background: 'rgba(0,0,0,0.97)',
       zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      {/* Large X — easy to tap on mobile */}
-      <button onClick={close} style={{
+      {/* stopPropagation prevents the click bubbling to the overlay and calling manualClose twice */}
+      <button onClick={e => { e.stopPropagation(); manualClose(); }} style={{
         position: 'absolute', top: 16, right: 16,
         width: 52, height: 52,
         borderRadius: '50%',
