@@ -13,8 +13,8 @@ import { applyTabOrder } from './lib/tabOrder';
 
 const TIER_GLOW = {
   enthusiast: { color: "#e8670a", label: "Enthusiast" },
-  team:       { color: "#0a8fe8", label: "Team"       },
-  business:   { color: "#e8c20a", label: "Business"   },
+  team:       { color: "#0a8fe8", label: "Pro"        },
+  business:   { color: "#e8c20a", label: "Pro"        },
 };
 import AuthScreen from './components/auth/AuthScreen';
 import OnboardingScreen from './components/auth/OnboardingScreen';
@@ -281,7 +281,7 @@ function App(){
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
       {billingBanner==="success"&&(
         <div style={{background:"#0a1a0a",color:"#00ff66",fontSize:11,fontWeight:700,letterSpacing:"0.12em",textAlign:"center",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 0 24px #00ff6688, 0 0 6px #00ff6644",borderBottom:"1px solid #00ff6655"}}>
-          <span style={{textShadow:"0 0 12px #00ff66, 0 0 4px #00ff66"}}>✓ SUBSCRIPTION ACTIVE — WELCOME TO YOUR NEW PLAN</span>
+          <span style={{textShadow:"0 0 12px #00ff66, 0 0 4px #00ff66"}}>You're in. Welcome to the crew. 🐀</span>
           <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#00ff66",fontSize:13,lineHeight:1,opacity:0.7}}>✕</button>
         </div>
       )}
@@ -349,8 +349,8 @@ function App(){
       )}
       {tab==="workshop"&&tier==="free"&&(
         <div style={{background:"#111",borderBottom:"1px solid #333",padding:"6px 16px",fontSize:9,color:MUT,letterSpacing:"0.06em",display:"flex",alignItems:"center",gap:10}}>
-          <span>🔨 Workshop — free tier limited to 5 items per type.</span>
-          <button onClick={()=>setTab("settings")} style={{background:"none",border:"none",cursor:"pointer",color:ACC,fontSize:9,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.06em",padding:0}}>Upgrade to Enthusiast →</button>
+          <span>🔨 Workshop — 5 items per type on the free plan. Plenty to get started.</span>
+          <button onClick={()=>setTab("settings")} style={{background:"none",border:"none",cursor:"pointer",color:ACC,fontSize:9,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.06em",padding:0}}>Go unlimited →</button>
         </div>
       )}
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>setTab("settings")}/></div>

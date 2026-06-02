@@ -237,8 +237,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
       {isFree && machineData.length > 0 && (
         <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div>
-            <div style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 3 }}>Free Plan — Reminders Preview</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Showing 1 reminder for 1 machine. Upgrade for all machines and all intervals.</div>
+            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Upgrade to track service reminders across all your machines.</div>
           </div>
           {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade</button>}
         </div>
@@ -302,7 +301,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
 
             {hiddenItems > 0 && (
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed #2a2a2a", fontSize: 9, color: MUT }}>
-                +{hiddenItems} more interval{hiddenItems !== 1 ? "s" : ""} hidden —{" "}
+                +{hiddenItems} more interval{hiddenItems !== 1 ? "s" : ""} —{" "}
                 <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade to see all</span>
               </div>
             )}
@@ -312,8 +311,8 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
 
       {hiddenMachines > 0 && (
         <div style={{ border: "1px dashed #2a2a2a", borderRadius: 2, padding: "14px", textAlign: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenMachines} more machine{hiddenMachines !== 1 ? "s" : ""} with reminders hidden</div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to Enthusiast</button>}
+          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenMachines} more machine{hiddenMachines !== 1 ? "s" : ""} with service reminders</div>
+          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to see all →</button>}
         </div>
       )}
 

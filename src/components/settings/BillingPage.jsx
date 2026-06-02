@@ -38,7 +38,7 @@ const PLANS = [
     label: "Free",
     price: "$0",
     period: "",
-    features: ["Up to 30 machines","Up to 5 tools / vehicles / equipment","Wiki access","Job tracker","Community support"],
+    features: ["Up to 30 machines","Up to 5 tools / vehicles / equipment","Wiki access","Job & service tracking","Everything you need to get started"],
     personal: true,
   },
   {
@@ -105,7 +105,7 @@ function PlanCard({ plan, current, onUpgrade, onManage, loading }) {
       </ul>
       {!plan.personal && !isCurrent && (
         <div style={{ fontSize: 8, color: MUT, marginBottom: 10, letterSpacing: "0.06em", borderTop: "1px solid #252525", paddingTop: 8 }}>
-          Requires an organisation
+          For shops and teams
         </div>
       )}
       {!isCurrent && plan.id !== "free" && (
