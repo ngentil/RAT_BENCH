@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import WikiHomePage from './WikiHomePage';
 import WikiEntryPage from './WikiEntryPage';
 import { effectiveTier } from '../../lib/gates';
-import { MUT, btnA, sm } from '../../lib/styles';
+import { ACC, MUT, btnA, sm } from '../../lib/styles';
 
 function WikiTab({ session, profile, company, onGoToBilling }) {
   const [currentSlug, setCurrentSlug] = useState(null);
