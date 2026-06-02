@@ -345,8 +345,9 @@ Stripe
 | Push notifications (service due) | 📋 | Needs FCM or similar |
 | Smart Mode cascade calculations | 📋 | Needs multiple sections complete |
 | Invoice / Quote PDF (separate from spec PDF) | 📋 | Currently HTML export only |
-| General Terms of Service page | ✅ | TermsPage.jsx — linked from AuthScreen footer + signup consent |
-| Privacy Policy page | ✅ | PrivacyPage.jsx — linked from AuthScreen footer + signup consent |
+| General Terms of Service page | ✅ | TermsPage.jsx — public URL: ratbench.net/terms |
+| Privacy Policy page | ✅ | PrivacyPage.jsx — public URL: ratbench.net/privacy |
+| Data Retention Policy page | ✅ | DataRetentionPage.jsx — public URL: ratbench.net/data-retention |
 | API access | ❌ | Not being built — removed from billing copy |
 | Firebase migration | 📋 | Long-term — after features stable |
 
