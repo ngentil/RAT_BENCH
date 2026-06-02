@@ -58,7 +58,9 @@ Stripe
 | Admin: hard-delete user from Supabase + all data | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC — run supabase/admin_delete_user.sql | Admin only |
 | Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql | Admin only |
 | Admin: delete individual wiki entry | ✅ | WikiEntryPage — admin delete button visible when VITE_ADMIN_EMAIL matches | Admin only |
-| Photo viewer: X button + Android back button closes viewer | ✅ | PhotoViewer.jsx shared component — history.pushState trick, 52px tap target | All |
+| Photo viewer: X button + Android back button closes viewer | ✅ | PhotoViewer.jsx — manualClose() pattern (stopPropagation on X prevents double history.back), 52px tap target | All |
+| Machine card: Android back button collapses expanded card | ✅ | MachineCard.jsx — pushState({ cardOpen: id }) on expand, popstate listener collapses it | All |
+| Android PWA: "Press back again to exit" toast | ✅ | src/lib/backGuard.js — installBackGuard() called in main.jsx before React renders; 2 s window | All |
 | Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
 | Photo storage — Supabase Storage bucket | ✅ | supabase/create_photos_bucket.sql + src/lib/storage.js — run SQL first, then deploy | All |
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
