@@ -3,9 +3,10 @@ import { supabase } from '../../lib/supabase';
 import { deleteUserPhotos } from '../../lib/storage';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } from '../../lib/styles';
 
-const TIER_COLOR = { free: MUT, enthusiast: '#e8670a', team: '#0a8fe8', business: '#e8c20a' };
-const ALL_TIERS  = ['free', 'enthusiast', 'team', 'business'];
-const ADMIN_TABS = ['Overview', 'Users', 'Grants', 'Flags', 'Announcements', 'Audit'];
+const TIER_COLOR  = { free: MUT, enthusiast: '#e8670a', team: '#0a8fe8', business: '#e8c20a' };
+const ALL_TIERS   = ['free', 'enthusiast', 'team', 'business'];
+const ADMIN_TABS  = ['Overview', 'Users', 'Grants', 'Flags', 'Announcements', 'Audit'];
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
 
 const lbl  = { fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 };
 const card = { background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '12px 14px' };
@@ -208,6 +209,7 @@ function UsersTab() {
 
   const deleteUser = async (u) => {
     const label = u.email || u.username || u.id;
+    if (u.email === ADMIN_EMAIL) { setMsg({ ok: false, text: 'Cannot delete the admin account.' }); return; }
     if (!confirm(`PERMANENTLY DELETE ${label}?\n\nThis deletes their Supabase account and ALL their workshop data — machines, clients, parts, vehicles, tools, everything.\n\nThis CANNOT be undone.`)) return;
     if (!confirm(`Second confirmation: delete ${label} forever?`)) return;
     setBusy(u.id); setMsg(null);
