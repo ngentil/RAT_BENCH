@@ -1,6 +1,8 @@
 -- Extended admin_get_stats RPC
 -- Run in Supabase SQL Editor to replace the existing function.
 
+DROP FUNCTION IF EXISTS admin_get_stats();
+
 CREATE OR REPLACE FUNCTION admin_get_stats()
 RETURNS jsonb
 LANGUAGE sql
