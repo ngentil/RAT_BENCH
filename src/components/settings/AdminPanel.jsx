@@ -194,14 +194,15 @@ function UsersTab() {
     load(search);
   };
 
-  const deleteUser = async (email) => {
-    if (!confirm(`PERMANENTLY DELETE ${email}?\n\nThis deletes their Supabase account and ALL their workshop data — machines, clients, parts, vehicles, tools, everything.\n\nThis CANNOT be undone.`)) return;
-    if (!confirm(`Second confirmation: delete ${email} forever?`)) return;
-    setBusy(email); setMsg(null);
-    const { data, error } = await supabase.rpc('admin_delete_user', { p_email: email });
+  const deleteUser = async (u) => {
+    const label = u.email || u.username || u.id;
+    if (!confirm(`PERMANENTLY DELETE ${label}?\n\nThis deletes their Supabase account and ALL their workshop data — machines, clients, parts, vehicles, tools, everything.\n\nThis CANNOT be undone.`)) return;
+    if (!confirm(`Second confirmation: delete ${label} forever?`)) return;
+    setBusy(u.id); setMsg(null);
+    const { data, error } = await supabase.rpc('admin_delete_user', { p_user_id: u.id });
     setBusy(null);
     if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
-    setMsg({ ok: true, text: `${email} permanently deleted` });
+    setMsg({ ok: true, text: `${label} permanently deleted` });
     load(search);
   };
 
@@ -239,12 +240,12 @@ function UsersTab() {
               >
                 {ALL_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <button onClick={() => deactivate(u.email)} disabled={busy === u.email}
-                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy === u.email ? 0.5 : 1 }}>
+              <button onClick={() => deactivate(u.email)} disabled={busy === u.id}
+                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy === u.id ? 0.5 : 1 }}>
                 Deactivate
               </button>
-              <button onClick={() => deleteUser(u.email)} disabled={busy === u.email}
-                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy === u.email ? 0.5 : 1, background: '#2a0a0a', borderColor: RED, color: RED }}>
+              <button onClick={() => deleteUser(u)} disabled={busy === u.id}
+                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy === u.id ? 0.5 : 1, background: '#2a0a0a', borderColor: RED, color: RED }}>
                 Delete
               </button>
             </div>
