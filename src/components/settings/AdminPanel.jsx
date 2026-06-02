@@ -228,6 +228,16 @@ function UsersTab() {
     load(search);
   };
 
+  const deleteWiki = async (u) => {
+    const label = u.email || u.username || u.id;
+    if (!confirm(`Delete all wiki entries by ${label}?\n\nThis permanently removes all wiki content they authored.\n\nThis CANNOT be undone.`)) return;
+    setBusy(u.id + '_wiki'); setMsg(null);
+    const { data, error } = await supabase.rpc('admin_delete_user_wiki', { p_user_id: u.id });
+    setBusy(null);
+    if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
+    setMsg({ ok: true, text: `${data.deleted} wiki ${data.deleted === 1 ? 'entry' : 'entries'} deleted for ${label}` });
+  };
+
   const deleteUser = async (u) => {
     const label = u.email || u.username || u.id;
     if (!confirm(`PERMANENTLY DELETE ${label}?\n\nThis deletes their Supabase account and ALL their workshop data — machines, clients, parts, vehicles, tools, everything.\n\nThis CANNOT be undone.`)) return;
@@ -274,12 +284,16 @@ function UsersTab() {
               >
                 {ALL_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <button onClick={() => deactivate(u.email)} disabled={busy === u.id}
-                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy === u.id ? 0.5 : 1 }}>
+              <button onClick={() => deactivate(u.email)} disabled={!!busy}
+                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1 }}>
                 Deactivate
               </button>
-              <button onClick={() => deleteUser(u)} disabled={busy === u.id}
-                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy === u.id ? 0.5 : 1, background: '#2a0a0a', borderColor: RED, color: RED }}>
+              <button onClick={() => deleteWiki(u)} disabled={!!busy}
+                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1, color: '#e8870a', borderColor: '#e8870a55' }}>
+                Del Wiki
+              </button>
+              <button onClick={() => deleteUser(u)} disabled={!!busy}
+                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1, background: '#2a0a0a', borderColor: RED, color: RED }}>
                 Delete
               </button>
             </div>
