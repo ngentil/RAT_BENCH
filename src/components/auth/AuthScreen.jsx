@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, BG, TXT, GRN, RED, inp, btnA, btnG, sm } from '../../lib/styles';
 import { checkUsernameAvailable, generateAvailableUsername } from '../../lib/username';
-import TermsPage from '../legal/TermsPage';
-import PrivacyPage from '../legal/PrivacyPage';
 function AuthScreen(){
   const [mode,setMode]=useState("login"); // login | signup | forgot
   const [email,setEmail]=useState("");
@@ -16,7 +14,6 @@ function AuthScreen(){
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
-  const [legal,setLegal]=useState(null); // "terms" | "privacy" | null
 
   // Reset loading if browser restores page from bfcache after OAuth redirect
   useEffect(()=>{
@@ -191,9 +188,9 @@ function AuthScreen(){
             </button>
             {mode==="signup"&&<div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:10,lineHeight:1.7}}>
               By creating an account you agree to our{" "}
-              <button onClick={()=>setLegal("terms")} style={{background:"none",border:"none",color:ACC,fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,textDecoration:"underline"}}>Terms of Service</button>
+              <a href="/terms" style={{color:ACC,fontSize:8,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>Terms of Service</a>
               {" "}and{" "}
-              <button onClick={()=>setLegal("privacy")} style={{background:"none",border:"none",color:ACC,fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,textDecoration:"underline"}}>Privacy Policy</button>.
+              <a href="/privacy" style={{color:ACC,fontSize:8,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>Privacy Policy</a>.
             </div>}
 
             {/* Forgot password */}
@@ -219,17 +216,17 @@ function AuthScreen(){
 
           </div>
 
-          <div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:24,lineHeight:2}}>
+          <div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:24,lineHeight:2.4}}>
             ratbench.net
-            <span style={{margin:"0 6px"}}>·</span>
-            <button onClick={()=>setLegal("terms")} style={{background:"none",border:"none",color:MUT,fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline",padding:0}}>Terms</button>
-            <span style={{margin:"0 6px"}}>·</span>
-            <button onClick={()=>setLegal("privacy")} style={{background:"none",border:"none",color:MUT,fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline",padding:0}}>Privacy</button>
+            {[["Terms","/terms"],["Privacy","/privacy"],["Data Retention","/data-retention"]].map(([label,href])=>(
+              <React.Fragment key={href}>
+                <span style={{margin:"0 6px"}}>·</span>
+                <a href={href} style={{color:MUT,fontSize:8,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>{label}</a>
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </div>
-      {legal === "terms"   && <TermsPage   onClose={() => setLegal(null)} />}
-      {legal === "privacy" && <PrivacyPage onClose={() => setLegal(null)} />}
     </div>
   );
 }

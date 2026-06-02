@@ -19,6 +19,9 @@ const TIER_GLOW = {
 import AuthScreen from './components/auth/AuthScreen';
 import OnboardingScreen from './components/auth/OnboardingScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
+import TermsPage from './components/legal/TermsPage';
+import PrivacyPage from './components/legal/PrivacyPage';
+import DataRetentionPage from './components/legal/DataRetentionPage';
 import SettingsPage from './components/settings/SettingsPage';
 import Tracker from './components/tracker/Tracker';
 import JobBoard from './components/tracker/JobBoard';
@@ -382,4 +385,11 @@ function App(){
     </div>
   );
 }
-export default App;
+function AppRouter() {
+  const path = window.location.pathname;
+  if (path === '/terms')          return <TermsPage />;
+  if (path === '/privacy')        return <PrivacyPage />;
+  if (path === '/data-retention') return <DataRetentionPage />;
+  return <App />;
+}
+export default AppRouter;
