@@ -3,7 +3,8 @@ import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, inp, sel, txa, btnA, btnG, col, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SVC_CATEGORIES } from '../../lib/constants';
 import { FL } from './shared';
-import { mIcon, nowL, uid, resizeImg, toB64 } from '../../lib/helpers';
+import { mIcon, nowL, uid } from '../../lib/helpers';
+import { uploadPhoto, deletePhoto } from '../../lib/storage';
 import PhotoAdder from './PhotoAdder';
 // ── Service Modal ─────────────────────────────────────────────────────────────
 function ServiceModal({machine,existing,onSave,onClose}){
@@ -17,7 +18,7 @@ function ServiceModal({machine,existing,onSave,onClose}){
   const [openCats,setOpenCats]=useState({general:true});
   const tog=t=>setTy(prev=>prev.includes(t)?prev.filter(x=>x!==t):[...prev,t]);
   const togCat=id=>setOpenCats(prev=>({...prev,[id]:!prev[id]}));
-  const handlePlug=async ev=>{const f=ev.target.files[0];if(!f)return;setPb(true);setPp(await resizeImg(await toB64(f)));setPb(false);};
+  const handlePlug=async ev=>{const f=ev.target.files[0];if(!f)return;setPb(true);if(pp)deletePhoto(pp);try{setPp(await uploadPhoto(f));}catch{setPb(false);}setPb(false);};
   const save=()=>onSave({id:e.id||uid(),completedAt:ca,types:types.length?types:["General Service"],
     notes:notes.trim(),plugPhoto:pp,jobPhotos:jp,
     createdAt:e.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
@@ -81,7 +82,7 @@ function ServiceModal({machine,existing,onSave,onClose}){
               <button onClick={()=>document.getElementById("plugCam").click()} style={{...btnG,flex:1,fontSize:9,padding:"8px 0"}}>📷 Camera</button>
               <button onClick={()=>document.getElementById("plugGal").click()} style={{...btnG,flex:1,fontSize:9,padding:"8px 0"}}>🖼 Gallery</button>
             </div>}
-            {pp&&<button style={{...btnG,...sm,marginTop:5}} onClick={()=>setPp(null)}>Remove</button>}
+            {pp&&<button style={{...btnG,...sm,marginTop:5}} onClick={()=>{deletePhoto(pp);setPp(null);}}>Remove</button>}
           </div>}
           <PhotoAdder photos={jp} setPhotos={setJp} label="Job Photos" />
         </div>
