@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
+import PhotoViewer from '../ui/PhotoViewer';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
 import { getAssignedTo, assignAsset, unassignAsset } from '../../lib/db/assetAssignments';
@@ -410,13 +411,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
         />
       )}
 
-      {photoIdx !== null && (
-        <div style={{ position: 'fixed', inset: 0, background: '#000d', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => setPhotoIdx(null)}>
-          <img src={vehicle.photos[photoIdx]} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 2 }}
-            onClick={e => e.stopPropagation()} />
-        </div>
-      )}
+      {photoIdx !== null && <PhotoViewer src={vehicle.photos[photoIdx]} onClose={() => setPhotoIdx(null)} />}
     </div>
   );
 }
