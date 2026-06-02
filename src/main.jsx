@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
-import { initAnalytics } from './lib/analytics';
 import './index.css';
 import App from './App';
 import WikiApp from './components/wiki/WikiApp';
@@ -14,8 +13,6 @@ Sentry.init({
   tracesSampleRate: 0.1,
   integrations: [Sentry.browserTracingIntegration()],
 });
-
-initAnalytics();
 
 const isWiki = window.location.hostname === "wiki.ratbench.net";
 ReactDOM.createRoot(document.getElementById('root')).render(

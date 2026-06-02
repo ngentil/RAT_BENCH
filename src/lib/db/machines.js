@@ -1,6 +1,5 @@
 import { supabase } from '../supabase';
 import { toDb, fromDb } from './transforms';
-import { track } from '../analytics';
 
 export async function getMachines() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -48,7 +47,6 @@ export async function upsertMachine(machine) {
   const isNew = !machine.id;
   const { error } = await supabase.from("machines").upsert(row, { onConflict: "id" });
   if (error) { console.error("upsertMachine:", error); throw error; }
-  if (isNew) track('machine_added', { type: machine.type || 'unknown' });
 }
 
 export async function deleteMachineApi(id) {
