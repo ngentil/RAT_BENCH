@@ -52,11 +52,6 @@ function AuthScreen(){
     if(error){setError(error.message);setLoading(false);}
   };
 
-  const handleApple=async()=>{
-    setLoading(true);setError("");
-    const{error}=await supabase.auth.signInWithOAuth({provider:"apple",options:{redirectTo:window.location.origin}});
-    if(error){setError(error.message);setLoading(false);}
-  };
 
   const handleGuest=async()=>{
     setLoading(true);setError("");
@@ -139,17 +134,10 @@ function AuthScreen(){
             </div>
 
             {/* OAuth buttons */}
-            {mode!=="forgot"&&<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
-              {[
-                {handler:handleGoogle, label:"Continue with Google", icon:"G", iconStyle:{fontFamily:"serif",fontSize:15,fontWeight:700}},
-                {handler:handleApple,  label:"Continue with Apple",  icon:"", iconStyle:{fontSize:16}},
-              ].map(({handler,label,icon,iconStyle})=>(
-                <button key={label} onClick={handler} disabled={loading}
-                  style={{width:"100%",padding:"10px 0",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"1px solid "+BRD,borderRadius:2,background:"transparent",color:TXT,display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?0.6:1}}>
-                  <span style={iconStyle}>{icon}</span>{label}
-                </button>
-              ))}
-            </div>}
+            {mode!=="forgot"&&<button onClick={handleGoogle} disabled={loading}
+              style={{width:"100%",padding:"10px 0",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"1px solid "+BRD,borderRadius:2,background:"transparent",color:TXT,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?0.6:1}}>
+              <span style={{fontFamily:"serif",fontSize:15,fontWeight:700}}>G</span> Continue with Google
+            </button>}
 
             {/* Divider */}
             {mode!=="forgot"&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
