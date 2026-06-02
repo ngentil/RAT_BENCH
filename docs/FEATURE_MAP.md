@@ -56,6 +56,8 @@ Stripe
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
 | Admin panel analytics (users, active, machines, signups trend) | ✅ | AdminPanel.jsx OverviewTab + admin_get_stats() RPC — run supabase/admin_get_stats.sql to update | Admin only |
 | Admin: hard-delete user from Supabase + all data | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC — run supabase/admin_delete_user.sql | Admin only |
+| Admin: nuke all wiki entries + revisions | ✅ | AdminPanel.jsx OverviewTab Danger Zone + admin_delete_all_wiki() RPC — run supabase/admin_delete_wiki.sql | Admin only |
+| Photo viewer: X button + Android back button closes viewer | ✅ | PhotoViewer.jsx shared component — history.pushState trick, 52px tap target | All |
 | Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
 | Photo storage — Supabase Storage bucket | ✅ | supabase/create_photos_bucket.sql + src/lib/storage.js — run SQL first, then deploy | All |
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
