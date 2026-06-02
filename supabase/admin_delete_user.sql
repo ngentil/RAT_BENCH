@@ -3,6 +3,7 @@
 -- Replaces the old email-based version — drop it first.
 
 DROP FUNCTION IF EXISTS admin_delete_user(text);
+DROP FUNCTION IF EXISTS admin_delete_user(uuid);
 
 CREATE OR REPLACE FUNCTION admin_delete_user(p_user_id uuid)
 RETURNS jsonb
@@ -34,6 +35,8 @@ BEGIN
   DELETE FROM equipment       WHERE user_id = p_user_id;
   DELETE FROM tools           WHERE user_id = p_user_id;
   DELETE FROM consumables     WHERE user_id = p_user_id;
+
+  DELETE FROM wiki_revisions WHERE edited_by = p_user_id;
 
   DELETE FROM profiles   WHERE id = p_user_id;
   DELETE FROM auth.users WHERE id = p_user_id;
