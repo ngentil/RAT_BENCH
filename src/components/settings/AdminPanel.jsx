@@ -154,39 +154,6 @@ function OverviewTab() {
         );
       })}
 
-      <DangerZone />
-    </div>
-  );
-}
-
-function DangerZone() {
-  const [busy, setBusy] = useState(false);
-  const [msg,  setMsg]  = useState(null);
-
-  const nukeWiki = async () => {
-    if (!confirm('Delete ALL wiki entries and revisions?\n\nThis permanently removes all community wiki content. Cannot be undone.')) return;
-    if (!confirm('Second confirmation: wipe entire wiki?')) return;
-    setBusy(true); setMsg(null);
-    const { data, error } = await supabase.rpc('admin_delete_all_wiki');
-    setBusy(false);
-    if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
-    setMsg({ ok: true, text: `${data.deleted} wiki ${data.deleted === 1 ? 'entry' : 'entries'} deleted` });
-  };
-
-  return (
-    <div style={{ marginTop: 32, border: '1px solid ' + RED + '44', borderRadius: 2, padding: 14 }}>
-      <div style={{ fontSize: 9, color: RED, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>Danger Zone</div>
-      <Msg m={msg} />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 10, color: TXT, fontWeight: 700, marginBottom: 2 }}>Delete All Wiki Entries</div>
-          <div style={{ fontSize: 9, color: MUT }}>Permanently wipes all wiki entries and revision history.</div>
-        </div>
-        <button onClick={nukeWiki} disabled={busy}
-          style={{ ...btnD, flexShrink: 0, opacity: busy ? 0.5 : 1, background: '#2a0a0a', borderColor: RED, color: RED, whiteSpace: 'nowrap' }}>
-          {busy ? 'Deleting…' : 'Nuke Wiki'}
-        </button>
-      </div>
     </div>
   );
 }
