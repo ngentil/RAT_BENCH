@@ -184,9 +184,9 @@ function App(){
   },[profile,company]);
 
   useEffect(()=>{
-    // Bootstrap from existing session
-    supabase.auth.getSession().then(({data:{session}})=>loadForSession(session));
-    // Listen for auth changes (login/logout)
+    // onAuthStateChange fires INITIAL_SESSION immediately on mount — no need for a separate
+    // getSession() call. Using both causes a race condition where two loadForSession calls
+    // run in parallel and one can win with null profile.
     const{data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
       if(_event==="PASSWORD_RECOVERY"){
         setPasswordReset(true);
