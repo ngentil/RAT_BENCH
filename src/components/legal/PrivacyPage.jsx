@@ -20,34 +20,36 @@ export default function PrivacyPage({ onClose }) {
           {onClose && <button onClick={onClose} style={{ ...btnG, ...sm }}>← Back</button>}
         </div>
 
-        <P>Last updated: January 2025</P>
+        <P>Last updated: June 2025</P>
         <P>This Privacy Policy describes how RAT BENCH ("we", "us", "our") collects, uses, and protects your information when you use the Service.</P>
 
         <H>1. Information We Collect</H>
         <P><span style={{ color: '#aaa' }}>Account data:</span> Email address, username, and display name when you register.</P>
         <P><span style={{ color: '#aaa' }}>Profile data:</span> Company name, ABN, hourly rate, and other business details you optionally provide in Settings.</P>
         <P><span style={{ color: '#aaa' }}>Workshop data:</span> Machines, jobs, time logs, parts, clients, vehicles, tools, and equipment records you create.</P>
-        <P><span style={{ color: '#aaa' }}>Usage data:</span> Basic analytics on feature usage to help us improve the Service. We do not use third-party analytics trackers.</P>
+        <P><span style={{ color: '#aaa' }}>Analytics data:</span> We collect product usage analytics including which features you use, which tabs you visit, and actions such as adding machines or upgrading your plan. This data is associated with your account and used solely to improve the Service. We use PostHog (EU-hosted) as our analytics platform.</P>
+        <P><span style={{ color: '#aaa' }}>Error data:</span> We collect crash reports and error logs via Sentry to diagnose and fix bugs. These may include browser type, app state at the time of the error, and your user ID.</P>
         <P><span style={{ color: '#aaa' }}>Payment data:</span> Billing is handled entirely by Stripe. We do not store your card details.</P>
 
         <H>2. How We Use Your Information</H>
-        <P>We use your information to: provide and operate the Service; process payments; send essential service communications (e.g. billing, security); and improve the Service based on usage patterns.</P>
+        <P>We use your information to: provide and operate the Service; process payments; send essential service communications (e.g. billing, security); diagnose errors and fix bugs; and improve the Service based on usage patterns.</P>
         <P>We do not sell, rent, or trade your personal information to third parties.</P>
 
         <H>3. Data Storage</H>
-        <P>Your data is stored in Supabase (a managed PostgreSQL platform) hosted on AWS infrastructure in the Sydney, Australia region. Data is encrypted in transit (TLS) and at rest.</P>
+        <P>Your workshop data is stored in Supabase (a managed PostgreSQL platform) hosted on AWS infrastructure. Analytics data is processed by PostHog on EU-based infrastructure. Error data is processed by Sentry.</P>
+        <P>All data is encrypted in transit (TLS) and at rest.</P>
 
         <H>4. Data Sharing</H>
-        <P>We share your data only with: (a) Supabase, for database hosting; (b) Stripe, for payment processing; (c) as required by law or to protect our legal rights.</P>
+        <P>We share your data only with: (a) Supabase, for database and authentication hosting; (b) Stripe, for payment processing; (c) PostHog, for product analytics; (d) Sentry, for error tracking; (e) as required by law or to protect our legal rights.</P>
 
         <H>5. Data Retention</H>
-        <P>We retain your data for as long as your account is active. If you delete your account, we retain your data for 30 days before permanent deletion, in case of accidental deletion.</P>
+        <P>We retain your data for as long as your account is active. If you delete your account, we retain your data for 30 days before permanent deletion. See our Data Retention Policy for full details.</P>
 
         <H>6. Your Rights</H>
-        <P>You may request access to, correction of, or deletion of your personal data at any time by contacting us. You may export your workshop data from within the app.</P>
+        <P>You may request access to, correction of, or deletion of your personal data at any time by contacting us. You may export your workshop data from within the app. If you are in the EEA or UK, you also have the right to object to processing and to data portability.</P>
 
         <H>7. Cookies</H>
-        <P>We use only essential session cookies required for authentication. We do not use advertising or tracking cookies.</P>
+        <P>We use essential session cookies required for authentication. We also use cookies set by PostHog for analytics purposes. We do not use advertising cookies or sell data to ad networks.</P>
 
         <H>8. Children's Privacy</H>
         <P>The Service is not directed at children under 18. We do not knowingly collect personal information from minors.</P>

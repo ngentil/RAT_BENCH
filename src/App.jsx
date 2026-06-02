@@ -10,6 +10,7 @@ import { TABS, WORKSHOP_TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
 import { applyTabOrder } from './lib/tabOrder';
+import { identifyUser, track, resetAnalytics } from './lib/analytics';
 
 const TIER_GLOW = {
   enthusiast: { color: "#e8670a", label: "Enthusiast" },
@@ -99,11 +100,18 @@ function App(){
       profileData = data;
       if(profileData){
         setProfile(profileData);
+        identifyUser(session.user.id, {
+          username:     profileData.username,
+          account_type: profileData.account_type,
+          tier:         profileData.tier || 'free',
+          is_anonymous: false,
+        });
         if(profileData.company_id){
           const co=await getMyCompany(profileData.company_id);
           setCompany(co);
         }
       } else if(session.user.is_anonymous){
+        identifyUser(session.user.id, { account_type: 'guest', tier: 'free', is_anonymous: true });
         const guestSuffix=session.user.id.replace(/-/g,"").slice(0,6);
         const {data:guest}=await supabase.from("profiles").upsert({
           id:session.user.id,
@@ -166,8 +174,8 @@ function App(){
     })();
   };
 
-  useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
-  useEffect(()=>{ localStorage.setItem("rat_workshop_tab",workshopTab); },[workshopTab]);
+  useEffect(()=>{ localStorage.setItem("rat_tab",tab); track('tab_viewed',{tab}); },[tab]);
+  useEffect(()=>{ localStorage.setItem("rat_workshop_tab",workshopTab); if(tab==="workshop") track('tab_viewed',{tab:`workshop:${workshopTab}`}); },[workshopTab]);
 
   useEffect(()=>{
     if(!profile) return;
@@ -241,6 +249,7 @@ function App(){
   },[company?.id]);
 
   const signOut=async()=>{
+    resetAnalytics();
     await supabase.auth.signOut();
     // onAuthStateChange will fire with null session and call loadForSession(null)
     // which resets all state correctly — don't touch state here
@@ -277,6 +286,7 @@ function App(){
   }
 
   const tier=effectiveTier(profile,company);
+  const goToBilling=(source)=>{ track('upgrade_clicked',{source,tier}); setTab("settings"); };
   const tierGlow = TIER_GLOW[tier];
   const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = machines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
@@ -369,18 +379,18 @@ function App(){
           <button onClick={()=>setTab("settings")} style={{background:"none",border:"none",cursor:"pointer",color:ACC,fontSize:9,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.06em",padding:0}}>Go unlimited →</button>
         </div>
       )}
-      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
-      <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="vehicles"?"contents":"none"}}><VehiclesTab vehicles={vehicles} setVehicles={setVehicles} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>setTab("settings")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>setTab("settings")}/></div>
+      <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="vehicles"?"contents":"none"}}><VehiclesTab vehicles={vehicles} setVehicles={setVehicles} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="settings"?"contents":"none"}}><SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/></div>
     </div>
   );
