@@ -4,50 +4,48 @@
 -- ============================================================
 
 -- ── 1. Machines RLS ──────────────────────────────────────────
--- If RLS is already enabled and policies exist, the IF NOT EXISTS
--- guards below prevent duplicate errors.
+-- SECURITY DEFINER helpers prevent infinite RLS recursion:
+-- the provisioned-machines policies query machine_permissions,
+-- which may itself have policies that reference machines.
+-- Running the sub-selects as DB owner (SECURITY DEFINER) breaks the cycle.
+
+CREATE OR REPLACE FUNCTION _provisioned_machine_ids(uid uuid)
+RETURNS SETOF uuid
+LANGUAGE sql SECURITY DEFINER STABLE
+AS $$
+  SELECT machine_id FROM machine_permissions WHERE user_id = uid;
+$$;
+
+CREATE OR REPLACE FUNCTION _editable_provisioned_machine_ids(uid uuid)
+RETURNS SETOF uuid
+LANGUAGE sql SECURITY DEFINER STABLE
+AS $$
+  SELECT machine_id FROM machine_permissions
+  WHERE user_id = uid AND can_edit = true;
+$$;
 
 ALTER TABLE machines ENABLE ROW LEVEL SECURITY;
 
-DO $$
-BEGIN
-  -- Own machines: full access
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'machines' AND policyname = 'machines_own'
-  ) THEN
-    CREATE POLICY machines_own ON machines
-      FOR ALL
-      USING (user_id = auth.uid())
-      WITH CHECK (user_id = auth.uid());
-  END IF;
+-- Drop & recreate so reruns are idempotent
+DROP POLICY IF EXISTS machines_own                ON machines;
+DROP POLICY IF EXISTS machines_provisioned_select ON machines;
+DROP POLICY IF EXISTS machines_provisioned_update ON machines;
 
-  -- Provisioned machines: select only
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'machines' AND policyname = 'machines_provisioned_select'
-  ) THEN
-    CREATE POLICY machines_provisioned_select ON machines
-      FOR SELECT
-      USING (
-        id IN (
-          SELECT machine_id FROM machine_permissions WHERE user_id = auth.uid()
-        )
-      );
-  END IF;
+-- Own machines: full access
+CREATE POLICY machines_own ON machines
+  FOR ALL
+  USING (user_id = auth.uid())
+  WITH CHECK (user_id = auth.uid());
 
-  -- Provisioned machines with edit rights: update allowed
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies WHERE tablename = 'machines' AND policyname = 'machines_provisioned_update'
-  ) THEN
-    CREATE POLICY machines_provisioned_update ON machines
-      FOR UPDATE
-      USING (
-        id IN (
-          SELECT machine_id FROM machine_permissions
-          WHERE user_id = auth.uid() AND can_edit = true
-        )
-      );
-  END IF;
-END $$;
+-- Provisioned machines: select only (uses SECURITY DEFINER helper)
+CREATE POLICY machines_provisioned_select ON machines
+  FOR SELECT
+  USING (id IN (SELECT _provisioned_machine_ids(auth.uid())));
+
+-- Provisioned machines with edit rights: update allowed
+CREATE POLICY machines_provisioned_update ON machines
+  FOR UPDATE
+  USING (id IN (SELECT _editable_provisioned_machine_ids(auth.uid())));
 
 
 -- ── 2. Critical indexes ───────────────────────────────────────
