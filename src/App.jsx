@@ -10,7 +10,6 @@ import { TABS, WORKSHOP_TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
 import { applyTabOrder } from './lib/tabOrder';
-import { identifyUser, track, resetAnalytics } from './lib/analytics';
 
 const TIER_GLOW = {
   enthusiast: { color: "#e8670a", label: "Enthusiast" },
@@ -100,18 +99,11 @@ function App(){
       profileData = data;
       if(profileData){
         setProfile(profileData);
-        identifyUser(session.user.id, {
-          username:     profileData.username,
-          account_type: profileData.account_type,
-          tier:         profileData.tier || 'free',
-          is_anonymous: false,
-        });
         if(profileData.company_id){
           const co=await getMyCompany(profileData.company_id);
           setCompany(co);
         }
       } else if(session.user.is_anonymous){
-        identifyUser(session.user.id, { account_type: 'guest', tier: 'free', is_anonymous: true });
         const guestSuffix=session.user.id.replace(/-/g,"").slice(0,6);
         const {data:guest}=await supabase.from("profiles").upsert({
           id:session.user.id,
@@ -174,8 +166,8 @@ function App(){
     })();
   };
 
-  useEffect(()=>{ localStorage.setItem("rat_tab",tab); track('tab_viewed',{tab}); },[tab]);
-  useEffect(()=>{ localStorage.setItem("rat_workshop_tab",workshopTab); if(tab==="workshop") track('tab_viewed',{tab:`workshop:${workshopTab}`}); },[workshopTab]);
+  useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
+  useEffect(()=>{ localStorage.setItem("rat_workshop_tab",workshopTab); },[workshopTab]);
 
   useEffect(()=>{
     if(!profile) return;
@@ -249,7 +241,6 @@ function App(){
   },[company?.id]);
 
   const signOut=async()=>{
-    resetAnalytics();
     await supabase.auth.signOut();
     // onAuthStateChange will fire with null session and call loadForSession(null)
     // which resets all state correctly — don't touch state here
@@ -286,7 +277,7 @@ function App(){
   }
 
   const tier=effectiveTier(profile,company);
-  const goToBilling=(source)=>{ track('upgrade_clicked',{source,tier}); setTab("settings"); };
+  const goToBilling=()=>{ setTab("settings"); };
   const tierGlow = TIER_GLOW[tier];
   const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = machines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
