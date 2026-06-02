@@ -49,7 +49,6 @@ export default function DataRetentionPage({ onClose }) {
         <P>Your data passes through the following third-party processors:</P>
         <P>— Supabase (database and authentication hosting) — workshop data stored in AWS infrastructure.</P>
         <P>— Stripe (payment processing) — subject to Stripe's own retention policies (typically 7 years for financial records).</P>
-        <P>— PostHog (product analytics) — usage events retained for 1 year on the EU cloud. You can request deletion of your analytics data by contacting us.</P>
         <P>— Sentry (error tracking) — error reports retained for 90 days by default.</P>
         <P>— Netlify (frontend hosting) — serves the application only; does not have access to your workshop data.</P>
 
