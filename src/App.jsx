@@ -138,16 +138,19 @@ function App(){
     else loadErrs.push("tools");
 
     if(first && loadErrs.length) setError(`Could not load: ${loadErrs.join(", ")}. Check your connection and refresh.`);
-    try {
-      const userTier = profileData?.tier || "free";
-      const{data:anns}=await supabase.from("announcements").select("*")
-        .eq("active",true).or(`tier_filter.eq.all,tier_filter.eq.${userTier}`);
-      if(anns){
-        const dismissed=JSON.parse(localStorage.getItem("rat_dismissed_anns")||"[]");
-        setAnnouncements(anns.filter(a=>!dismissed.includes(a.id)&&(!a.expires_at||new Date(a.expires_at)>new Date())));
-      }
-    }catch{}
     if(first){ setInitializing(false); initializedRef.current=true; }
+    // Fetch announcements after UI is visible — non-blocking
+    (async()=>{
+      try {
+        const userTier = profileData?.tier || "free";
+        const{data:anns}=await supabase.from("announcements").select("*")
+          .eq("active",true).or(`tier_filter.eq.all,tier_filter.eq.${userTier}`);
+        if(anns){
+          const dismissed=JSON.parse(localStorage.getItem("rat_dismissed_anns")||"[]");
+          setAnnouncements(anns.filter(a=>!dismissed.includes(a.id)&&(!a.expires_at||new Date(a.expires_at)>new Date())));
+        }
+      }catch{}
+    })();
   };
 
   useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
