@@ -1,22 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, GRN, RED, inp, btnA, btnG, col, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { RESERVED_USERNAMES } from '../../lib/constants';
-
-const ADJS = ["rusty","greasy","turbo","speedy","chunky","mighty","brave","sneaky","cheeky","grumpy","fuzzy","zippy","nimble","cranky","dusty","peppy","feisty","gnarly","plucky","dinky","nifty","quirky","spunky","wiry","bolty","grimy","oily","ratty","scruffy","grubby"];
-const ANIMALS = ["rat","mouse","vole","shrew","ferret","weasel","stoat","beaver","marmot","squirrel","rabbit","hare","mole","badger","raccoon","possum","skunk","lemur","degu","pika","jerboa","otter","quokka","numbat","bilby","wombat","gerbil","hamster","meerkat"];
-
-const makeName = () => {
-  const a = ADJS[Math.floor(Math.random()*ADJS.length)];
-  const b = ANIMALS[Math.floor(Math.random()*ANIMALS.length)];
-  return `${a}_${b}_${Math.floor(Math.random()*900)+100}`;
-};
-
-const checkAvailable = async (name) => {
-  if (RESERVED_USERNAMES.has(name.toLowerCase())) return false;
-  const { data } = await supabase.from("profiles").select("id").eq("username", name.toLowerCase()).maybeSingle();
-  return !data;
-};
+import { checkUsernameAvailable, generateAvailableUsername } from '../../lib/username';
 
 function GuestUpgradeModal({profile,setProfile,onClose}){
   const [username,setUsername]=useState(profile?.username||"");
@@ -38,7 +23,7 @@ function GuestUpgradeModal({profile,setProfile,onClose}){
     setAvailability("checking");
     const id=++checkRef.current;
     const t=setTimeout(async()=>{
-      const ok=await checkAvailable(val);
+      const ok=await checkUsernameAvailable(val);
       if(checkRef.current===id) setAvailability(ok?"available":"taken");
     },400);
     return()=>clearTimeout(t);
@@ -46,13 +31,8 @@ function GuestUpgradeModal({profile,setProfile,onClose}){
 
   const generate=async()=>{
     setGenerating(true);
-    for(let i=0;i<10;i++){
-      const name=makeName();
-      const ok=await checkAvailable(name);
-      if(ok){setUsername(name);setGenerating(false);return;}
-    }
-    // Fallback: just set last generated even if somehow all taken
-    setUsername(makeName());
+    const name = await generateAvailableUsername();
+    setUsername(name);
     setGenerating(false);
   };
 
