@@ -48,6 +48,9 @@ Stripe
 | Critical DB indexes (machines, services, bookings, permissions) | ✅ | scalability_hardening.sql | All |
 | Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
+| Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
+| Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing | All |
+| Service worker / PWA static asset cache (repeat-visit perf) | ✅ | vite-plugin-pwa, dist/sw.js | All |
 
 ---
 
