@@ -34,6 +34,7 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | Supabase Auth (email/pass, anon guest) | ✅ | — | Free |
+| Branded email templates (confirm signup + reset password) | ✅ | supabase/email-templates/ — paste into Supabase Auth → Email Templates | Free |
 | OAuth: Google sign-in | ✅ | AuthScreen, Supabase Auth | Free |
 | OAuth: Facebook sign-in | ❌ | Removed — Meta requires business verification | — |
 | OAuth: Apple sign-in | 📋 | Queued — code removed for now, add back when needed | Free |
