@@ -111,7 +111,17 @@ function App(){
         profileData = guest;
         setProfile(guest||null);
       } else {
-        if(first) setProfile(null);
+        // Regular user, first login after email confirm — auto-create profile from signup metadata
+        const rawUsername = session.user.user_metadata?.username || "";
+        const username = rawUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g,"").slice(0,20)
+          || `user_${session.user.id.replace(/-/g,"").slice(0,6)}`;
+        const {data:autoProfile} = await supabase.from("profiles").upsert({
+          id: session.user.id,
+          username,
+          account_type: "personal",
+        },{onConflict:"id"}).select().single();
+        profileData = autoProfile;
+        setProfile(autoProfile||null);
       }
     } catch(e){ if(first) setProfile(null); }
     setProfileChecked(true);

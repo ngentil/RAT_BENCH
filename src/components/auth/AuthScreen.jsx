@@ -7,6 +7,7 @@ function AuthScreen(){
   const [mode,setMode]=useState("login"); // login | signup | forgot
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
+  const [confirmPassword,setConfirmPassword]=useState("");
   const [username,setUsername]=useState("");
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
@@ -42,7 +43,10 @@ function AuthScreen(){
       if(error)setError(error.message);
     } else if(mode==="signup"){
       if(!username.trim()){setError("Username is required.");setLoading(false);return;}
-      const{error}=await supabase.auth.signUp({email,password,options:{data:{username:username.trim()}}});
+      if(!/^[a-zA-Z0-9_]{3,20}$/.test(username.trim())){setError("Username must be 3–20 characters, letters/numbers/underscores only.");setLoading(false);return;}
+      if(password.length<8){setError("Password must be at least 8 characters.");setLoading(false);return;}
+      if(password!==confirmPassword){setError("Passwords don't match.");setLoading(false);return;}
+      const{error}=await supabase.auth.signUp({email,password,options:{data:{username:username.trim().toLowerCase()}}});
       if(error)setError(error.message);
       else setMessage("Check your email to confirm your account.");
     } else if(mode==="forgot"){
@@ -132,6 +136,11 @@ function AuthScreen(){
               {mode!=="forgot"&&<div>
                 <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Password</div>
                 <input style={{...inp}} type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&handleSubmit()} />
+              </div>}
+              {mode==="signup"&&<div>
+                <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Confirm Password</div>
+                <input style={{...inp}} type="password" placeholder="••••••••" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()} />
               </div>}
             </div>
