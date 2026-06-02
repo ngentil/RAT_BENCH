@@ -39,3 +39,10 @@ export const deletePhoto = (url) => {
   const path = url.slice(idx + marker.length);
   supabase.storage.from(BUCKET).remove([path]);
 };
+
+export const deleteUserPhotos = async (userId) => {
+  const { data: files } = await supabase.storage.from(BUCKET).list(userId, { limit: 1000 });
+  if (!files?.length) return;
+  const paths = files.map(f => `${userId}/${f.name}`);
+  await supabase.storage.from(BUCKET).remove(paths);
+};

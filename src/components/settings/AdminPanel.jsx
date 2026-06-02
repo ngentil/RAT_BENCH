@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { deleteUserPhotos } from '../../lib/storage';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } from '../../lib/styles';
 
 const TIER_COLOR = { free: MUT, enthusiast: '#e8670a', team: '#0a8fe8', business: '#e8c20a' };
@@ -213,6 +214,7 @@ function UsersTab() {
     const { data, error } = await supabase.rpc('admin_delete_user', { p_user_id: u.id });
     setBusy(null);
     if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
+    await deleteUserPhotos(u.id);
     setMsg({ ok: true, text: `${label} permanently deleted` });
     load(search);
   };
