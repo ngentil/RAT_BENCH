@@ -35,6 +35,7 @@ Stripe
 |---------|--------|-----------|------|
 | Supabase Auth (email/pass, anon guest) | ✅ | — | Free |
 | Signup: confirm password + username validation | ✅ | AuthScreen | Free |
+| Signup: live username availability check (✓/✗) + 🎲 dice generator | ✅ | AuthScreen, lib/username.js | Free |
 | Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession | Free |
 | Password reset | ✅ | auth | Free |
 | Guest upgrade modal | ✅ | auth | Free |
