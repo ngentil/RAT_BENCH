@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
+import PhotoViewer from '../ui/PhotoViewer';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
 import { fmtDate } from '../../lib/helpers';
@@ -249,13 +250,7 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
         </div>
       )}
 
-      {photoIdx !== null && (
-        <div style={{ position: 'fixed', inset: 0, background: '#000d', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onClick={() => setPhotoIdx(null)}>
-          <img src={item.photos[photoIdx]} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 2 }}
-            onClick={e => e.stopPropagation()} />
-        </div>
-      )}
+      {photoIdx !== null && <PhotoViewer src={item.photos[photoIdx]} onClose={() => setPhotoIdx(null)} />}
     </div>
   );
 }
