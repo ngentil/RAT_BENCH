@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, SURF, BG, TXT, GRN, RED, inp, btnA, btnG } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, BG, TXT, GRN, RED, inp, btnA, btnG, sm } from '../../lib/styles';
+import { checkUsernameAvailable, generateAvailableUsername } from '../../lib/username';
 import TermsPage from '../legal/TermsPage';
 import PrivacyPage from '../legal/PrivacyPage';
 function AuthScreen(){
@@ -9,6 +10,9 @@ function AuthScreen(){
   const [password,setPassword]=useState("");
   const [confirmPassword,setConfirmPassword]=useState("");
   const [username,setUsername]=useState("");
+  const [availability,setAvailability]=useState(null); // null | "checking" | "available" | "taken"
+  const [generating,setGenerating]=useState(false);
+  const checkRef=useRef(0);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const [message,setMessage]=useState("");
@@ -20,6 +24,27 @@ function AuthScreen(){
     window.addEventListener("pageshow",reset);
     return()=>window.removeEventListener("pageshow",reset);
   },[]);
+
+  // Debounced username availability check
+  useEffect(()=>{
+    if(mode!=="signup"){return;}
+    const val=username.trim().toLowerCase();
+    if(!val||!/^[a-zA-Z0-9_]{3,20}$/.test(val)){setAvailability(null);return;}
+    setAvailability("checking");
+    const id=++checkRef.current;
+    const t=setTimeout(async()=>{
+      const ok=await checkUsernameAvailable(val);
+      if(checkRef.current===id) setAvailability(ok?"available":"taken");
+    },400);
+    return()=>clearTimeout(t);
+  },[username,mode]);
+
+  const handleGenerate=async()=>{
+    setGenerating(true);
+    const name=await generateAvailableUsername();
+    setUsername(name);
+    setGenerating(false);
+  };
 
   const handleGoogle=async()=>{
     setLoading(true);setError("");
@@ -44,6 +69,8 @@ function AuthScreen(){
     } else if(mode==="signup"){
       if(!username.trim()){setError("Username is required.");setLoading(false);return;}
       if(!/^[a-zA-Z0-9_]{3,20}$/.test(username.trim())){setError("Username must be 3–20 characters, letters/numbers/underscores only.");setLoading(false);return;}
+      if(availability==="taken"){setError("That username is already taken — try another.");setLoading(false);return;}
+      if(availability==="checking"){setError("Still checking username — wait a moment.");setLoading(false);return;}
       if(password.length<8){setError("Password must be at least 8 characters.");setLoading(false);return;}
       if(password!==confirmPassword){setError("Passwords don't match.");setLoading(false);return;}
       const{error}=await supabase.auth.signUp({email,password,options:{data:{username:username.trim().toLowerCase()}}});
@@ -126,7 +153,17 @@ function AuthScreen(){
               {mode==="signup"&&(
                 <div>
                   <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Username</div>
-                  <input style={{...inp}} placeholder="e.g. wrench_rat" value={username} onChange={e=>setUsername(e.target.value)} />
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input style={{...inp,flex:1}} placeholder="e.g. wrench_rat" value={username}
+                      onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,""))} />
+                    {availability==="available"&&<span style={{fontSize:16,color:GRN,fontWeight:900,lineHeight:1,textShadow:"0 0 8px "+GRN,flexShrink:0}}>✓</span>}
+                    {availability==="taken"&&<span style={{fontSize:16,color:RED,fontWeight:900,lineHeight:1,flexShrink:0}}>✗</span>}
+                    {availability==="checking"&&<span style={{fontSize:10,color:MUT,flexShrink:0}}>…</span>}
+                    <button type="button" onClick={handleGenerate} disabled={generating}
+                      style={{...btnG,...sm,flexShrink:0,opacity:generating?0.5:1}} title="Generate random name">
+                      {generating?"…":"🎲"}
+                    </button>
+                  </div>
                 </div>
               )}
               <div>
