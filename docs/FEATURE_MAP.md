@@ -55,6 +55,8 @@ Stripe
 | Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
 | Admin panel analytics (users, active, machines, signups trend) | ✅ | AdminPanel.jsx OverviewTab + admin_get_stats() RPC — run supabase/admin_get_stats.sql to update | Admin only |
+| Admin: hard-delete user from Supabase + all data | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC — run supabase/admin_delete_user.sql | Admin only |
+| Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
 | Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing | All |
 | Service worker / PWA static asset cache (repeat-visit perf) | ✅ | vite-plugin-pwa, dist/sw.js | All |
