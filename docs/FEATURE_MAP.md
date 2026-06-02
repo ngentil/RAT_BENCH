@@ -34,6 +34,9 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | Supabase Auth (email/pass, anon guest) | ✅ | — | Free |
+| OAuth: Google sign-in | ✅ | AuthScreen, Supabase Auth | Free |
+| OAuth: Facebook sign-in | ✅ | AuthScreen, Supabase Auth — enable in Supabase dashboard + Meta Dev Console | Free |
+| OAuth: Apple sign-in | ✅ | AuthScreen, Supabase Auth — enable in Supabase dashboard + Apple Dev account | Free |
 | Signup: confirm password + username validation | ✅ | AuthScreen | Free |
 | Signup: live username availability check (✓/✗) + 🎲 dice generator | ✅ | AuthScreen, lib/username.js | Free |
 | Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession | Free |
