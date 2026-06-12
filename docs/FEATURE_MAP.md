@@ -75,6 +75,9 @@ Stripe
 |---------|--------|-----------|------|
 | machines table (200+ columns, RLS) | ✅ | profiles, companies | Free |
 | Create / edit / delete machine | ✅ | machines table, transforms.js | Free |
+| Quick-add machine (empty-state inline form: name/type/make/model) | ✅ | Tracker.jsx — replaces Empty component when machines.length===0 | Free |
+| Share machine link (🔗 copies /m/:id URL, 2-sec ✓ feedback) | ✅ | MachineCard.jsx copied state + clipboard API | Free |
+| Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
 | List view + grid view | ✅ | machines, MachineTile, MachineCard | Free |
 | Search, sort, filter by status | ✅ | machines | Free |
@@ -138,6 +141,7 @@ Stripe
 | Overdue / due-soon badge in tab bar | ✅ | getMachineServiceStatus() helper | Free |
 | Progress bar (green → red) | ✅ | service intervals, last service date | Free |
 | Service history timeline on machine card | ✅ | services table | Free |
+| Mark Serviced auto-logs to service history (3-tap flow from reminder) | ✅ | ServiceReminders.jsx markServiced calls upsertService with General Service entry | Free |
 
 ---
 
