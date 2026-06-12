@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
-import { mIcon, getStorageStatus } from '../../lib/helpers';
-import { upsertMachine } from '../../lib/db';
+import { mIcon, getStorageStatus, uid } from '../../lib/helpers';
+import { upsertMachine, upsertService } from '../../lib/db';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { getAllActiveBookings } from '../../lib/db/bookings';
 import { getConsumables } from '../../lib/db/consumables';
@@ -185,6 +185,14 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
   const markServiced = async (machine, data) => {
     const updated = { ...machine, ...data };
     await upsertMachine(updated);
+    await upsertService(machine.id, {
+      id: uid(),
+      completedAt: data.lastServiceDate,
+      types: ['General Service'],
+      notes: data.lastServiceNotes || '',
+      plugPhoto: '',
+      jobPhotos: [],
+    });
     setMachines(prev => prev.map(m => m.id === machine.id ? updated : m));
   };
 

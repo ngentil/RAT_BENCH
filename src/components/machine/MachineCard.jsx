@@ -33,6 +33,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
   const [showBookIn,setShowBookIn]=useState(false);
   const [bookForm,setBookForm]=useState({storageTier:"Bench",receivedAt:"",storageEnabled:true,storageFeeOverride:"",notes:""});
   const [bookSaving,setBookSaving]=useState(false);
+  const [copied,setCopied]=useState(false);
   const [bookErr,setBookErr]=useState("");
   const m=machine;
   const openRef = useRef(false);
@@ -445,6 +446,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
             <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>
             {showPdfOpts&&<Suspense fallback={null}><PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/></Suspense>}
             {!isGuest&&effectiveTier(profile,company)!=="free"&&m.make&&m.model&&<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
+            <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>
             <button style={btnD} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
             <button onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:9,padding:"4px 6px",fontFamily:"'IBM Plex Mono',monospace"}} title="Configure expanded sections">⚙️ Layout</button>
           </div>

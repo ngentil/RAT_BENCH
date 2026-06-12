@@ -4,6 +4,7 @@ import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 import { atMachineLimit } from '../../lib/gates';
+import { uid } from '../../lib/helpers';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
@@ -23,6 +24,10 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [tileOpen,setTileOpen]=useState(null);
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
+  const [qaName,setQaName]=useState("");
+  const [qaType,setQaType]=useState(MACHINE_TYPES[0]?.label||"");
+  const [qaMake,setQaMake]=useState("");
+  const [qaModel,setQaModel]=useState("");
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
   const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
@@ -71,6 +76,18 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       await upsertMachine(m);
       setMachines(prev=>[m,...prev]);
       setShowAdd(false);
+    }catch(e){alert("Save failed: "+e.message);}
+    setSaving(false);
+  };
+  const qaSubmit=async e=>{
+    e.preventDefault();
+    if(!qaName.trim())return;
+    const m={id:uid(),name:qaName.trim(),type:qaType,make:qaMake.trim(),model:qaModel.trim(),status:"Active",services:[],timeLog:[],photos:[],createdAt:new Date().toISOString()};
+    setSaving(true);
+    try{
+      await upsertMachine(m);
+      setMachines(prev=>[m,...prev]);
+      setQaName("");setQaMake("");setQaModel("");
     }catch(e){alert("Save failed: "+e.message);}
     setSaving(false);
   };
@@ -168,7 +185,25 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         })}
       </div>}
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
-      {machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
+      {machines.length===0&&(
+        <div style={{background:SURF,border:"1px solid "+BRD,borderRadius:2,padding:"20px 16px",marginBottom:14}}>
+          <div style={{fontSize:13,color:TXT,fontWeight:700,marginBottom:4}}>Add your first machine</div>
+          <div style={{fontSize:10,color:MUT,marginBottom:16,lineHeight:1.6}}>Mowers, bikes, generators — anything you work on.</div>
+          <form onSubmit={qaSubmit} style={{display:"flex",flexDirection:"column",gap:8}}>
+            <input style={{...inp,fontSize:12}} placeholder="Machine name *" value={qaName} onChange={e=>setQaName(e.target.value)} autoFocus />
+            <div style={{display:"flex",gap:8}}>
+              <select style={{...inp,flex:1,fontSize:11}} value={qaType} onChange={e=>setQaType(e.target.value)}>
+                {MACHINE_TYPES.map(t=><option key={t.label} value={t.label}>{t.icon} {t.label}</option>)}
+              </select>
+              <input style={{...inp,flex:1,fontSize:11}} placeholder="Make" value={qaMake} onChange={e=>setQaMake(e.target.value)} />
+              <input style={{...inp,flex:1,fontSize:11}} placeholder="Model" value={qaModel} onChange={e=>setQaModel(e.target.value)} />
+            </div>
+            <button type="submit" disabled={saving||!qaName.trim()} style={{...btnA,opacity:saving||!qaName.trim()?0.5:1,alignSelf:"flex-end"}}>
+              {saving?"Saving…":"+ Add Machine"}
+            </button>
+          </form>
+        </div>
+      )}
       {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
       {view==="grid"?(
         <>
