@@ -13,6 +13,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const isNew=true;
   const [showFormGuide,setShowFormGuide]=useState(()=>localStorage.getItem('rat_form_tut')!=='1');
   const dismissFormGuide=()=>{localStorage.setItem('rat_form_tut','1');setShowFormGuide(false);};
+  const firstAdd=showFormGuide&&!existing;
 
   const [companyId,setCompanyId]=useState(e.companyId||null);
   const [type,setType]=useState(e.type||"");
@@ -640,7 +641,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}>
                     <FL t="Type" />
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <select style={{...sel,flex:1}} value={type} onChange={ev=>setType(ev.target.value)}>
+                      <select className={firstAdd?"field-guide":undefined} style={{...sel,flex:1}} value={type} onChange={ev=>setType(ev.target.value)}>
                         <option value="">— not set —</option>
                         {MACHINE_TYPES.map(m=><option key={m.label} value={m.label}>{m.icon} {m.label}</option>)}
                       </select>
@@ -651,7 +652,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 </div>
                 {!isTracked(type)&&<div style={col}>
                   <FL t="Name *" />
-                  <input style={{...inp,border:"1px solid "+(nameErr?RED:BRD)}} placeholder={getPH(type,"name")} value={name} onChange={ev=>{setName(ev.target.value);setNameErr(false);}} autoFocus />
+                  <input className={firstAdd?"field-guide":undefined} style={{...inp,border:"1px solid "+(nameErr?RED:BRD)}} placeholder={getPH(type,"name")} value={name} onChange={ev=>{setName(ev.target.value);setNameErr(false);}} autoFocus />
                   {nameErr&&<div style={{fontSize:9,color:RED,marginTop:3}}>Name is required</div>}
                 </div>}
                 {isTracked(type)&&<div style={{fontSize:9,color:MUT,marginBottom:8,lineHeight:1.5}}>Name auto-generated from Brand + Machine Type + Model.</div>}
