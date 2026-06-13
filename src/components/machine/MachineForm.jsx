@@ -589,7 +589,22 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {showFormGuide&&(
             <div style={{background:"#0a0a0a",border:"1px solid #222",borderLeft:"2px solid #e8870a",borderRadius:2,padding:"10px 12px",marginBottom:10}}>
-              <div style={{fontSize:8,color:"#555",fontFamily:"'IBM Plex Mono',monospace",marginBottom:8}}>all sections optional — expand what's relevant to your machine</div>
+              {/* How the form works */}
+              {[
+                ["⚡ SMART button","hides sections that don't apply to your machine type — tap it to toggle",true],
+                ["more specs = more calcs","bore + stroke unlock compression ratio, piston speed & more automatically",false],
+              ].map(([label,desc,hl])=>(
+                <div key={label} style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
+                  <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0,marginTop:1}}>
+                    <path d="M 1 4 C 3 2, 6 2, 9 4" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
+                    <path d="M 7 2 L 9 4 L 7 6" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:96,flexShrink:0}}>{label}</span>
+                  <span style={{fontSize:8,color:"#555",fontFamily:"'IBM Plex Mono',monospace",lineHeight:"1.5"}}>{desc}</span>
+                </div>
+              ))}
+              <div style={{borderTop:"1px solid #1a1a1a",margin:"8px 0"}}/>
+              <div style={{fontSize:8,color:"#444",fontFamily:"'IBM Plex Mono',monospace",marginBottom:7}}>sections guide — all optional</div>
               {[
                 ["Basic Info","name, make, model & photos",false],
                 ["Engine","bore, stroke & auto-calcs",false],
@@ -609,7 +624,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <span style={{fontSize:8,color:hl?"#e8870a":"#4a4a4a",fontFamily:"'IBM Plex Mono',monospace"}}>{desc}</span>
                 </div>
               ))}
-              <button onClick={dismissFormGuide} style={{marginTop:8,background:"none",border:"none",color:"#333",fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,letterSpacing:"0.05em"}}>got it</button>
+              <button onClick={dismissFormGuide} style={{marginTop:10,background:"#e8870a",border:"none",color:"#000",fontSize:9,fontWeight:700,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:"5px 14px",borderRadius:3,letterSpacing:"0.06em",display:"block",width:"100%"}}>got it ✓</button>
             </div>
           )}
           {/* ── Section header helper inline ── */}
