@@ -166,7 +166,7 @@ export const WIKI_FIELD_LABELS = {
 const STRIP_FIELDS = new Set([
   "id","userId","companyId","clientId","createdAt","updatedAt",
   "status","source","rage","photos","jobPhotos",
-  "lighting","services","smartMode",
+  "lighting","services",
   "wireGauge","wireLength","wireAmps","totalLoadWatts",
   "riderWeight","springRate","groundContactLength",
   "primaryRatio","topGearRatio",

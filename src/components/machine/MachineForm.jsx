@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, isChipper, isStumpGrinder, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_CLONE_BRANDS, CARB_TYPES, CARB_BOLTS, OIL_BRANDS, OIL_SYNTH, JASO_2T, JASO_4T, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS, CHIPPER_TYPES, CHIPPER_BRANDS, STUMP_BRANDS, STUMP_DRIVE_TYPES } from '../../lib/constants';
-import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm, FuseBoxCard, FuseBoxForm } from '../ui/shared';
+import { SL, FL, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm, FuseBoxCard, FuseBoxForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -13,7 +13,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const isNew=true;
   const [showFormGuide,setShowFormGuide]=useState(()=>localStorage.getItem('rat_form_tut')!=='1');
   const dismissFormGuide=()=>{localStorage.setItem('rat_form_tut','1');setShowFormGuide(false);};
-  const [smartMode,setSmartMode]=useState(e.smartMode||false);
+
   const [companyId,setCompanyId]=useState(e.companyId||null);
   const [type,setType]=useState(e.type||"");
   const [name,setName]=useState(e.name||"");
@@ -527,7 +527,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     }
     if(!isTracked(type)&&!finalName){setNameErr(true);return;}
     if(showFormGuide)dismissFormGuide();
-    onSave({id:e.id||uid(),companyId:companyId||null,smartMode,type,name:finalName,make:make.trim(),model:model.trim(),
+    onSave({id:e.id||uid(),companyId:companyId||null,type,name:finalName,make:make.trim(),model:model.trim(),
       desc:desc.trim(),source,status,photos,year:year.trim(),colour:colour.trim(),bodyType,driveConfig,plugType:plugType.trim(),strokeType,motorType,motorPower:motorPower.toString(),motorTorque:motorTorque.toString(),controllerBrand:controllerBrand.trim(),packVoltage:packVoltage.toString(),packCapacity:packCapacity.toString(),battChemistry,cellCount:cellCount.toString(),chargePort,maxChargeRate:maxChargeRate.toString(),evRange:evRange.toString(),regenBraking,cylCount,firingOrder:firingOrder.trim(),valveTrain,locknutSize,camType,
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
       iValveFace:iValveFace.toString().trim(),iValveStem:iValveStem.toString().trim(),iValveLift:iValveLift.toString().trim(),iValveWeight:iValveWeight.toString().trim(),
@@ -571,9 +571,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
         <div style={mdlH}>
           <b style={{fontSize:14,textTransform:"uppercase"}}>{existing?"Edit Machine":"Add Machine"}</b>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <Tooltip text={smartMode?"Smart Mode ON — linked fields auto-update from your inputs":"Enable Smart Mode to auto-calculate compression ratio, piston speed, fuel grade and other derived specs"} pos="bottom">
-              <button onClick={()=>setSmartMode(o=>!o)} style={{...btnG,...sm,fontSize:8,padding:"4px 8px",...(smartMode?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}}>⚡ Smart</button>
-            </Tooltip>
             <button style={{...btnG,...sm}} onClick={onClose}>✕</button>
           </div>
         </div>
@@ -591,8 +588,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
             <div style={{background:"#0a0a0a",border:"1px solid #222",borderLeft:"2px solid #e8870a",borderRadius:2,padding:"10px 12px",marginBottom:10}}>
               {/* How the form works */}
               {[
-                ["⚡ SMART button","auto-calculates compression ratio, piston speed, fuel grade & other derived specs from your inputs",true],
-                ["more specs = more calcs","bore + stroke unlock compression ratio, piston speed & more automatically",false],
+                ["more specs = more calcs","bore + stroke → compression ratio & piston speed · lighting entries → charge load · all auto",true],
               ].map(([label,desc,hl])=>(
                 <div key={label} style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
                   <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0,marginTop:1}}>
@@ -2130,18 +2126,18 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}><FL t="Rectifier / Regulator fitted" /><select style={sel} value={rectRegFitted} onChange={ev=>setRectRegFitted(ev.target.value)}><option value="">— not set —</option>{RECT_REG.map(r=><option key={r}>{r}</option>)}</select></div>
                 </div>
                 {(()=>{
-                  const smartLoad=smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0):null;
-                  const displayLoad=smartMode&&smartLoad>0?smartLoad.toString():totalLoadWatts;
+                  const smartLoad=lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0);
+                  const displayLoad=smartLoad>0?smartLoad.toString():totalLoadWatts;
                   return <div style={{...col,maxWidth:200}}>
-                    <FL t={smartMode&&smartLoad>0?"Total accessory load (W) ⚡ auto":"Total accessory load (W)"} />
-                    <input style={{...inp,...(smartMode&&smartLoad>0?{opacity:0.6}:{})}} type="number" placeholder="e.g. 120" step="5" min="0"
-                      value={displayLoad} disabled={smartMode&&smartLoad>0}
+                    <FL t={smartLoad>0?"Total accessory load (W) ⚡ auto":"Total accessory load (W)"} />
+                    <input style={{...inp,...(smartLoad>0?{opacity:0.6}:{})}} type="number" placeholder="e.g. 120" step="5" min="0"
+                      value={displayLoad} disabled={smartLoad>0}
                       onChange={ev=>setTotalLoadWatts(ev.target.value)} />
-                    {smartMode&&smartLoad>0&&<div style={{fontSize:8,color:MUT,marginTop:3}}>From {lighting.length} lighting {lighting.length===1?"entry":"entries"} — edit in Lighting section to change</div>}
+                    {smartLoad>0&&<div style={{fontSize:8,color:MUT,marginTop:3}}>From {lighting.length} lighting {lighting.length===1?"entry":"entries"} — edit in Lighting section to change</div>}
                   </div>;
                 })()}
-                {chargeAmps&&chargeVoltage&&chargeVoltage!=="Dual"&&(smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0)>0:totalLoadWatts)&&(()=>{
-                  const loadW=smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0):parseFloat(totalLoadWatts);
+                {chargeAmps&&chargeVoltage&&chargeVoltage!=="Dual"&&(lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0)>0||totalLoadWatts)&&(()=>{
+                  const loadW=lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0)||parseFloat(totalLoadWatts);
                   const altW=parseFloat(chargeAmps)*parseFloat(chargeVoltage);
                   const net=altW-loadW;
                   const [label,clr]=net>=0?[`Surplus ${net.toFixed(0)}W — battery charging while running`,ACC]:[`Deficit ${Math.abs(net).toFixed(0)}W — battery draining`,"#e05252"];
