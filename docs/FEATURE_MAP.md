@@ -79,7 +79,7 @@ Stripe
 | Share machine link (🔗 copies /m/:id URL, 2-sec ✓ feedback) | ✅ | MachineCard.jsx copied state + clipboard API | Free |
 | Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
-| Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — lists 8 key sections with curved orange arrows; Service Intervals highlighted; dismissed to localStorage rat_form_tut; auto-dismisses on first save | Free |
+| Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — explains SMART button (hides irrelevant sections by machine type) + cascading calcs tip (bore+stroke unlock more computed fields); lists 8 key sections with curved orange arrows; Service Intervals highlighted; prominent orange "got it ✓" dismiss button; dismissed to localStorage rat_form_tut; auto-dismisses on first save | Free |
 | List view + grid view | ✅ | machines, MachineTile, MachineCard | Free |
 | Search, sort, filter by status | ✅ | machines | Free |
 | Drag-to-reorder | ✅ | machines | Free |
@@ -332,7 +332,7 @@ Stripe
 |---------|--------|-----------|------|
 | 🔨 Workshop parent tab (nested sub-tab bar) | ✅ | App.jsx, WORKSHOP_TABS constant | Free |
 | Workshop sub-tabs: Parts, Clients, Tools, Vehicles, Equipment, Consumables, Revenue | ✅ | WORKSHOP_TABS, App.jsx content panels | Free / Ent+ |
-| Free-tier Workshop banner (5-item limit nudge + upgrade link) | ✅ | effectiveTier(), Workshop tab | Free |
+| Per-subtab upgrade banner (shows only when at item limit) | ✅ | VehiclesTab / EquipmentTab / ToolsTab / StockItemTab — each shows banner only when atLimit/atAssetLimit; global Workshop tab banner removed from App.jsx | Free |
 | Revenue sub-tab gated behind Enthusiast+ | ✅ | WORKSHOP_TABS enthusiastOnly flag | Enthusiast+ |
 | Per-user Workshop tab visibility preferences | ✅ | profiles.tab_order.workshop_visible (Supabase), TabOrderSettings.jsx checkboxes | Free |
 | Per-user Workshop default sub-tab | ✅ | First visible tab in ordered workshop list (implicit, no separate setting) | Free |
