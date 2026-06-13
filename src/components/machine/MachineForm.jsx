@@ -11,6 +11,8 @@ import { effectiveTier } from '../../lib/gates';
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
   const e=existing||{};
   const isNew=true;
+  const [showFormGuide,setShowFormGuide]=useState(()=>localStorage.getItem('rat_form_tut')!=='1');
+  const dismissFormGuide=()=>{localStorage.setItem('rat_form_tut','1');setShowFormGuide(false);};
   const [smartMode,setSmartMode]=useState(e.smartMode||false);
   const [companyId,setCompanyId]=useState(e.companyId||null);
   const [type,setType]=useState(e.type||"");
@@ -524,6 +526,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       setName(finalName);
     }
     if(!isTracked(type)&&!finalName){setNameErr(true);return;}
+    if(showFormGuide)dismissFormGuide();
     onSave({id:e.id||uid(),companyId:companyId||null,smartMode,type,name:finalName,make:make.trim(),model:model.trim(),
       desc:desc.trim(),source,status,photos,year:year.trim(),colour:colour.trim(),bodyType,driveConfig,plugType:plugType.trim(),strokeType,motorType,motorPower:motorPower.toString(),motorTorque:motorTorque.toString(),controllerBrand:controllerBrand.trim(),packVoltage:packVoltage.toString(),packCapacity:packCapacity.toString(),battChemistry,cellCount:cellCount.toString(),chargePort,maxChargeRate:maxChargeRate.toString(),evRange:evRange.toString(),regenBraking,cylCount,firingOrder:firingOrder.trim(),valveTrain,locknutSize,camType,
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
@@ -584,6 +587,31 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
             </div>
           </div>}
 
+          {showFormGuide&&(
+            <div style={{background:"#0a0a0a",border:"1px solid #222",borderLeft:"2px solid #e8870a",borderRadius:2,padding:"10px 12px",marginBottom:10}}>
+              <div style={{fontSize:8,color:"#555",fontFamily:"'IBM Plex Mono',monospace",marginBottom:8}}>all sections optional — expand what's relevant to your machine</div>
+              {[
+                ["Basic Info","name, make, model & photos",false],
+                ["Engine","bore, stroke & auto-calcs",false],
+                ["Ignition System","spark plug gap & timing",false],
+                ["Fuel System","carb, mix ratio & tank size",false],
+                ["Service Intervals","⚡ this drives your reminders",true],
+                ["Fluids","oil type & capacity",false],
+                ["Bar & Chain","chainsaw bar, pitch & sprocket",false],
+                ["Notes","free-form notes & anything else",false],
+              ].map(([label,desc,hl])=>(
+                <div key={label} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+                  <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0}}>
+                    <path d="M 1 4 C 3 2, 6 2, 9 4" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
+                    <path d="M 7 2 L 9 4 L 7 6" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:96,flexShrink:0}}>{label}</span>
+                  <span style={{fontSize:8,color:hl?"#e8870a":"#4a4a4a",fontFamily:"'IBM Plex Mono',monospace"}}>{desc}</span>
+                </div>
+              ))}
+              <button onClick={dismissFormGuide} style={{marginTop:8,background:"none",border:"none",color:"#333",fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,letterSpacing:"0.05em"}}>got it</button>
+            </div>
+          )}
           {/* ── Section header helper inline ── */}
           {/* Basic Info */}
           {(()=>{
