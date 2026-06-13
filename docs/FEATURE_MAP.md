@@ -79,7 +79,7 @@ Stripe
 | Share machine link (🔗 copies /m/:id URL, 2-sec ✓ feedback) | ✅ | MachineCard.jsx copied state + clipboard API | Free |
 | Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
-| Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — explains SMART button (hides irrelevant sections by machine type) + cascading calcs tip (bore+stroke unlock more computed fields); lists 8 key sections with curved orange arrows; Service Intervals highlighted; prominent orange "got it ✓" dismiss button; dismissed to localStorage rat_form_tut; auto-dismisses on first save | Free |
+| Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — "more specs = more calcs" tip (bore+stroke → compression ratio & piston speed; lighting entries → charge load, all auto); lists 8 key sections with curved orange arrows; Service Intervals highlighted; prominent orange "got it ✓" dismiss button; dismissed to localStorage rat_form_tut; auto-dismisses on first save | Free |
 | List view + grid view | ✅ | machines, MachineTile, MachineCard | Free |
 | Search, sort, filter by status | ✅ | machines | Free |
 | Drag-to-reorder | ✅ | machines | Free |
@@ -357,7 +357,7 @@ Stripe
 | VPS radio transcription service — ffmpeg + silero-vad + faster-whisper large-v3 → Supabase radio_transcripts | 📋 | Needs Broadcastify Premium (or free stream URL); separate Python service, not in this repo |
 | Photo migration → Supabase Storage | 📋 | Currently base64 in DB rows — expensive |
 | Push notifications (service due) | 📋 | Needs FCM or similar |
-| Smart Mode cascade calculations | 📋 | Needs multiple sections complete |
+| Auto-calc: electrical load from lighting entries (always-on) | ✅ | MachineForm.jsx — smartMode toggle removed; load auto-sums from Lighting section entries, net charge rate auto-calculates when chargeAmps + chargeVoltage present | Free |
 | Invoice / Quote PDF (separate from spec PDF) | 📋 | Currently HTML export only |
 | General Terms of Service page | ✅ | TermsPage.jsx — public URL: ratbench.net/terms |
 | Privacy Policy page | ✅ | PrivacyPage.jsx — public URL: ratbench.net/privacy |
