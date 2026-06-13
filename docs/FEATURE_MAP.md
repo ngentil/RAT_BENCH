@@ -75,7 +75,7 @@ Stripe
 |---------|--------|-----------|------|
 | machines table (200+ columns, RLS) | ✅ | profiles, companies | Free |
 | Create / edit / delete machine | ✅ | machines table, transforms.js | Free |
-| First-run arrow guide (2-step tutorial: arrow → + Add, then arrow → first card) | ✅ | Tracker.jsx GuideStep1/GuideStep2 — curved hand-drawn orange SVG arrows with pulsing glow, dismissed to localStorage; guest limit note inline in step 1 | Free |
+| First-run arrow guide (3-step tutorial: arrow → + Add · arrow → first card · in-card button key) | ✅ | Tracker.jsx GuideStep1/GuideStep2 + MachineCard showGuide prop — curved hand-drawn orange SVG arrows with pulsing glow; step 3 annotates each button (Edit Machine, PDF, Share, Layout, + LOG) inside the expanded card; dismissed to localStorage | Free |
 | Share machine link (🔗 copies /m/:id URL, 2-sec ✓ feedback) | ✅ | MachineCard.jsx copied state + clipboard API | Free |
 | Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
