@@ -38,6 +38,16 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const m=machine;
   // Notify parent when card opens so the above-card guide arrow can hide
   useEffect(()=>{if(open&&showGuide)onCardOpened?.();},[open]);
+  const withGuide=(desc,el)=>showGuide?(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+      {el}
+      <svg className="arrow-guide" width="18" height="14" viewBox="0 0 18 14" style={{display:"block"}}>
+        <path d="M 9 12 C 12 7, 6 5, 9 2" stroke="#e8870a" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+        <path d="M 6 4 L 9 1 L 12 4" stroke="#e8870a" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span style={{fontSize:7,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",textAlign:"center",lineHeight:"1.3",whiteSpace:"pre-line"}}>{desc}</span>
+    </div>
+  ):el;
   const openRef = useRef(false);
   openRef.current = open;
 
@@ -443,34 +453,18 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               )}
             </div>
           )}
-          <div style={{padding:"0 14px 12px",display:"flex",gap:8,justifyContent:"flex-end",alignItems:"center"}}>
-            <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>
-            <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>
+          <div style={{padding:"0 14px 12px",display:"flex",gap:8,justifyContent:"flex-end",alignItems:showGuide?"flex-end":"center"}}>
+            {withGuide("all specs\n& intervals",<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>)}
+            {withGuide("export\nspec sheet",<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>)}
             {showPdfOpts&&<Suspense fallback={null}><PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/></Suspense>}
             {!isGuest&&effectiveTier(profile,company)!=="free"&&m.make&&m.model&&<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
-            <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>
+            {withGuide("public\nlink ↗",<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             <button style={btnD} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
-            <button onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:9,padding:"4px 6px",fontFamily:"'IBM Plex Mono',monospace"}} title="Configure expanded sections">⚙️ Layout</button>
+            {withGuide("customise\nlayout",<button onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:9,padding:"4px 6px",fontFamily:"'IBM Plex Mono',monospace"}} title="Configure expanded sections">⚙️ Layout</button>)}
           </div>
           {showGuide&&(
-            <div style={{margin:"0 14px 14px",borderTop:"1px solid #1e1e1e",paddingTop:12}}>
-              {[
-                ["Edit Machine","all specs, service intervals &amp; notes"],
-                ["PDF","export a spec sheet"],
-                ["Share","copy public link — great for YouTube"],
-                ["Layout","choose which sections expand by default"],
-                ["+ LOG","record a service in history"],
-              ].map(([label,desc])=>(
-                <div key={label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-                  <svg className="arrow-guide" width="10" height="14" viewBox="0 0 10 14" style={{flexShrink:0}}>
-                    <path d="M 5 2 C 7 6, 3 8, 5 12" stroke="#e8870a" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
-                    <path d="M 3 10 L 5 13 L 7 10" stroke="#e8870a" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:78,flexShrink:0}} dangerouslySetInnerHTML={{__html:label}}/>
-                  <span style={{fontSize:9,color:"#4a4a4a",fontFamily:"'IBM Plex Mono',monospace"}} dangerouslySetInnerHTML={{__html:"— "+desc}}/>
-                </div>
-              ))}
-              <button onClick={ev=>{ev.stopPropagation();onTutDismiss?.();}} style={{marginTop:4,background:"none",border:"none",color:"#333",fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,letterSpacing:"0.05em"}}>got it</button>
+            <div style={{padding:"0 14px 14px",textAlign:"right"}}>
+              <button onClick={ev=>{ev.stopPropagation();onTutDismiss?.();}} style={{background:"none",border:"none",color:"#333",fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,letterSpacing:"0.05em"}}>got it</button>
             </div>
           )}
         </div>
