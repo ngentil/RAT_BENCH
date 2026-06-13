@@ -591,7 +591,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
             <div style={{background:"#0a0a0a",border:"1px solid #222",borderLeft:"2px solid #e8870a",borderRadius:2,padding:"10px 12px",marginBottom:10}}>
               {/* How the form works */}
               {[
-                ["⚡ SMART button","hides sections that don't apply to your machine type — tap it to toggle",true],
+                ["⚡ SMART button","auto-calculates compression ratio, piston speed, fuel grade & other derived specs from your inputs",true],
                 ["more specs = more calcs","bore + stroke unlock compression ratio, piston speed & more automatically",false],
               ].map(([label,desc,hl])=>(
                 <div key={label} style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
