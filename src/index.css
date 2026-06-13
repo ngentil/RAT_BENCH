@@ -28,3 +28,9 @@ body { background: #0e0e0e; font-family: 'IBM Plex Mono', monospace; }
 
 .plan-card { transition: box-shadow 0.2s, transform 0.15s; }
 .plan-card:hover { transform: translateY(-1px); }
+
+@keyframes arrowGlow {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(232,135,10,0.30)); }
+  50%       { filter: drop-shadow(0 0 9px rgba(232,135,10,0.72)); }
+}
+.arrow-guide { animation: arrowGlow 2.4s ease-in-out infinite; overflow: visible; display: block; }
