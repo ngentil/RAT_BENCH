@@ -79,6 +79,7 @@ Stripe
 | Share machine link (🔗 copies /m/:id URL, 2-sec ✓ feedback) | ✅ | MachineCard.jsx copied state + clipboard API | Free |
 | Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
+| Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — lists 8 key sections with curved orange arrows; Service Intervals highlighted; dismissed to localStorage rat_form_tut; auto-dismisses on first save | Free |
 | List view + grid view | ✅ | machines, MachineTile, MachineCard | Free |
 | Search, sort, filter by status | ✅ | machines | Free |
 | Drag-to-reorder | ✅ | machines | Free |
