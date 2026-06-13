@@ -14,7 +14,7 @@ const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}){
+function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened}){
   const [open,setOpen]=useState(false);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -36,6 +36,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
   const [copied,setCopied]=useState(false);
   const [bookErr,setBookErr]=useState("");
   const m=machine;
+  // Notify parent when card opens so the above-card guide arrow can hide
+  useEffect(()=>{if(open&&showGuide)onCardOpened?.();},[open]);
   const openRef = useRef(false);
   openRef.current = open;
 
@@ -450,6 +452,27 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
             <button style={btnD} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
             <button onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:9,padding:"4px 6px",fontFamily:"'IBM Plex Mono',monospace"}} title="Configure expanded sections">⚙️ Layout</button>
           </div>
+          {showGuide&&(
+            <div style={{margin:"0 14px 14px",borderTop:"1px solid #1e1e1e",paddingTop:12}}>
+              {[
+                ["Edit Machine","all specs, service intervals &amp; notes"],
+                ["PDF","export a spec sheet"],
+                ["Share","copy public link — great for YouTube"],
+                ["Layout","choose which sections expand by default"],
+                ["+ LOG","record a service in history"],
+              ].map(([label,desc])=>(
+                <div key={label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+                  <svg className="arrow-guide" width="10" height="14" viewBox="0 0 10 14" style={{flexShrink:0}}>
+                    <path d="M 5 2 C 7 6, 3 8, 5 12" stroke="#e8870a" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+                    <path d="M 3 10 L 5 13 L 7 10" stroke="#e8870a" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:78,flexShrink:0}} dangerouslySetInnerHTML={{__html:label}}/>
+                  <span style={{fontSize:9,color:"#4a4a4a",fontFamily:"'IBM Plex Mono',monospace"}} dangerouslySetInnerHTML={{__html:"— "+desc}}/>
+                </div>
+              ))}
+              <button onClick={ev=>{ev.stopPropagation();onTutDismiss?.();}} style={{marginTop:4,background:"none",border:"none",color:"#333",fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,letterSpacing:"0.05em"}}>got it</button>
+            </div>
+          )}
         </div>
       )}
     </div>

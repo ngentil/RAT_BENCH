@@ -62,6 +62,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
   const [tutDone,setTutDone]=useState(()=>localStorage.getItem('rat_tut')==='1');
+  const [tutCardOpened,setTutCardOpened]=useState(false);
   const skipTut=()=>{localStorage.setItem('rat_tut','1');setTutDone(true);};
   const tutStep=!tutDone?(machines.length===0?1:machines.length===1?2:0):0;
 
@@ -205,7 +206,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       {tutStep===1&&<GuideStep1 onSkip={skipTut} isGuest={isGuest} onUpgrade={()=>setShowUpgrade(true)}/>}
       {tutStep===0&&machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
       {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
-      {tutStep===2&&<GuideStep2 onSkip={skipTut}/>}
+      {tutStep===2&&!tutCardOpened&&<GuideStep2 onSkip={skipTut}/>}
       {view==="grid"?(
         <>
           {sorted.length > 0 && (
@@ -223,7 +224,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
             <div style={{position:"fixed",inset:0,background:"#000a",zIndex:200,overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setTileOpen(null);}}>
               <div style={{maxWidth:640,margin:"24px auto",padding:"0 8px"}}>
-                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
+                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
                 <button onClick={()=>setTileOpen(null)} style={{...btnG,width:"100%",marginTop:8,fontSize:10}}>Close</button>
               </div>
             </div>
@@ -236,7 +237,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
               useWindowScroll
               data={sorted}
               itemContent={(_idx, m) => (
-                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
+                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
               )}
             />
           : sorted.map((m,idx)=>(
@@ -249,7 +250,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
                 onDragEnd={onDragEnd}
                 style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
               >
-                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
+                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
               </div>
             ))
       )}
