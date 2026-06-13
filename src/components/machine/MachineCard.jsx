@@ -459,8 +459,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {showPdfOpts&&<Suspense fallback={null}><PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/></Suspense>}
             {!isGuest&&effectiveTier(profile,company)!=="free"&&m.make&&m.model&&<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
             {withGuide("public\nlink ↗",<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
+            {withGuide("customise\nlayout",<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             <button style={btnD} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
-            {withGuide("customise\nlayout",<button onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:9,padding:"4px 6px",fontFamily:"'IBM Plex Mono',monospace"}} title="Configure expanded sections">⚙️ Layout</button>)}
           </div>
           {showGuide&&(
             <div style={{padding:"0 14px 14px",textAlign:"right"}}>
