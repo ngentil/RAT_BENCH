@@ -749,13 +749,9 @@ export default function StockItemTab({ tableType, label, machines, session, prof
         </div>
       )}
 
-      {/* Free tier banner */}
-      {isFree && items.length > 0 && (
+      {isFree && items.length >= FREE_LIMIT && (
         <div style={{ background: '#0a1a0a', border: '1px solid #1a3a1a', borderRadius: 2, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, color: '#4ade80', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 3 }}>Free Plan — {noun}s Preview</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Up to {FREE_LIMIT} {label.toLowerCase()} on free plan. Upgrade for unlimited.</div>
-          </div>
+          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>You're at the {FREE_LIMIT}-{label.toLowerCase()} limit on the free plan.</div>
           {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: 'nowrap' }}>Upgrade</button>}
         </div>
       )}
