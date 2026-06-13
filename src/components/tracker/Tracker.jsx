@@ -4,13 +4,50 @@ import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 import { atMachineLimit } from '../../lib/gates';
-import { uid } from '../../lib/helpers';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
+
+const _ARW = "#e8870a";
+const _M = { fontFamily:"'IBM Plex Mono',monospace" };
+
+function GuideStep1({ onSkip, isGuest, onUpgrade }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", marginBottom:20, paddingRight:2, userSelect:"none" }}>
+      <svg className="arrow-guide" width="62" height="54" viewBox="0 0 62 54">
+        <path d="M 8 51 C 14 35, 32 18, 54 8" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
+        <path d="M 49 4 L 56 9 L 51 15" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span style={{ ..._M, fontSize:13, color:_ARW, fontWeight:700, marginTop:4 }}>start here</span>
+      <span style={{ ..._M, fontSize:9, color:"#666", marginTop:4 }}>tap + Add to track your first machine</span>
+      <span style={{ ..._M, fontSize:9, color:"#555", marginTop:2 }}>name &amp; type is all you need to begin</span>
+      {isGuest && (
+        <span style={{ ..._M, fontSize:8, color:"#444", marginTop:8 }}>
+          guest: 3-machine limit ·{" "}
+          <span onClick={onUpgrade} style={{ color:_ARW, cursor:"pointer" }}>create a free account →</span>
+        </span>
+      )}
+      <button onClick={onSkip} style={{ ..._M, marginTop:12, background:"none", border:"none", color:"#333", fontSize:8, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>skip guide</button>
+    </div>
+  );
+}
+
+function GuideStep2({ onSkip }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:14, userSelect:"none" }}>
+      <span style={{ ..._M, fontSize:11, color:_ARW, fontWeight:700 }}>tap the card to explore</span>
+      <span style={{ ..._M, fontSize:9, color:"#555", marginTop:4, textAlign:"center" }}>service history · timers · photos · invoices</span>
+      <svg className="arrow-guide" width="30" height="42" viewBox="0 0 30 42" style={{ marginTop:8 }}>
+        <path d="M 15 4 C 20 16, 11 25, 15 36" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
+        <path d="M 11 32 L 15 38 L 19 32" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <button onClick={onSkip} style={{ ..._M, marginTop:10, background:"none", border:"none", color:"#333", fontSize:8, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>got it</button>
+    </div>
+  );
+}
 function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling}){
   const [showAdd,setShowAdd]=useState(false);
   const [showUpgrade,setShowUpgrade]=useState(false);
@@ -24,10 +61,9 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [tileOpen,setTileOpen]=useState(null);
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
-  const [qaName,setQaName]=useState("");
-  const [qaType,setQaType]=useState(MACHINE_TYPES[0]?.label||"");
-  const [qaMake,setQaMake]=useState("");
-  const [qaModel,setQaModel]=useState("");
+  const [tutDone,setTutDone]=useState(()=>localStorage.getItem('rat_tut')==='1');
+  const skipTut=()=>{localStorage.setItem('rat_tut','1');setTutDone(true);};
+  const tutStep=!tutDone?(machines.length===0?1:machines.length===1?2:0):0;
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
   const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
@@ -76,18 +112,6 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       await upsertMachine(m);
       setMachines(prev=>[m,...prev]);
       setShowAdd(false);
-    }catch(e){alert("Save failed: "+e.message);}
-    setSaving(false);
-  };
-  const qaSubmit=async e=>{
-    e.preventDefault();
-    if(!qaName.trim())return;
-    const m={id:uid(),name:qaName.trim(),type:qaType,make:qaMake.trim(),model:qaModel.trim(),status:"Active",services:[],timeLog:[],photos:[],createdAt:new Date().toISOString()};
-    setSaving(true);
-    try{
-      await upsertMachine(m);
-      setMachines(prev=>[m,...prev]);
-      setQaName("");setQaMake("");setQaModel("");
     }catch(e){alert("Save failed: "+e.message);}
     setSaving(false);
   };
@@ -178,30 +202,10 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         })}
       </div>}
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
-      {machines.length===0&&(
-        <div style={{background:SURF,border:"1px solid "+BRD,borderRadius:2,padding:"20px 16px",marginBottom:14}}>
-          <div style={{fontSize:13,color:TXT,fontWeight:700,marginBottom:4}}>Add your first machine</div>
-          <div style={{fontSize:10,color:MUT,marginBottom:16,lineHeight:1.6}}>Mowers, bikes, generators — anything you work on.</div>
-          <form onSubmit={qaSubmit} style={{display:"flex",flexDirection:"column",gap:8}}>
-            <input style={{...inp,fontSize:12}} placeholder="Machine name *" value={qaName} onChange={e=>setQaName(e.target.value)} autoFocus />
-            <div style={{display:"flex",gap:8}}>
-              <select style={{...inp,flex:1,fontSize:11}} value={qaType} onChange={e=>setQaType(e.target.value)}>
-                {MACHINE_TYPES.map(t=><option key={t.label} value={t.label}>{t.icon} {t.label}</option>)}
-              </select>
-              <input style={{...inp,flex:1,fontSize:11}} placeholder="Make" value={qaMake} onChange={e=>setQaMake(e.target.value)} />
-              <input style={{...inp,flex:1,fontSize:11}} placeholder="Model" value={qaModel} onChange={e=>setQaModel(e.target.value)} />
-            </div>
-            <button type="submit" disabled={saving||!qaName.trim()} style={{...btnA,opacity:saving||!qaName.trim()?0.5:1,alignSelf:"flex-end"}}>
-              {saving?"Saving…":"+ Add Machine"}
-            </button>
-          </form>
-          {isGuest&&<div style={{marginTop:14,paddingTop:12,borderTop:"1px solid #1a3a1a",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-            <span style={{fontSize:9,color:MUT,lineHeight:1.6}}>Guest accounts keep up to 3 machines — your data is not saved permanently.</span>
-            <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a",whiteSpace:"nowrap"}}>Create a free account →</button>
-          </div>}
-        </div>
-      )}
+      {tutStep===1&&<GuideStep1 onSkip={skipTut} isGuest={isGuest} onUpgrade={()=>setShowUpgrade(true)}/>}
+      {tutStep===0&&machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
       {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
+      {tutStep===2&&<GuideStep2 onSkip={skipTut}/>}
       {view==="grid"?(
         <>
           {sorted.length > 0 && (
