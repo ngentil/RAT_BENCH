@@ -80,6 +80,7 @@ Stripe
 | Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
 | Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — "more specs = more calcs" tip (bore+stroke → compression ratio & piston speed; lighting entries → charge load, all auto); lists 8 key sections with curved orange arrows; Service Intervals highlighted; prominent orange "got it ✓" dismiss button; dismissed to localStorage rat_form_tut; auto-dismisses on first save | Free |
+| First-add field glow (Type + Name) | ✅ | MachineForm.jsx firstAdd flag (showFormGuide && !existing) — pulsing orange box-shadow on Type select and Name input; .field-guide CSS class in index.css; clears after guide dismissed | Free |
 | List view + grid view | ✅ | machines, MachineTile, MachineCard | Free |
 | Search, sort, filter by status | ✅ | machines | Free |
 | Drag-to-reorder | ✅ | machines | Free |
