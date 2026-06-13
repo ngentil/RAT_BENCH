@@ -34,3 +34,9 @@ body { background: #0e0e0e; font-family: 'IBM Plex Mono', monospace; }
   50%       { filter: drop-shadow(0 0 9px rgba(232,135,10,0.72)); }
 }
 .arrow-guide { animation: arrowGlow 2.4s ease-in-out infinite; overflow: visible; display: block; }
+
+@keyframes fieldGlow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(232,135,10,0.25); }
+  50%       { box-shadow: 0 0 0 2px rgba(232,135,10,0.50), 0 0 10px rgba(232,135,10,0.12); }
+}
+.field-guide { animation: fieldGlow 2s ease-in-out infinite; }
