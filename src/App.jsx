@@ -364,12 +364,7 @@ function App(){
           ))}
         </div>
       )}
-      {tab==="workshop"&&tier==="free"&&(
-        <div style={{background:"#111",borderBottom:"1px solid #333",padding:"6px 16px",fontSize:9,color:MUT,letterSpacing:"0.06em",display:"flex",alignItems:"center",gap:10}}>
-          <span>🔨 Workshop — 5 items per type on the free plan. Plenty to get started.</span>
-          <button onClick={()=>setTab("settings")} style={{background:"none",border:"none",cursor:"pointer",color:ACC,fontSize:9,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.06em",padding:0}}>Go unlimited →</button>
-        </div>
-      )}
+
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>

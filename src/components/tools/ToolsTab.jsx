@@ -423,13 +423,10 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      {isFree && (
+      {atLimit && (
         <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 3 }}>Free Plan</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>
-              {limit} tool limit · upgrade for unlimited tools, vehicles, equipment &amp; more.
-            </div>
+          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>
+            You're at the {limit}-tool limit on the free plan.
           </div>
           {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade →</button>}
         </div>
