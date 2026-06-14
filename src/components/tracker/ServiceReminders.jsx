@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
 import { mIcon, getStorageStatus } from '../../lib/helpers';
+import UpgradeBanner from '../ui/UpgradeBanner';
 import { upsertMachine } from '../../lib/db';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { getAllActiveBookings } from '../../lib/db/bookings';
@@ -234,15 +235,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
         </div>
       )}
 
-      {isFree && machineData.length > 0 && (
-        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 3 }}>Free Plan — Reminders Preview</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Showing 1 reminder for 1 machine. Upgrade for all machines and all intervals.</div>
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade</button>}
-        </div>
-      )}
+      {isFree && machineData.length > 0 && <UpgradeBanner text="Upgrade to track service reminders across all your machines." onUpgrade={onGoToBilling} />}
 
       {cappedFiltered.map(({ machine, items }) => {
         const hasAlert = items.some(i => i.overdue || i.dueSoon);
@@ -300,22 +293,12 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
               );
             })}
 
-            {hiddenItems > 0 && (
-              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed #2a2a2a", fontSize: 9, color: MUT }}>
-                +{hiddenItems} more interval{hiddenItems !== 1 ? "s" : ""} hidden —{" "}
-                <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade to see all</span>
-              </div>
-            )}
+            {hiddenItems > 0 && <UpgradeBanner text={`+${hiddenItems} more interval${hiddenItems !== 1 ? "s" : ""} — upgrade to see all`} onUpgrade={onGoToBilling} marginBottom={0} />}
           </div>
         );
       })}
 
-      {hiddenMachines > 0 && (
-        <div style={{ border: "1px dashed #2a2a2a", borderRadius: 2, padding: "14px", textAlign: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenMachines} more machine{hiddenMachines !== 1 ? "s" : ""} with reminders hidden</div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to Enthusiast</button>}
-        </div>
-      )}
+      {hiddenMachines > 0 && <UpgradeBanner text={`+${hiddenMachines} more machine${hiddenMachines !== 1 ? "s" : ""} with service reminders`} onUpgrade={onGoToBilling} marginBottom={10} />}
 
       {filtered.length === 0 && machineData.length > 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>No machines match this filter.</div>
