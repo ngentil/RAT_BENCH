@@ -66,6 +66,7 @@ function App(){
     const p=new URLSearchParams(window.location.search);
     return p.get("billing")||null;
   });
+  const [retrying,setRetrying]=useState(false);
   const [announcements,setAnnouncements]=useState([]);
   const [dismissedAnns,setDismissedAnns]=useState(()=>{
     try{return JSON.parse(localStorage.getItem("rat_dismissed_anns")||"[]");}catch{return[];}
@@ -151,7 +152,33 @@ function App(){
     if (tsR.status === 'fulfilled') setTools(Array.isArray(tsR.value) ? tsR.value : []);
     else loadErrs.push("tools");
 
-    if(first && loadErrs.length) setError(`Could not load: ${loadErrs.join(", ")}. Check your connection and refresh.`);
+    if(first && loadErrs.length >= 4){
+      // Total failure — almost certainly a transient network blip. Retry once after 2 s.
+      setRetrying(true);
+      await new Promise(r=>setTimeout(r,2000));
+      const [msR2,csR2,vsR2,eqR2,tsR2]=await Promise.allSettled([
+        getMachines(),
+        (async()=>{ await migrateLocalClients(session.user.id); return getClients(); })(),
+        getVehicles(),
+        getEquipment(),
+        getTools(),
+      ]);
+      setRetrying(false);
+      const retryErrs=[];
+      if(msR2.status==='fulfilled') setMachines(Array.isArray(msR2.value)?msR2.value:[]);
+      else retryErrs.push("machines");
+      if(csR2.status==='fulfilled') setClients(Array.isArray(csR2.value)?csR2.value:[]);
+      else retryErrs.push("clients");
+      if(vsR2.status==='fulfilled') setVehicles(Array.isArray(vsR2.value)?vsR2.value:[]);
+      else retryErrs.push("vehicles");
+      if(eqR2.status==='fulfilled') setEquipment(Array.isArray(eqR2.value)?eqR2.value:[]);
+      else retryErrs.push("equipment");
+      if(tsR2.status==='fulfilled') setTools(Array.isArray(tsR2.value)?tsR2.value:[]);
+      else retryErrs.push("tools");
+      if(retryErrs.length) setError(`Could not load: ${retryErrs.join(", ")}. Check your connection and refresh.`);
+    } else if(first && loadErrs.length){
+      setError(`Could not load: ${loadErrs.join(", ")}. Check your connection and refresh.`);
+    }
     if(first){ setInitializing(false); initializedRef.current=true; }
     // Fetch announcements after UI is visible — non-blocking
     (async()=>{
@@ -252,9 +279,16 @@ function App(){
     return (
       <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14}}>
         <div className="loading-rat" style={{fontSize:44,lineHeight:1}}>🐀</div>
-        <div className="loading-text" style={{display:"flex",alignItems:"center",gap:1,fontSize:10,color:MUT,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.18em",textTransform:"uppercase"}}>
-          Loading<span className="loading-dot">.</span><span className="loading-dot">.</span><span className="loading-dot">.</span>
-        </div>
+        {retrying?(
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,textAlign:"center",padding:"0 24px"}}>
+            <div style={{fontSize:10,color:MUT,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.12em"}}>Taking a bit longer than usual…</div>
+            <div style={{fontSize:9,color:"#444",fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.08em"}}>slow connection — giving it another go</div>
+          </div>
+        ):(
+          <div className="loading-text" style={{display:"flex",alignItems:"center",gap:1,fontSize:10,color:MUT,fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.18em",textTransform:"uppercase"}}>
+            Loading<span className="loading-dot">.</span><span className="loading-dot">.</span><span className="loading-dot">.</span>
+          </div>
+        )}
       </div>
     );
   }
