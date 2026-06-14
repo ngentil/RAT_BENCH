@@ -47,6 +47,7 @@ function App(){
     return stored;
   });
   const [workshopTab,setWorkshopTab]=useState(()=>localStorage.getItem("rat_workshop_tab")||"parts");
+  const [settingsTab,setSettingsTab]=useState("profile");
   const [machines,setMachines]=useState([]);
   const [clients,setClients]=useState([]);
   const [vehicles,setVehicles]=useState([]);
@@ -277,7 +278,6 @@ function App(){
   }
 
   const tier=effectiveTier(profile,company);
-  const [settingsTab,setSettingsTab]=useState("profile");
   const goToBilling=()=>{ setSettingsTab("billing"); setTab("settings"); };
   const tierGlow = TIER_GLOW[tier];
   const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
