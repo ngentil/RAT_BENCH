@@ -589,15 +589,15 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
             <div style={{background:"#0a0a0a",border:"1px solid #222",borderLeft:"2px solid #e8870a",borderRadius:2,padding:"10px 12px",marginBottom:10}}>
               {/* How the form works */}
               {[
-                ["more specs = more calcs","bore + stroke → compression ratio & piston speed · lighting entries → charge load · all auto",true],
+                ["more specs = more calcs","bore + stroke → compression ratio · piston speed · rod ratio\ncompression → fuel octane grade\nsprockets → final drive ratio & top speed\nblade length + WOT rpm → tip speed\ntank capacity + mix ratio → 2T oil per fill\nlighting wattage → total load · net charge surplus/deficit",true],
               ].map(([label,desc,hl])=>(
-                <div key={label} style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
-                  <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0,marginTop:1}}>
+                <div key={label} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:6}}>
+                  <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0,marginTop:4}}>
                     <path d="M 1 4 C 3 2, 6 2, 9 4" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
                     <path d="M 7 2 L 9 4 L 7 6" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:96,flexShrink:0}}>{label}</span>
-                  <span style={{fontSize:8,color:"#555",fontFamily:"'IBM Plex Mono',monospace",lineHeight:"1.5"}}>{desc}</span>
+                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:96,flexShrink:0,marginTop:1}}>{label}</span>
+                  <span style={{fontSize:8,color:"#555",fontFamily:"'IBM Plex Mono',monospace",lineHeight:"1.8",whiteSpace:"pre-line"}}>{desc}</span>
                 </div>
               ))}
               <div style={{borderTop:"1px solid #1a1a1a",margin:"8px 0"}}/>
