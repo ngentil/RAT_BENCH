@@ -383,7 +383,7 @@ function App(){
             t.id==="jobs"&&timerRunning?{n:"▶",c:GRN}:
             null;
           return (
-          <button key={t.id} onClick={()=>setTab(t.id)} className="tab-btn" style={{flexShrink:0,padding:"10px 10px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?ACC+"12":"none",borderBottom:active?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
+          <button key={t.id} onClick={()=>setTab(t.id)} className="tab-btn" style={{flexShrink:0,padding:"10px 12px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?ACC+"1a":"none",borderBottom:active?"3px solid "+ACC:"3px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
             {t.label}
             {badge&&<span style={{position:"absolute",top:4,right:2,fontSize:7,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
           </button>
@@ -393,7 +393,7 @@ function App(){
       {tab==="workshop"&&(
         <div style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
           {visibleWorkshopTabs.map(t=>(
-            <button key={t.id} onClick={()=>setWorkshopTab(t.id)} style={{flexShrink:0,padding:"8px 10px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",color:workshopTab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:"none",borderBottom:workshopTab===t.id?"2px solid "+ACC:"2px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
+            <button key={t.id} onClick={()=>setWorkshopTab(t.id)} style={{flexShrink:0,padding:"8px 12px",fontSize:10,fontWeight:workshopTab===t.id?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:workshopTab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:workshopTab===t.id?ACC+"1a":"none",borderBottom:workshopTab===t.id?"3px solid "+ACC:"3px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
               {t.label}
             </button>
           ))}
