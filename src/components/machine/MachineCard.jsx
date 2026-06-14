@@ -221,7 +221,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             ? <img src={m.photos[0]} alt="" style={{width:44,height:44,objectFit:"cover",borderRadius:2,flexShrink:0,border:"1px solid #252525"}} />
             : <span style={{fontSize:16}}>{mIcon(m.type)}</span>}
           <div style={{flex:1,minWidth:0}}>
-            <div className={timerRunning?"loading-rat":undefined} style={{fontSize:14,fontWeight:700,color:TXT,display:"flex",alignItems:"center",gap:6}}>
+            <div className={timerRunning?"loading-rat":undefined} style={{fontSize:16,fontWeight:700,color:TXT,display:"flex",alignItems:"center",gap:6}}>
               {m.name}
               {timerRunning&&<span style={{width:7,height:7,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,flexShrink:0,display:"inline-block"}}/>}
             </div>
@@ -235,7 +235,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               const tc=m.tileColors||{};
               const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
               const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
-              const bStyle={fontSize:8,fontWeight:700,letterSpacing:"0.1em",padding:"2px 6px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
+              const bStyle={fontSize:10,fontWeight:700,letterSpacing:"0.1em",padding:"3px 7px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
               if(k==="status"){const S=["Active","Queued","Complete"];const cur=m.status||"Active";const next=S[(S.indexOf(cur)+1)%S.length];return <StatusBadge key="status" status={cur} onClick={ev=>{ev.stopPropagation();const u={...m,status:next};upsertMachine(u).catch(()=>{});onUpdate(u);}} title={`Click to set ${next}`} />;};
               if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:8,fontWeight:700,letterSpacing:"0.1em",padding:"2px 6px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55")}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
               if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:10,letterSpacing:-2}}>{"☠️".repeat(m.rage)}</span>;
@@ -246,8 +246,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               }
               return null;
             })}
-            {svcStatus.overdue  && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0}}>SERVICE</span>}
-            {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",flexShrink:0}}>DUE SOON</span>}
+            {svcStatus.overdue  && <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0}}>SERVICE</span>}
+            {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:2,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",flexShrink:0}}>DUE SOON</span>}
             {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0,boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",flexShrink:0}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",flexShrink:0}}>${storageStatus.accrued.toFixed(0)}</span>)}
           </div>
           <span style={{fontSize:14,color:MUT,flexShrink:0,paddingLeft:8}}>{open?"▲":"▼"}</span>
@@ -257,7 +257,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
       </div>
 
       {open&&(
-        <div style={{borderTop:"1px solid "+BRD2}}>
+        <div className="card-expand" style={{borderTop:"1px solid "+BRD2}}>
           {(()=>{
             const ef = m.expandFields&&m.expandFields.length>0 ? m.expandFields : DEFAULT_EXPAND;
             const show = k => ef.includes(k);
