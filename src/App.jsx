@@ -272,7 +272,8 @@ function App(){
     return (
       <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:20}}>
         <div style={{fontSize:32}}>⚠️</div>
-        <div style={{fontSize:11,color:RED,fontFamily:"'IBM Plex Mono',monospace",textAlign:"center",lineHeight:1.6,maxWidth:320}}>{error}</div>
+        <div style={{fontSize:11,color:RED,fontFamily:"'IBM Plex Mono',monospace",textAlign:"center",lineHeight:1.6,maxWidth:320,marginBottom:4}}>{error}</div>
+        <button onClick={()=>{ setError(null); setInitializing(true); initializedRef.current=false; loadForSession(session); }} style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:9,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",background:"none",border:"1px solid #333",color:MUT,padding:"6px 16px",borderRadius:2,cursor:"pointer"}}>↺ Retry</button>
       </div>
     );
   }
