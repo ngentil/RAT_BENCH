@@ -9,6 +9,7 @@ import { SL, Empty, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
 import StatusBadge from '../ui/StatusBadge';
 import { effectiveTier } from '../../lib/gates';
+import UpgradeBanner from '../ui/UpgradeBanner';
 
 const ORANGE = "#e8a20a";
 
@@ -791,10 +792,8 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
 
   if (locked) {
     return (
-      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Job Timer</div>
-        <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6, marginBottom: 8 }}>🔒 Job timers require an Enthusiast subscription.</div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, fontSize: 8 }}>Upgrade</button>}
+      <div style={{ marginTop: 10 }}>
+        <UpgradeBanner text="Job timers require an Enthusiast subscription." onUpgrade={onGoToBilling} />
       </div>
     );
   }
@@ -1022,12 +1021,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
           {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
           {!timerLocked && <TimeLogSection machine={m} company={company} clients={[]} userId={session?.user?.id} onUpdate={onUpdate} />}
           {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
-          {timerLocked && (
-            <div style={{ marginTop: 10, fontSize: 9, color: MUT, fontStyle: "italic" }}>
-              🔒 Timer &amp; parts unlock on Enthusiast —{" "}
-              <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade</span>
-            </div>
-          )}
+          {timerLocked && <UpgradeBanner text="Timer & parts log unlocks on Enthusiast." onUpgrade={onGoToBilling} marginBottom={0} />}
           {grandTotal > 0 && (
             <div style={{ marginTop: 10, padding: "8px 10px", background: "#0a0f0a", border: "1px solid #1e2e1e", borderRadius: 2, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>Cost Summary</span>
@@ -1153,13 +1147,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
         </div>
       )}
       {isFree && machines.length > 0 && (
-        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 3 }}>Free Plan — Jobs Preview</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Showing {Math.min(machines.length, FREE_LIMIT)} of {machines.length} machines. First machine has full timer &amp; parts access.</div>
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade</button>}
-        </div>
+        <UpgradeBanner label="Free Plan" text={`Showing ${Math.min(machines.length, FREE_LIMIT)} of ${machines.length} machines. First machine has full timer & parts access.`} onUpgrade={onGoToBilling} />
       )}
       {cappedGroups.map(({ status, items }) => items.length === 0 ? null : (
         <div key={status} style={{ marginBottom: 20 }}>
@@ -1180,12 +1168,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           })}
         </div>
       ))}
-      {hiddenCount > 0 && (
-        <div style={{ border: "1px dashed #2a2a2a", borderRadius: 3, padding: "16px 14px", textAlign: "center", marginBottom: 8 }}>
-          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenCount} more machine{hiddenCount !== 1 ? "s" : ""} hidden — upgrade to see all jobs</div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to Enthusiast</button>}
-        </div>
-      )}
+      {hiddenCount > 0 && <UpgradeBanner text={`+${hiddenCount} more machine${hiddenCount !== 1 ? "s" : ""} hidden — upgrade to see all jobs`} onUpgrade={onGoToBilling} marginBottom={8} />}
     </div>
   );
 }
