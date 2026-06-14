@@ -40,3 +40,6 @@ body { background: #0e0e0e; font-family: 'IBM Plex Mono', monospace; }
   50%       { box-shadow: 0 0 0 2px rgba(232,135,10,0.50), 0 0 10px rgba(232,135,10,0.12); }
 }
 .field-guide { animation: fieldGlow 2s ease-in-out infinite; }
+
+.billing-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 20px; }
+@media (min-width: 680px) { .billing-grid { grid-template-columns: repeat(3, 1fr); } }
