@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import TabGuide from '../ui/TabGuide';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -535,6 +536,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
           </button>
         </div>
       </div>
+      <TabGuide storageKey="rat_tut_vehicles" title="start here" lines={["tap + Add Vehicle to register company vehicles","link to machines for loadout tracking"]} />
 
       {(vehicles || []).length > 4 && (
         <input style={{ ...inp, marginBottom: 8, fontSize: 11 }} placeholder="Search vehicles…" value={search} onChange={e => setSearch(e.target.value)} />

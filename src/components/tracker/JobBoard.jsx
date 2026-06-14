@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import TabGuide from '../ui/TabGuide';
 import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
@@ -1123,6 +1124,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           </div>
         )}
       </div>
+      <TabGuide storageKey="rat_tut_jobs" variant="info" title="your job board" lines={["start a timer from any machine card in Tracker","time + parts log here automatically"]} />
       {machines.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 24px" }}>
           <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>

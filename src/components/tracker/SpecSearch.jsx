@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MUT, ACC, BRD, BRD2, SURF, TXT, inp, btnG, sm } from '../../lib/styles';
 import { SL, Empty } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import { mIcon } from '../../lib/helpers';
 import StatusBadge from '../ui/StatusBadge';
 
@@ -167,6 +168,7 @@ function SpecSearch({machines}){
     <div style={{padding:16,flex:1}}>
       <SL t="Spec Search" />
       <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Search any spec across your inventory — stud spacing, carb brand, plug type, bolt size.</div>
+      <TabGuide storageKey="rat_tut_search" variant="info" title="cross-machine search" lines={["search any spec across all your machines","plug gap · compression · bar length & more"]} />
       <div style={{display:"flex",gap:8,marginBottom:14}}>
         <input style={{...inp,fontSize:13}} placeholder="e.g.  28  /  Walbro  /  NGK  /  M5..." value={query} onChange={e=>setQuery(e.target.value)} />
         {query&&<button style={{...btnG,...sm,whiteSpace:"nowrap"}} onClick={()=>setQuery("")}>Clear</button>}
