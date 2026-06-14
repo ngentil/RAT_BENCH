@@ -1141,11 +1141,10 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
               return (
                 <button key={s || "all"} onClick={() => setStatusFilter(s)} style={{ ...btnG, ...sm,
                   borderRadius: i === 0 ? "2px 0 0 2px" : i === arr.length - 1 ? "0 2px 2px 0" : "0",
-                  borderRight: i < arr.length - 1 ? "none" : "1px solid " + BRD,
+                  borderRight: i < arr.length - 1 ? "none" : undefined,
                   background: isActive ? (s ? STATUS_COLOR[s] + "22" : ACC + "18") : "none",
                   color: isActive ? (s ? STATUS_COLOR[s] : ACC) : MUT,
-                  borderColor: isActive ? (s ? STATUS_COLOR[s] + "66" : ACC + "66") : BRD,
-                  borderTopWidth: "1px", borderBottomWidth: "1px", borderLeftWidth: "1px",
+                  boxShadow: isActive ? ("inset 0 0 0 1px " + (s ? STATUS_COLOR[s] + "99" : ACC)) : "none",
                 }}>
                   {s || "All"}
                 </button>
