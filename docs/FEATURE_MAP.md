@@ -50,7 +50,7 @@ Stripe
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
 | Announcements (in-app banners) | ✅ | profiles.tier | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql | All |
-| DB-level machine limit trigger (free=30, guest=3) | ✅ | scalability_hardening.sql, profiles.tier | Free |
+| DB-level machine limit trigger (free=10, guest=3) | ✅ | scalability_hardening.sql, profiles.tier | Free |
 | Critical DB indexes (machines, services, bookings, permissions) | ✅ | scalability_hardening.sql | All |
 | Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |

@@ -38,7 +38,7 @@ const PLANS = [
     label: "Free",
     price: "$0",
     period: "",
-    features: ["Up to 30 machines","Up to 5 tools / vehicles / equipment","Wiki access","Job & service tracking","Everything you need to get started"],
+    features: ["Up to 10 machines","Up to 5 tools / vehicles / equipment","Wiki access","Job & service tracking","Everything you need to get started"],
     personal: true,
   },
   {
