@@ -66,7 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_consumables_user_id    ON consumables(user_id);
 
 
 -- ── 3. Machine limit enforcement (DB level) ───────────────────
--- Enforces the free-tier 30-machine cap at the database layer so
+-- Enforces the free-tier 10-machine cap at the database layer so
 -- client-side gates.js cannot be bypassed via direct API calls.
 
 CREATE OR REPLACE FUNCTION enforce_machine_limit()
@@ -82,8 +82,8 @@ BEGIN
     SELECT COUNT(*) INTO v_count
     FROM machines WHERE user_id = NEW.user_id;
 
-    IF v_count >= 30 THEN
-      RAISE EXCEPTION 'Machine limit reached: free tier allows up to 30 machines.';
+    IF v_count >= 10 THEN
+      RAISE EXCEPTION 'Machine limit reached: free tier allows up to 10 machines.';
     END IF;
   END IF;
 
