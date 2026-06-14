@@ -588,18 +588,20 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
           {showFormGuide&&(
             <div style={{background:"#0a0a0a",border:"1px solid #222",borderLeft:"2px solid #e8870a",borderRadius:2,padding:"10px 12px",marginBottom:10}}>
               {/* How the form works */}
-              {[
-                ["more specs = more calcs","bore + stroke → compression ratio · piston speed · rod ratio\ncompression → fuel octane grade\nsprockets → final drive ratio & top speed\nblade length + WOT rpm → tip speed\ntank capacity + mix ratio → 2T oil per fill\nlighting wattage → total load · net charge surplus/deficit",true],
-              ].map(([label,desc,hl])=>(
-                <div key={label} style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:6}}>
-                  <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0,marginTop:4}}>
+              <div style={{marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                  <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0}}>
                     <path d="M 1 4 C 3 2, 6 2, 9 4" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
                     <path d="M 7 2 L 9 4 L 7 6" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:96,flexShrink:0,marginTop:1}}>{label}</span>
-                  <span style={{fontSize:8,color:"#555",fontFamily:"'IBM Plex Mono',monospace",lineHeight:"1.8",whiteSpace:"pre-line"}}>{desc}</span>
+                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700}}>more specs = more calcs</span>
                 </div>
-              ))}
+                <div style={{fontSize:9,color:"#666",fontFamily:"'IBM Plex Mono',monospace",lineHeight:"1.8",paddingLeft:2}}>
+                  The more you fill in, the more the app works out for you — automatically, with no extra steps.<br/><br/>
+                  Add <span style={{color:"#888"}}>bore and stroke</span> to unlock compression ratio, piston speed and rod ratio. Enter your <span style={{color:"#888"}}>compression ratio</span> and you'll get a fuel octane recommendation. Fill in <span style={{color:"#888"}}>sprocket teeth</span> to see your final drive ratio and an estimated top speed.<br/><br/>
+                  Add <span style={{color:"#888"}}>blade length and WOT rpm</span> for tip speed, <span style={{color:"#888"}}>tank size and mix ratio</span> for 2-stroke oil per fill, and <span style={{color:"#888"}}>lighting wattage entries</span> under Electrics to see your total load and whether your charging system is running a surplus or a deficit.
+                </div>
+              </div>
               <div style={{borderTop:"1px solid #1a1a1a",margin:"8px 0"}}/>
               <div style={{fontSize:8,color:"#444",fontFamily:"'IBM Plex Mono',monospace",marginBottom:7}}>sections guide — all optional</div>
               {[
