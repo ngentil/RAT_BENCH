@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import UpgradeBanner from '../ui/UpgradeBanner';
 import { SL, FL, Empty } from '../ui/shared';
-import TabGuide from '../ui/TabGuide';
 import PhotoAdder from '../ui/PhotoAdder';
-import PhotoViewer from '../ui/PhotoViewer';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
 import { fmtDate } from '../../lib/helpers';
@@ -251,7 +250,13 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
         </div>
       )}
 
-      {photoIdx !== null && <PhotoViewer src={item.photos[photoIdx]} onClose={() => setPhotoIdx(null)} />}
+      {photoIdx !== null && (
+        <div style={{ position: 'fixed', inset: 0, background: '#000d', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setPhotoIdx(null)}>
+          <img src={item.photos[photoIdx]} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 2 }}
+            onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }
@@ -339,14 +344,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      {atLimit && (
-        <div style={{ background: '#0a1a0a', border: '1px solid #1a3a1a', borderRadius: 2, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>
-            You're at the {limit}-item equipment limit on the free plan.
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: 'nowrap' }}>Upgrade →</button>}
-        </div>
-      )}
+      {atLimit && <UpgradeBanner text={`You're at the ${limit}-item equipment limit on the free plan.`} onUpgrade={onGoToBilling} />}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -369,7 +367,6 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
           </button>
         </div>
       </div>
-      <TabGuide storageKey="rat_tut_equip" title="start here" lines={["tap + Add Equipment to track what you use on jobs","assign to machines via the loadout panel"]} />
 
       {(equipment||[]).length > 0 && (
         <div style={{display:'flex',gap:16,marginBottom:10,paddingBottom:10,borderBottom:'1px solid #1a1a1a'}}>

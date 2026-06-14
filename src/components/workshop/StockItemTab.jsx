@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import QRCode from 'qrcode';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { FL, Empty } from '../ui/shared';
-import TabGuide from '../ui/TabGuide';
 import { effectiveTier } from '../../lib/gates';
+import UpgradeBanner from '../ui/UpgradeBanner';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
 import LoadoutSection from '../ui/LoadoutSection';
@@ -701,18 +701,8 @@ export default function StockItemTab({ tableType, label, machines, session, prof
           {!atLimit && (
             <button onClick={() => setFormItem({})} style={{ ...btnA, ...sm, fontSize: 8 }}>+ Add</button>
           )}
-          {atLimit && onGoToBilling && (
-            <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade for more</button>
-          )}
         </div>
       </div>
-      <TabGuide
-        storageKey={tableType === 'consumable' ? 'rat_tut_consumables' : 'rat_tut_parts'}
-        title="start here"
-        lines={tableType === 'consumable'
-          ? ["tap + Add to track oils, fuels & consumables","set min/max par levels for LOW · OUT alerts"]
-          : ["tap + Add to build your parts inventory","track stock · buy & sell price · QR labels"]}
-      />
 
       {/* Summary row */}
       {items.length > 0 && (
@@ -757,12 +747,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
         </div>
       )}
 
-      {isFree && items.length >= FREE_LIMIT && (
-        <div style={{ background: '#0a1a0a', border: '1px solid #1a3a1a', borderRadius: 2, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>You're at the {FREE_LIMIT}-{label.toLowerCase()} limit on the free plan.</div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: 'nowrap' }}>Upgrade</button>}
-        </div>
-      )}
+      {isFree && items.length >= FREE_LIMIT && <UpgradeBanner text={`You're at the ${FREE_LIMIT}-${label.toLowerCase()} limit on the free plan.`} onUpgrade={onGoToBilling} marginBottom={12} />}
 
       {/* Loading / empty */}
       {loading && <div style={{ fontSize: 10, color: MUT, padding: '24px 0', textAlign: 'center' }}>Loading…</div>}
@@ -822,12 +807,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
         ))
       )}
 
-      {hiddenCount > 0 && (
-        <div style={{ border: '1px dashed #2a2a2a', borderRadius: 2, padding: 14, textAlign: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenCount} more {label.toLowerCase()} hidden — upgrade for unlimited</div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to Enthusiast</button>}
-        </div>
-      )}
+      {hiddenCount > 0 && <UpgradeBanner text={`+${hiddenCount} more ${label.toLowerCase()} hidden — upgrade for unlimited`} onUpgrade={onGoToBilling} marginBottom={10} />}
 
       <div style={{ marginTop: 8, fontSize: 9, color: MUT, lineHeight: 1.7 }}>
         Stock is adjusted automatically when items are used on a job. Buy price = your cost, Sell price = what you charge.

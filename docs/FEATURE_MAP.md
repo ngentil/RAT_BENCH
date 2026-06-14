@@ -66,6 +66,7 @@ Stripe
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
 | Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing | All |
 | Service worker / PWA static asset cache (repeat-visit perf) | ✅ | vite-plugin-pwa, dist/sw.js | All |
+| Shared `UpgradeBanner` component (green box, label, Upgrade → button) | ✅ | src/components/ui/UpgradeBanner.jsx — used in JobBoard, ServiceReminders, VehiclesTab, EquipmentTab, ToolsTab, StockItemTab, WikiTab | All |
 
 ---
 
