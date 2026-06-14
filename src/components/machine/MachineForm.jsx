@@ -410,6 +410,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [carbFuelInletBarbDiameter,setCarbFuelInletBarbDiameter]=useState(_cs.fuelInletBarbDiameter||"");
   const [carbFuelOutletBarbDiameter,setCarbFuelOutletBarbDiameter]=useState(_cs.fuelOutletBarbDiameter||"");
   const [carbFuelBulbDiameter,setCarbFuelBulbDiameter]=useState(_cs.fuelBulbDiameter||"");
+  const [carbThrottleCableDia,setCarbThrottleCableDia]=useState(_cs.throttleCableDia||"");
   const [secCarbSpec,setSecCarbSpec]=useState(false);
   const [editCarbSpec,setEditCarbSpec]=useState(isNew);
   const handleCarbBoltSpacing=v=>{
@@ -560,7 +561,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       trackType,trackWidth:trackWidth.toString(),trackPitch:trackPitch.toString(),trackLinks:trackLinks.toString(),sprocketTeeth:sprocketTeeth.toString(),undercarriageHours:undercarriageHours.toString(),groundContactLength:groundContactLength.toString(),
       hydPumpCount,hydPumpType,hydSystemPressure:hydSystemPressure.toString(),hydOilCapacity:hydOilCapacity.toString(),hydReliefValve:hydReliefValve.toString(),
       hydRams,attachments,lighting,
-      carbSpec:{brand:carbBrandSpec,cloneBrand:carbCloneBrand,cloneDerivative:carbCloneDerivative,oemPartNo:carbOemPartNo.trim(),clonePartNo:carbClonePartNo.trim(),repairKitPartNo:carbRepairKitPartNo.trim(),gasketPhotos:carbGasketPhotos,purchaseLinks:carbPurchaseLinks,thickness:carbThickness.toString().trim(),boltSpacing:carbBoltSpacing.toString().trim(),throatDiameter:carbThroatDiameter.toString().trim(),engravings:carbEngravings.trim(),needlePumpValveDiameter:carbNeedlePumpValveDiameter.toString().trim(),needleValveLength:carbNeedleValveLength.toString().trim(),fuelInletBarbDiameter:carbFuelInletBarbDiameter.toString().trim(),fuelOutletBarbDiameter:carbFuelOutletBarbDiameter.toString().trim(),fuelBulbDiameter:carbFuelBulbDiameter.toString().trim()},
+      carbSpec:{brand:carbBrandSpec,cloneBrand:carbCloneBrand,cloneDerivative:carbCloneDerivative,oemPartNo:carbOemPartNo.trim(),clonePartNo:carbClonePartNo.trim(),repairKitPartNo:carbRepairKitPartNo.trim(),gasketPhotos:carbGasketPhotos,purchaseLinks:carbPurchaseLinks,thickness:carbThickness.toString().trim(),boltSpacing:carbBoltSpacing.toString().trim(),throatDiameter:carbThroatDiameter.toString().trim(),engravings:carbEngravings.trim(),needlePumpValveDiameter:carbNeedlePumpValveDiameter.toString().trim(),needleValveLength:carbNeedleValveLength.toString().trim(),fuelInletBarbDiameter:carbFuelInletBarbDiameter.toString().trim(),fuelOutletBarbDiameter:carbFuelOutletBarbDiameter.toString().trim(),fuelBulbDiameter:carbFuelBulbDiameter.toString().trim(),throttleCableDia:carbThrottleCableDia.toString().trim()},
       obShaftLength,obTransomHeight,obTiltTrim,obSteering,obPropPitch:obPropPitch.toString().trim(),obPropDiameter:obPropDiameter.toString().trim(),obPropMaterial,obGearRatio,obLowerUnitOilType:obLowerUnitOilType.trim(),obLowerUnitOilCapacity:obLowerUnitOilCapacity.toString().trim(),obAnodeMaterial,obBreakInHours:obBreakInHours.toString().trim(),obImpellerLastChanged:obImpellerLastChanged.trim(),
       chipperSpec:{type:chipperType,brand:chipperBrand,brandOther:chipperBrandOther,inchSize:chipperInchSize.toString(),bladeCount:chipperBladeCount.toString(),hours:chipperHours.toString(),bladeLastSharpened:chipperBladeLastSharpened.trim()},
       stumpGrinderSpec:{brand:stumpBrand,brandOther:stumpBrandOther,wheelDiameter:stumpWheelDiameter.toString(),toothCount:stumpToothCount.toString(),hours:stumpHours.toString(),cuttingDepth:stumpCuttingDepth.toString(),cuttingWidth:stumpCuttingWidth.toString(),driveType:stumpDriveType,teethLastReplaced:stumpTeethLastReplaced.trim()}});
@@ -1456,7 +1457,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {/* Carburettor Spec */}
           {(strokeType==="2-stroke"||fuelSystem==="Carburetted")&&(()=>{
-            const hasData=!!(carbBrandSpec||carbOemPartNo||carbClonePartNo||carbRepairKitPartNo||carbThickness||carbBoltSpacing||carbThroatDiameter||carbGasketPhotos.length||carbPurchaseLinks.length);
+            const hasData=!!(carbBrandSpec||carbOemPartNo||carbClonePartNo||carbRepairKitPartNo||carbThickness||carbBoltSpacing||carbThroatDiameter||carbThrottleCableDia||carbGasketPhotos.length||carbPurchaseLinks.length);
             const carbSpecSum=[
               carbBrandSpec==="Clone"?`Clone (${carbCloneBrand||"?"} → ${carbCloneDerivative||"?"})`:carbBrandSpec,
               carbOemPartNo?"OEM: "+carbOemPartNo:null,
@@ -1520,6 +1521,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <div style={col}><FL t="Fuel bulb diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 35" step="0.5" min="0" value={carbFuelBulbDiameter} onChange={ev=>setCarbFuelBulbDiameter(ev.target.value)} /></div>
                     <div style={col}><FL t="Fuel inlet barb ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 4" step="0.25" min="0" value={carbFuelInletBarbDiameter} onChange={ev=>setCarbFuelInletBarbDiameter(ev.target.value)} /></div>
                     <div style={col}><FL t="Fuel outlet barb ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 4" step="0.25" min="0" value={carbFuelOutletBarbDiameter} onChange={ev=>setCarbFuelOutletBarbDiameter(ev.target.value)} /></div>
+                    <div style={col}><FL t="Throttle cable ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 1.2" step="0.1" min="0" value={carbThrottleCableDia} onChange={ev=>setCarbThrottleCableDia(ev.target.value)} /></div>
                   </div>
                   {/* Internal measurements */}
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
