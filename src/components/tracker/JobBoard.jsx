@@ -816,18 +816,22 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   }
 
   if (t.status === "idle" && !t.duration) {
-    const tabStyle = (active) => ({
-      padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em",
-      textTransform: "uppercase", cursor: "pointer", border: "1px solid #333", fontFamily: "'IBM Plex Mono',monospace",
-      background: active ? ACC : "none", color: active ? "#000" : MUT,
-    });
+    const modeBtn = (key, label) => (
+      <button key={key} onClick={() => setMode(key)} style={{ padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", border: "none", fontFamily: "'IBM Plex Mono',monospace", background: mode === key ? ACC : "none", color: mode === key ? "#000" : MUT }}>
+        {label}
+      </button>
+    );
     return (
       <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>Job Timer</div>
-          <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>↓ Countdown</button>
-          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0", borderRight: "none" }}>↑ Count Up</button>
-          <button onClick={() => setMode("manual")}    style={{ ...tabStyle(mode === "manual"),    borderRadius: "0 2px 2px 0" }}>✎ Log</button>
+          <div style={{ display: "flex", border: "1px solid #333", borderRadius: 2, overflow: "hidden" }}>
+            {modeBtn("countdown", "↓ Countdown")}
+            <div style={{ width: 1, background: "#333", flexShrink: 0 }} />
+            {modeBtn("countup", "↑ Count Up")}
+            <div style={{ width: 1, background: "#333", flexShrink: 0 }} />
+            {modeBtn("manual", "✎ Log")}
+          </div>
         </div>
         <div style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
@@ -956,7 +960,7 @@ function MachineNotes({ machine, onSave }) {
     <div style={{ marginBottom: 8 }}>
       {machine.notes
         ? <div style={{ fontSize: 11, color: TXT, lineHeight: 1.5, cursor: "pointer", opacity: 0.7 }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
-        : <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9, color: MUT, padding: 0, fontFamily: "'IBM Plex Mono',monospace", fontStyle: "italic" }}>+ job notes</button>}
+        : <button onClick={() => setEditing(true)} style={{ ...btnA, ...sm, fontSize: 9, background: "none", borderColor: ACC+"55", color: ACC }}>✏ Notes</button>}
     </div>
   );
 }
@@ -969,6 +973,8 @@ const STATUS_COLOR = {
 
 function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, session, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
   const [open, setOpen] = useState(false);
+  const [jobGuide, setJobGuide] = useState(() => localStorage.getItem("rat_tut_job_card") !== "1");
+  const dismissJobGuide = () => { localStorage.setItem("rat_tut_job_card", "1"); setJobGuide(false); };
 
   const totalSecs   = (m.timeLog||[]).reduce((s, e) => s + (e.seconds||0), 0);
   const partsCount  = (m.parts||[]).length;
@@ -1018,6 +1024,18 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
       {/* Expanded body */}
       {open && (
         <div style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
+          {jobGuide && (
+            <div style={{ background: "#0a0f0a", border: "1px solid #1a2a1a", borderRadius: 2, padding: "10px 12px", margin: "10px 0 8px" }}>
+              <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Job Card</div>
+              <div style={{ fontSize: 9, color: MUT, lineHeight: 2 }}>
+                <span style={{ color: TXT }}>✏ Notes</span> — save job notes for this machine<br/>
+                <span style={{ color: TXT }}>Timer</span> — countdown, count up, or log time manually<br/>
+                <span style={{ color: TXT }}>Parts</span> — add stock items used on this job<br/>
+                <span style={{ color: TXT }}>Status buttons</span> — move the job between Active · Queued · Complete
+              </div>
+              <button onClick={dismissJobGuide} style={{ marginTop: 8, background: "none", border: "none", color: "#444", fontSize: 8, cursor: "pointer", padding: 0, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "0.05em" }}>got it</button>
+            </div>
+          )}
           <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; onUpdate(u); await upsertMachine(u); }} />
           {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
           {!timerLocked && <TimeLogSection machine={m} company={company} clients={[]} userId={session?.user?.id} onUpdate={onUpdate} />}
