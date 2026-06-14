@@ -43,6 +43,7 @@ Stripe
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
 | Announcements (in-app banners) | ✅ | profiles.tier | All |
+| Shared `UpgradeBanner` component (green box, label, Upgrade → button) | ✅ | lib/styles (MUT, GRN, btnA, sm) | All |
 
 ---
 
