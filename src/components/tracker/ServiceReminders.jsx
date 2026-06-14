@@ -229,7 +229,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
           const isLast  = idx === arr.length - 1;
           const isActive = filter === v;
           return (
-            <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, borderRadius: isFirst ? "2px 0 0 2px" : isLast ? "0 2px 2px 0" : 0, borderRight: isLast ? undefined : "none", ...(isActive ? { background: ACC+"18", color: ACC, border: "1px solid "+ACC, borderRight: isLast ? "1px solid "+ACC : "none" } : {}) }}>
+            <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, borderRadius: isFirst ? "2px 0 0 2px" : isLast ? "0 2px 2px 0" : 0, borderRight: isLast ? undefined : "none", ...(isActive ? { background: ACC+"18", color: ACC, boxShadow: "inset 0 0 0 1px "+ACC } : {}) }}>
               {l}
             </button>
           );
