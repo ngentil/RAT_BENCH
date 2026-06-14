@@ -42,7 +42,7 @@ Stripe
 | Signup: live username availability check (✓/✗) + 🎲 dice generator | ✅ | AuthScreen, lib/username.js | Free |
 | Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession | Free |
 | Password reset | ✅ | auth | Free |
-| Guest upgrade modal | ✅ | auth | Free |
+| Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
 | Profiles table + RLS | ✅ | auth.users | Free |
 | Tier system (`gates.js`) | ✅ | profiles.tier | All |
 | Stripe Checkout (3 plans: Free / Enthusiast $3.50wk / Pro $10wk) | ✅ | Stripe, profiles | All |
