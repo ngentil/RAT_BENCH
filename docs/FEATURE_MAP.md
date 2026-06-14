@@ -327,6 +327,7 @@ Stripe
 | Submit machine specs to wiki | ✅ | machines → wiki_entries | Enthusiast+ |
 | Author attribution | ✅ | wiki_revisions.author_id | Enthusiast+ |
 | Admin delete any wiki entry | ✅ | VITE_ADMIN_EMAIL env var check in WikiEntryPage, deleteWikiEntry() | Admin only |
+| Per-user sample wiki entries (Honda GX200, Husqvarna 455 Rancher, Yamaha YZ250) | ✅ | seedSampleWikiEntries() in wiki.js — seeded on first wiki visit (rat_wiki_seeded localStorage gate); each user gets their own copies (slug: {base}-sample-{uid8}); is_sample + sample_owner_id columns on wiki_entries; users see only their own samples + global non-sample entries; "Remove Sample" delete button on own samples; run supabase/wiki_sample_entries.sql first | Free |
 
 ---
 
