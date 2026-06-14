@@ -190,11 +190,11 @@ function SpecSearch({machines}){
                 {hits.map(f=>(
                   f.isFastener
                     ? <div key={f.k} style={{background:ACC+"0a",border:"1px solid "+ACC+"33",borderRadius:2,padding:"6px 9px",gridColumn:"1/-1"}}>
-                        <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
+                        <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
                         <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{f.value}</div>
                       </div>
                     : <div key={f.k} style={{background:ACC+"0a",border:"1px solid "+ACC+"33",borderRadius:2,padding:"6px 9px"}}>
-                        <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
+                        <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
                         <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
                       </div>
                 ))}
@@ -203,7 +203,7 @@ function SpecSearch({machines}){
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:4}}>
                   {FIELDS.filter(f=>m[f.k]&&!hits.find(h=>h.k===f.k)).map(f=>(
                     <div key={f.k} style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"6px 9px"}}>
-                      <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>{f.l}</div>
+                      <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>{f.l}</div>
                       <div style={{fontSize:11,color:"#484848",fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
                     </div>
                   ))}

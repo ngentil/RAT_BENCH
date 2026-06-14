@@ -604,7 +604,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 </div>
               </div>
               <div style={{borderTop:"1px solid #1a1a1a",margin:"8px 0"}}/>
-              <div style={{fontSize:8,color:"#444",fontFamily:"'IBM Plex Mono',monospace",marginBottom:7}}>sections guide — all optional</div>
+              <div style={{fontSize:10,color:"#444",fontFamily:"'IBM Plex Mono',monospace",marginBottom:7}}>sections guide — all optional</div>
               {[
                 ["Basic Info","make, model & photos",false],
                 ["Engine","bore, stroke & auto-calcs",false],
@@ -621,7 +621,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <path d="M 7 2 L 9 4 L 7 6" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                   <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:96,flexShrink:0}}>{label}</span>
-                  <span style={{fontSize:8,color:hl?"#e8870a":"#4a4a4a",fontFamily:"'IBM Plex Mono',monospace"}}>{desc}</span>
+                  <span style={{fontSize:10,color:hl?"#e8870a":"#4a4a4a",fontFamily:"'IBM Plex Mono',monospace"}}>{desc}</span>
                 </div>
               ))}
               <button onClick={dismissFormGuide} style={{marginTop:10,background:"#e8870a",border:"none",color:"#000",fontSize:9,fontWeight:700,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:"5px 14px",borderRadius:3,letterSpacing:"0.06em",display:"block",width:"100%"}}>got it ✓</button>
@@ -892,8 +892,8 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                       </div>
                       {(intakeValveN&&exhaustValveN&&cylCount)&&<div style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"8px 10px",marginTop:6}}>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          <div><div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Total Valve Count</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseInt(intakeValveN)+parseInt(exhaustValveN))*parseInt(cylCount)}</div></div>
-                          <div><div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Valves per Cylinder</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{parseInt(intakeValveN)+parseInt(exhaustValveN)}</div></div>
+                          <div><div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Total Valve Count</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseInt(intakeValveN)+parseInt(exhaustValveN))*parseInt(cylCount)}</div></div>
+                          <div><div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Valves per Cylinder</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{parseInt(intakeValveN)+parseInt(exhaustValveN)}</div></div>
                         </div>
                       </div>}
                     </div>}
@@ -1256,7 +1256,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}><FL t="Height (mm)" /><input style={inp} type="number" placeholder="e.g. 12" step="0.1" min="0" value={iPH} onChange={ev=>setIPH(ev.target.value)} /></div>
                 </div>
                 {iPW&&iPH&&<div style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"6px 10px",marginBottom:10}}>
-                  <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Intake Port Area</div>
+                  <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Intake Port Area</div>
                   <div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseFloat(iPW)*parseFloat(iPH)).toFixed(1)} mm²</div>
                 </div>}
                 <div style={col}><FL t="Condition" /><select style={sel} value={iPCond} onChange={ev=>setIPCond(ev.target.value)}>{PORT_CONDITION.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -1272,7 +1272,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}><FL t="Height (mm)" /><input style={inp} type="number" placeholder="e.g. 16" step="0.1" min="0" value={ePH} onChange={ev=>setEPH(ev.target.value)} /></div>
                 </div>
                 {ePW&&ePH&&<div style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"6px 10px",marginBottom:10}}>
-                  <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Exhaust Port Area</div>
+                  <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Exhaust Port Area</div>
                   <div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseFloat(ePW)*parseFloat(ePH)).toFixed(1)} mm²</div>
                 </div>}
                 <div style={col}><FL t="Condition" /><select style={sel} value={ePCond} onChange={ev=>setEPCond(ev.target.value)}>{PORT_CONDITION.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -1991,12 +1991,12 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   const parseTyre=s=>{const m=s&&s.trim().match(/^(\d+)\/(\d+)[Rr-](\d+(?:\.\d+)?)$/);if(!m)return null;const w=parseFloat(m[1]),a=parseFloat(m[2]),rim=parseFloat(m[3]);const sw=w*a/100;const od=rim*25.4+2*sw;return{w,a,rim,sw:sw.toFixed(1),od_mm:od.toFixed(1),od_in:(od/25.4).toFixed(2),circ:(Math.PI*od/1000).toFixed(3)};};
                   const pf=parseTyre(tyreFront), pr=parseTyre(tyreRear);
                   const chip=(label,t)=>t?<div style={{display:"flex",gap:12,flexWrap:"wrap",padding:"6px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4,marginBottom:4}}>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>{label} width</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.w}mm</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Aspect</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.a}%</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rim</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.rim}"</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Sidewall</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.sw}mm</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Overall dia.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.od_mm}mm / {t.od_in}"</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rolling circ.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.circ}m</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>{label} width</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.w}mm</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Aspect</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.a}%</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rim</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.rim}"</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Sidewall</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.sw}mm</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Overall dia.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.od_mm}mm / {t.od_in}"</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rolling circ.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.circ}m</div></div>
                   </div>:null;
                   return <>
                     <div style={row}>
@@ -2138,7 +2138,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <input style={{...inp,...(smartLoad>0?{opacity:0.6}:{})}} type="number" placeholder="e.g. 120" step="5" min="0"
                       value={displayLoad} disabled={smartLoad>0}
                       onChange={ev=>setTotalLoadWatts(ev.target.value)} />
-                    {smartLoad>0&&<div style={{fontSize:8,color:MUT,marginTop:3}}>From {lighting.length} lighting {lighting.length===1?"entry":"entries"} — edit in Lighting section to change</div>}
+                    {smartLoad>0&&<div style={{fontSize:10,color:MUT,marginTop:3}}>From {lighting.length} lighting {lighting.length===1?"entry":"entries"} — edit in Lighting section to change</div>}
                   </div>;
                 })()}
                 {chargeAmps&&chargeVoltage&&chargeVoltage!=="Dual"&&(lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0)>0||totalLoadWatts)&&(()=>{

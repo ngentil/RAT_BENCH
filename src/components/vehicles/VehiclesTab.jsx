@@ -311,7 +311,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
       </div>
 
       {open && (
-        <div style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
+        <div className="card-expand" style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
           {vehicle.photos?.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 10 }}>
               {vehicle.photos.map((p, i) => (

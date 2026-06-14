@@ -20,9 +20,9 @@ export function HydRamCard({r,onEdit,onRemove}){
       <div style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{loc}</div>
       <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",marginBottom:calcs?4:8,lineHeight:1.5}}>{parts.length?parts.join(" · "):"No specs yet"}</div>
       {calcs&&<div style={{display:"flex",gap:12,flexWrap:"wrap",padding:"6px 8px",background:"#060606",borderRadius:2,marginBottom:8}}>
-        <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Extend</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.F_ext}t</div></div>
-        {calcs.F_ret&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Retract</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.F_ret}t</div></div>}
-        {calcs.vol&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Oil / cycle</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.vol}L</div></div>}
+        <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Extend</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.F_ext}t</div></div>
+        {calcs.F_ret&&<div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Retract</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.F_ret}t</div></div>}
+        {calcs.vol&&<div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Oil / cycle</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.vol}L</div></div>}
       </div>}
       {r.notes&&<div style={{fontSize:10,color:MUT,marginBottom:6,lineHeight:1.4}}>{r.notes}</div>}
       <div style={{display:"flex",gap:6}}><button onClick={onEdit} style={{...btnG,...sm}}>Edit</button><button onClick={onRemove} style={btnD}>Delete</button></div>
@@ -70,9 +70,9 @@ export function HydRamForm({r,onSave,onCancel}){
         <div style={{...col,gridColumn:"1/-1"}}><FL t="Seal kit part no." /><input style={inp} placeholder="e.g. KOM-707-98-09000" value={sealKit} onChange={ev=>setSealKit(ev.target.value)} /></div>
       </div>
       {calcs&&<div style={{display:"flex",gap:12,flexWrap:"wrap",padding:"8px 10px",background:"#060606",border:"1px solid #1a1a1a",borderRadius:2,marginTop:8}}>
-        <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Extend force</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.F_ext}t</div></div>
-        {calcs.F_ret&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Retract force</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.F_ret}t</div></div>}
-        {calcs.vol&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Oil / full cycle</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.vol}L</div></div>}
+        <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Extend force</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.F_ext}t</div></div>
+        {calcs.F_ret&&<div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Retract force</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.F_ret}t</div></div>}
+        {calcs.vol&&<div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Oil / full cycle</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {calcs.vol}L</div></div>}
       </div>}
       <div style={col}><FL t="Notes" /><textarea style={{...txa,minHeight:40}} placeholder="e.g. Outer seal only, no wiper" value={notes} onChange={ev=>setNotes(ev.target.value)} /></div>
       <div style={{display:"flex",gap:8,marginTop:10,justifyContent:"flex-end"}}>

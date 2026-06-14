@@ -365,13 +365,13 @@ function App(){
             {company
               ? <div style={{fontSize:9,color:TXT,letterSpacing:"0.08em",textTransform:"uppercase",marginTop:1}}>{company.name}</div>
               : <div style={{fontSize:9,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:1}}>small engine & equipment repair</div>}
-            {tierGlow&&<div style={{fontSize:8,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",marginTop:2,color:tierGlow.color,textShadow:`0 0 8px ${tierGlow.color}`}}>{tierGlow.label}</div>}
+            {tierGlow&&<div style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",marginTop:2,color:tierGlow.color,textShadow:`0 0 8px ${tierGlow.color}`}}>{tierGlow.label}</div>}
           </div>
         </a>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>{profile?.display_name||profile?.username}</span>
-          {session?.user?.is_anonymous&&<button onClick={signOut} style={{...btnG,...sm,fontSize:8}}>Sign Out</button>}
-          {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:8}}>⚙️</button>}
+          {session?.user?.is_anonymous&&<button onClick={signOut} style={{...btnG,...sm,fontSize:10}}>Sign Out</button>}
+          {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:10}}>⚙️</button>}
         </div>
       </div>
       <div className="tab-bar" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
@@ -385,7 +385,7 @@ function App(){
           return (
           <button key={t.id} onClick={()=>setTab(t.id)} className="tab-btn" style={{flexShrink:0,padding:"10px 12px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?ACC+"1a":"none",borderBottom:active?"3px solid "+ACC:"3px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
             {t.label}
-            {badge&&<span style={{position:"absolute",top:4,right:2,fontSize:7,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
+            {badge&&<span style={{position:"absolute",top:4,right:2,fontSize:9,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
           </button>
           );
         })}

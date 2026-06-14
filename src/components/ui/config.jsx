@@ -68,7 +68,7 @@ export function TileConfig({machine, onSave, onClose}){
           </div>
           {sections.map(section=>(
             <div key={section} style={{marginBottom:10}}>
-              <div style={{fontSize:8,color:ACC,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:6,paddingBottom:4,borderBottom:"1px solid #1a1a1a"}}>{section}</div>
+              <div style={{fontSize:10,color:ACC,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:6,paddingBottom:4,borderBottom:"1px solid #1a1a1a"}}>{section}</div>
               {availableFields.filter(f=>f.section===section).map(f=>{
                 const active = fields.includes(f.k);
                 const isAuto = autoFields.includes(f.k);
@@ -79,7 +79,7 @@ export function TileConfig({machine, onSave, onClose}){
                     <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
                       <input type="checkbox" checked={active} onChange={()=>toggle(f.k)} style={{accentColor:ACC,width:14,height:14,flexShrink:0}} />
                       <span style={{fontSize:10,color:active?TXT:MUT,fontFamily:"'IBM Plex Mono',monospace",flex:1}}>{f.l}</span>
-                      {val&&!isAuto&&<span style={{fontSize:8,color:"#444"}}>{String(val).slice(0,16)}</span>}
+                      {val&&!isAuto&&<span style={{fontSize:10,color:"#444"}}>{String(val).slice(0,16)}</span>}
                     </label>
                     {active&&!isAuto&&(
                       <div style={{display:"flex",gap:4,marginTop:6,marginLeft:24}}>

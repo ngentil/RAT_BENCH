@@ -111,7 +111,7 @@ function AuthScreen(){
           <div style={{textAlign:"center",marginBottom:32}}>
             <div style={{fontSize:36,marginBottom:8}}>🐀</div>
             <div style={{fontSize:16,fontWeight:700,color:ACC,letterSpacing:"0.06em",textTransform:"uppercase"}}>Rat Bench</div>
-            <div style={{fontSize:8,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:4}}>small engine & equipment repair</div>
+            <div style={{fontSize:10,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:4}}>small engine & equipment repair</div>
             <div style={{fontSize:12,color:"#666",marginTop:16,lineHeight:1.6}}>
               Log every machine. Find every spec.<br/>Never forget a torque value again.
             </div>
@@ -147,7 +147,7 @@ function AuthScreen(){
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {mode==="signup"&&(
                 <div>
-                  <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Username</div>
+                  <div style={{fontSize:10,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Username</div>
                   <div style={{display:"flex",gap:6,alignItems:"center"}}>
                     <input style={{...inp,flex:1}} placeholder="e.g. wrench_rat" value={username}
                       onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,""))} />
@@ -162,16 +162,16 @@ function AuthScreen(){
                 </div>
               )}
               <div>
-                <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Email</div>
+                <div style={{fontSize:10,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Email</div>
                 <input style={{...inp}} type="email" placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)} />
               </div>
               {mode!=="forgot"&&<div>
-                <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Password</div>
+                <div style={{fontSize:10,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Password</div>
                 <input style={{...inp}} type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()} />
               </div>}
               {mode==="signup"&&<div>
-                <div style={{fontSize:8,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Confirm Password</div>
+                <div style={{fontSize:10,color:MUT,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Confirm Password</div>
                 <input style={{...inp}} type="password" placeholder="••••••••" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}
                   onKeyDown={e=>e.key==="Enter"&&handleSubmit()} />
               </div>}
@@ -186,11 +186,11 @@ function AuthScreen(){
               style={{...btnA,width:"100%",marginTop:16,padding:"11px 0",fontSize:10,opacity:loading?0.6:1,letterSpacing:"0.1em"}}>
               {loading?"Please wait...":(mode==="login"?"Sign In":mode==="signup"?"Create Account":"Send Reset Link")}
             </button>
-            {mode==="signup"&&<div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:10,lineHeight:1.7}}>
+            {mode==="signup"&&<div style={{fontSize:10,color:MUT,textAlign:"center",marginTop:10,lineHeight:1.7}}>
               By creating an account you agree to our{" "}
-              <a href="/terms" style={{color:ACC,fontSize:8,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>Terms of Service</a>
+              <a href="/terms" style={{color:ACC,fontSize:10,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>Terms of Service</a>
               {" "}and{" "}
-              <a href="/privacy" style={{color:ACC,fontSize:8,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>Privacy Policy</a>.
+              <a href="/privacy" style={{color:ACC,fontSize:10,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>Privacy Policy</a>.
             </div>}
 
             {/* Forgot password */}
@@ -216,12 +216,12 @@ function AuthScreen(){
 
           </div>
 
-          <div style={{fontSize:8,color:MUT,textAlign:"center",marginTop:24,lineHeight:2.4}}>
+          <div style={{fontSize:10,color:MUT,textAlign:"center",marginTop:24,lineHeight:2.4}}>
             ratbench.net
             {[["Terms","/terms"],["Privacy","/privacy"],["Data Retention","/data-retention"]].map(([label,href])=>(
               <React.Fragment key={href}>
                 <span style={{margin:"0 6px"}}>·</span>
-                <a href={href} style={{color:MUT,fontSize:8,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>{label}</a>
+                <a href={href} style={{color:MUT,fontSize:10,fontFamily:"'IBM Plex Mono',monospace",textDecoration:"underline"}}>{label}</a>
               </React.Fragment>
             ))}
           </div>

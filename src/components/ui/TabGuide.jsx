@@ -32,7 +32,7 @@ export default function TabGuide({ storageKey, title, lines, variant = "add" }) 
         {lines.map((l, i) => (
           <span key={i} style={{ ...M, fontSize:9, color:"#666", marginTop:i===0?4:2 }}>{l}</span>
         ))}
-        <button onClick={dismiss} style={{ ...M, marginTop:10, background:"none", border:"none", color:"#333", fontSize:8, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>got it</button>
+        <button onClick={dismiss} style={{ ...M, marginTop:10, background:"none", border:"none", color:"#333", fontSize:10, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>got it</button>
       </div>
     );
   }
@@ -44,7 +44,7 @@ export default function TabGuide({ storageKey, title, lines, variant = "add" }) 
         <span key={i} style={{ ...M, fontSize:9, color:"#666", marginTop:i===0?4:2, textAlign:"center" }}>{l}</span>
       ))}
       <DownArrow />
-      <button onClick={dismiss} style={{ ...M, marginTop:8, background:"none", border:"none", color:"#333", fontSize:8, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>got it</button>
+      <button onClick={dismiss} style={{ ...M, marginTop:8, background:"none", border:"none", color:"#333", fontSize:10, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>got it</button>
     </div>
   );
 }

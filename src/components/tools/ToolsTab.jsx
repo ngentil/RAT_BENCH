@@ -212,7 +212,7 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
       </div>
 
       {open && (
-        <div style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
+        <div className="card-expand" style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
           {tool.photos?.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginTop: 10 }}>
               {tool.photos.map((p, i) => (
