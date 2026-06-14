@@ -68,6 +68,11 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
 
   return(
     <div>
+      {isGuest&&<div style={{background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:16,marginBottom:20}}>
+        <div style={{fontSize:9,color:GRN,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Save Your Data</div>
+        <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Create an account to keep your machines and sign back in any time.</div>
+        <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create Account</button>
+      </div>}
       {pendingValid&&(
         <div style={{marginBottom:20,background:"#08100a",border:"1px solid "+GRN+"55",borderRadius:2,padding:16}}>
           <div style={{fontSize:9,color:GRN,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Pending Plan Upgrade</div>
@@ -124,12 +129,6 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
           {pwSaved&&<div style={{fontSize:10,color:GRN,marginBottom:8}}>✓ Password updated</div>}
           <button onClick={changePassword} disabled={pwBusy} style={{...btnA,...sm,opacity:pwBusy?0.6:1}}>{pwBusy?"Saving…":"Update Password"}</button>
         </>}
-      </div>}
-
-      {isGuest&&<div style={{...sec,...secSep,background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:16,marginBottom:20}}>
-        <div style={{fontSize:9,color:GRN,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Save Your Data</div>
-        <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Create an account to keep your machines and sign back in any time.</div>
-        <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create Account</button>
       </div>}
 
       {machines?.length > 0 && (
