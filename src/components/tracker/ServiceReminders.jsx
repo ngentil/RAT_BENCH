@@ -1,9 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
-import TabGuide from '../ui/TabGuide';
-import { mIcon, getStorageStatus, uid } from '../../lib/helpers';
-import { upsertMachine, upsertService } from '../../lib/db';
+import { mIcon, getStorageStatus } from '../../lib/helpers';
+import UpgradeBanner from '../ui/UpgradeBanner';
+import { upsertMachine } from '../../lib/db';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { getAllActiveBookings } from '../../lib/db/bookings';
 import { getConsumables } from '../../lib/db/consumables';
@@ -186,14 +186,6 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
   const markServiced = async (machine, data) => {
     const updated = { ...machine, ...data };
     await upsertMachine(updated);
-    await upsertService(machine.id, {
-      id: uid(),
-      completedAt: data.lastServiceDate,
-      types: ['General Service'],
-      notes: data.lastServiceNotes || '',
-      plugPhoto: '',
-      jobPhotos: [],
-    });
     setMachines(prev => prev.map(m => m.id === machine.id ? updated : m));
   };
 
@@ -221,7 +213,6 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
           )}
         </div>
       </div>
-      <TabGuide storageKey="rat_tut_remind" variant="info" title="your service hub" lines={["set service intervals on machines in their form","due dates · overdue alerts appear here"]} />
 
       <div style={{ display: "flex", gap: 0, marginBottom: 14 }}>
         {[["all","All"], ["due_soon","Due / Overdue"], ["overdue","Overdue Only"]].map(([v,l], idx, arr) => {
@@ -229,7 +220,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
           const isLast  = idx === arr.length - 1;
           const isActive = filter === v;
           return (
-            <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, borderRadius: isFirst ? "2px 0 0 2px" : isLast ? "0 2px 2px 0" : 0, borderRight: isLast ? undefined : "none", ...(isActive ? { background: ACC+"18", color: ACC, boxShadow: "inset 0 0 0 1px "+ACC } : {}) }}>
+            <button key={v} onClick={() => setFilter(v)} style={{ ...btnG, ...sm, borderRadius: isFirst ? "2px 0 0 2px" : isLast ? "0 2px 2px 0" : 0, borderRight: isLast ? undefined : "none", ...(isActive ? { background: ACC+"18", color: ACC, border: "1px solid "+ACC, borderRight: isLast ? "1px solid "+ACC : "none" } : {}) }}>
               {l}
             </button>
           );
@@ -244,14 +235,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
         </div>
       )}
 
-      {isFree && machineData.length > 0 && (
-        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Upgrade to track service reminders across all your machines.</div>
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade</button>}
-        </div>
-      )}
+      {isFree && machineData.length > 0 && <UpgradeBanner text="Upgrade to track service reminders across all your machines." onUpgrade={onGoToBilling} />}
 
       {cappedFiltered.map(({ machine, items }) => {
         const hasAlert = items.some(i => i.overdue || i.dueSoon);
@@ -309,22 +293,12 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
               );
             })}
 
-            {hiddenItems > 0 && (
-              <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed #2a2a2a", fontSize: 9, color: MUT }}>
-                +{hiddenItems} more interval{hiddenItems !== 1 ? "s" : ""} —{" "}
-                <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade to see all</span>
-              </div>
-            )}
+            {hiddenItems > 0 && <UpgradeBanner text={`+${hiddenItems} more interval${hiddenItems !== 1 ? "s" : ""} — upgrade to see all`} onUpgrade={onGoToBilling} marginBottom={0} />}
           </div>
         );
       })}
 
-      {hiddenMachines > 0 && (
-        <div style={{ border: "1px dashed #2a2a2a", borderRadius: 2, padding: "14px", textAlign: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenMachines} more machine{hiddenMachines !== 1 ? "s" : ""} with service reminders</div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to see all →</button>}
-        </div>
-      )}
+      {hiddenMachines > 0 && <UpgradeBanner text={`+${hiddenMachines} more machine${hiddenMachines !== 1 ? "s" : ""} with service reminders`} onUpgrade={onGoToBilling} marginBottom={10} />}
 
       {filtered.length === 0 && machineData.length > 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>No machines match this filter.</div>

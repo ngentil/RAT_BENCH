@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
-import TabGuide from '../ui/TabGuide';
+import UpgradeBanner from '../ui/UpgradeBanner';
 import PhotoAdder from '../ui/PhotoAdder';
-import PhotoViewer from '../ui/PhotoViewer';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
 import { fmtDate, fmtMoney } from '../../lib/helpers';
@@ -325,7 +324,13 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
         </div>
       )}
 
-      {photoIdx !== null && <PhotoViewer src={tool.photos[photoIdx]} onClose={() => setPhotoIdx(null)} />}
+      {photoIdx !== null && (
+        <div style={{ position: "fixed", inset: 0, background: "#000d", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setPhotoIdx(null)}>
+          <img src={tool.photos[photoIdx]} alt="" style={{ maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 2 }}
+            onClick={e => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }
@@ -424,14 +429,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      {atLimit && (
-        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>
-            You're at the {limit}-tool limit on the free plan.
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade →</button>}
-        </div>
-      )}
+      {atLimit && <UpgradeBanner text={`You're at the ${limit}-tool limit on the free plan.`} onUpgrade={onGoToBilling} />}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -453,7 +451,6 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
           </button>
         </div>
       </div>
-      <TabGuide storageKey="rat_tut_tools" title="start here" lines={["tap + Add Tool to track your kit","log warranty, loan status & location"]} />
 
       {tools.length > 0 && (
         <div style={{ display: "flex", gap: 20, marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid #1a1a1a" }}>
