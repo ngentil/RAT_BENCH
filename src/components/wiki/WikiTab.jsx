@@ -27,6 +27,7 @@ function WikiTab({ session, profile, company, onGoToBilling }) {
       <WikiHomePage
         onSelect={slug => setCurrentSlug(slug)}
         embedded
+        profile={profile}
       />
     </div>
   );
