@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import PhotoAdder from '../ui/PhotoAdder';
 import PhotoViewer from '../ui/PhotoViewer';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
@@ -452,6 +453,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
           </button>
         </div>
       </div>
+      <TabGuide storageKey="rat_tut_tools" title="start here" lines={["tap + Add Tool to track your kit","log warranty, loan status & location"]} />
 
       {tools.length > 0 && (
         <div style={{ display: "flex", gap: 20, marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid #1a1a1a" }}>

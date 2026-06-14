@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, btnA, btnG, sm } from '../../lib/styles';
 import { SL } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { mIcon, getClosedBookingFee } from '../../lib/helpers';
 import { getClosedBookings } from '../../lib/db/bookings';
@@ -179,6 +180,7 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
           ))}
         </div>
       </div>
+      <TabGuide storageKey="rat_tut_revenue" variant="info" title="your revenue" lines={["log jobs with time + parts in Tracker","earnings flow here — filter by week · month · all"]} />
 
       {period === "custom" && (
         <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>

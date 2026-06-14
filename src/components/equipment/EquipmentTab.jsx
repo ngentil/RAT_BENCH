@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import PhotoAdder from '../ui/PhotoAdder';
 import PhotoViewer from '../ui/PhotoViewer';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
@@ -368,6 +369,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
           </button>
         </div>
       </div>
+      <TabGuide storageKey="rat_tut_equip" title="start here" lines={["tap + Add Equipment to track what you use on jobs","assign to machines via the loadout panel"]} />
 
       {(equipment||[]).length > 0 && (
         <div style={{display:'flex',gap:16,marginBottom:10,paddingBottom:10,borderBottom:'1px solid #1a1a1a'}}>

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import { mIcon, getStorageStatus, uid } from '../../lib/helpers';
 import { upsertMachine, upsertService } from '../../lib/db';
 import { canUse, effectiveTier } from '../../lib/gates';
@@ -220,6 +221,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
           )}
         </div>
       </div>
+      <TabGuide storageKey="rat_tut_remind" variant="info" title="your service hub" lines={["set service intervals on machines in their form","due dates · overdue alerts appear here"]} />
 
       <div style={{ display: "flex", gap: 0, marginBottom: 14 }}>
         {[["all","All"], ["due_soon","Due / Overdue"], ["overdue","Overdue Only"]].map(([v,l], idx, arr) => {

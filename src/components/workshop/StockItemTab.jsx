@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import QRCode from 'qrcode';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { FL, Empty } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import { effectiveTier } from '../../lib/gates';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
@@ -705,6 +706,13 @@ export default function StockItemTab({ tableType, label, machines, session, prof
           )}
         </div>
       </div>
+      <TabGuide
+        storageKey={tableType === 'consumable' ? 'rat_tut_consumables' : 'rat_tut_parts'}
+        title="start here"
+        lines={tableType === 'consumable'
+          ? ["tap + Add to track oils, fuels & consumables","set min/max par levels for LOW · OUT alerts"]
+          : ["tap + Add to build your parts inventory","track stock · buy & sell price · QR labels"]}
+      />
 
       {/* Summary row */}
       {items.length > 0 && (

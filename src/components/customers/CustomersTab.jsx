@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import { mIcon, getStorageStatus, fmtMoney } from '../../lib/helpers';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
 import { effectiveTier, canUse } from '../../lib/gates';
@@ -206,6 +207,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
           <button onClick={openNew} style={{ ...btnA, ...sm }}>+ Add Client</button>
         </div>
       </div>
+      <TabGuide storageKey="rat_tut_clients" title="start here" lines={["tap + Add Client to save customer details","link machines to clients for invoicing"]} />
 
       {clients.length > 0 && (
         <input

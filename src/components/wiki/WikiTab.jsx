@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import WikiHomePage from './WikiHomePage';
+import TabGuide from '../ui/TabGuide';
 import WikiEntryPage from './WikiEntryPage';
 import { effectiveTier } from '../../lib/gates';
 import { ACC, MUT, btnA, sm } from '../../lib/styles';
@@ -22,6 +23,7 @@ function WikiTab({ session, profile, company, onGoToBilling }) {
 
   return (
     <div>
+      <TabGuide storageKey="rat_tut_wiki" variant="info" title="community specs" lines={["browse machine specs for free","submit yours on the Enthusiast plan"]} />
       {isFree && (
         <div style={{fontSize:9,color:MUT,letterSpacing:"0.06em",padding:"8px 0 12px",lineHeight:1.6}}>
           The wiki is free to read for everyone.{" "}
