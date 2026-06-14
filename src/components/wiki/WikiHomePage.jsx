@@ -11,8 +11,8 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
 
   useEffect(() => {
     if (profile?.id && localStorage.getItem("rat_wiki_seeded") !== "1") {
-      localStorage.setItem("rat_wiki_seeded", "1");
       seedSampleWikiEntries(profile).then(() => {
+        localStorage.setItem("rat_wiki_seeded", "1");
         searchWiki("", profile.id).then(r => setRecent(r || []));
       });
     } else {
