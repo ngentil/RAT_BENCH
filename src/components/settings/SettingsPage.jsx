@@ -12,11 +12,12 @@ import UsersTab from '../users/UsersTab';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
 
-function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,vehicles,equipment,tools}){
+function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,vehicles,equipment,tools,activeTab,setActiveTab}){
   const isAdmin = session?.user?.email === ADMIN_EMAIL;
   const tier = effectiveTier(profile, company);
   const isTeam = ["team","business"].includes(tier);
-  const [tab,setTab]=useState("profile");
+  const [tab,setTab]=useState(activeTab||"profile");
+  React.useEffect(()=>{ if(activeTab) setTab(activeTab); },[activeTab]);
   const baseTabs=[
     {id:"profile",  label:"Profile"},
     {id:"company",  label:"Company / Org"},
@@ -32,7 +33,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
     <div style={{padding:16,flex:1,maxWidth:560,margin:"0 auto",width:"100%"}}>
       <div style={{display:"flex",borderBottom:"1px solid #252525",marginBottom:20,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none"}}>
         {tabs.map(({id,label})=>(
-          <button key={id} className="tab-btn" onClick={()=>setTab(id)} style={{background:"none",border:"none",borderBottom:tab===id?"2px solid "+ACC:"2px solid transparent",color:tab===id?ACC:MUT,padding:"10px 14px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",transition:"color 0.12s",whiteSpace:"nowrap",flexShrink:0}}>{label}</button>
+          <button key={id} className="tab-btn" onClick={()=>{setTab(id);setActiveTab&&setActiveTab(id);}} style={{background:"none",border:"none",borderBottom:tab===id?"2px solid "+ACC:"2px solid transparent",color:tab===id?ACC:MUT,padding:"10px 14px",fontSize:9,fontWeight:700,letterSpacing:"0.06em",textTransform:"uppercase",cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",transition:"color 0.12s",whiteSpace:"nowrap",flexShrink:0}}>{label}</button>
         ))}
       </div>
       {tab==="profile"&&<ProfileSettings profile={profile} setProfile={setProfile} session={session} onSignOut={onSignOut} isGuest={!!session?.user?.is_anonymous} machines={machines}/>}
