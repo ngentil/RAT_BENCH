@@ -430,7 +430,7 @@ function PartsSection({ machine, onUpdate, userId }) {
   const totalCost    = parts.reduce((s,p)=>(s+(parseFloat(p.buyPrice)||0)*(Number(p.qty)||1)),0);
 
   const inpS = { background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, outline:"none", boxSizing:"border-box", width:"100%" };
-  const L = ({ t }) => <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{t}</div>;
+  const L = ({ t }) => <div style={{ fontSize:10, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{t}</div>;
 
   // Combined search list for the picker
   const pickerList = pickerSource === "part" ? inv : cons;
@@ -518,12 +518,12 @@ function PartsSection({ machine, onUpdate, userId }) {
         <div style={{ fontSize:9, color:ACC, letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
           Parts &amp; Consumables {parts.length > 0 && `(${parts.length})`}
           {totalRevenue > 0 && <span style={{ color:GRN, marginLeft:8 }}>${totalRevenue.toFixed(2)}</span>}
-          {totalCost > 0 && totalRevenue > 0 && <span style={{ color:MUT, marginLeft:4, fontSize:8 }}>cost ${totalCost.toFixed(2)}</span>}
+          {totalCost > 0 && totalRevenue > 0 && <span style={{ color:MUT, marginLeft:4, fontSize:10 }}>cost ${totalCost.toFixed(2)}</span>}
         </div>
         {!mode && (
           <div style={{ display:"flex", gap:5 }}>
-            {(inv.length > 0 || cons.length > 0) && <button onClick={() => { setMode("inv"); setSearch(""); setSelected(null); }} style={{ ...btnA, ...sm, fontSize:8 }}>Use from Stock</button>}
-            <button onClick={() => setMode("standalone")} style={{ ...btnG, ...sm, fontSize:8 }}>+ One-off</button>
+            {(inv.length > 0 || cons.length > 0) && <button onClick={() => { setMode("inv"); setSearch(""); setSelected(null); }} style={{ ...btnA, ...sm, fontSize:10 }}>Use from Stock</button>}
+            <button onClick={() => setMode("standalone")} style={{ ...btnG, ...sm, fontSize:10 }}>+ One-off</button>
           </div>
         )}
       </div>
@@ -536,7 +536,7 @@ function PartsSection({ machine, onUpdate, userId }) {
             <div style={{ display:"flex", gap:0 }}>
               {[["part","🔩 Parts"],["consumable","📦 Consumables"]].map(([v,l], i) => (
                 <button key={v} onClick={() => { setPickerSource(v); setSearch(""); setSelected(null); }}
-                  style={{ ...btnG, ...sm, fontSize:8, borderRadius: i===0?"2px 0 0 2px":"0 2px 2px 0", borderRight: i===0?"none":undefined, ...(pickerSource===v?{background:ACC+"18",color:ACC}:{}) }}>
+                  style={{ ...btnG, ...sm, fontSize:10, borderRadius: i===0?"2px 0 0 2px":"0 2px 2px 0", borderRight: i===0?"none":undefined, ...(pickerSource===v?{background:ACC+"18",color:ACC}:{}) }}>
                   {l}
                 </button>
               ))}
@@ -551,11 +551,11 @@ function PartsSection({ machine, onUpdate, userId }) {
                   style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 8px", borderRadius:2, cursor:"pointer", background: selected?.id===i.id ? ACC+"22" : "transparent", border:"1px solid "+(selected?.id===i.id ? ACC+"55" : "transparent"), marginBottom:3 }}>
                   <div>
                     <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
-                    <div style={{ fontSize:8, color:MUT }}>{[i.category, i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
+                    <div style={{ fontSize:10, color:MUT }}>{[i.category, i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
                   </div>
                   <div style={{ textAlign:"right", flexShrink:0 }}>
                     <div style={{ fontSize:10, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} {pickerSource==="part"?"in stock":i.unit||"in stock"}</div>
-                    {i.sellPrice && <div style={{ fontSize:8, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
+                    {i.sellPrice && <div style={{ fontSize:10, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
                   </div>
                 </div>
               );
@@ -566,10 +566,10 @@ function PartsSection({ machine, onUpdate, userId }) {
             <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px", background:"#0a0a0a", borderRadius:2, marginBottom:8 }}>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{selected.name}</div>
-                <div style={{ fontSize:8, color:MUT }}>Cost ${(parseFloat(selected.buyPrice)||0).toFixed(2)} · Sell ${(parseFloat(selected.sellPrice)||0).toFixed(2)}</div>
+                <div style={{ fontSize:10, color:MUT }}>Cost ${(parseFloat(selected.buyPrice)||0).toFixed(2)} · Sell ${(parseFloat(selected.sellPrice)||0).toFixed(2)}</div>
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <div style={{ fontSize:8, color:MUT }}>Qty</div>
+                <div style={{ fontSize:10, color:MUT }}>Qty</div>
                 <input style={{ ...inpS, width:50, textAlign:"center" }} type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)}/>
               </div>
             </div>
@@ -590,7 +590,7 @@ function PartsSection({ machine, onUpdate, userId }) {
               <L t="Name *"/>
               <div style={{ position:"relative" }}>
                 <input style={inpS} value={saForm.name} onChange={e=>onSaNameChange(e.target.value)} placeholder="e.g. Air filter" autoFocus onBlur={()=>setTimeout(()=>setSaSuggestions([]),150)}/>
-                {saMatchedInvId && (() => { const i=inv.find(x=>x.id===saMatchedInvId); const s=Number(i?.stockQty)||0; return i ? <span style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",fontSize:8,color:s>0?GRN:RED,letterSpacing:"0.06em",pointerEvents:"none"}}>{s} in stock</span> : null; })()}
+                {saMatchedInvId && (() => { const i=inv.find(x=>x.id===saMatchedInvId); const s=Number(i?.stockQty)||0; return i ? <span style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",fontSize:10,color:s>0?GRN:RED,letterSpacing:"0.06em",pointerEvents:"none"}}>{s} in stock</span> : null; })()}
                 {saSuggestions.length > 0 && (
                   <div style={{ position:"absolute", top:"100%", left:0, right:0, background:SURF, border:"1px solid "+ACC+"55", borderRadius:2, zIndex:50, maxHeight:180, overflowY:"auto" }}>
                     {saSuggestions.map(i => {
@@ -600,11 +600,11 @@ function PartsSection({ machine, onUpdate, userId }) {
                           onMouseEnter={e=>e.currentTarget.style.background=BRD} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                           <div>
                             <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
-                            {(i.brand||i.partNumber) && <div style={{ fontSize:8, color:MUT }}>{[i.brand,i.partNumber].filter(Boolean).join(" · ")}</div>}
+                            {(i.brand||i.partNumber) && <div style={{ fontSize:10, color:MUT }}>{[i.brand,i.partNumber].filter(Boolean).join(" · ")}</div>}
                           </div>
                           <div style={{ textAlign:"right", flexShrink:0, marginLeft:10 }}>
                             <div style={{ fontSize:9, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} in stock</div>
-                            {i.sellPrice && <div style={{ fontSize:8, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
+                            {i.sellPrice && <div style={{ fontSize:10, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
                           </div>
                         </div>
                       );
@@ -645,13 +645,13 @@ function PartsSection({ machine, onUpdate, userId }) {
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                 <span style={{ fontSize:10, color:TXT, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
-                {Number(p.qty)>1 && <span style={{ fontSize:8, color:MUT, flexShrink:0 }}>×{p.qty}</span>}
-                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background: SURF, padding:"1px 4px", borderRadius:2, border:"1px solid " + BRD }}>{p.partNumber}</span>}
-                {(p.sourceType === "consumable" || p.consumableId) && <span style={{ fontSize:7, color:"#3a7bd5", letterSpacing:"0.06em" }}>CONS</span>}
-                {(p.sourceType === "part" || (!p.sourceType && p.inventoryId)) && <span style={{ fontSize:7, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
+                {Number(p.qty)>1 && <span style={{ fontSize:10, color:MUT, flexShrink:0 }}>×{p.qty}</span>}
+                {p.partNumber && <span style={{ fontSize:10, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background: SURF, padding:"1px 4px", borderRadius:2, border:"1px solid " + BRD }}>{p.partNumber}</span>}
+                {(p.sourceType === "consumable" || p.consumableId) && <span style={{ fontSize:9, color:"#3a7bd5", letterSpacing:"0.06em" }}>CONS</span>}
+                {(p.sourceType === "part" || (!p.sourceType && p.inventoryId)) && <span style={{ fontSize:9, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
               </div>
               {(rev > 0 || cost > 0) && (
-                <div style={{ fontSize:8, color:MUT }}>
+                <div style={{ fontSize:10, color:MUT }}>
                   {cost > 0 && <span>Cost ${cost.toFixed(2)}</span>}
                   {rev > 0  && <span style={{ color:GRN }}>{cost>0?" · ":""}Sell ${rev.toFixed(2)}</span>}
                   {rev > 0 && cost > 0 && <span style={{ color: rev-cost>=0?"#3d9e50":"#c94040" }}> ({rev-cost>=0?"+":""}${(rev-cost).toFixed(2)})</span>}
@@ -1023,7 +1023,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
 
       {/* Expanded body */}
       {open && (
-        <div style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
+        <div className="card-expand" style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
           {jobGuide && (
             <div style={{ background: "#0a0f0a", border: "1px solid #1a2a1a", borderRadius: 2, padding: "10px 12px", margin: "10px 0 8px" }}>
               <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Job Card</div>

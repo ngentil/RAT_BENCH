@@ -269,7 +269,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
         <div style={col}><div style={lbl}>{cfg.postcode}</div><input style={inp} value={postcode} onChange={e=>setPostcode(e.target.value)}/></div>
       </div>
       <div style={{marginTop:4,paddingTop:14,borderTop:"1px solid #1a1a1a"}}>
-        <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,fontWeight:700}}>Billing Rates</div>
+        <div style={{fontSize:10,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,fontWeight:700}}>Billing Rates</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
           <div style={col}><div style={lbl}>Labour Rate ($/hr)</div><input style={inp} type="number" min="0" step="0.5" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="e.g. 85"/></div>
           <div style={col}><div style={lbl}>Tax Rate (%)</div><input style={inp} type="number" min="0" max="100" step="0.5" value={taxRate} onChange={e=>setTaxRate(e.target.value)} placeholder="e.g. 10"/></div>
@@ -362,7 +362,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
           <div style={secHd}>Asset Provisioning</div>
           <div style={{fontSize:10,color:MUT,lineHeight:1.6,marginBottom:14}}>Grant org members access to your assets. Revoke at any time.</div>
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Machines</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Machines</div>
           <AssetProvisioningPanel
             assets={(machines||[]).filter(m=>m.companyId===company?.id)}
             emptyMsg="No org machines to provision. Add machines and tag them to this organisation from the Tracker tab."
@@ -372,7 +372,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeMachinePermission}
           />
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Vehicles</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Vehicles</div>
           <AssetProvisioningPanel
             assets={vehicles||[]}
             emptyMsg="No vehicles to provision yet. Add vehicles from the Vehicles tab."
@@ -382,7 +382,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeVehiclePermission}
           />
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Equipment</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Equipment</div>
           <AssetProvisioningPanel
             assets={equipment||[]}
             emptyMsg="No equipment to provision yet. Add equipment from the Equipment tab."
@@ -392,7 +392,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeEquipmentPermission}
           />
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Tools</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Tools</div>
           <AssetProvisioningPanel
             assets={tools||[]}
             emptyMsg="No tools to provision yet. Add tools from the Tools tab."
@@ -402,7 +402,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeToolPermission}
           />
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Consumables</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Consumables</div>
           <AssetProvisioningPanel
             assets={consumables||[]}
             emptyMsg="No consumables to provision yet. Add supplies from the Consumables tab."

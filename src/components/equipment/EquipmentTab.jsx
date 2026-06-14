@@ -178,7 +178,7 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
       </div>
 
       {open && (
-        <div style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
+        <div className="card-expand" style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
           {item.photos?.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 10 }}>
               {item.photos.map((p, i) => (
@@ -376,7 +376,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
             {label:'Total hrs', value:Math.round((equipment||[]).reduce((s,e)=>s+(e.hours||0),0)).toLocaleString(), col:TXT},
           ].filter(s=>Number(s.value)>0||s.label==='Total hrs').map(s=>(
             <div key={s.label}>
-              <div style={{fontSize:7,color:MUT,letterSpacing:'0.1em',textTransform:'uppercase'}}>{s.label}</div>
+              <div style={{fontSize:9,color:MUT,letterSpacing:'0.1em',textTransform:'uppercase'}}>{s.label}</div>
               <div style={{fontSize:12,fontWeight:700,color:s.col,fontFamily:"'IBM Plex Mono',monospace"}}>{s.value}</div>
             </div>
           ))}

@@ -40,9 +40,9 @@ function ServiceModal({machine,existing,onSave,onClose}){
           <div style={col}><FL t="Completed" /><input type="datetime-local" style={inp} value={ca} onChange={ev=>setCa(ev.target.value)} /></div>
 
           {types.length>0&&<div style={{marginBottom:10,padding:"8px 10px",background:"#0d0d0d",border:"1px solid "+BRD,borderRadius:2}}>
-            <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Selected ({types.length})</div>
+            <div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Selected ({types.length})</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-              {types.map(t=><span key={t} onClick={()=>tog(t)} style={{fontSize:8,fontWeight:700,padding:"2px 7px",borderRadius:2,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",textTransform:"uppercase",background:"#2a1200",border:"1px solid "+ACC,color:ACC}}>✕ {t}</span>)}
+              {types.map(t=><span key={t} onClick={()=>tog(t)} style={{fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:2,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",textTransform:"uppercase",background:"#2a1200",border:"1px solid "+ACC,color:ACC}}>✕ {t}</span>)}
             </div>
           </div>}
 
@@ -56,7 +56,7 @@ function ServiceModal({machine,existing,onSave,onClose}){
               return (
                 <div key={cat.id} style={{marginBottom:4,border:"1px solid "+(catSelected>0?ACC+"44":BRD),borderRadius:2,overflow:"hidden"}}>
                   <div onClick={()=>togCat(cat.id)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",cursor:"pointer",background:catSelected>0?"#1a0a00":"#0a0a0a",userSelect:"none"}}>
-                    <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:catSelected>0?ACC:MUT}}>{cat.label}{catSelected>0&&<span style={{marginLeft:6,fontSize:8,background:ACC,color:"#fff",borderRadius:2,padding:"1px 5px"}}>{catSelected}</span>}</span>
+                    <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:catSelected>0?ACC:MUT}}>{cat.label}{catSelected>0&&<span style={{marginLeft:6,fontSize:10,background:ACC,color:"#fff",borderRadius:2,padding:"1px 5px"}}>{catSelected}</span>}</span>
                     <span style={{color:MUT,fontSize:11}}>{isOpen?"▲":"▼"}</span>
                   </div>
                   {isOpen&&<div style={{padding:"8px 10px",display:"flex",flexWrap:"wrap",gap:5,borderTop:"1px solid "+BRD}}>

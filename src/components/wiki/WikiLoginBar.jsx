@@ -18,12 +18,12 @@ function WikiLoginBar({profile,onLogin,onLogout}){
       {profile?(
         <>
           <span style={{color:MUT,flex:1}}>{profile.display_name||profile.username}</span>
-          <button onClick={onLogout} style={{...btnG,fontSize:8,padding:"3px 8px"}}>Sign out</button>
+          <button onClick={onLogout} style={{...btnG,fontSize:10,padding:"3px 8px"}}>Sign out</button>
         </>
       ):(
         <>
           <span style={{color:MUT,flex:1}}>Sign in to edit or manage entries</span>
-          <button onClick={()=>setShow(s=>!s)} style={{...btnG,fontSize:8,padding:"3px 8px"}}>{show?"Cancel":"Sign in"}</button>
+          <button onClick={()=>setShow(s=>!s)} style={{...btnG,fontSize:10,padding:"3px 8px"}}>{show?"Cancel":"Sign in"}</button>
         </>
       )}
       {show&&!profile&&(

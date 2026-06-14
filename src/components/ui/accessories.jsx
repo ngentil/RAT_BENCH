@@ -226,8 +226,8 @@ export function BatteryCard({b, onEdit, onRemove}){
       {b.label&&<div style={{fontSize:9,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{b.label}</div>}
       <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",marginBottom:(ccw||energy)?4:8,lineHeight:1.5}}>{parts.length?parts.join(" · "):"No specs yet"}</div>
       {(ccw||energy)&&<div style={{display:"flex",gap:12,padding:"5px 8px",background:"#060606",borderRadius:2,marginBottom:8}}>
-        {ccw&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Cold cranking watts</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {ccw}</div></div>}
-        {energy&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Energy</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {energy}</div></div>}
+        {ccw&&<div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Cold cranking watts</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {ccw}</div></div>}
+        {energy&&<div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Energy</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {energy}</div></div>}
       </div>}
       <div style={{display:"flex",gap:6}}>
         <button onClick={onEdit} style={{...btnG,...sm}}>Edit</button>
@@ -286,8 +286,8 @@ export function BatteryForm({b, onSave, onCancel}){
         </div>
       </div>
       {(ccw||energy)&&<div style={{display:"flex",gap:12,padding:"6px 8px",background:"#060606",border:"1px solid #1a1a1a",borderRadius:2,marginTop:8}}>
-        {ccw&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Cold cranking watts</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {ccw}</div></div>}
-        {energy&&<div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Energy</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {energy}</div></div>}
+        {ccw&&<div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Cold cranking watts</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {ccw}</div></div>}
+        {energy&&<div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Energy</div><div style={{fontSize:11,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {energy}</div></div>}
       </div>}
       <div style={{display:"flex",gap:8,marginTop:10,justifyContent:"flex-end"}}>
         <button style={{...btnG,...sm}} onClick={onCancel}>Cancel</button>
@@ -461,7 +461,7 @@ export function FuseBoxForm({box, onSave, onCancel}){
             />
           ))}
           <button onClick={()=>setColor("")} title="Clear colour"
-            style={{width:20,height:20,borderRadius:"50%",background:"#111",border:color===""?"2px solid "+ACC:"1px solid #333",cursor:"pointer",padding:0,fontSize:8,color:MUT}}
+            style={{width:20,height:20,borderRadius:"50%",background:"#111",border:color===""?"2px solid "+ACC:"1px solid #333",cursor:"pointer",padding:0,fontSize:10,color:MUT}}
           >✕</button>
         </div>
       </div>
