@@ -215,8 +215,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
       {showExpandConfig&&<ExpandConfig machine={m} onSave={u=>{onUpdate(u);setShowExpandConfig(false);}} onClose={()=>setShowExpandConfig(false)} />}
       {(showSvc||editSvc)&&<ServiceModal machine={m} existing={editSvc} onSave={saveSvc} onClose={()=>{setShowSvc(false);setEditSvc(null);}} />}
 
-      <div style={{display:"flex",alignItems:"center",padding:"11px 14px",gap:10}}>
-        <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer",userSelect:"none",minWidth:0}}>
+      <div style={{display:"flex",alignItems:"stretch"}}>
+        <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",padding:"11px 10px 11px 14px",gap:10,flex:1,cursor:"pointer",userSelect:"none",minWidth:0}}>
           {m.photos?.[0]
             ? <img src={m.photos[0]} alt="" style={{width:44,height:44,objectFit:"cover",borderRadius:2,flexShrink:0,border:"1px solid #252525"}} />
             : <span style={{fontSize:16}}>{mIcon(m.type)}</span>}
@@ -250,9 +250,10 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",flexShrink:0}}>DUE SOON</span>}
             {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0,boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",flexShrink:0}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",flexShrink:0}}>${storageStatus.accrued.toFixed(0)}</span>)}
           </div>
-          <span style={{fontSize:10,color:MUT,flexShrink:0,marginLeft:6}}>{open?"▲":"▼"}</span>
+          <span style={{fontSize:14,color:MUT,flexShrink:0,paddingLeft:8}}>{open?"▲":"▼"}</span>
         </div>
-        <button onClick={ev=>{ev.stopPropagation();setShowConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:9,padding:"4px 6px",flexShrink:0,fontFamily:"'IBM Plex Mono',monospace"}} title="Configure tile badges">⚙️ Tile</button>
+        <div style={{width:1,background:BRD,flexShrink:0}}/>
+        <button onClick={ev=>{ev.stopPropagation();setShowConfig(true);}} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:9,padding:"0 14px",flexShrink:0,fontFamily:"'IBM Plex Mono',monospace",display:"flex",alignItems:"center",justifyContent:"center",gap:5,minWidth:52}} title="Configure tile badges">⚙️ Tile</button>
       </div>
 
       {open&&(
