@@ -605,7 +605,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
               <div style={{borderTop:"1px solid #1a1a1a",margin:"8px 0"}}/>
               <div style={{fontSize:8,color:"#444",fontFamily:"'IBM Plex Mono',monospace",marginBottom:7}}>sections guide — all optional</div>
               {[
-                ["Basic Info","name, make, model & photos",false],
+                ["Basic Info","make, model & photos",false],
                 ["Engine","bore, stroke & auto-calcs",false],
                 ["Ignition System","spark plug gap & timing",false],
                 ["Fuel System","carb, mix ratio & tank size",false],
