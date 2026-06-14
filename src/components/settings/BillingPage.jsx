@@ -74,37 +74,37 @@ function PlanCard({ plan, current, onUpgrade, onManage, loading }) {
     <div className="plan-card" style={{
       background: SURF,
       border: "1px solid " + accentColor,
-      borderTop: "2px solid " + accentColor,
-      borderRadius: 3,
-      padding: "20px 14px 14px",
+      borderTop: "3px solid " + accentColor,
+      borderRadius: 4,
+      padding: "22px 18px 18px",
       position: "relative",
       boxShadow: glowShadow,
     }}>
       {plan.highlight && !isCurrent && (
-        <div style={{ position: "absolute", top: -11, left: 12, background: ACC, color: "#000", fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", padding: "2px 8px", borderRadius: 2 }}>
+        <div style={{ position: "absolute", top: -11, left: 14, background: ACC, color: "#000", fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", padding: "2px 10px", borderRadius: 2 }}>
           POPULAR
         </div>
       )}
       {isCurrent && (
-        <div style={{ position: "absolute", top: -11, left: 12, background: GRN, color: "#000", fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", padding: "2px 8px", borderRadius: 2 }}>
-          ✓ CURRENT
+        <div style={{ position: "absolute", top: -11, left: 14, background: GRN, color: "#000", fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", padding: "2px 10px", borderRadius: 2 }}>
+          ✓ CURRENT PLAN
         </div>
       )}
-      <div style={{ fontSize: 9, color: accentColor, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 8 }}>{plan.label}</div>
-      <div style={{ marginBottom: 14 }}>
-        <span style={{ fontSize: 26, fontWeight: 700, color: TXT, letterSpacing: "-0.02em" }}>{price?.split("/")[0] || "$0"}</span>
-        {price?.includes("/") && <span style={{ fontSize: 10, color: MUT, marginLeft: 2 }}>/{price.split("/")[1]}</span>}
-        {!price && <span style={{ fontSize: 10, color: MUT }}> free forever</span>}
+      <div style={{ fontSize: 10, color: accentColor, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{plan.label}</div>
+      <div style={{ marginBottom: 16, display: "flex", alignItems: "baseline", gap: 4 }}>
+        <span style={{ fontSize: 32, fontWeight: 700, color: TXT, letterSpacing: "-0.02em", lineHeight: 1 }}>{price?.split("/")[0] || "$0"}</span>
+        {price?.includes("/") && <span style={{ fontSize: 12, color: MUT }}>/{price.split("/")[1]}</span>}
+        {plan.id === "free" && <span style={{ fontSize: 11, color: MUT }}>forever</span>}
       </div>
-      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 12px", fontSize: 10, lineHeight: 2 }}>
+      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 16px", fontSize: 11, lineHeight: 1.8 }}>
         {plan.features.map(f => (
-          <li key={f} style={{ display: "flex", gap: 6, alignItems: "flex-start", color: MUT }}>
-            <span style={{ color: plan.id === "free" ? MUT : GRN, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
+          <li key={f} style={{ display: "flex", gap: 8, alignItems: "flex-start", color: MUT, paddingBottom: 2 }}>
+            <span style={{ color: plan.id === "free" ? MUT : GRN, flexShrink: 0, marginTop: 2, fontSize: 10 }}>✓</span>{f}
           </li>
         ))}
       </ul>
       {!plan.personal && !isCurrent && (
-        <div style={{ fontSize: 8, color: MUT, marginBottom: 10, letterSpacing: "0.06em", borderTop: "1px solid #252525", paddingTop: 8 }}>
+        <div style={{ fontSize: 9, color: MUT, marginBottom: 12, letterSpacing: "0.06em", borderTop: "1px solid #252525", paddingTop: 10 }}>
           For shops and teams
         </div>
       )}
@@ -183,7 +183,7 @@ function BillingPage({ profile, company, session }) {
 
   return (
     <div>
-      <div style={{ fontSize: 9, color: MUT, marginBottom: 16, lineHeight: 1.7 }}>
+      <div style={{ fontSize: 10, color: MUT, marginBottom: 20, lineHeight: 1.7 }}>
         {["team","business"].includes(tier)
           ? `Your organisation is on the ${TIERS[tier]?.label} plan.`
           : `Your account is on the ${TIERS[tier]?.label} plan.`}
@@ -191,7 +191,7 @@ function BillingPage({ profile, company, session }) {
 
       {err && <div style={{ fontSize: 10, color: RED, marginBottom: 12 }}>{err}</div>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+      <div className="billing-grid">
         {PLANS.map(plan => (
           <PlanCard
             key={plan.id}
