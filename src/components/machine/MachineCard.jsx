@@ -230,7 +230,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const today=now.toDateString()===due.toDateString();const dueColor=overdue?"#e87a0a":today?"#4a9eff":MUT;return<div style={{fontSize:8,color:dueColor,marginTop:1}}>{overdue?"OVERDUE ":"DUE "}{due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>;})()}
             {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const rate=company?.hourly_rate||0;const rev=tHrs*rate;const hasHrs=tHrs>0;const hasRev=rate>0&&rev>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRev&&!hasRage)return null;return<div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>{hasHrs&&<span style={{fontSize:8,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRev&&<span style={{fontSize:8,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}{hasRage&&<span style={{fontSize:8,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</div>;})()}
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:"55%",overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:"48%",overflow:"hidden"}}>
             {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
               const tc=m.tileColors||{};
               const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
@@ -250,7 +250,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:2,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",flexShrink:0}}>DUE SOON</span>}
             {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0,boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",flexShrink:0}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",flexShrink:0}}>${storageStatus.accrued.toFixed(0)}</span>)}
           </div>
-          <span style={{fontSize:14,color:MUT,flexShrink:0,paddingLeft:8}}>{open?"▲":"▼"}</span>
+          <span style={{fontSize:14,color:MUT,flexShrink:0,padding:"0 6px 0 20px"}}>{open?"▲":"▼"}</span>
         </div>
         <div style={{width:1,background:BRD,flexShrink:0}}/>
         <button onClick={ev=>{ev.stopPropagation();setShowConfig(true);}} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:9,padding:"0 14px",flexShrink:0,fontFamily:"'IBM Plex Mono',monospace",display:"flex",alignItems:"center",justifyContent:"center",gap:5,minWidth:52}} title="Configure tile badges">⚙️ Tile</button>
