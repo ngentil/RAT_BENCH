@@ -206,7 +206,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const timerRunning = m.jobTimer?.status === "running";
   const svcStatus = getMachineServiceStatus(m);
 
-  const _jBase = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:6,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",border:"none"};
+  const _jBase = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:6,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",border:"none",width:"100%",boxSizing:"border-box"};
   const _jEdit   = {..._jBase,background:"linear-gradient(180deg,#1a4d8f,#0f2d5c)",color:"#a8cff8",border:"1px solid #2a6bcc"};
   const _jPdf    = {..._jBase,background:"linear-gradient(180deg,#4a1a7a,#2d0f50)",color:"#d4a0ff",border:"1px solid #7a3acc"};
   const _jWiki   = {..._jBase,background:"linear-gradient(180deg,#155c38,#0a3320)",color:"#7ae8a0",border:"1px solid #1e8850"};
@@ -462,7 +462,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               )}
             </div>
           )}
-          <div style={{padding:"0 14px 14px",display:"flex",gap:6,justifyContent:"flex-end",alignItems:showGuide?"flex-end":"center",flexWrap:"wrap"}}>
+          <div style={{padding:"0 10px 14px",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
             {withGuide("all specs\n& intervals",<button style={_jEdit} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>)}
             {withGuide("export\nspec sheet",<button style={_jPdf} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>)}
             {showPdfOpts&&<Suspense fallback={null}><PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/></Suspense>}
@@ -470,7 +470,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
-            <button style={_jDel} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
+            <button style={{..._jDel,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
           </div>
           {showGuide&&(
             <div style={{padding:"0 14px 14px",textAlign:"right"}}>
