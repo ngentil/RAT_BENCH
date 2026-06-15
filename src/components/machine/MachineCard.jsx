@@ -206,7 +206,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const timerRunning = m.jobTimer?.status === "running";
   const svcStatus = getMachineServiceStatus(m);
 
-  const _jBase = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:6,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",border:"none",width:"100%",boxSizing:"border-box"};
+  const _jBase = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:6,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",border:"none",width:"100%",boxSizing:"border-box",minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"};
   const _jEdit   = {..._jBase,background:"linear-gradient(180deg,#1a4d8f,#0f2d5c)",color:"#a8cff8",border:"1px solid #2a6bcc"};
   const _jPdf    = {..._jBase,background:"linear-gradient(180deg,#4a1a7a,#2d0f50)",color:"#d4a0ff",border:"1px solid #7a3acc"};
   const _jWiki   = {..._jBase,background:"linear-gradient(180deg,#155c38,#0a3320)",color:"#7ae8a0",border:"1px solid #1e8850"};
