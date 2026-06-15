@@ -243,7 +243,7 @@ function VehicleMemberSection({ vehicle, company, isShared }) {
   );
 }
 
-function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, company }) {
+function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, company, isFree }) {
   const [open, setOpen] = useState(false);
   const [showSvc, setShowSvc] = useState(false);
   const [editSvc, setEditSvc] = useState(null);
@@ -589,6 +589,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
                     isShared={v.userId !== userId}
                     units={units}
                     company={company}
+                    isFree={isFree}
                     onEdit={() => { setFormVehicle(v); setTileOpen(null); }}
                     onDelete={() => { remove(v.id); setTileOpen(null); }}
                     onUpdate={update}
@@ -607,6 +608,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
             isShared={v.userId !== userId}
             units={units}
             company={company}
+            isFree={isFree}
             onEdit={() => setFormVehicle(v)}
             onDelete={() => remove(v.id)}
             onUpdate={update}
