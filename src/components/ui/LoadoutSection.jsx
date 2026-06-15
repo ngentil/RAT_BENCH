@@ -25,7 +25,7 @@ function itemName(type, item) {
   return item.name || item.make || '(unnamed)';
 }
 
-export default function LoadoutSection({ parentType, parentId, parentName, isShared }) {
+export default function LoadoutSection({ parentType, parentId, parentName, isShared, allowedChildTypes }) {
   const [assignedTo, setAssignedTo]   = useState([]);   // what's assigned TO this item
   const [assignedIn, setAssignedIn]   = useState([]);   // what this item is assigned IN
   const [loaded, setLoaded]           = useState(false);
@@ -48,8 +48,8 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
     }).catch(() => setLoaded(true));
   }, [parentType, parentId]);
 
-  // Picker types: all types except the parent's own type
-  const pickerTypes = ALL_TYPES.filter(t => t !== parentType);
+  // Picker types: all types except the parent's own type, optionally restricted
+  const pickerTypes = ALL_TYPES.filter(t => t !== parentType && (!allowedChildTypes || allowedChildTypes.includes(t)));
 
   const openPicker = async (type) => {
     const t = type || pickerTypes.find(t => t !== parentType) || pickerTypes[0];
