@@ -440,11 +440,11 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button style={{ ...btnG, ...sm, color: sortBy ? ACC : MUT }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
-          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
           <button
             onClick={() => setFormTool({})}
             disabled={atLimit}
-            style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
+            style={{ ...btnA, opacity: atLimit ? 0.4 : 1 }}
             title={atLimit ? `Upgrade to add more than ${limit} tools` : undefined}
           >
             + Add Tool
