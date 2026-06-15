@@ -320,7 +320,7 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
             ))}
           </div>
 
-          <LoadoutSection parentType="tool" parentId={tool.id} parentName={tool.name} isShared={isShared} />
+          <LoadoutSection parentType="tool" parentId={tool.id} parentName={tool.name} isShared={isShared} allowedChildTypes={['vehicle']} />
 
           {!isShared && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 12 }}>
