@@ -347,12 +347,12 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
       {atLimit && <UpgradeBanner text={`You're at the ${limit}-item equipment limit on the free plan.`} onUpgrade={onGoToBilling} />}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <SL t="Equipment" />
-          <span style={{ fontSize: 8, color: MUT, letterSpacing: '0.06em' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>⚙️ Equipment</div>
+          <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {(equipment || []).length} item{(equipment || []).length !== 1 ? 's' : ''}
-          </span>
-          {isFree && <span style={{ fontSize: 8, color: atLimit ? RED : MUT, letterSpacing: '0.06em' }}>{(equipment || []).length}/{limit}</span>}
+            {isFree && <span style={{ marginLeft: 8, color: atLimit ? RED : MUT }}>· {(equipment || []).length}/{limit} (free limit)</span>}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button style={{ ...btnG, color: sortBy ? ACC : MUT, alignSelf: 'stretch' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>

@@ -432,11 +432,12 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
       {atLimit && <UpgradeBanner text={`You're at the ${limit}-tool limit on the free plan.`} onUpgrade={onGoToBilling} />}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <SL t="Tools" />
-          <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.06em" }}>
-            {tools.length}{isFree ? `/${limit}` : ""} tool{tools.length !== 1 ? "s" : ""}
-          </span>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🔧 Tools</div>
+          <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
+            {tools.length} tool{tools.length !== 1 ? 's' : ''}
+            {isFree && <span style={{ marginLeft: 8, color: atLimit ? RED : MUT }}>· {tools.length}/{limit} (free limit)</span>}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <button style={{ ...btnG, color: sortBy ? ACC : MUT, alignSelf: 'stretch' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
