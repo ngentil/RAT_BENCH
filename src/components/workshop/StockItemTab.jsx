@@ -463,9 +463,7 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
             <div style={{ marginTop: 10, fontSize: 10, color: MUT, lineHeight: 1.5, background: '#0a0a0a', padding: '6px 8px', borderRadius: 2, border: '1px solid #1a1a1a' }}>{item.notes}</div>
           )}
 
-          {tableType === 'consumable' && (
-            <LoadoutSection parentType="consumable" parentId={item.id} parentName={item.name} isShared={isShared} />
-          )}
+
 
           {!isShared && (
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
