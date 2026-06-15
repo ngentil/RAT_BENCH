@@ -694,12 +694,12 @@ export default function StockItemTab({ tableType, label, machines, session, prof
               {lowItems.length} LOW — Print Reorder
             </button>
           )}
-          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
-          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>
+          <button style={{ ...btnG, color: sortBy ? ACC : MUT }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36 }}>
             {view === 'list' ? '☰' : `⊞${cols}`}
           </button>
           {!atLimit && (
-            <button onClick={() => setFormItem({})} style={{ ...btnA, ...sm, fontSize: 8 }}>+ Add</button>
+            <button onClick={() => setFormItem({})} style={{ ...btnA }}>+ Add</button>
           )}
         </div>
       </div>

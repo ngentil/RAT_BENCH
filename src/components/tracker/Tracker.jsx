@@ -191,8 +191,8 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           {totalHrsAll>0&&<span style={{fontSize:10,color:GRN,letterSpacing:"0.06em"}}>{totalHrsAll.toFixed(1)}h{rate>0?" · $"+(totalHrsAll*rate).toFixed(0):""}</span>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
-          <button onClick={()=>{if(view==="list"){setColsP(2);}else if(cols<4){setColsP(cols+1);}else{setViewP("list");}}} style={{...btnG,...sm,fontSize:9,minWidth:36}}>{view==="list"?"☰":`⊞${cols}`}</button>
+          <button style={{...btnG,color:sortBy?ACC:MUT}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
+          <button onClick={()=>{if(view==="list"){setColsP(2);}else if(cols<4){setColsP(cols+1);}else{setViewP("list");}}} style={{...btnG,minWidth:36}}>{view==="list"?"☰":`⊞${cols}`}</button>
           {isGuest&&machines.length>=3
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
@@ -201,9 +201,9 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
             : !isGuest&&atMachineLimit(machines.length,profile,company)
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>10 machines — nice work</span>
-                <button style={{...btnA,...sm}} onClick={onGoToBilling}>Go unlimited →</button>
+                <button style={{...btnA}} onClick={onGoToBilling}>Go unlimited →</button>
               </div>
-            : <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>}
+            : <button style={{...btnA}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
       </div>
       {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
