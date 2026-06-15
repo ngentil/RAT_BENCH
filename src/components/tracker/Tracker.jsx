@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Virtuoso } from 'react-virtuoso';
+import { supabase } from '../../lib/supabase';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
@@ -48,8 +49,9 @@ function GuideStep2({ onSkip }) {
     </div>
   );
 }
-function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling}){
+function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear}){
   const [showAdd,setShowAdd]=useState(false);
+  const [prefill,setPrefill]=useState(null);
   const [showUpgrade,setShowUpgrade]=useState(false);
   const [saving,setSaving]=useState(false);
   const [dragIdx,setDragIdx]=useState(null);
@@ -141,9 +143,20 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   };
   const onDragEnd=()=>{setDragIdx(null);setDragOver(null);};
 
+  useEffect(()=>{
+    if(!templateMachineId) return;
+    supabase.rpc('get_public_machine',{p_id:templateMachineId}).then(({data})=>{
+      if(data){
+        setPrefill({name:data.name,type:data.type||"",make:data.make||"",model:data.model||"",year:data.year||"",desc:data.notes||""});
+        setShowAdd(true);
+      }
+      onTemplateClear?.();
+    });
+  },[templateMachineId]);
+
   return (
     <div style={{padding:16,flex:1}}>
-      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
+      {showAdd&&<ErrorBoundary><MachineForm existing={prefill||undefined} onSave={m=>{addM(m);setPrefill(null);}} onClose={()=>{setShowAdd(false);setPrefill(null);}} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
           <div style={{...mdl,maxHeight:"70vh"}} onClick={ev=>ev.stopPropagation()}>
