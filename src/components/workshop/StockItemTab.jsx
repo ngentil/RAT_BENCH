@@ -694,8 +694,8 @@ export default function StockItemTab({ tableType, label, machines, session, prof
               {lowItems.length} LOW — Print Reorder
             </button>
           )}
-          <button style={{ ...btnG, color: sortBy ? ACC : MUT }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
-          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36 }}>
+          <button style={{ ...btnG, color: sortBy ? ACC : MUT, alignSelf: 'stretch' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36, alignSelf: 'stretch' }}>
             {view === 'list' ? '☰' : `⊞${cols}`}
           </button>
           {!atLimit && (
