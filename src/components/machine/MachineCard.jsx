@@ -212,6 +212,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const _jWiki   = {..._jBase,background:"linear-gradient(180deg,#155c38,#0a3320)",color:"#7ae8a0",border:"1px solid #1e8850"};
   const _jShare  = {..._jBase,background:"linear-gradient(180deg,#0d4a5a,#072a35)",color:"#60d8ee",border:"1px solid #1090b0"};
   const _jLayout = {..._jBase,background:"linear-gradient(180deg,#4a3000,#2d1a00)",color:"#f5b830",border:"1px solid #c07020"};
+  const _jTile   = {..._jBase,background:"linear-gradient(180deg,#2a2a3a,#181828)",color:"#b0b8d8",border:"1px solid #4a5080"};
   const _jDel    = {..._jBase,background:"linear-gradient(180deg,#6a0f0f,#3c0707)",color:"#ff8080",border:"1px solid #cc2020"};
 
   return (
@@ -259,10 +260,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:2,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",flexShrink:0}}>DUE SOON</span>}
             {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0,boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",flexShrink:0}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",flexShrink:0}}>${storageStatus.accrued.toFixed(0)}</span>)}
           </div>
-          <span style={{fontSize:12,color:"#888",flexShrink:0,margin:"0 4px 0 18px",padding:"3px 9px",border:"1px solid #333",borderRadius:4,background:"#0f0f0f",lineHeight:1,userSelect:"none"}}>{open?"▲":"▼"}</span>
+          <span style={{fontSize:12,color:"#888",flexShrink:0,margin:"0 8px 0 18px",padding:"3px 9px",border:"1px solid #333",borderRadius:4,background:"#0f0f0f",lineHeight:1,userSelect:"none"}}>{open?"▲":"▼"}</span>
         </div>
-        <div style={{width:1,background:BRD,flexShrink:0}}/>
-        <button onClick={ev=>{ev.stopPropagation();setShowConfig(true);}} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:14,padding:"0 14px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",minWidth:44}} title="Configure tile badges">⚙️</button>
       </div>
 
       {open&&(
@@ -470,6 +469,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {!isGuest&&effectiveTier(profile,company)!=="free"&&m.make&&m.model&&<button style={_jWiki} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
             {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
+            {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
             <button style={_jDel} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
           </div>
           {showGuide&&(
