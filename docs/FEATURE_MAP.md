@@ -272,11 +272,8 @@ Stripe
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
 | Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
 | **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql | Free |
-| All-to-all cross-assignment (vehicle/tool/equipment/consumable/part) | ✅ | asset_assignments, LoadoutSection | Free |
-| Forward loadout panel (Assigned Items + picker) | ✅ | LoadoutSection, VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab | Free |
-| Parts (inventory items) assignable via Loadout picker | ✅ | getInventoryItems() wrapper, LoadoutSection | Free |
-| Reverse lookup panel (Assigned To) | ✅ | getAssignedIn(), LoadoutSection | Free |
-| Unassign items from loadout | ✅ | unassignAsset(), LoadoutSection | Free |
+| Vehicle loadout: assign tools/equipment/consumables/parts to a vehicle | ✅ | asset_assignments, LoadoutSection — assignment only from VehiclesTab; LoadoutSection removed from Tools/Equipment/StockItemTab | Free |
+| Unassign items from vehicle loadout | ✅ | unassignAsset(), LoadoutSection | Free |
 | **consumables** table + RLS | ✅ | asset_permissions | Free |
 | Consumables tab: CRUD + qty tracking + stock alerts | ✅ | consumables table | Free (10 limit) |
 | Sort modal + list/grid view toggle (Consumables) | ✅ | ConsumablesTab, AssetTile | Free |
