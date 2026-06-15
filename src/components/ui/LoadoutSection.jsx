@@ -25,7 +25,7 @@ function itemName(type, item) {
   return item.name || item.make || '(unnamed)';
 }
 
-export default function LoadoutSection({ parentType, parentId, parentName, isShared, allowedChildTypes }) {
+export default function LoadoutSection({ parentType, parentId, parentName, isShared, allowedChildTypes, maxItems = Infinity }) {
   const [assignedTo, setAssignedTo]   = useState([]);   // what's assigned TO this item
   const [assignedIn, setAssignedIn]   = useState([]);   // what this item is assigned IN
   const [loaded, setLoaded]           = useState(false);
@@ -128,10 +128,12 @@ export default function LoadoutSection({ parentType, parentId, parentName, isSha
       {/* ── Assigned Items ─────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <div style={{ fontSize: 7, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
-          Loadout {loaded && assignedTo.length > 0 && `(${assignedTo.length})`}
+          Loadout {loaded && assignedTo.length > 0 && `(${assignedTo.length}${maxItems < Infinity ? '/'+maxItems : ''})`}
         </div>
         {!isShared && !showPicker && (
-          <button onClick={() => openPicker(null)} style={{ ...btnG, ...sm, fontSize: 8 }}>+ Assign</button>
+          assignedTo.length >= maxItems
+            ? <span style={{ fontSize: 8, color: MUT, fontStyle: 'italic' }}>limit reached — upgrade for more</span>
+            : <button onClick={() => openPicker(null)} style={{ ...btnG, ...sm, fontSize: 8 }}>+ Assign</button>
         )}
         {!isShared && showPicker && (
           <button onClick={closePicker} style={{ ...btnG, ...sm, fontSize: 8 }}>Done</button>

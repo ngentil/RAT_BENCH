@@ -389,7 +389,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
             ))}
           </div>
 
-          <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} />
+          <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} maxItems={isFree ? 5 : Infinity} />
           <VehicleMemberSection vehicle={vehicle} company={company} isShared={isShared} />
 
 
