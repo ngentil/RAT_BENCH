@@ -1,6 +1,6 @@
 // Tier definitions
 export const TIERS = {
-  free:        { label: "Free",        price: null,        machines: 10,       tools: 5,        vehicles: 5,        equipment: 5,        consumables: 10,       org: false, acl: false, support: false },
+  free:        { label: "Free",        price: null,        machines: 10,       tools: 5,        vehicles: 1,        equipment: 5,        consumables: 5,        org: false, acl: false, support: false },
   enthusiast:  { label: "Enthusiast",  price: "$3.50/wk",  machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: false, acl: false, support: false },
   team:        { label: "Pro",         price: "$10/wk",    machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
   business:    { label: "Pro",         price: "$10/wk",    machines: Infinity, tools: Infinity, vehicles: Infinity, equipment: Infinity, consumables: Infinity, org: true,  acl: true,  support: true  },
