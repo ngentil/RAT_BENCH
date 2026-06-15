@@ -258,14 +258,14 @@ Stripe
 |---------|--------|-----------|------|
 | asset_permissions table + RLS | ✅ | auth.users, company_members | Team+ |
 | **vehicles** table + RLS | ✅ | asset_permissions | Free |
-| Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (3 limit) |
+| Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (1 limit) |
 | Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab | Free |
 | Sort modal + list/grid view toggle (Vehicles) | ✅ | VehiclesTab, AssetTile | Free |
 | **equipment** table + RLS | ✅ | asset_permissions | Free |
-| Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (3 limit) |
+| Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (5 limit) |
 | Sort modal + list/grid view toggle (Equipment) | ✅ | EquipmentTab, AssetTile | Free |
 | **tools** table + RLS | ✅ | asset_permissions | Free |
-| Tools tab: CRUD + warranty + loan tracking | ✅ | tools table | Free (3 limit) |
+| Tools tab: CRUD + warranty + loan tracking | ✅ | tools table | Free (5 limit) |
 | Sort modal + list/grid view toggle (Tools) | ✅ | ToolsTab, AssetTile | Free |
 | localStorage → Supabase migration (tools) | ✅ | tools table | — |
 | Free-tier item limits (vehicles=1, tools=5, equipment=5, consumables=5, parts=5) | ✅ | gates.js TIERS.free + StockItemTab FREE_LIMIT | Free |
