@@ -268,7 +268,7 @@ Stripe
 | Tools tab: CRUD + warranty + loan tracking | ✅ | tools table | Free (3 limit) |
 | Sort modal + list/grid view toggle (Tools) | ✅ | ToolsTab, AssetTile | Free |
 | localStorage → Supabase migration (tools) | ✅ | tools table | — |
-| Free-tier item limit (3 per type) | ✅ | gates.js assetLimit() | Free |
+| Free-tier item limits (vehicles=1, tools=5, equipment=5, consumables=5, parts=5) | ✅ | gates.js TIERS.free + StockItemTab FREE_LIMIT | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
 | Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
 | **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql | Free |
