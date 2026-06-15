@@ -516,7 +516,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const setColsP   = c => { setCols(c);  localStorage.setItem(`${tableType}Cols`, String(c)); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
-  const FREE_LIMIT = 10;
+  const FREE_LIMIT = 5;
   const atLimit = isFree && items.length >= FREE_LIMIT;
 
   // ── Load ────────────────────────────────────────────────────────────────────
