@@ -439,7 +439,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
           </span>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button style={{ ...btnG, ...sm, color: sortBy ? ACC : MUT }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
           <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
           <button
             onClick={() => setFormTool({})}
