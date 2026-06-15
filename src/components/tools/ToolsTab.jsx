@@ -360,8 +360,8 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const setColsP = c => { setCols(c); localStorage.setItem('toolsCols', String(c)); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === "free";
-  const limit   = assetLimit('tool', profile, company);
-  const atLimit = atAssetLimit('tool', tools.length, profile, company);
+  const limit   = assetLimit('tools', profile, company);
+  const atLimit = atAssetLimit('tools', tools.length, profile, company);
 
   useEffect(() => {
     if (!userId) return;

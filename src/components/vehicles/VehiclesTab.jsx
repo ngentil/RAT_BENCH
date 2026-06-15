@@ -440,8 +440,8 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   const setColsP = c => { setCols(c); localStorage.setItem('vehiclesCols', String(c)); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
-  const limit   = assetLimit('vehicle', profile, company);
-  const atLimit = atAssetLimit('vehicle', vehicles?.length ?? 0, profile, company);
+  const limit   = assetLimit('vehicles', profile, company);
+  const atLimit = atAssetLimit('vehicles', vehicles?.length ?? 0, profile, company);
 
   useEffect(() => {
     setLoading(true);
