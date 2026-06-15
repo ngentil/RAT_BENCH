@@ -66,6 +66,10 @@ function App(){
     const p=new URLSearchParams(window.location.search);
     return p.get("billing")||null;
   });
+  const [templateMachineId,setTemplateMachineId]=useState(()=>{
+    const p=new URLSearchParams(window.location.search);
+    return p.get("template")||null;
+  });
   const [retrying,setRetrying]=useState(false);
   const [announcements,setAnnouncements]=useState([]);
   const [dismissedAnns,setDismissedAnns]=useState(()=>{
@@ -243,6 +247,14 @@ function App(){
     }
   },[billingBanner]);
 
+  useEffect(()=>{
+    if(templateMachineId){
+      const url=new URL(window.location.href);
+      url.searchParams.delete("template");
+      window.history.replaceState({},"",url.toString());
+    }
+  },[]);
+
   // Poll for tier update after billing success — only once session is loaded
   useEffect(()=>{
     if(billingBanner!=="success"||!session?.user?.id) return;
@@ -400,7 +412,7 @@ function App(){
         </div>
       )}
 
-      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
