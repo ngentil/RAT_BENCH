@@ -54,14 +54,20 @@ function ToolForm({ tool, onSave, onCancel }) {
     photos:          tool.photos          || [],
   } : EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
 
   const s = (k, v) => setF(prev => ({ ...prev, [k]: v }));
 
   const save = async () => {
     if (!f.name.trim()) return;
     setSaving(true);
-    await onSave({ ...tool, ...f, name: f.name.trim(), brand: f.brand.trim(), model: f.model.trim(), purchasePrice: parseFloat(f.purchasePrice) || 0 });
-    setSaving(false);
+    setErr(null);
+    try {
+      await onSave({ ...tool, ...f, name: f.name.trim(), brand: f.brand.trim(), model: f.model.trim(), purchasePrice: parseFloat(f.purchasePrice) || 0 });
+    } catch (e) {
+      setErr(e?.message || 'Save failed — check your connection');
+      setSaving(false);
+    }
   };
 
   return (
@@ -111,6 +117,7 @@ function ToolForm({ tool, onSave, onCancel }) {
             <PhotoAdder photos={f.photos} setPhotos={ps => s("photos", typeof ps === "function" ? ps(f.photos) : ps)} label="Photos" />
           </div>
         </div>
+        {err && <div style={{ padding: '8px 16px', color: '#ff6b6b', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }}>⚠ {err}</div>}
         <div style={mdlF}>
           <button style={btnG} onClick={onCancel}>Cancel</button>
           <button style={{ ...btnA, opacity: f.name.trim() && !saving ? 1 : 0.4 }} disabled={!f.name.trim() || saving} onClick={save}>

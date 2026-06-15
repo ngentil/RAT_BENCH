@@ -163,6 +163,7 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
   const [f, setF]       = useState(initF);
   const [photos, setPhotos] = useState(item?.photos || []);
   const [saving, setSaving] = useState(false);
+  const [err, setErr]   = useState(null);
   const s = (k, v) => setF(p => ({ ...p, [k]: v }));
   const fld = { background: '#0a0a0a', border: '1px solid #252525', color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: '6px 8px', borderRadius: 2, outline: 'none', boxSizing: 'border-box', width: '100%' };
 
@@ -184,18 +185,23 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
-    await onSave({
-      ...item,
-      ...f,
-      name:        f.name.trim(),
-      quantity:    parseFloat(f.quantity) || 0,
-      buyPrice:    f.buyPrice    !== '' ? parseFloat(f.buyPrice)    : null,
-      sellPrice:   f.sellPrice   !== '' ? parseFloat(f.sellPrice)   : null,
-      minQuantity: f.minQuantity !== '' ? parseFloat(f.minQuantity) : null,
-      maxQuantity: f.maxQuantity !== '' ? parseFloat(f.maxQuantity) : null,
-      photos,
-    });
-    setSaving(false);
+    setErr(null);
+    try {
+      await onSave({
+        ...item,
+        ...f,
+        name:        f.name.trim(),
+        quantity:    parseFloat(f.quantity) || 0,
+        buyPrice:    f.buyPrice    !== '' ? parseFloat(f.buyPrice)    : null,
+        sellPrice:   f.sellPrice   !== '' ? parseFloat(f.sellPrice)   : null,
+        minQuantity: f.minQuantity !== '' ? parseFloat(f.minQuantity) : null,
+        maxQuantity: f.maxQuantity !== '' ? parseFloat(f.maxQuantity) : null,
+        photos,
+      });
+    } catch (e) {
+      setErr(e?.message || 'Save failed — check your connection');
+      setSaving(false);
+    }
   };
 
   const noun = tableType === 'part' ? 'Part' : 'Consumable';
@@ -299,6 +305,7 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
             <PhotoAdder photos={photos} setPhotos={setPhotos} />
           </div>
         </div>
+        {err && <div style={{ padding: '8px 16px', color: '#ff6b6b', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }}>⚠ {err}</div>}
         <div style={mdlF}>
           <button style={btnG} onClick={onCancel}>Cancel</button>
           <button style={{ ...btnA, opacity: canSave ? 1 : 0.4 }} disabled={!canSave} onClick={save}>
