@@ -139,7 +139,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
   }, [session?.user?.id]);
   const isOwner=company&&company.owner_id===session?.user?.id;
   const isAdmin=isOwner; // kept for backward compat in JSX below
-  const canMultiUser=["team","business"].includes(effectiveTier(profile,company));
+  const canMultiUser=effectiveTier(profile,company)==="business";
   const [myRole,setMyRole]=useState(null);
   useEffect(()=>{
     if(!company?.id||!session?.user?.id) return;

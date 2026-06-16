@@ -29,7 +29,7 @@ function GlowBtn({ onClick, disabled, style, glow, children }) {
 
 const PRICE_IDS = {
   enthusiast: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST,
-  team:       import.meta.env.VITE_STRIPE_PRICE_PRO,
+  business:   import.meta.env.VITE_STRIPE_PRICE_PRO,
 };
 
 const PLANS = [
@@ -51,11 +51,11 @@ const PLANS = [
     highlight: true,
   },
   {
-    id: "team",
-    label: "Pro",
+    id: "business",
+    label: "Business",
     price: "$10",
     period: "/wk",
-    features: ["Unlimited machines","Organisation / multi-user","Access control (ACL)","Provision assets to team members","Shared machine library","Priority support","Everything in Enthusiast"],
+    features: ["Everything in Enthusiast","Organisation / multi-user (3 seats included)","Extra seats at $2/wk each","Access control per machine & asset","Provision assets to team members","Priority support"],
     personal: false,
   },
 ];
@@ -105,7 +105,7 @@ function PlanCard({ plan, current, onUpgrade, onManage, loading }) {
       </ul>
       {!plan.personal && !isCurrent && (
         <div style={{ fontSize: 9, color: MUT, marginBottom: 12, letterSpacing: "0.06em", borderTop: "1px solid #252525", paddingTop: 10 }}>
-          For shops and teams
+          For small shops & businesses
         </div>
       )}
       {!isCurrent && plan.id !== "free" && (
@@ -141,7 +141,7 @@ function BillingPage({ profile, company, session }) {
     setLoading(planId); setErr("");
     try {
       const price_id = PRICE_IDS[planId];
-      const isOrgPlan = ["team","business"].includes(planId);
+      const isOrgPlan = planId === "business";
 
       const base = window.location.origin;
       const { data, error } = await supabase.functions.invoke("create-checkout", {
@@ -165,7 +165,7 @@ function BillingPage({ profile, company, session }) {
     setLoading("manage"); setErr("");
     try {
       const base = window.location.origin;
-      const isOrgPlan = ["team","business"].includes(tier);
+      const isOrgPlan = tier === "business";
       const { data, error } = await supabase.functions.invoke("create-portal", {
         body: {
           user_id: session.user.id,
@@ -184,7 +184,7 @@ function BillingPage({ profile, company, session }) {
   return (
     <div>
       <div style={{ fontSize: 10, color: MUT, marginBottom: 20, lineHeight: 1.7 }}>
-        {["team","business"].includes(tier)
+        {tier === "business"
           ? `Your organisation is on the ${TIERS[tier]?.label} plan.`
           : `Your account is on the ${TIERS[tier]?.label} plan.`}
       </div>
