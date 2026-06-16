@@ -44,8 +44,8 @@ Stripe
 | Password reset | ✅ | auth | Free |
 | Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
 | Profiles table + RLS | ✅ | auth.users | Free |
-| Tier system (`gates.js`) | ✅ | profiles.tier | All |
-| Stripe Checkout (3 plans: Free / Enthusiast $3.50wk / Pro $10wk) | ✅ | Stripe, profiles | All |
+| Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
+| Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
 | Announcements (in-app banners) | ✅ | profiles.tier | All |
@@ -93,9 +93,9 @@ Stripe
 | Configurable expand sections | ✅ | machines, ui.js constants | Free |
 | PDF spec sheet export | ✅ | machines, jspdf | Free |
 | Machine → client linking | ✅ | machines, clients table | Enthusiast+ |
-| Machine → company tagging | ✅ | machines, companies | Team+ |
-| Real-time sync (org machines) | ✅ | Supabase channel, company_id | Team+ |
-| "Shared" badge on provisioned machines | ✅ | machine_permissions | Team+ |
+| Machine → company tagging | ✅ | machines, companies | Business |
+| Real-time sync (org machines) | ✅ | Supabase channel, company_id | Business |
+| "Shared" badge on provisioned machines | ✅ | machine_permissions | Business |
 | Wiki submission from machine | ✅ | wiki_entries, machines | Enthusiast+ |
 | Rage rating (☠️ skulls) | ✅ | machines.rage | Free |
 | Custom sections (user-defined spec blocks) | ✅ | machines.custom_sections (jsonb) | Free |
@@ -126,11 +126,11 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| machine_permissions table + RLS | ✅ | machines, company_members | Team+ |
-| getMachines() returns provisioned machines | ✅ | machine_permissions | Team+ |
-| Provisioning panel in CompanySettings | ✅ | machine_permissions, company_members | Team+ |
-| Grant View / Grant Edit / Revoke per member | ✅ | machine_permissions | Team+ |
-| Read-only machine card for View-only members | ✅ | machine_permissions, can_edit flag | Team+ |
+| machine_permissions table + RLS | ✅ | machines, company_members | Business |
+| getMachines() returns provisioned machines | ✅ | machine_permissions | Business |
+| Provisioning panel in CompanySettings | ✅ | machine_permissions, company_members | Business |
+| Grant View / Grant Edit / Revoke per member | ✅ | machine_permissions | Business |
+| Read-only machine card for View-only members | ✅ | machine_permissions, can_edit flag | Business |
 
 ---
 
@@ -184,12 +184,12 @@ Stripe
 |---------|--------|-----------|------|
 | Job timer (start / stop / pause) | ✅ | machines.job_timer (jsonb) | Free |
 | Multiple timers per machine | ✅ | machines.job_timer array | Free |
-| Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Team+ |
+| Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Business |
 | Time log (save sessions with label + notes) | ✅ | machines.time_log (jsonb) | Free |
 | Running timer badge in Jobs tab | ✅ | machines.job_timer status | Free |
 | Invoice generation (labour + parts) | ✅ | time_log, inventory, company rates | Free |
 | Parts markup on invoice | ✅ | inventory buy/sell price | Free |
-| Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Team+ |
+| Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Business |
 | Invoice number auto-increment | ✅ | invoices.js RPC + localStorage fallback | Free |
 | HTML invoice export | ✅ | time_log, parts, company details | Free |
 | Collapsed/expanded job card layout (matching asset tabs) | ✅ | JobBoard, JobCard | Free |
@@ -210,8 +210,8 @@ Stripe
 | Revenue totals (labour, parts & consumables, profit) | ✅ | time_log, inventory, consumables, company.hourly_rate | Enthusiast+ |
 | Date filters (week / month / all / custom) | ✅ | time_log.completedAt, machine.parts[].usedAt | Enthusiast+ |
 | Per-machine breakdown | ✅ | time_log, machines | Enthusiast+ |
-| Tax deduction display | ✅ | companies.tax_rate | Team+ |
-| Currency formatting | ✅ | companies.currency | Team+ |
+| Tax deduction display | ✅ | companies.tax_rate | Business |
+| Currency formatting | ✅ | companies.currency | Business |
 
 ---
 
@@ -256,7 +256,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| asset_permissions table + RLS | ✅ | auth.users, company_members | Team+ |
+| asset_permissions table + RLS | ✅ | auth.users, company_members | Business |
 | **vehicles** table + RLS | ✅ | asset_permissions | Free |
 | Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (1 limit) |
 | Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab | Free |
@@ -270,7 +270,7 @@ Stripe
 | localStorage → Supabase migration (tools) | ✅ | tools table | — |
 | Free-tier item limits (vehicles=1, tools=5, equipment=5, consumables=5, parts=5) | ✅ | gates.js TIERS.free + StockItemTab FREE_LIMIT | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
-| Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
+| Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Business |
 | **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql | Free |
 | Vehicle loadout: assign tools/equipment/consumables/parts to a vehicle | ✅ | asset_assignments, LoadoutSection — assignment only from VehiclesTab; LoadoutSection removed from Tools/Equipment/StockItemTab | Free |
 | Vehicle loadout item limit (free=5, paid=unlimited) | ✅ | LoadoutSection maxItems prop — VehiclesTab passes 5 for free tier; shows n/5 count and disables + Assign at limit with upgrade nudge | Free |
@@ -288,8 +288,8 @@ Stripe
 | Configurable min par (reorder point) and max par (ceiling) | ✅ | consumables.min_quantity, consumables.max_quantity | Free |
 | Buy price / sell price / supplier / part number / location | ✅ | consumables.buy_price, sell_price, supplier, part_number, location | Free |
 | Shared UI (StockItemTab) with Parts tab | ✅ | StockItemTab.jsx, tableType="consumable" | Free |
-| Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
-| Assign org member to vehicle (VehicleMemberSection) | ✅ | getCompanyMembers(), assignAsset child_type='member', company prop | Team+ |
+| Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Business |
+| Assign org member to vehicle (VehicleMemberSection) | ✅ | getCompanyMembers(), assignAsset child_type='member', company prop | Business |
 
 ---
 
@@ -297,18 +297,18 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| companies table + RLS | ✅ | profiles | Team+ |
-| Create / edit company | ✅ | companies | Team+ |
-| Invite code join flow | ✅ | companies.invite_code, RPC | Team+ |
-| company_members table | ✅ | companies, profiles | Team+ |
-| Roles: owner / admin / technician / viewer | ✅ | company_members.role | Team+ |
-| Edit member roles | ✅ | updateMemberRole() RPC | Team+ |
-| Remove member | ✅ | removeMember() RPC | Team+ |
-| Regenerate invite code | ✅ | regenerateInviteCode() RPC | Team+ |
-| Company logo upload | ✅ | companies.logo (base64) | Team+ |
-| Hourly rate / tax rate / currency config | ✅ | companies fields | Team+ |
-| Machine provisioning panel (CompanySettings) | ✅ | machine_permissions | Team+ |
-| Asset provisioning panel (vehicles/equip/tools) | ✅ | asset_permissions, CompanySettings | Team+ |
+| companies table + RLS | ✅ | profiles | Business |
+| Create / edit company | ✅ | companies | Business |
+| Invite code join flow | ✅ | companies.invite_code, RPC | Business |
+| company_members table | ✅ | companies, profiles | Business |
+| Roles: owner / admin / technician / viewer | ✅ | company_members.role | Business |
+| Edit member roles | ✅ | updateMemberRole() RPC | Business |
+| Remove member | ✅ | removeMember() RPC | Business |
+| Regenerate invite code | ✅ | regenerateInviteCode() RPC | Business |
+| Company logo upload | ✅ | companies.logo (base64) | Business |
+| Hourly rate / tax rate / currency config | ✅ | companies fields | Business |
+| Machine provisioning panel (CompanySettings) | ✅ | machine_permissions | Business |
+| Asset provisioning panel (vehicles/equip/tools) | ✅ | asset_permissions, CompanySettings | Business |
 
 ---
 
@@ -341,7 +341,7 @@ Stripe
 | Per-user Workshop tab visibility preferences | ✅ | profiles.tab_order.workshop_visible (Supabase), TabOrderSettings.jsx checkboxes | Free |
 | Per-user Workshop default sub-tab | ✅ | First visible tab in ordered workshop list (implicit, no separate setting) | Free |
 | Workshop visibility + order UI under Settings → ⇅ Tabs | ✅ | TabOrderSettings.jsx WorkshopReorderList (checkboxes + ↑/↓ + DEFAULT badge) | Free |
-| Users tab moved into Settings (team/business only) | ✅ | SettingsPage, UsersTab | Team+ |
+| Users tab moved into Settings (Business only) | ✅ | SettingsPage, UsersTab | Business |
 | localStorage migration (old flat tab IDs → workshop sub-tabs) | ✅ | App.jsx init state | Free |
 | Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
 | Per-account tab reordering (main nav, workshop, settings) | ✅ | profiles.tab_order JSONB, applyTabOrder(), TabOrderSettings.jsx | Free |
