@@ -15,7 +15,7 @@ const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com
 function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,vehicles,equipment,tools,initialTab}){
   const isAdmin = session?.user?.email === ADMIN_EMAIL;
   const tier = effectiveTier(profile, company);
-  const isTeam = ["team","business"].includes(tier);
+  const isTeam = tier === "business";
   const [tab,setTab]=useState(initialTab||"profile");
   const baseTabs=[
     {id:"profile",  label:"Profile"},

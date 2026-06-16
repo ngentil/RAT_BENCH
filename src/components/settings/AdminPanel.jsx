@@ -3,8 +3,8 @@ import { supabase } from '../../lib/supabase';
 import { deleteUserPhotos } from '../../lib/storage';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } from '../../lib/styles';
 
-const TIER_COLOR  = { free: MUT, enthusiast: '#e8670a', team: '#0a8fe8', business: '#e8c20a' };
-const ALL_TIERS   = ['free', 'enthusiast', 'team', 'business'];
+const TIER_COLOR  = { free: MUT, enthusiast: '#e8670a', business: '#e8c20a' };
+const ALL_TIERS   = ['free', 'enthusiast', 'business'];
 const ADMIN_TABS  = ['Overview', 'Users', 'Grants', 'Flags', 'Announcements', 'Audit'];
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
 
