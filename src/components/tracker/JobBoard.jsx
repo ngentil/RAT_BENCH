@@ -960,7 +960,7 @@ function MachineNotes({ machine, onSave }) {
     <div style={{ marginBottom: 8 }}>
       {machine.notes
         ? <div style={{ fontSize: 11, color: TXT, lineHeight: 1.5, cursor: "pointer", opacity: 0.7 }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
-        : <button onClick={() => setEditing(true)} style={{ ...btnA, ...sm, fontSize: 9, background: "none", borderColor: ACC+"55", color: ACC }}>✏ Notes</button>}
+        : <button onClick={() => setEditing(true)} style={{ ...btnA, ...sm, fontSize: 9 }}>✏ Notes</button>}
     </div>
   );
 }
