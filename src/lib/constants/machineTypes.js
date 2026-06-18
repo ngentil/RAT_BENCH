@@ -7,6 +7,7 @@ export const MACHINE_TYPES = [
   {icon:"🚗",label:"Vehicle"},{icon:"🚧",label:"Tracked Machine"},
   {icon:"⛵",label:"Outboard Motor"},
   {icon:"🌲",label:"Chipper"},{icon:"🌳",label:"Stump Grinder"},
+  {icon:"🎮",label:"RC Model"},
   {icon:"⚙️",label:"Custom"},
 ];
 
@@ -37,13 +38,14 @@ export const TYPE_PH = {
   "Tracked Machine":     {name:"e.g. Komatsu PC130",      make:"e.g. Komatsu",    model:"e.g. PC130",       desc:"e.g. Condition on arrival, fault description"},
   "Chipper":             {name:"e.g. Bandit 12XP",        make:"e.g. Bandit",     model:"e.g. 12XP",        desc:"e.g. Condition on arrival, drum fault"},
   "Stump Grinder":       {name:"e.g. Carlton SP7015",     make:"e.g. Carlton",    model:"e.g. SP7015",      desc:"e.g. Condition on arrival, wheel damage"},
+  "RC Model":            {name:"e.g. Traxxas Rustler 4x4", make:"e.g. Traxxas",    model:"e.g. Rustler 4x4 VXL", desc:"e.g. 1/10 scale brushless, ESC failure, needs bearing replacement"},
   "Custom":              {name:"e.g. Machine name",       make:"e.g. Brand",      model:"e.g. Model",       desc:"e.g. Condition on arrival, fault description"},
 };
 export const getPH = (t,f) => (TYPE_PH[t]||TYPE_PH["Custom"])[f];
 
 export const HANDHELD    = ["Chainsaw","Trimmer","Blower","Hedge Trimmer","Multi-Tool"];
 export const WHEELED     = ["Lawnmower","Ride-on Mower"];
-export const MOTO        = ["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC"];
+export const MOTO        = ["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC","RC Model"];
 export const VEHICLE     = ["Vehicle"];
 export const TRACKED     = ["Tracked Machine"];
 export const isCustom        = t => t==="Custom";
