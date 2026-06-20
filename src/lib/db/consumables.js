@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
+import { deletePhoto } from '../storage';
 
 function fromDb(r) {
   return {
@@ -72,6 +73,10 @@ export async function upsertConsumable(item) {
 }
 
 export async function deleteConsumable(id) {
+  try {
+    const { data } = await supabase.from('consumables').select('photos').eq('id', id).single();
+    (data?.photos || []).forEach(url => deletePhoto(url));
+  } catch {}
   await unassignAllByChild('consumable', id);
   const { error } = await supabase.from('consumables').delete().eq('id', id);
   if (error) throw error;

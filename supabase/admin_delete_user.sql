@@ -36,7 +36,13 @@ BEGIN
   DELETE FROM tools           WHERE user_id = p_user_id;
   DELETE FROM consumables     WHERE user_id = p_user_id;
 
-  DELETE FROM wiki_revisions WHERE edited_by = p_user_id;
+  -- Wiki: contributions first (FK child), then revisions, then entries
+  DELETE FROM wiki_contributions WHERE user_id    = p_user_id;
+  DELETE FROM wiki_revisions     WHERE edited_by  = p_user_id;
+  DELETE FROM wiki_entries       WHERE created_by = p_user_id;
+
+  -- Asset assignments owned by this user
+  DELETE FROM asset_assignments WHERE user_id = p_user_id;
 
   DELETE FROM profiles   WHERE id = p_user_id;
   DELETE FROM auth.users WHERE id = p_user_id;
