@@ -262,7 +262,7 @@ Stripe
 | asset_permissions table + RLS | ✅ | auth.users, company_members | Business |
 | **vehicles** table + RLS | ✅ | asset_permissions | Free |
 | Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (1 limit) |
-| Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab | Free |
+| Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab — saving guard prevents duplicate entries on double-click; plug photo replace uploads new first then deletes old (safe on network failure) | Free |
 | Sort modal + list/grid view toggle (Vehicles) | ✅ | VehiclesTab, AssetTile | Free |
 | **equipment** table + RLS | ✅ | asset_permissions | Free |
 | Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (5 limit) |
