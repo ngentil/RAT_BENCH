@@ -140,6 +140,29 @@ GRANT UPDATE (
   storage_tiers
 ) ON profiles TO authenticated;
 
+-- Column-level SELECT restriction: hide sensitive billing/upgrade fields from
+-- other users. Any authenticated user can read public profile fields (needed for
+-- wiki attribution, member lists). Sensitive fields are restricted to own-row
+-- access via the get_my_profile() SECURITY DEFINER RPC.
+REVOKE SELECT ON profiles FROM authenticated;
+GRANT SELECT (
+  id, display_name, username, units, default_status, tab_order, preferences,
+  storage_policy_enabled, storage_tiers, tier, company_id, created_at
+) ON profiles TO authenticated;
+
+-- SECURITY DEFINER: returns the caller's full profile row including sensitive fields.
+-- Use this instead of select("*") when own-row data (stripe IDs, pending upgrade) is needed.
+CREATE OR REPLACE FUNCTION get_my_profile()
+RETURNS SETOF profiles
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT * FROM profiles WHERE id = auth.uid();
+$$;
+
+GRANT EXECUTE ON FUNCTION get_my_profile() TO authenticated;
+
 -- Same protection for companies: block direct tier/billing escalation.
 -- Edge functions (stripe-webhook, create-checkout) use service_role and bypass these grants.
 REVOKE UPDATE ON companies FROM authenticated;

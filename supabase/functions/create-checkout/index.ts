@@ -8,12 +8,15 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
 const ALLOWED_ORIGINS = ["https://www.ratbench.net", "https://ratbench.net"];
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+}
 
 const VALID_PRICE_IDS = new Set(
   [Deno.env.get("PRICE_ENTHUSIAST"), Deno.env.get("PRICE_PRO")].filter(Boolean)
@@ -29,6 +32,7 @@ function isSafeUrl(url: string | undefined): boolean {
 }
 
 serve(async (req) => {
+  const CORS = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
@@ -117,6 +121,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ url: session.url }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+    console.error("create-checkout error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: CORS });
   }
 });

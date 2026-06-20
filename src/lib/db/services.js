@@ -2,7 +2,7 @@ import { supabase } from '../supabase';
 import { svcToDb, svcFromDb } from './transforms';
 
 export async function getServices(machineId) {
-  const { data, error } = await supabase.from("services").select("*").eq("machine_id", machineId).order("completed_at", { ascending: false });
+  const { data, error } = await supabase.from("services").select("*").eq("machine_id", machineId).order("completed_at", { ascending: false }).limit(500);
   if (error) { console.error("getServices:", error); return []; }
   return (data || []).map(svcFromDb);
 }

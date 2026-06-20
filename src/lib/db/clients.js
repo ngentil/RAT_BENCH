@@ -21,7 +21,8 @@ export async function getClients() {
     .from("clients")
     .select("*")
     .eq("user_id", user.id)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(500);
   if (error) { console.error("getClients:", error); return []; }
   return (data || []).map(fromDb);
 }

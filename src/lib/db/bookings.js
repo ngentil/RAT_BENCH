@@ -34,7 +34,8 @@ export async function getBookingHistory(machineId) {
     .from('machine_bookings')
     .select('*')
     .eq('machine_id', machineId)
-    .order('received_at', { ascending: false });
+    .order('received_at', { ascending: false })
+    .limit(200);
   return data || [];
 }
 

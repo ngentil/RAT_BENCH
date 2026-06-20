@@ -19,10 +19,13 @@ CREATE POLICY wiki_entries_select ON wiki_entries
     OR sample_owner_id = auth.uid()
   );
 
--- INSERT: authenticated users only
+-- INSERT: authenticated users only; block injecting is_sample into another user's library
 CREATE POLICY wiki_entries_insert ON wiki_entries
   FOR INSERT TO authenticated
-  WITH CHECK (created_by = auth.uid());
+  WITH CHECK (
+    created_by = auth.uid()
+    AND (NOT is_sample OR sample_owner_id = auth.uid())
+  );
 
 -- UPDATE: only the original author
 CREATE POLICY wiki_entries_update ON wiki_entries

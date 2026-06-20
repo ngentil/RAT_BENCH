@@ -35,7 +35,8 @@ export async function getConsumables() {
     .select('*')
     .eq('user_id', user.id)
     .order('category', { ascending: true })
-    .order('name',     { ascending: true });
+    .order('name',     { ascending: true })
+    .limit(1000);
   if (error) throw error;
   return (data || []).map(fromDb);
 }
