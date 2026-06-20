@@ -76,3 +76,12 @@ export async function syncAssignmentChildName(childType, childId, childName) {
     .eq('child_type', childType)
     .eq('child_id', childId);
 }
+
+export async function syncAssignmentParentName(parentType, parentId, parentName) {
+  if (!parentId || !parentName) return;
+  await supabase
+    .from('asset_assignments')
+    .update({ parent_name: parentName })
+    .eq('parent_type', parentType)
+    .eq('parent_id', parentId);
+}
