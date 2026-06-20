@@ -28,9 +28,12 @@ function fromDb(r) {
 }
 
 export async function getConsumables() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
   const { data, error } = await supabase
     .from('consumables')
     .select('*')
+    .eq('user_id', user.id)
     .order('category', { ascending: true })
     .order('name',     { ascending: true });
   if (error) throw error;

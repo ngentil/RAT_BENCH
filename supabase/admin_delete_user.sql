@@ -13,6 +13,10 @@ AS $$
 DECLARE
   v_email text;
 BEGIN
+  IF auth.email() IS DISTINCT FROM 'nathan.gentil.ai@gmail.com' THEN
+    RETURN jsonb_build_object('error', 'Access denied');
+  END IF;
+
   SELECT email INTO v_email FROM auth.users WHERE id = p_user_id;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('error', 'User not found');

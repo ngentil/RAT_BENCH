@@ -15,6 +15,14 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
+  -- Owners cannot leave — they must transfer ownership or delete the company
+  IF EXISTS (
+    SELECT 1 FROM company_members
+    WHERE company_id = p_company_id AND user_id = v_uid AND role = 'owner'
+  ) THEN
+    RAISE EXCEPTION 'Owner cannot leave — transfer ownership or delete the company first';
+  END IF;
+
   -- Revoke provisioned machine access
   DELETE FROM machine_permissions
   WHERE user_id = v_uid

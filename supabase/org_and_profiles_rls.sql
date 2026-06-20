@@ -47,11 +47,13 @@ CREATE POLICY cm_read ON company_members
   FOR SELECT TO authenticated
   USING (_is_company_member(company_id, auth.uid()));
 
--- Owners/admins can add, update, or remove members
+-- Owners/admins can add, update, or remove members.
+-- WITH CHECK prevents setting role='owner' via direct API — ownership transfer
+-- must go through a SECURITY DEFINER RPC that bypasses RLS.
 CREATE POLICY cm_manage ON company_members
   FOR ALL TO authenticated
   USING     (_is_company_admin(company_id, auth.uid()))
-  WITH CHECK (_is_company_admin(company_id, auth.uid()));
+  WITH CHECK (_is_company_admin(company_id, auth.uid()) AND role != 'owner');
 
 -- Users can remove themselves (leave)
 CREATE POLICY cm_leave ON company_members
@@ -139,3 +141,32 @@ GRANT UPDATE (
   storage_policy_enabled,
   storage_tiers
 ) ON profiles TO authenticated;
+
+-- Same protection for companies: block direct tier/billing escalation.
+-- Edge functions (stripe-webhook, create-checkout) use service_role and bypass these grants.
+REVOKE UPDATE ON companies FROM authenticated;
+
+GRANT UPDATE (
+  name,
+  trading_name,
+  abn,
+  phone,
+  email,
+  website,
+  address,
+  city,
+  state,
+  postcode,
+  country,
+  industry,
+  logo,
+  hourly_rate,
+  tax_rate,
+  tax_label,
+  invite_code
+) ON companies TO authenticated;
+
+-- Enforce valid role values at the DB level (belt-and-suspenders with the RLS WITH CHECK above)
+ALTER TABLE company_members
+  DROP CONSTRAINT IF EXISTS chk_company_members_role,
+  ADD CONSTRAINT chk_company_members_role CHECK (role IN ('owner', 'admin', 'technician', 'viewer'));
