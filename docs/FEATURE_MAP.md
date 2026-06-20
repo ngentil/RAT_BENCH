@@ -50,7 +50,7 @@ Stripe
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
 | Announcements (in-app banners) | ✅ | profiles.tier | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql | All |
-| DB-level machine limit trigger (free=10, guest=3) | ✅ | scalability_hardening.sql, profiles.tier | Free |
+| DB-level machine limit trigger (free=5, guest=3) | ✅ | scalability_hardening.sql, profiles.tier | Free |
 | Critical DB indexes (machines, services, bookings, permissions) | ✅ | scalability_hardening.sql | All |
 | Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
@@ -88,7 +88,7 @@ Stripe
 | List view + grid view | ✅ | machines, MachineTile, MachineCard | Free |
 | Search, sort, filter by status | ✅ | machines | Free |
 | Drag-to-reorder | ✅ | machines | Free |
-| Machine limit enforcement (10 free, 3 guest) | ✅ | gates.js, machines count | Free |
+| Machine limit enforcement (5 free, 3 guest) | ✅ | gates.js, machines count | Free |
 | Configurable tile fields + colours | ✅ | machines, ui.js constants | Free |
 | Configurable expand sections | ✅ | machines, ui.js constants | Free |
 | PDF spec sheet export | ✅ | machines, jspdf | Free |
