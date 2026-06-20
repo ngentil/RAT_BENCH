@@ -44,8 +44,9 @@ export async function revokeMachinePermission(machineId, userId) {
 
 export async function upsertMachine(machine) {
   const { data: { user } } = await supabase.auth.getUser();
-  const row = { ...toDb(machine), user_id: user?.id };
   const isNew = !machine.id;
+  const row = toDb(machine);
+  if (isNew) row.user_id = user?.id;
   const { error } = await supabase.from("machines").upsert(row, { onConflict: "id" });
   if (error) { console.error("upsertMachine:", error); throw error; }
 }

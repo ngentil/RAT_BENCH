@@ -23,7 +23,7 @@ BEGIN
     'vehiclesSort', 'vehiclesView', 'toolsSort', 'toolsView',
     'equipmentSort', 'equipmentView',
     'trackerCols', 'vehiclesCols', 'toolsCols', 'equipmentCols',
-    'dismissedAnns', '_lsMigrated', 'last_portal_session_at'
+    'dismissedAnns', '_lsMigrated'
   ) THEN
     RAISE EXCEPTION 'Forbidden preference key';
   END IF;

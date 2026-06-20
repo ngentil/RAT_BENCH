@@ -101,12 +101,9 @@ serve(async (req) => {
       return_url: return_url || "https://www.ratbench.net/",
     });
 
-    // Stamp last portal session time atomically (avoids overwriting concurrent tab writes)
-    await supabase.rpc("upsert_preference", {
-      p_user_id: user_id,
-      p_key: "last_portal_session_at",
-      p_value: new Date().toISOString(),
-    });
+    // Stamp last portal session time via internal RPC (not in upsert_preference allowlist
+    // — prevents users from bypassing the cooldown by resetting the timestamp directly)
+    await supabase.rpc("_set_portal_session_at", { p_user_id: user_id });
 
     return new Response(JSON.stringify({ url: session.url }), {
       status: 200,

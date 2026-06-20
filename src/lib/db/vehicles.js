@@ -87,8 +87,9 @@ export async function upsertVehicle(vehicle) {
     if (error) throw error;
     return fromDb({ ...row, id: data.id, created_at: row.updated_at });
   } else {
-    // Update: no round-trip select needed — reconstruct from what we sent
-    const { error } = await supabase.from('vehicles').update(row).eq('id', row.id);
+    // Update: omit user_id — provisioned users must not be able to change ownership
+    const { user_id: _uid, ...updateRow } = row;
+    const { error } = await supabase.from('vehicles').update(updateRow).eq('id', row.id);
     if (error) throw error;
     await syncAssignmentParentName('vehicle', row.id, row.name);
     return fromDb(row);
