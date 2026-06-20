@@ -123,3 +123,19 @@ CREATE POLICY profiles_write ON profiles
   FOR UPDATE TO authenticated
   USING     (id = auth.uid())
   WITH CHECK (id = auth.uid());
+
+-- Column-level write restrictions: prevent self-escalation of tier/billing fields.
+-- SECURITY DEFINER functions (admin_set_tier, apply_pending_upgrade, stripe webhook, etc.)
+-- run as the DB owner and bypass column-level grants, so they can still write any column.
+REVOKE UPDATE ON profiles FROM authenticated;
+
+GRANT UPDATE (
+  display_name,
+  username,
+  units,
+  default_status,
+  tab_order,
+  preferences,
+  storage_policy_enabled,
+  storage_tiers
+) ON profiles TO authenticated;

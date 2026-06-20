@@ -24,3 +24,5 @@ EXCEPTION WHEN OTHERS THEN
   RETURN jsonb_build_object('error', SQLERRM);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION admin_delete_all_wiki() TO authenticated;

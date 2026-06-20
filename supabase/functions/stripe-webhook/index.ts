@@ -57,14 +57,21 @@ serve(async (req) => {
     }
   } else if (event.type === "customer.subscription.updated") {
     const sub = obj as Stripe.Subscription;
-    const priceId = sub.items.data[0].price.id;
-    if (!(priceId in PRICE_TO_TIER)) {
-      console.error(`[stripe-webhook] Unknown price ID: ${priceId} — defaulting to free. Check PRICE_ENTHUSIAST / PRICE_PRO env vars.`);
-    }
-    const tier = PRICE_TO_TIER[priceId] || "free";
     const customerId = sub.customer as string;
-    await supabase.from("profiles").update({ tier, stripe_subscription_id: sub.id }).eq("stripe_customer_id", customerId);
-    await supabase.from("companies").update({ tier, stripe_subscription_id: sub.id }).eq("stripe_customer_id", customerId);
+
+    if (sub.status === "active" || sub.status === "trialing") {
+      const priceId = sub.items.data[0].price.id;
+      if (!(priceId in PRICE_TO_TIER)) {
+        console.error(`[stripe-webhook] Unknown price ID: ${priceId} — defaulting to free. Check PRICE_ENTHUSIAST / PRICE_PRO env vars.`);
+      }
+      const tier = PRICE_TO_TIER[priceId] || "free";
+      await supabase.from("profiles").update({ tier, stripe_subscription_id: sub.id }).eq("stripe_customer_id", customerId);
+      await supabase.from("companies").update({ tier, stripe_subscription_id: sub.id }).eq("stripe_customer_id", customerId);
+    } else {
+      // past_due, incomplete, unpaid, paused → downgrade immediately
+      await supabase.from("profiles").update({ tier: "free" }).eq("stripe_customer_id", customerId);
+      await supabase.from("companies").update({ tier: "free" }).eq("stripe_customer_id", customerId);
+    }
   } else if (event.type === "customer.subscription.deleted" || event.type === "invoice.payment_failed") {
     const customerId = obj.customer as string;
     await supabase.from("profiles").update({ tier: "free", stripe_subscription_id: null }).eq("stripe_customer_id", customerId);

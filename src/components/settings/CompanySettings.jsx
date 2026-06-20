@@ -223,7 +223,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
 
   const handleLeave=async()=>{
     if(!confirm("Leave this organisation? Your machines will remain."))return;
-    await leaveCompany(company.id,session.user.id);
+    await leaveCompany(company.id);
     setCompany(null);setProfile(prev=>({...prev,company_id:null}));
   };
 

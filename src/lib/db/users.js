@@ -25,9 +25,9 @@ export async function joinCompanyByCode(code) {
   return data;
 }
 
-export async function leaveCompany(companyId, userId) {
-  await supabase.from("company_members").delete().eq("company_id", companyId).eq("user_id", userId);
-  await supabase.from("profiles").update({ company_id: null }).eq("id", userId);
+export async function leaveCompany(companyId) {
+  const { error } = await supabase.rpc("rpc_leave_company", { p_company_id: companyId });
+  if (error) throw error;
 }
 
 export async function getCompanyMembers(companyId) {

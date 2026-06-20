@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { unassignAllByParent, syncAssignmentParentName } from './assetAssignments';
+import { deletePhoto } from '../storage';
 
 function toDb(v) {
   return {
@@ -95,6 +96,12 @@ export async function upsertVehicle(vehicle) {
 }
 
 export async function deleteVehicle(id) {
+  const { data } = await supabase.from('vehicles').select('photos, service_log').eq('id', id).single();
+  (data?.photos || []).forEach(url => deletePhoto(url));
+  (data?.service_log || []).forEach(entry => {
+    if (entry.plugPhoto) deletePhoto(entry.plugPhoto);
+    (entry.jobPhotos || []).forEach(url => deletePhoto(url));
+  });
   await unassignAllByParent('vehicle', id);
   await supabase.from('asset_permissions').delete().eq('asset_type', 'vehicle').eq('asset_id', id);
   const { error } = await supabase.from('vehicles').delete().eq('id', id);
