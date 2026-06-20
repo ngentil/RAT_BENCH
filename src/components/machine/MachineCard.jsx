@@ -206,15 +206,15 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const timerRunning = m.jobTimer?.status === "running";
   const svcStatus = getMachineServiceStatus(m);
 
-  const _jBase   = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:0,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",border:"none",width:"100%",boxSizing:"border-box",minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"};
-  const _jOrange = {..._jBase,background:"linear-gradient(180deg,#f07820,#c05000)",color:"#fff",border:"1px solid #e8670a"};
-  const _jEdit   = _jOrange;
-  const _jPdf    = _jOrange;
-  const _jWiki   = _jOrange;
-  const _jShare  = _jOrange;
-  const _jLayout = _jOrange;
-  const _jTile   = _jOrange;
-  const _jDel    = {..._jBase,background:"linear-gradient(180deg,#6a0f0f,#3c0707)",color:"#ff8080",border:"1px solid #cc2020"};
+  const _jBase   = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"9px 14px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",border:"none",width:"100%",boxSizing:"border-box",minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"};
+  const _jAct    = {..._jBase,background:ACC,color:"#fff"};
+  const _jEdit   = _jAct;
+  const _jPdf    = _jAct;
+  const _jWiki   = _jAct;
+  const _jShare  = _jAct;
+  const _jLayout = _jAct;
+  const _jTile   = _jAct;
+  const _jDel    = {..._jBase,background:RED,color:"#fff"};
 
   return (
     <div style={{background:SURF,border:"1px solid "+(timerRunning?GRN+"55":BRD),borderRadius:3,marginBottom:8,overflow:"hidden",boxShadow:timerRunning?"0 0 8px "+GRN+"22":undefined}}>
