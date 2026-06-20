@@ -13,6 +13,17 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ALLOWED_ORIGINS = ["https://www.ratbench.net", "https://ratbench.net"];
+
+function isSafeUrl(url: string | undefined): boolean {
+  if (!url) return true;
+  try {
+    return ALLOWED_ORIGINS.some(o => new URL(url).origin === o);
+  } catch {
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -21,6 +32,10 @@ serve(async (req) => {
 
     if (!price_id || !user_id) {
       return new Response(JSON.stringify({ error: "Missing price_id or user_id" }), { status: 400, headers: CORS });
+    }
+
+    if (!isSafeUrl(success_url) || !isSafeUrl(cancel_url)) {
+      return new Response(JSON.stringify({ error: "Invalid redirect URL" }), { status: 400, headers: CORS });
     }
 
     // Verify the caller is who they claim to be

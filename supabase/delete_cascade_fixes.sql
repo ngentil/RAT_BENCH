@@ -26,7 +26,21 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+  v_caller_role text;
 BEGIN
+  SELECT role INTO v_caller_role
+  FROM company_members
+  WHERE company_id = p_company_id AND user_id = auth.uid();
+
+  IF v_caller_role NOT IN ('owner', 'admin') THEN
+    RAISE EXCEPTION 'Forbidden: only company owners and admins can remove members';
+  END IF;
+
+  IF p_user_id = auth.uid() THEN
+    RAISE EXCEPTION 'Cannot remove yourself — use leave company instead';
+  END IF;
+
   -- Revoke machine access
   DELETE FROM machine_permissions
   WHERE user_id = p_user_id

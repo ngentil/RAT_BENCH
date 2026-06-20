@@ -9,6 +9,10 @@ AS $$
 DECLARE
   v_count int;
 BEGIN
+  IF auth.email() != 'nathan.gentil.ai@gmail.com' THEN
+    RETURN jsonb_build_object('error', 'Access denied');
+  END IF;
+
   SELECT COUNT(*) INTO v_count FROM wiki_entries WHERE created_by = p_user_id;
   DELETE FROM wiki_contributions WHERE user_id = p_user_id;
   DELETE FROM wiki_revisions WHERE edited_by = p_user_id;
