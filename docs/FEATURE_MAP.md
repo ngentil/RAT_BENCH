@@ -56,7 +56,7 @@ Stripe
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
 | Admin panel analytics (users, active, machines, signups trend) | ✅ | AdminPanel.jsx OverviewTab + admin_get_stats() RPC — run supabase/admin_get_stats.sql to update; server-side auth.email() check blocks non-admin calls; GRANT EXECUTE TO authenticated added (was missing, caused silent 403 failures) | Admin only |
 | Admin: list / search users | ✅ | AdminPanel.jsx UsersTab + admin_list_users(p_search, p_limit, p_offset) RPC — run supabase/admin_rpcs.sql; returns id, email, display_name, username, tier, created_at, last_sign_in_at, machine_count; server-side auth.email() check | Admin only |
-| Admin: set user tier | ✅ | AdminPanel.jsx UsersTab tier select + admin_set_tier(p_email, p_tier) RPC — run supabase/admin_rpcs.sql; server-side auth.email() check; audited to admin_audit_log | Admin only |
+| Admin: set user tier | ✅ | AdminPanel.jsx UsersTab tier select + admin_set_tier(p_email, p_tier) RPC — run supabase/admin_rpcs.sql; server-side auth.email() check; p_tier validated against allowlist (free/enthusiast/team/business) — arbitrary strings rejected; audited to admin_audit_log | Admin only |
 | Admin: deactivate user (reset to free) | ✅ | AdminPanel.jsx UsersTab Deactivate button + admin_deactivate_user(p_email) RPC — run supabase/admin_rpcs.sql; clears stripe_subscription_id; audited | Admin only |
 | Admin: hard-delete user from Supabase + all data + storage photos | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC + deleteUserPhotos() — run supabase/admin_delete_user.sql AND supabase/admin_storage_policy.sql — cleans: company_members, machine_permissions, asset_permissions, services, machine_bookings, machines, clients, inventory_items, vehicles, equipment, tools, consumables, wiki data, asset_assignments, profiles, auth.users; wiki deletion order: contributions+revisions on user's entries first (covers other contributors), then entries, then user's own revisions/contributions on others' entries; if sole company owner, company tier reset to free; server-side auth.email() admin guard | Admin only |
 | Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql; server-side auth.email() check prevents any authenticated user from calling it; wiki deletion order: contributions+revisions on user's entries first (prevents FK violation when other contributors have rows referencing those entries), then entries, then user's own revisions/contributions on other entries | Admin only |
@@ -66,7 +66,7 @@ Stripe
 | Feature flags table | ✅ | feature_flags table — run supabase/admin_tables_rls.sql; admin can create/toggle/delete; all authenticated users can SELECT (for client-side gating); managed from AdminPanel FlagsTab | Admin only |
 | Admin: storage photo cleanup on user delete | ✅ | is_admin_user() storage policy — run supabase/admin_storage_policy.sql; now checks auth.email() = admin email (previously checked account_type='admin' which was never set, so admin photo deletes always silently failed) | Admin only |
 | upgrade_grants table + RLS | ✅ | Stores admin-issued tier grants (email + tier + expiry); run supabase/upgrade_grants_rls.sql — admin-only SELECT/INSERT/UPDATE/DELETE; without RLS any authenticated user could read all grant records | Admin only |
-| Upgrade grant RPCs (grant / revoke / apply) | ✅ | run supabase/apply_pending_upgrade_rpc.sql — creates upgrade_grants table + pending_* columns on profiles; grant_upgrade(email, tier): admin-only, generates code, sets pending_code/pending_tier/pending_code_expires_at on target profile; revoke_upgrade(email): admin-only, expires grant and clears pending columns; apply_pending_upgrade(): called by user from ProfileSettings, validates code against upgrade_grants (redeemed_at IS NULL, not expired), upgrades profile tier, marks grant redeemed, audits | Admin + All |
+| Upgrade grant RPCs (grant / revoke / apply) | ✅ | run supabase/apply_pending_upgrade_rpc.sql — creates upgrade_grants table + pending_* columns on profiles; grant_upgrade(email, tier): admin-only, generates code, sets pending_code/pending_tier/pending_code_expires_at on target profile; revoke_upgrade(email): admin-only, expires grant and clears pending columns; apply_pending_upgrade(): called by user from ProfileSettings, validates code; uses profiles FOR UPDATE lock + atomic UPDATE upgrade_grants SET redeemed_at = now() RETURNING id to claim the grant in a single statement (prevents TOCTOU where two concurrent callers could both pass the redeemed_at IS NULL check); upgrades profile tier, audits | Admin + All |
 | Photo viewer: X button + Android back button closes viewer | ✅ | PhotoViewer.jsx — manualClose() pattern (stopPropagation on X prevents double history.back), 52px tap target | All |
 | Machine card: Android back button collapses expanded card | ✅ | MachineCard.jsx — pushState({ cardOpen: id }) on expand, popstate listener collapses it | All |
 | Android PWA: "Press back again to exit" toast | ✅ | src/lib/backGuard.js — installBackGuard() called in main.jsx before React renders; 2 s window | All |
@@ -240,7 +240,7 @@ Stripe
 | Part category groups filter bar (Tyres & Wheels, Engine, Fuel & Induction, Ignition, Drive Train, etc.) | ✅ | partsTypes.js PART_CATEGORY_GROUPS | Free |
 | QR code label generation + print | ✅ | inventory_items, qrcode library | Free |
 | Barcode scanner input | ✅ | keyboard detection | Free |
-| Stock adjustment (use / restock) | ✅ | inventory_items.payload | Free |
+| Stock adjustment (use / restock) | ✅ | inventory_items.payload — adjustStock() calls adjust_inventory_stock() RPC (run supabase/adjust_stock_rpcs.sql); atomic single-statement UPDATE eliminates read-modify-write race condition under concurrent use by multiple technicians | Free |
 | Machine parts list (per-machine) | ✅ | machines.parts (jsonb) | Free |
 | localStorage → Supabase migration | ✅ | inventory_items | Free |
 | Photos per part (stored in payload JSONB) | ✅ | inventory_items.payload.photos | Free |
@@ -293,7 +293,7 @@ Stripe
 | Sort modal + list/grid view toggle (Consumables) | ✅ | ConsumablesTab, AssetTile | Free |
 | 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
 | Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
-| ± stock adjustment inline on card | ✅ | adjustConsumableQty(), StockItemTab | Free |
+| ± stock adjustment inline on card | ✅ | adjustConsumableQty() calls adjust_consumable_qty() RPC (run supabase/adjust_stock_rpcs.sql); atomic UPDATE eliminates read-modify-write race under concurrent adjustments | Free |
 | Cover photo selection (☆ Cover sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab, MachineCard | Free |
 | Photos for consumables (add via form, thumbnail in card, cover selection) | ✅ | ConsumablesTab, consumables table photos column | Free |
 | Machine card collapsed header shows cover photo thumbnail | ✅ | MachineCard | Free |
@@ -310,19 +310,19 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| companies table + RLS | ✅ | profiles — run supabase/org_and_profiles_rls.sql; members read; admins update (column-level REVOKE/GRANT blocks direct writes to tier/stripe_customer_id/stripe_subscription_id — only SECURITY DEFINER edge functions can write those); _is_company_member / _is_company_admin SECURITY DEFINER helpers avoid asset_permissions recursion | Business |
+| companies table + RLS | ✅ | profiles — run supabase/org_and_profiles_rls.sql; members read; admins update (column-level REVOKE/GRANT blocks direct writes to tier/stripe_customer_id/stripe_subscription_id — only SECURITY DEFINER edge functions can write those); _is_company_member / _is_company_admin SECURITY DEFINER helpers avoid asset_permissions recursion; direct INSERT policy removed (rpc_create_company is SECURITY DEFINER and handles both the company row and company_members seeding atomically — open INSERT policy would create ownerless companies) | Business |
 | Create / edit company | ✅ | companies — run supabase/company_rpcs.sql (defines rpc_create_company SECURITY DEFINER: creates row, seeds caller as owner in company_members, links profile) | Business |
 | Invite code join flow | ✅ | companies.invite_code — run supabase/company_rpcs.sql (defines join_company_by_invite SECURITY DEFINER: matches invite_code, inserts member as 'viewer' role, links profile; blocks joining if already a member of a different org — must leave first; original 'member' role violated the role CHECK constraint) | Business |
 | company_members table | ✅ | companies, profiles — RLS: members read own company list; admins manage; users can leave; cm_manage WITH CHECK blocks setting role='owner' via direct API (prevents admin self-escalation to owner); CHECK constraint enforces valid role values at DB level; run supabase/org_and_profiles_rls.sql | Business |
 | Roles: owner / admin / technician / viewer | ✅ | company_members.role — DB CHECK constraint enforces valid values; role='owner' cannot be set via direct UPDATE (requires SECURITY DEFINER RPC) | Business |
-| Edit member roles | ✅ | updateMemberRole() RPC | Business |
-| Remove member | ✅ | rpc_remove_member() — run supabase/delete_cascade_fixes.sql; verifies caller is owner/admin; blocks removing the company owner (would orphan company permanently); cleans machine_permissions, asset_permissions, vehicle crew assignments | Business |
+| Edit member roles | ✅ | updateMemberRole() — UsersTab derives isOwner and isMemberOwner from company_members.role in the loaded members list (company.owner_id column never existed; using it made isOwner always false, locking the owner out of all management actions and exposing the owner's role to change) | Business |
+| Remove member | ✅ | rpc_remove_member() — run supabase/delete_cascade_fixes.sql; verifies caller is owner/admin; blocks removing the company owner (would orphan company permanently); cleans machine_permissions, asset_permissions, vehicle crew assignments; uuid columns in DELETE queries use direct uuid comparison (::text casts removed — casts prevented index use) | Business |
 | Leave company (self) | ✅ | rpc_leave_company(p_company_id) — run supabase/rpc_leave_company.sql; cleans machine_permissions and asset_permissions for that company before removing the company_members row and clearing profiles.company_id; previously leaveCompany only deleted the members row, leaving orphaned provisioned access; owner is blocked from leaving (must transfer ownership or delete company first) | Business |
 | Delete company | ✅ | deleteCompany() → rpc_delete_company SECURITY DEFINER — run supabase/company_rpcs.sql; clears profiles.company_id for all members, removes asset_permissions, company_members, then company row (FK SET NULL handles machines/vehicles/etc.) | Business |
 | Regenerate invite code | ✅ | regenerateInviteCode() — uses crypto.randomUUID() (CSPRNG) for the 8-char code | Business |
 | Company logo upload | ✅ | companies.logo (base64) | Business |
 | Hourly rate / tax rate / currency config | ✅ | companies fields | Business |
-| Machine provisioning panel (CompanySettings) | ✅ | machine_permissions | Business |
+| Machine provisioning panel (CompanySettings) | ✅ | machine_permissions — run supabase/create_machine_permissions.sql; machine_perms_update policy now has explicit WITH CHECK (prevents machine owner changing machine_id to a machine they don't own in a single UPDATE) | Business |
 | Asset provisioning panel (vehicles/equip/tools) | ✅ | asset_permissions, CompanySettings | Business |
 
 ---
@@ -335,7 +335,7 @@ Stripe
 | wiki_revisions table | ✅ | wiki_entries | Enthusiast+ |
 | Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only; UPDATE RLS restricted to entry author; column-level REVOKE/GRANT limits author updates to make/model/type/slug (prevents flipping is_sample or sample_owner_id to inject into another user's sample list); run supabase/wiki_rls.sql; authors can delete their own public entries (run supabase/wiki_author_delete.sql) | Free |
 | Wiki collaborative rev pointer | ✅ | update_wiki_rev_pointer(p_entry_id, p_rev_id) RPC — run supabase/wiki_advance_rev_rpc.sql; SECURITY DEFINER bypasses the author-only UPDATE RLS policy to advance current_rev_id; caller must be entry author or have contributed a revision to the entry AND must be the target revision's author or entry author (prevents random users from vandalizing entries by blanking the pointer or rolling back to old revisions) | Free |
-| View count tracking | ✅ | wiki_entries.view_count + increment_wiki_views() RPC — run supabase/wiki_view_count_rpc.sql (adds view_count column + SECURITY DEFINER RPC granted to anon+authenticated); previously the RPC was called but undefined so view counts never incremented and popularity ordering was always zero | Free |
+| View count tracking | ✅ | wiki_entries.view_count + increment_wiki_views() RPC — run supabase/wiki_view_count_rpc.sql (adds view_count column + SECURITY DEFINER RPC granted to anon+authenticated); WHERE clause includes AND NOT is_sample so sample entries never accumulate view counts; previously the RPC was called but undefined so view counts never incremented | Free |
 | Create / edit wiki entry | ✅ | wiki_entries | Enthusiast+ |
 | Field-level editing with edit summary | ✅ | wiki_revisions | Enthusiast+ |
 | Full revision history | ✅ | wiki_revisions | Enthusiast+ |
