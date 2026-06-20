@@ -67,3 +67,5 @@ BEGIN
   );
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION admin_get_stats() TO authenticated;

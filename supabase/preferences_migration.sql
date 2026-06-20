@@ -16,6 +16,17 @@ BEGIN
   IF p_user_id != auth.uid() THEN
     RAISE EXCEPTION 'Forbidden';
   END IF;
+  IF p_key NOT IN (
+    'rat_tut', 'rat_tut_job_card', 'rat_tut_jobs', 'rat_tut_revenue',
+    'rat_tut_search', 'rat_tut_clients', 'rat_form_tut', 'rat_wiki_seeded',
+    'tab', 'workshopTab', 'trackerSort', 'trackerView',
+    'vehiclesSort', 'vehiclesView', 'toolsSort', 'toolsView',
+    'equipmentSort', 'equipmentView',
+    'trackerCols', 'vehiclesCols', 'toolsCols', 'equipmentCols',
+    'dismissedAnns', '_lsMigrated', 'last_portal_session_at'
+  ) THEN
+    RAISE EXCEPTION 'Forbidden preference key';
+  END IF;
   UPDATE profiles
   SET preferences = preferences || jsonb_build_object(p_key, p_value)
   WHERE id = p_user_id;

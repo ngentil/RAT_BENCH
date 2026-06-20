@@ -101,10 +101,12 @@ serve(async (req) => {
       return_url: return_url || "https://www.ratbench.net/",
     });
 
-    // Stamp last portal session time to rate-limit repeated calls
-    await supabase.from("profiles").update({
-      preferences: { ...prefs, last_portal_session_at: new Date().toISOString() },
-    }).eq("id", user_id);
+    // Stamp last portal session time atomically (avoids overwriting concurrent tab writes)
+    await supabase.rpc("upsert_preference", {
+      p_user_id: user_id,
+      p_key: "last_portal_session_at",
+      p_value: new Date().toISOString(),
+    });
 
     return new Response(JSON.stringify({ url: session.url }), {
       status: 200,

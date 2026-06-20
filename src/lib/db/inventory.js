@@ -128,7 +128,7 @@ export async function getInventoryPermissions(itemId) {
   const { data, error } = await supabase
     .from('asset_permissions')
     .select('*')
-    .eq('asset_type', 'consumable')
+    .eq('asset_type', 'part')
     .eq('asset_id', itemId);
   if (error) throw error;
   return data || [];
@@ -136,7 +136,7 @@ export async function getInventoryPermissions(itemId) {
 
 export async function upsertInventoryPermission(itemId, userId, companyId, canEdit) {
   const { error } = await supabase.from('asset_permissions').upsert({
-    asset_type: 'consumable',
+    asset_type: 'part',
     asset_id:   itemId,
     user_id:    userId,
     company_id: companyId,
@@ -148,7 +148,7 @@ export async function upsertInventoryPermission(itemId, userId, companyId, canEd
 export async function revokeInventoryPermission(itemId, userId) {
   const { error } = await supabase.from('asset_permissions')
     .delete()
-    .eq('asset_type', 'consumable')
+    .eq('asset_type', 'part')
     .eq('asset_id', itemId)
     .eq('user_id', userId);
   if (error) throw error;

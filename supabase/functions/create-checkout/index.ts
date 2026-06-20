@@ -15,6 +15,10 @@ const CORS = {
 
 const ALLOWED_ORIGINS = ["https://www.ratbench.net", "https://ratbench.net"];
 
+const VALID_PRICE_IDS = new Set(
+  [Deno.env.get("PRICE_ENTHUSIAST"), Deno.env.get("PRICE_PRO")].filter(Boolean)
+);
+
 function isSafeUrl(url: string | undefined): boolean {
   if (!url) return true;
   try {
@@ -32,6 +36,10 @@ serve(async (req) => {
 
     if (!price_id || !user_id) {
       return new Response(JSON.stringify({ error: "Missing price_id or user_id" }), { status: 400, headers: CORS });
+    }
+
+    if (VALID_PRICE_IDS.size > 0 && !VALID_PRICE_IDS.has(price_id)) {
+      return new Response(JSON.stringify({ error: "Invalid price_id" }), { status: 400, headers: CORS });
     }
 
     if (!isSafeUrl(success_url) || !isSafeUrl(cancel_url)) {
