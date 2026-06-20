@@ -104,20 +104,9 @@ export async function deleteInventoryItem(userId, itemId) {
 // delta: negative to deduct (use), positive to restock
 export async function adjustStock(userId, itemId, delta) {
   try {
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .select('payload')
-      .eq('id', itemId)
-      .eq('user_id', userId)
-      .single();
+    const { data, error } = await supabase.rpc('adjust_inventory_stock', { p_item_id: itemId, p_delta: delta });
     if (error) throw error;
-    const p = data?.payload || {};
-    const newQty = Math.max(0, (Number(p.stockQty) || 0) + delta);
-    await supabase
-      .from('inventory_items')
-      .update({ payload: { ...p, stockQty: newQty }, updated_at: new Date().toISOString() })
-      .eq('id', itemId)
-      .eq('user_id', userId);
+    if (data?.error) throw new Error(data.error);
   } catch (e) { console.warn('adjustStock Supabase failed:', e); }
   return getInventory(userId);
 }

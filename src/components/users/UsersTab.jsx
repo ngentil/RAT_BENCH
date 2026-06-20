@@ -48,7 +48,8 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
   const [updatingRole, setUpdatingRole] = useState(null);
   const [showInvite, setShowInvite] = useState(false);
 
-  const isOwner = company?.owner_id === session?.user?.id;
+  const myMember = members.find(m => m.user_id === session?.user?.id);
+  const isOwner = myMember?.role === 'owner';
   const tier = effectiveTier(profile, company);
   const canManageUsers = tier === "business";
   const seats = seatLimit(profile, company);
@@ -179,7 +180,7 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
         {!loading && members.map(m => {
           const displayName = m.profile?.display_name || m.profile?.username || m.user_id.slice(0, 8);
           const isMe = m.user_id === session?.user?.id;
-          const isMemberOwner = m.user_id === company.owner_id;
+          const isMemberOwner = m.role === 'owner';
 
           const roleColor = isMemberOwner ? GRN : ROLE_COLOR[m.role] || MUT;
           return (

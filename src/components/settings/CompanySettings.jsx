@@ -137,8 +137,6 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
   useEffect(() => {
     if (session?.user?.id) getConsumables().then(setConsumables).catch(() => {});
   }, [session?.user?.id]);
-  const isOwner=company&&company.owner_id===session?.user?.id;
-  const isAdmin=isOwner; // kept for backward compat in JSX below
   const canMultiUser=effectiveTier(profile,company)==="business";
   const [myRole,setMyRole]=useState(null);
   useEffect(()=>{
@@ -146,6 +144,8 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
     supabase.from("company_members").select("role").eq("company_id",company.id).eq("user_id",session.user.id).single()
       .then(({data})=>setMyRole(data?.role||null));
   },[company?.id,session?.user?.id]);
+  const isOwner=myRole==="owner";
+  const isAdmin=isOwner; // kept for backward compat in JSX below
   const canProvision=canMultiUser&&(isOwner||myRole==="admin");
   const [mode,setMode]=useState("view"); // view|create|join
   const [err,setErr]=useState("");

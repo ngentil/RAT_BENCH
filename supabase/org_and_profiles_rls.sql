@@ -80,11 +80,9 @@ CREATE POLICY companies_manage ON companies
   USING     (_is_company_admin(id, auth.uid()))
   WITH CHECK (_is_company_admin(id, auth.uid()));
 
--- Authenticated users can create a company (rpc_create_company is SECURITY DEFINER
--- and will also insert the owner into company_members)
-CREATE POLICY companies_create ON companies
-  FOR INSERT TO authenticated
-  WITH CHECK (true);
+-- Direct INSERT on companies is intentionally blocked for authenticated users.
+-- rpc_create_company is SECURITY DEFINER and bypasses RLS — it handles both the
+-- company row and the owner's company_members entry atomically.
 
 
 -- ── Fix asset_permissions to use SECURITY DEFINER helpers ────────────────────

@@ -103,10 +103,11 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_uid  uuid       := auth.uid();
-  v_code text;
-  v_tier text;
-  v_exp  timestamptz;
+  v_uid      uuid       := auth.uid();
+  v_code     text;
+  v_tier     text;
+  v_exp      timestamptz;
+  v_grant_id uuid;
 BEGIN
   IF v_uid IS NULL THEN
     RETURN jsonb_build_object('error', 'Not authenticated');
@@ -126,13 +127,17 @@ BEGIN
     RETURN jsonb_build_object('error', 'Upgrade code has expired');
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM upgrade_grants
-    WHERE code = v_code
-      AND tier = v_tier
-      AND redeemed_at IS NULL
-      AND expires_at > now()
-  ) THEN
+  -- Atomically claim the grant — prevents two concurrent callers both seeing
+  -- redeemed_at IS NULL and both succeeding.
+  UPDATE upgrade_grants
+  SET redeemed_at = now()
+  WHERE code        = v_code
+    AND tier        = v_tier
+    AND redeemed_at IS NULL
+    AND expires_at  > now()
+  RETURNING id INTO v_grant_id;
+
+  IF v_grant_id IS NULL THEN
     RETURN jsonb_build_object('error', 'Code is no longer valid');
   END IF;
 
@@ -142,10 +147,6 @@ BEGIN
       pending_tier            = NULL,
       pending_code_expires_at = NULL
   WHERE id = v_uid;
-
-  UPDATE upgrade_grants
-  SET redeemed_at = now()
-  WHERE code = v_code;
 
   INSERT INTO admin_audit_log (action, target_email, detail)
   SELECT 'apply_upgrade', u.email, 'Code ' || v_code || ' applied → ' || v_tier
