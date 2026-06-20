@@ -9,6 +9,7 @@ import { fromDb } from './lib/db/transforms';
 import { TABS, WORKSHOP_TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
+import { savePref } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
 
 const TIER_GLOW = {
@@ -39,14 +40,8 @@ import ConsumablesTab from './components/consumables/ConsumablesTab';
 
 
 function App(){
-  const [tab,setTab]=useState(()=>{
-    const stored=localStorage.getItem("rat_tab")||"tracker";
-    const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue"]);
-    if(WS_IDS.has(stored)){localStorage.setItem("rat_workshop_tab",stored);return"workshop";}
-    if(stored==="users") return "tracker";
-    return stored;
-  });
-  const [workshopTab,setWorkshopTab]=useState(()=>localStorage.getItem("rat_workshop_tab")||"parts");
+  const [tab,setTab]=useState("tracker");
+  const [workshopTab,setWorkshopTab]=useState("parts");
   const [settingsTab,setSettingsTab]=useState("profile");
   const [machines,setMachines]=useState([]);
   const [clients,setClients]=useState([]);
@@ -72,13 +67,12 @@ function App(){
   });
   const [retrying,setRetrying]=useState(false);
   const [announcements,setAnnouncements]=useState([]);
-  const [dismissedAnns,setDismissedAnns]=useState(()=>{
-    try{return JSON.parse(localStorage.getItem("rat_dismissed_anns")||"[]");}catch{return[];}
-  });
+  const [dismissedAnns,setDismissedAnns]=useState([]);
+  const [prefsSynced,setPrefsSynced]=useState(false);
 
   const dismissAnn=(id)=>{
     const next=[...dismissedAnns,id];
-    localStorage.setItem("rat_dismissed_anns",JSON.stringify(next));
+    savePref(profile?.id,'dismissedAnns',next);
     setDismissedAnns(next);
     setAnnouncements(prev=>prev.filter(a=>a.id!==id));
   };
@@ -191,18 +185,30 @@ function App(){
         const{data:anns}=await supabase.from("announcements").select("*")
           .eq("active",true).or(`tier_filter.eq.all,tier_filter.eq.${userTier}`);
         if(anns){
-          const dismissed=JSON.parse(localStorage.getItem("rat_dismissed_anns")||"[]");
+          const dismissed=profileData?.preferences?.dismissedAnns||[];
           setAnnouncements(anns.filter(a=>!dismissed.includes(a.id)&&(!a.expires_at||new Date(a.expires_at)>new Date())));
         }
       }catch{}
     })();
   };
 
-  useEffect(()=>{ localStorage.setItem("rat_tab",tab); },[tab]);
-  useEffect(()=>{ localStorage.setItem("rat_workshop_tab",workshopTab); },[workshopTab]);
+  useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'tab',tab); },[tab,prefsSynced,profile?.id]);
+  useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'workshopTab',workshopTab); },[workshopTab,prefsSynced,profile?.id]);
 
   useEffect(()=>{
     if(!profile) return;
+    if(!prefsSynced){
+      const prefs=profile.preferences||{};
+      const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue"]);
+      if(prefs.tab&&prefs.tab!=="users"){
+        if(WS_IDS.has(prefs.tab)){setTab("workshop");if(prefs.workshopTab)setWorkshopTab(prefs.workshopTab);}
+        else setTab(prefs.tab);
+      } else if(prefs.workshopTab){
+        setWorkshopTab(prefs.workshopTab);
+      }
+      if(prefs.dismissedAnns) setDismissedAnns(prefs.dismissedAnns);
+      setPrefsSynced(true);
+    }
     const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings"]));
     if(!validTopIds.has(tab)) setTab("tracker");
     const tier=effectiveTier(profile,company);
@@ -415,7 +421,7 @@ function App(){
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} /></div>
+      <div style={{display:tab==="search"?"contents":"none"}}><SpecSearch  machines={machines} profile={profile} /></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>

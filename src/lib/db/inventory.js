@@ -1,7 +1,6 @@
 import { supabase } from '../supabase';
 import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
 
-const lsKey = uid => `rat_inventory_${uid}`;
 
 function fromDb(r) {
   const p = r.payload || {};
@@ -68,19 +67,13 @@ export async function getInventoryItems() {
 
 export async function getInventory(userId) {
   if (!userId) return [];
-  try {
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    const items = (data || []).map(fromDb);
-    localStorage.setItem(lsKey(userId), JSON.stringify(items));
-    return items;
-  } catch {
-    try { return JSON.parse(localStorage.getItem(lsKey(userId)) || '[]'); } catch { return []; }
-  }
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(fromDb);
 }
 
 export async function saveInventoryItem(userId, item) {

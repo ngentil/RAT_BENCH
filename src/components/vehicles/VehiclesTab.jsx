@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import UpgradeBanner from '../ui/UpgradeBanner';
 import { SL, FL, Empty } from '../ui/shared';
+import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
@@ -428,16 +429,16 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   const [search, setSearch]     = useState('');
   const [typeFilter, setTypeFilter] = useState(null);
   const [showSort, setShowSort] = useState(false);
-  const [sortBy, setSortBy] = useState(() => localStorage.getItem('vehiclesSort') || null);
-  const [view, setView] = useState(() => localStorage.getItem('vehiclesView') || 'list');
-  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('vehiclesCols') || '2'));
+  const [sortBy, setSortBy] = useState(() => getPref(profile, 'vehiclesSort', null));
+  const [view, setView] = useState(() => getPref(profile, 'vehiclesView', 'list'));
+  const [cols, setCols] = useState(() => getPref(profile, 'vehiclesCols', 2));
   const [tileOpen, setTileOpen] = useState(null);
   const userId = session?.user?.id;
   const units  = profile?.units || 'metric';
 
-  const setViewP = v => { setView(v); localStorage.setItem('vehiclesView', v); };
-  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('vehiclesSort', v) : localStorage.removeItem('vehiclesSort'); };
-  const setColsP = c => { setCols(c); localStorage.setItem('vehiclesCols', String(c)); setViewP('grid'); };
+  const setViewP = v => { setView(v); savePref(profile?.id, 'vehiclesView', v); };
+  const setSortByP = v => { setSortBy(v); savePref(profile?.id, 'vehiclesSort', v ?? null); };
+  const setColsP = c => { setCols(c); savePref(profile?.id, 'vehiclesCols', c); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
   const limit   = assetLimit('vehicles', profile, company);

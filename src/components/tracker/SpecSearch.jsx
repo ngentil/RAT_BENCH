@@ -3,6 +3,7 @@ import { MUT, ACC, BRD, BRD2, SURF, TXT, inp, btnG, sm } from '../../lib/styles'
 import { SL, Empty } from '../ui/shared';
 import TabGuide from '../ui/TabGuide';
 import { mIcon } from '../../lib/helpers';
+import { getPref } from '../../lib/db/preferences';
 import StatusBadge from '../ui/StatusBadge';
 
 const FIELDS=[
@@ -128,7 +129,7 @@ const FIELDS=[
   {k:"obAnodeMaterial",  l:"Anode Material",                    u:""},
 ];
 
-function SpecSearch({machines}){
+function SpecSearch({machines, profile}){
   const [query,setQuery]=useState("");
   const q=query.trim().toLowerCase();
 
@@ -168,7 +169,7 @@ function SpecSearch({machines}){
     <div style={{padding:16,flex:1}}>
       <SL t="Spec Search" />
       <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Search any spec across your inventory — stud spacing, carb brand, plug type, bolt size.</div>
-      <TabGuide storageKey="rat_tut_search" variant="info" title="cross-machine search" lines={["search any spec across all your machines","plug gap · compression · bar length & more"]} />
+      <TabGuide storageKey="rat_tut_search" variant="info" title="cross-machine search" lines={["search any spec across all your machines","plug gap · compression · bar length & more"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_search",false)} />
       <div style={{display:"flex",gap:8,marginBottom:14}}>
         <input style={{...inp,fontSize:13}} placeholder="e.g.  28  /  Walbro  /  NGK  /  M5..." value={query} onChange={e=>setQuery(e.target.value)} />
         {query&&<button style={{...btnG,...sm,whiteSpace:"nowrap"}} onClick={()=>setQuery("")}>Clear</button>}

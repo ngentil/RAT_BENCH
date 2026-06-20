@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { savePref } from '../../lib/db/preferences';
 
 const ARW = "#e8870a";
 const M = { fontFamily:"'IBM Plex Mono',monospace" };
@@ -19,10 +20,11 @@ const DownArrow = () => (
 
 // variant "add"  → right-aligned, arrow up-right toward + Add button
 // variant "info" → centered, arrow down toward content below
-export default function TabGuide({ storageKey, title, lines, variant = "add" }) {
-  const [done, setDone] = useState(() => localStorage.getItem(storageKey) === '1');
+export default function TabGuide({ storageKey, title, lines, variant = "add", userId, initialDone = false }) {
+  const [done, setDone] = useState(initialDone);
+  useEffect(() => { if (initialDone) setDone(true); }, [initialDone]);
   if (done) return null;
-  const dismiss = () => { localStorage.setItem(storageKey, '1'); setDone(true); };
+  const dismiss = () => { setDone(true); savePref(userId, storageKey, true); };
 
   if (variant === "add") {
     return (
