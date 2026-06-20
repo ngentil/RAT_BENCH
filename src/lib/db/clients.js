@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { deletePhoto } from '../storage';
 
 function fromDb(r) {
   return {
@@ -42,6 +43,10 @@ export async function upsertClient(client) {
 }
 
 export async function deleteClientApi(id) {
+  try {
+    const { data } = await supabase.from('clients').select('photos').eq('id', id).single();
+    (data?.photos || []).forEach(url => deletePhoto(url));
+  } catch {}
   const { error } = await supabase.from("clients").delete().eq("id", id);
   if (error) console.error("deleteClient:", error);
 }

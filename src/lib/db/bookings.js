@@ -14,7 +14,8 @@ export async function getAllActiveBookings() {
   const { data } = await supabase
     .from('machine_bookings')
     .select('*')
-    .is('collected_at', null);
+    .is('collected_at', null)
+    .limit(500);
   return data || [];
 }
 
@@ -23,7 +24,8 @@ export async function getClosedBookings() {
     .from('machine_bookings')
     .select('*')
     .not('collected_at', 'is', null)
-    .order('collected_at', { ascending: false });
+    .order('collected_at', { ascending: false })
+    .limit(500);
   return data || [];
 }
 

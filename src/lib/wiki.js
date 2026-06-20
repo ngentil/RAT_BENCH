@@ -211,7 +211,11 @@ export async function searchWiki(query, userId) {
   return data || [];
 }
 
+const _viewedThisSession = new Set();
+
 export async function incrementViewCount(entryId) {
+  if (_viewedThisSession.has(entryId)) return;
+  _viewedThisSession.add(entryId);
   await supabase.rpc("increment_wiki_views", { entry_id: entryId });
 }
 

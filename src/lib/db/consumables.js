@@ -64,7 +64,8 @@ export async function upsertConsumable(item) {
     updated_at:   now,
   };
   if (item.id) {
-    const { data, error } = await supabase.from('consumables').update(payload).eq('id', item.id).select().single();
+    const { user_id: _uid, ...updatePayload } = payload;
+    const { data, error } = await supabase.from('consumables').update(updatePayload).eq('id', item.id).select().single();
     if (error) throw error;
     await syncAssignmentChildName('consumable', item.id, item.name);
     return fromDb(data);

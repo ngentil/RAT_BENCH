@@ -82,11 +82,17 @@ export async function saveInventoryItem(userId, item) {
   const isNew = !item.id;
   const id = item.id || crypto.randomUUID();
   try {
-    await supabase.from('inventory_items').upsert(
-      { ...toDb(userId, item), id, updated_at: now, ...(isNew ? { created_at: now } : {}) },
-      { onConflict: 'id' }
-    );
-    if (!isNew && item.name) await syncAssignmentChildName('part', id, item.name);
+    const { user_id: _uid, ...updateRow } = toDb(userId, item);
+    if (isNew) {
+      await supabase.from('inventory_items').insert(
+        { user_id: userId, ...updateRow, id, created_at: now, updated_at: now }
+      );
+    } else {
+      await supabase.from('inventory_items').update(
+        { ...updateRow, updated_at: now }
+      ).eq('id', id);
+      if (item.name) await syncAssignmentChildName('part', id, item.name);
+    }
   } catch (e) { console.warn('saveInventoryItem Supabase failed:', e); }
   return getInventory(userId);
 }

@@ -91,8 +91,9 @@ function App(){
     setSession(session);
     if(first) setProfileChecked(false);
 
-    // profileData declared here so it's in scope for the announcements fetch below
+    // profileData/companyData declared here so they're in scope for the announcements fetch below
     let profileData = null;
+    let companyData = null;
     try {
       const {data} = await supabase
         .from("profiles").select("*").eq("id",session.user.id).single();
@@ -101,6 +102,7 @@ function App(){
         setProfile(profileData);
         if(profileData.company_id){
           const co=await getMyCompany(profileData.company_id);
+          companyData = co;
           setCompany(co);
         }
       } else if(session.user.is_anonymous){
@@ -179,7 +181,7 @@ function App(){
     // Fetch announcements after UI is visible — non-blocking
     (async()=>{
       try {
-        const userTier = profileData?.tier || "free";
+        const userTier = effectiveTier(profileData, companyData);
         const{data:anns}=await supabase.from("announcements").select("*")
           .eq("active",true).or(`tier_filter.eq.all,tier_filter.eq.${userTier}`);
         if(anns){
