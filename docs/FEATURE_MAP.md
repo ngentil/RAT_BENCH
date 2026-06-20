@@ -182,6 +182,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
+| Jobs tab: shows first 3 machines only on free tier (FREE_LIMIT=3) | ✅ | JobBoard.jsx FREE_LIMIT | Free (limit) |
 | Job timer (start / stop / pause) | ✅ | machines.job_timer (jsonb) | Free |
 | Multiple timers per machine | ✅ | machines.job_timer array | Free |
 | Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Business |
