@@ -238,48 +238,54 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             ? <img src={m.photos[0]} alt="" style={{width:48,height:48,objectFit:"cover",borderRadius:4,flexShrink:0,border:"1px solid #2a2a2a"}} />
             : <div style={{width:42,height:42,borderRadius:4,flexShrink:0,background:"#1a1a1a",border:"1px solid #2a2a2a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{mIcon(m.type)}</div>}
 
-          {/* Left: name + meta */}
+          {/* Content column */}
           <div style={{flex:1,minWidth:0}}>
-            <div className={timerRunning?"loading-rat":undefined} style={{fontSize:14,fontWeight:700,color:TXT,letterSpacing:"0.01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",display:"flex",alignItems:"center",gap:6}}>
-              {m.name}
-              {timerRunning&&<span style={{width:6,height:6,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,flexShrink:0,display:"inline-block"}}/>}
+
+            {/* Row 1: name + chevron */}
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div className={timerRunning?"loading-rat":undefined} style={{flex:1,minWidth:0,fontSize:14,fontWeight:700,color:TXT,letterSpacing:"0.01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                {m.name}
+                {timerRunning&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,marginLeft:6,verticalAlign:"middle"}}/>}
+              </div>
+              <span style={{fontSize:10,color:"#555",flexShrink:0,userSelect:"none"}}>{open?"▲":"▼"}</span>
             </div>
-            <div style={{fontSize:10,color:MUT,marginTop:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+
+            {/* Row 2: make/model/year */}
+            <div style={{fontSize:10,color:MUT,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
               {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
-              {m.source&&<span style={{color:"#555",marginLeft:4}}>· {m.source}</span>}
+              {m.source&&<span style={{color:"#555"}}> · {m.source}</span>}
             </div>
-            {/* Client, due date, stats row */}
-            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3,flexWrap:"wrap"}}>
-              {clientName&&<span style={{fontSize:9,color:ACC,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:100}}>👤 {clientName}</span>}
-              {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const today=now.toDateString()===due.toDateString();const dueColor=overdue?"#e87a0a":today?"#4a9eff":MUT;return<span style={{fontSize:9,color:dueColor}}>{overdue?"⚠ OVERDUE":"DUE "}{!overdue&&due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
+
+            {/* Row 3: badges — full width, can wrap */}
+            <div style={{display:"flex",alignItems:"center",gap:4,marginTop:5,flexWrap:"wrap"}}>
+              {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
+                const tc=m.tileColors||{};
+                const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
+                const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
+                const bStyle={fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
+                if(k==="status"){const S=["Active","Queued","Complete"];const cur=m.status||"Active";const next=S[(S.indexOf(cur)+1)%S.length];return <StatusBadge key="status" status={cur} onClick={ev=>{ev.stopPropagation();const u={...m,status:next};upsertMachine(u).catch(()=>{});onUpdate(u);}} title={`Click to set ${next}`} />;};
+                if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55"),whiteSpace:"nowrap"}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
+                if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:10,letterSpacing:-2}}>{"☠️".repeat(m.rage)}</span>;
+                const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
+                if(field&&m[k]){
+                  const lbl=(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "));
+                  return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,14)}</span>;
+                }
+                return null;
+              })}
+              {svcStatus.overdue  && <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap"}}>SERVICE</span>}
+              {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",whiteSpace:"nowrap"}}>DUE SOON</span>}
+              {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap",boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",whiteSpace:"nowrap"}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",whiteSpace:"nowrap"}}>${storageStatus.accrued.toFixed(0)}</span>)}
+            </div>
+
+            {/* Row 4: client / due date / stats (only if present) */}
+            {(clientName||m.dueDate||(m.timeLog||[]).length>0||(m.rage||0)>0)&&<div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
+              {clientName&&<span style={{fontSize:9,color:ACC,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:120}}>👤 {clientName}</span>}
+              {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const dueColor=overdue?"#e87a0a":now.toDateString()===due.toDateString()?"#4a9eff":MUT;return<span style={{fontSize:9,color:dueColor,whiteSpace:"nowrap"}}>{overdue?"⚠ OVERDUE":"DUE "}{!overdue&&due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
               {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const rate=company?.hourly_rate||0;const rev=tHrs*rate;const hasHrs=tHrs>0;const hasRev=rate>0&&rev>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRev&&!hasRage)return null;return<>{hasHrs&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRev&&<span style={{fontSize:9,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}{hasRage&&<span style={{fontSize:9,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</>;})()}
-            </div>
-          </div>
+            </div>}
 
-          {/* Right: badges — single row, no wrap, clip overflow */}
-          <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0,overflow:"hidden",maxWidth:"44%"}}>
-            {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
-              const tc=m.tileColors||{};
-              const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
-              const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
-              const bStyle={fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap",flexShrink:0};
-              if(k==="status"){const S=["Active","Queued","Complete"];const cur=m.status||"Active";const next=S[(S.indexOf(cur)+1)%S.length];return <StatusBadge key="status" status={cur} onClick={ev=>{ev.stopPropagation();const u={...m,status:next};upsertMachine(u).catch(()=>{});onUpdate(u);}} title={`Click to set ${next}`} />;};
-              if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55"),whiteSpace:"nowrap",flexShrink:0}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
-              if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:10,letterSpacing:-2,flexShrink:0}}>{"☠️".repeat(m.rage)}</span>;
-              const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
-              if(field&&m[k]){
-                const lbl=(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "));
-                return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,12)}</span>;
-              }
-              return null;
-            })}
-            {svcStatus.overdue  && <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap",flexShrink:0}}>SERVICE</span>}
-            {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 7px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",whiteSpace:"nowrap",flexShrink:0}}>DUE SOON</span>}
-            {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap",flexShrink:0,boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",whiteSpace:"nowrap",flexShrink:0}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",whiteSpace:"nowrap",flexShrink:0}}>${storageStatus.accrued.toFixed(0)}</span>)}
           </div>
-
-          {/* Chevron */}
-          <span style={{fontSize:10,color:"#555",flexShrink:0,marginLeft:10,lineHeight:1,userSelect:"none"}}>{open?"▲":"▼"}</span>
         </div>
       </div>
 
