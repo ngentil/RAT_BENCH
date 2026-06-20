@@ -203,7 +203,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>10 machines — nice work</span>
                 <button style={{...btnA}} onClick={onGoToBilling}>Go unlimited →</button>
               </div>
-            : <button style={{...btnA}} onClick={()=>setShowAdd(true)}>+ Add</button>}
+            : <button style={{...btnA, minHeight:44, display:"flex", alignItems:"center"}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
       </div>
       {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
