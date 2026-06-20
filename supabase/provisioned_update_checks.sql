@@ -109,6 +109,34 @@ CREATE POLICY tools_provisioned_update ON tools
   );
 
 
+-- ── consumables: add WITH CHECK ──────────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION _consumable_owner(p_id uuid)
+RETURNS uuid LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT user_id FROM consumables WHERE id = p_id;
+$$;
+
+DROP POLICY IF EXISTS consumables_provisioned_update ON consumables;
+
+CREATE POLICY consumables_provisioned_update ON consumables
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1 FROM asset_permissions
+      WHERE asset_type = 'consumable' AND asset_id = consumables.id
+        AND user_id = auth.uid() AND can_edit = true
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM asset_permissions
+      WHERE asset_type = 'consumable' AND asset_id = id
+        AND user_id = auth.uid() AND can_edit = true
+    )
+    AND user_id = _consumable_owner(id)
+  );
+
+
 -- ── asset_permissions.asset_type: enforce valid values ───────────────────────
 
 ALTER TABLE asset_permissions
