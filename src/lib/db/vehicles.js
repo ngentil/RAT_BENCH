@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { unassignAllByParent } from './assetAssignments';
+import { unassignAllByParent, syncAssignmentParentName } from './assetAssignments';
 
 function toDb(v) {
   return {
@@ -89,6 +89,7 @@ export async function upsertVehicle(vehicle) {
     // Update: no round-trip select needed — reconstruct from what we sent
     const { error } = await supabase.from('vehicles').update(row).eq('id', row.id);
     if (error) throw error;
+    await syncAssignmentParentName('vehicle', row.id, row.name);
     return fromDb(row);
   }
 }
