@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import QRCode from 'qrcode';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { FL, Empty } from '../ui/shared';
+import { getPref, savePref } from '../../lib/db/preferences';
 import { effectiveTier } from '../../lib/gates';
 import UpgradeBanner from '../ui/UpgradeBanner';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
@@ -505,15 +506,15 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const [groupFilter, setGroupFilter] = useState(null);
 
   const [showSort, setShowSort]       = useState(false);
-  const [sortBy, setSortBy]   = useState(() => localStorage.getItem(`${tableType}Sort`) || null);
-  const [view, setView]       = useState(() => localStorage.getItem(`${tableType}View`) || 'list');
-  const [cols, setCols]       = useState(() => parseInt(localStorage.getItem(`${tableType}Cols`) || '2'));
+  const [sortBy, setSortBy]   = useState(() => getPref(profile, `${tableType}Sort`, null));
+  const [view, setView]       = useState(() => getPref(profile, `${tableType}View`, 'list'));
+  const [cols, setCols]       = useState(() => getPref(profile, `${tableType}Cols`, 2));
   const [tileOpen, setTileOpen] = useState(null);
   const [lastScan, setLastScan] = useState(null);
 
-  const setViewP   = v => { setView(v);   localStorage.setItem(`${tableType}View`, v); };
-  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem(`${tableType}Sort`, v) : localStorage.removeItem(`${tableType}Sort`); };
-  const setColsP   = c => { setCols(c);  localStorage.setItem(`${tableType}Cols`, String(c)); setViewP('grid'); };
+  const setViewP   = v => { setView(v);   savePref(profile?.id, `${tableType}View`, v); };
+  const setSortByP = v => { setSortBy(v); savePref(profile?.id, `${tableType}Sort`, v ?? null); };
+  const setColsP   = c => { setCols(c);  savePref(profile?.id, `${tableType}Cols`, c); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
   const FREE_LIMIT = 5;

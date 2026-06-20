@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import TabGuide from '../ui/TabGuide';
+import { getPref, savePref } from '../../lib/db/preferences';
 import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
@@ -971,10 +972,10 @@ const STATUS_COLOR = {
   "Complete": MUT,
 };
 
-function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, session, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
+function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
   const [open, setOpen] = useState(false);
-  const [jobGuide, setJobGuide] = useState(() => localStorage.getItem("rat_tut_job_card") !== "1");
-  const dismissJobGuide = () => { localStorage.setItem("rat_tut_job_card", "1"); setJobGuide(false); };
+  const [jobGuide, setJobGuide] = useState(() => !getPref(profile, "rat_tut_job_card", false));
+  const dismissJobGuide = () => { setJobGuide(false); savePref(profile?.id, "rat_tut_job_card", true); };
 
   const totalSecs   = (m.timeLog||[]).reduce((s, e) => s + (e.seconds||0), 0);
   const partsCount  = (m.parts||[]).length;
@@ -1136,7 +1137,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           </div>
         )}
       </div>
-      <TabGuide storageKey="rat_tut_jobs" variant="info" title="your job board" lines={["start a timer from any machine card in Tracker","time + parts log here automatically"]} />
+      <TabGuide storageKey="rat_tut_jobs" variant="info" title="your job board" lines={["start a timer from any machine card in Tracker","time + parts log here automatically"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_jobs",false)} />
       {machines.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 24px" }}>
           <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
@@ -1180,7 +1181,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
             const locked = isFree && freeIdx > 0;
             return (
               <JobCard key={m.id} m={m} status={status} timerLocked={locked} partsLocked={locked}
-                clientMap={clientMap} company={company} session={session}
+                clientMap={clientMap} company={company} session={session} profile={profile}
                 onUpdate={updateM} onUpdateStatus={updateStatus} onUpdateRage={updateRage}
                 onGoToBilling={onGoToBilling} />
             );

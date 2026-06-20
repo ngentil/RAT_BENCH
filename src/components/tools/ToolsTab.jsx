@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
 import UpgradeBanner from '../ui/UpgradeBanner';
+import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
@@ -350,14 +351,14 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const [catFilter, setCatFilter] = useState(null);
   const [showLoaned, setShowLoaned] = useState(false);
   const [showSort, setShowSort] = useState(false);
-  const [sortBy, setSortBy] = useState(() => localStorage.getItem('toolsSort') || null);
-  const [view, setView] = useState(() => localStorage.getItem('toolsView') || 'list');
-  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('toolsCols') || '2'));
+  const [sortBy, setSortBy] = useState(() => getPref(profile, 'toolsSort', null));
+  const [view, setView] = useState(() => getPref(profile, 'toolsView', 'list'));
+  const [cols, setCols] = useState(() => getPref(profile, 'toolsCols', 2));
   const [tileOpen, setTileOpen] = useState(null);
 
-  const setViewP = v => { setView(v); localStorage.setItem('toolsView', v); };
-  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('toolsSort', v) : localStorage.removeItem('toolsSort'); };
-  const setColsP = c => { setCols(c); localStorage.setItem('toolsCols', String(c)); setViewP('grid'); };
+  const setViewP = v => { setView(v); savePref(profile?.id, 'toolsView', v); };
+  const setSortByP = v => { setSortBy(v); savePref(profile?.id, 'toolsSort', v ?? null); };
+  const setColsP = c => { setCols(c); savePref(profile?.id, 'toolsCols', c); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === "free";
   const limit   = assetLimit('tools', profile, company);

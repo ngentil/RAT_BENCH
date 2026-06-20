@@ -3,6 +3,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, btnA, btnG, sm } from '../../lib/st
 import { SL } from '../ui/shared';
 import TabGuide from '../ui/TabGuide';
 import { canUse, effectiveTier } from '../../lib/gates';
+import { getPref } from '../../lib/db/preferences';
 import { mIcon, getClosedBookingFee } from '../../lib/helpers';
 import { getClosedBookings } from '../../lib/db/bookings';
 
@@ -180,7 +181,7 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
           ))}
         </div>
       </div>
-      <TabGuide storageKey="rat_tut_revenue" variant="info" title="your revenue" lines={["log jobs with time + parts in Tracker","earnings flow here — filter by week · month · all"]} />
+      <TabGuide storageKey="rat_tut_revenue" variant="info" title="your revenue" lines={["log jobs with time + parts in Tracker","earnings flow here — filter by week · month · all"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_revenue",false)} />
 
       {period === "custom" && (
         <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>

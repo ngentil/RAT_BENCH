@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import UpgradeBanner from '../ui/UpgradeBanner';
 import { SL, FL, Empty } from '../ui/shared';
+import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
@@ -266,15 +267,15 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
   const [search, setSearch]    = useState('');
   const [typeFilter, setTypeFilter] = useState(null);
   const [showSort, setShowSort] = useState(false);
-  const [sortBy, setSortBy] = useState(() => localStorage.getItem('equipmentSort') || null);
-  const [view, setView] = useState(() => localStorage.getItem('equipmentView') || 'list');
-  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('equipmentCols') || '2'));
+  const [sortBy, setSortBy] = useState(() => getPref(profile, 'equipmentSort', null));
+  const [view, setView] = useState(() => getPref(profile, 'equipmentView', 'list'));
+  const [cols, setCols] = useState(() => getPref(profile, 'equipmentCols', 2));
   const [tileOpen, setTileOpen] = useState(null);
   const userId = session?.user?.id;
 
-  const setViewP = v => { setView(v); localStorage.setItem('equipmentView', v); };
-  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('equipmentSort', v) : localStorage.removeItem('equipmentSort'); };
-  const setColsP = c => { setCols(c); localStorage.setItem('equipmentCols', String(c)); setViewP('grid'); };
+  const setViewP = v => { setView(v); savePref(profile?.id, 'equipmentView', v); };
+  const setSortByP = v => { setSortBy(v); savePref(profile?.id, 'equipmentSort', v ?? null); };
+  const setColsP = c => { setCols(c); savePref(profile?.id, 'equipmentCols', c); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
   const limit   = assetLimit('equipment', profile, company);

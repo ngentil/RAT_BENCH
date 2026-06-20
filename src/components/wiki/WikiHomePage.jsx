@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
 import { searchWiki, seedSampleWikiEntries } from '../../lib/wiki';
+import { getPref, savePref } from '../../lib/db/preferences';
 import { WikiHeader } from './WikiEntryPage';
 
 function WikiHomePage({ onSelect, embedded = false, profile }) {
@@ -10,9 +11,9 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    if (profile?.id && localStorage.getItem("rat_wiki_seeded") !== "1") {
+    if (profile?.id && !getPref(profile, "rat_wiki_seeded", false)) {
       seedSampleWikiEntries(profile).then(() => {
-        localStorage.setItem("rat_wiki_seeded", "1");
+        savePref(profile.id, "rat_wiki_seeded", true);
         searchWiki("", profile.id).then(r => setRecent(r || []));
       });
     } else {

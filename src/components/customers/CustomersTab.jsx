@@ -3,6 +3,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col
 import { SL, FL, Empty } from '../ui/shared';
 import TabGuide from '../ui/TabGuide';
 import { mIcon, getStorageStatus, fmtMoney } from '../../lib/helpers';
+import { getPref } from '../../lib/db/preferences';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
 import { effectiveTier, canUse } from '../../lib/gates';
 import { getActiveBooking } from '../../lib/db/bookings';
@@ -207,7 +208,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
           <button onClick={openNew} style={{ ...btnA, ...sm }}>+ Add Client</button>
         </div>
       </div>
-      <TabGuide storageKey="rat_tut_clients" title="start here" lines={["tap + Add Client to save customer details","link machines to clients for invoicing"]} />
+      <TabGuide storageKey="rat_tut_clients" title="start here" lines={["tap + Add Client to save customer details","link machines to clients for invoicing"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_clients",false)} />
 
       {clients.length > 0 && (
         <input

@@ -5,6 +5,7 @@ import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
 import { atMachineLimit, machineLimit } from '../../lib/gates';
+import { getPref, savePref } from '../../lib/db/preferences';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
@@ -57,21 +58,21 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [dragIdx,setDragIdx]=useState(null);
   const [dragOver,setDragOver]=useState(null);
   const [showSort,setShowSort]=useState(false);
-  const [sortBy,setSortBy]=useState(()=>localStorage.getItem("trackerSort")||null);
-  const [view,setView]=useState(()=>localStorage.getItem("trackerView")||"list");
-  const [cols,setCols]=useState(()=>parseInt(localStorage.getItem("trackerCols")||"2"));
+  const [sortBy,setSortBy]=useState(()=>getPref(profile,"trackerSort",null));
+  const [view,setView]=useState(()=>getPref(profile,"trackerView","list"));
+  const [cols,setCols]=useState(()=>getPref(profile,"trackerCols",2));
   const [tileOpen,setTileOpen]=useState(null);
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
-  const [tutDone,setTutDone]=useState(()=>localStorage.getItem('rat_tut')==='1');
+  const [tutDone,setTutDone]=useState(()=>getPref(profile,'rat_tut',false));
   const [tutCardOpened,setTutCardOpened]=useState(false);
-  const skipTut=()=>{localStorage.setItem('rat_tut','1');setTutDone(true);};
+  const skipTut=()=>{setTutDone(true);savePref(profile?.id,'rat_tut',true);};
   const tutStep=!tutDone?(machines.length===0?1:machines.length===1?2:0):0;
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
-  const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
-  const setSortByP=v=>{setSortBy(v);if(v)localStorage.setItem("trackerSort",v);else localStorage.removeItem("trackerSort");};
-  const setColsP=c=>{setCols(c);localStorage.setItem("trackerCols",String(c));setViewP("grid");};
+  const setViewP=v=>{setView(v);savePref(profile?.id,"trackerView",v);};
+  const setSortByP=v=>{setSortBy(v);savePref(profile?.id,"trackerSort",v??null);};
+  const setColsP=c=>{setCols(c);savePref(profile?.id,"trackerCols",c);setViewP("grid");};
 
   const SORT_OPTS=[
     {k:"name_az",l:"Name A → Z"},

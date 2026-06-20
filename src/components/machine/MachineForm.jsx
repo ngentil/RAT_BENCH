@@ -8,11 +8,12 @@ import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring,
 import PhotoAdder from '../ui/PhotoAdder';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { effectiveTier } from '../../lib/gates';
+import { getPref, savePref } from '../../lib/db/preferences';
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
   const e=existing||{};
   const isNew=true;
-  const [showFormGuide,setShowFormGuide]=useState(()=>localStorage.getItem('rat_form_tut')!=='1');
-  const dismissFormGuide=()=>{localStorage.setItem('rat_form_tut','1');setShowFormGuide(false);};
+  const [showFormGuide,setShowFormGuide]=useState(()=>!getPref(profile,'rat_form_tut',false));
+  const dismissFormGuide=()=>{setShowFormGuide(false);savePref(profile?.id,'rat_form_tut',true);};
   const firstAdd=showFormGuide&&!existing;
 
   const [companyId,setCompanyId]=useState(e.companyId||null);
