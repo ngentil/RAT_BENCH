@@ -8,10 +8,7 @@ LANGUAGE sql
 SECURITY DEFINER
 STABLE
 AS $$
-  SELECT EXISTS(
-    SELECT 1 FROM profiles
-    WHERE id = auth.uid() AND account_type = 'admin'
-  )
+  SELECT auth.email() = 'nathan.gentil.ai@gmail.com'
 $$;
 
 CREATE POLICY "admin delete any photo"

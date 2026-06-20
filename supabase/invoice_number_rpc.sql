@@ -14,6 +14,10 @@ DECLARE
   v_prefs jsonb;
   v_next  int;
 BEGIN
+  IF p_user_id != auth.uid() THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
   SELECT COALESCE(preferences, '{}'::jsonb) INTO v_prefs
   FROM profiles WHERE id = p_user_id FOR UPDATE;
 

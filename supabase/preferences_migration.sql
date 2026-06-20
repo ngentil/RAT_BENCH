@@ -9,12 +9,17 @@ ALTER TABLE profiles
 --    overwriting other keys (safe for concurrent calls from different tabs)
 CREATE OR REPLACE FUNCTION upsert_preference(p_user_id uuid, p_key text, p_value jsonb)
 RETURNS void
-LANGUAGE sql
+LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+BEGIN
+  IF p_user_id != auth.uid() THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
   UPDATE profiles
   SET preferences = preferences || jsonb_build_object(p_key, p_value)
   WHERE id = p_user_id;
+END;
 $$;
 
 GRANT EXECUTE ON FUNCTION upsert_preference(uuid, text, jsonb) TO authenticated;
