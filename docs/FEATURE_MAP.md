@@ -40,7 +40,7 @@ Stripe
 | OAuth: Apple sign-in | 📋 | Queued — code removed for now, add back when needed | Free |
 | Signup: confirm password + username validation | ✅ | AuthScreen | Free |
 | Signup: live username availability check (✓/✗) + 🎲 dice generator | ✅ | AuthScreen, lib/username.js | Free |
-| Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession | Free |
+| Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession — account_type removed from all profile upserts (guest + auto + OnboardingScreen); field is not in the column-level GRANT UPDATE so including it caused the UPDATE path to fail with permission denied for returning users | Free |
 | Password reset | ✅ | auth | Free |
 | Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
 | Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT for all authenticated (usernames public for wiki/member lists); UPDATE own row only, but column-level GRANT restricts writable columns to display_name/username/units/default_status/tab_order/preferences/storage_policy_enabled/storage_tiers — tier, stripe fields, and pending_* cannot be self-updated; SECURITY DEFINER functions bypass column grants; same protection applied to companies table (only safe profile columns grantable by admins; tier/stripe_customer_id/stripe_subscription_id require SECURITY DEFINER path) | Free |
@@ -59,7 +59,7 @@ Stripe
 | Admin: set user tier | ✅ | AdminPanel.jsx UsersTab tier select + admin_set_tier(p_email, p_tier) RPC — run supabase/admin_rpcs.sql; server-side auth.email() check; audited to admin_audit_log | Admin only |
 | Admin: deactivate user (reset to free) | ✅ | AdminPanel.jsx UsersTab Deactivate button + admin_deactivate_user(p_email) RPC — run supabase/admin_rpcs.sql; clears stripe_subscription_id; audited | Admin only |
 | Admin: hard-delete user from Supabase + all data + storage photos | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC + deleteUserPhotos() — run supabase/admin_delete_user.sql AND supabase/admin_storage_policy.sql — cleans: company_members, machine_permissions, asset_permissions, services, machine_bookings, machines, clients, inventory_items, vehicles, equipment, tools, consumables, wiki data, asset_assignments, profiles, auth.users; wiki deletion order: contributions+revisions on user's entries first (covers other contributors), then entries, then user's own revisions/contributions on others' entries; if sole company owner, company tier reset to free; server-side auth.email() admin guard | Admin only |
-| Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql; server-side auth.email() check prevents any authenticated user from calling it | Admin only |
+| Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql; server-side auth.email() check prevents any authenticated user from calling it; wiki deletion order: contributions+revisions on user's entries first (prevents FK violation when other contributors have rows referencing those entries), then entries, then user's own revisions/contributions on other entries | Admin only |
 | Admin: delete individual wiki entry | ✅ | WikiEntryPage — admin delete button visible when VITE_ADMIN_EMAIL matches; deleteWikiEntry() manually deletes contributions + revisions before entry | Admin only |
 | Admin: bulk-delete all wiki entries | ✅ | admin_delete_all_wiki() RPC — run supabase/admin_delete_wiki.sql; deletes contributions, revisions, and entries in order; server-side auth.email() check | Admin only |
 | Admin audit log | ✅ | admin_audit_log table — run supabase/admin_tables_rls.sql; admin-only RLS (SELECT + INSERT); all admin RPCs write here; AuditTab in AdminPanel reads last 200 entries | Admin only |
@@ -301,7 +301,7 @@ Stripe
 | Configurable min par (reorder point) and max par (ceiling) | ✅ | consumables.min_quantity, consumables.max_quantity | Free |
 | Buy price / sell price / supplier / part number / location | ✅ | consumables.buy_price, sell_price, supplier, part_number, location | Free |
 | Shared UI (StockItemTab) with Parts tab | ✅ | StockItemTab.jsx, tableType="consumable" | Free |
-| Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Business |
+| Org provisioning for consumables | ✅ | asset_permissions, CompanySettings — provisioned UPDATE policy now has WITH CHECK (user_id = _consumable_owner(id)) via supabase/provisioned_update_checks.sql; prevents provisioned users from changing user_id to steal consumable ownership | Business |
 | Assign org member to vehicle (VehicleMemberSection) | ✅ | getCompanyMembers(), assignAsset child_type='member', company prop — run supabase/asset_assignments_add_member.sql to enable (original CHECK constraint blocked 'member' inserts) | Business |
 
 ---
