@@ -10,7 +10,7 @@ const supabase = createClient(
 
 const PRICE_TO_TIER: Record<string, string> = {
   [Deno.env.get("PRICE_ENTHUSIAST") || ""]: "enthusiast",
-  [Deno.env.get("PRICE_PRO")        || ""]: "team",
+  [Deno.env.get("PRICE_PRO")        || ""]: "business",
 };
 
 serve(async (req) => {
