@@ -48,7 +48,7 @@ Stripe
 | Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
-| Announcements (in-app banners) | ✅ | profiles.tier | All |
+| Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql | All |
 | DB-level machine limit trigger (free=5, guest=3) | ✅ | scalability_hardening.sql, profiles.tier | Free |
 | Critical DB indexes (machines, services, bookings, permissions) | ✅ | scalability_hardening.sql | All |
@@ -321,7 +321,7 @@ Stripe
 |---------|--------|-----------|------|
 | wiki_entries table | ✅ | — | Free |
 | wiki_revisions table | ✅ | wiki_entries | Enthusiast+ |
-| Browse + search wiki | ✅ | wiki_entries | Free |
+| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only (run supabase/wiki_rls.sql) | Free |
 | View count tracking | ✅ | wiki_entries.view_count | Free |
 | Create / edit wiki entry | ✅ | wiki_entries | Enthusiast+ |
 | Field-level editing with edit summary | ✅ | wiki_revisions | Enthusiast+ |
