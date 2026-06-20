@@ -22,13 +22,13 @@ CREATE POLICY wiki_entries_select ON wiki_entries
 -- INSERT: authenticated users only
 CREATE POLICY wiki_entries_insert ON wiki_entries
   FOR INSERT TO authenticated
-  WITH CHECK (author_id = auth.uid());
+  WITH CHECK (created_by = auth.uid());
 
 -- UPDATE: only the original author
 CREATE POLICY wiki_entries_update ON wiki_entries
   FOR UPDATE TO authenticated
-  USING  (author_id = auth.uid())
-  WITH CHECK (author_id = auth.uid());
+  USING  (created_by = auth.uid())
+  WITH CHECK (created_by = auth.uid());
 
 -- (DELETE policies already exist from wiki_sample_entries.sql)
 
@@ -54,7 +54,7 @@ CREATE POLICY wiki_revisions_select ON wiki_revisions
 -- INSERT: authenticated users only
 CREATE POLICY wiki_revisions_insert ON wiki_revisions
   FOR INSERT TO authenticated
-  WITH CHECK (author_id = auth.uid());
+  WITH CHECK (edited_by = auth.uid());
 
 -- (DELETE policy already exists from wiki_sample_entries.sql)
 
@@ -80,6 +80,6 @@ CREATE POLICY wiki_contribs_select ON wiki_contributions
 -- INSERT: authenticated users only
 CREATE POLICY wiki_contribs_insert ON wiki_contributions
   FOR INSERT TO authenticated
-  WITH CHECK (contributor_id = auth.uid());
+  WITH CHECK (user_id = auth.uid());
 
 -- (DELETE policy already exists from wiki_sample_entries.sql)
