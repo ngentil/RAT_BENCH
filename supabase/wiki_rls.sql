@@ -30,6 +30,12 @@ CREATE POLICY wiki_entries_update ON wiki_entries
   USING  (created_by = auth.uid())
   WITH CHECK (created_by = auth.uid());
 
+-- Column-level restrictions: prevent authors from flipping is_sample / sample_owner_id
+-- which could hide entries from their intended audience or inject into another user's samples.
+-- current_rev_id is handled exclusively by the update_wiki_rev_pointer SECURITY DEFINER RPC.
+REVOKE UPDATE ON wiki_entries FROM authenticated;
+GRANT UPDATE (make, model, type, slug) ON wiki_entries TO authenticated;
+
 -- (DELETE policies already exist from wiki_sample_entries.sql)
 
 

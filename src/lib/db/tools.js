@@ -104,7 +104,8 @@ export async function saveToolItem(tool) {
     if (error) throw error;
     return fromDb({ ...row, id: data.id, created_at: row.updated_at });
   } else {
-    const { error } = await supabase.from('tools').update(row).eq('id', row.id);
+    const { user_id: _uid, ...updateRow } = row;
+    const { error } = await supabase.from('tools').update(updateRow).eq('id', row.id);
     if (error) throw error;
     await syncAssignmentChildName('tool', row.id, row.name);
     return fromDb(row);

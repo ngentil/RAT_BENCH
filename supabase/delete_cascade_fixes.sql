@@ -41,6 +41,14 @@ BEGIN
     RAISE EXCEPTION 'Cannot remove yourself — use leave company instead';
   END IF;
 
+  -- Prevent removing the company owner (would orphan the company)
+  IF EXISTS (
+    SELECT 1 FROM company_members
+    WHERE company_id = p_company_id AND user_id = p_user_id AND role = 'owner'
+  ) THEN
+    RAISE EXCEPTION 'Cannot remove the company owner — transfer ownership first';
+  END IF;
+
   -- Revoke machine access
   DELETE FROM machine_permissions
   WHERE user_id = p_user_id

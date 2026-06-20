@@ -82,7 +82,8 @@ export async function upsertEquipment(item) {
     if (error) throw error;
     return fromDb({ ...row, id: data.id, created_at: row.updated_at });
   } else {
-    const { error } = await supabase.from('equipment').update(row).eq('id', row.id);
+    const { user_id: _uid, ...updateRow } = row;
+    const { error } = await supabase.from('equipment').update(updateRow).eq('id', row.id);
     if (error) throw error;
     await syncAssignmentChildName('equipment', row.id, row.name);
     return fromDb(row);

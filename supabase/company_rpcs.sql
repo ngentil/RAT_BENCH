@@ -120,9 +120,17 @@ BEGIN
     RAISE EXCEPTION 'Invalid invite code';
   END IF;
 
+  -- Prevent joining if already a member of a different company
+  IF EXISTS (
+    SELECT 1 FROM company_members
+    WHERE user_id = v_uid AND company_id != v_company_id
+  ) THEN
+    RAISE EXCEPTION 'Leave your current organisation before joining another';
+  END IF;
+
   -- Upsert so re-joining after leaving doesn't error
   INSERT INTO company_members (company_id, user_id, role, joined_at)
-  VALUES (v_company_id, v_uid, 'member', now())
+  VALUES (v_company_id, v_uid, 'viewer', now())
   ON CONFLICT (company_id, user_id) DO NOTHING;
 
   UPDATE profiles SET company_id = v_company_id WHERE id = v_uid;
