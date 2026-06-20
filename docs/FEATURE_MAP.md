@@ -46,11 +46,11 @@ Stripe
 | Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT for all authenticated (usernames public for wiki/member lists); UPDATE own only | Free |
 | Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
 | Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing also verifies company membership before creating session | All |
-| Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
+| Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; unmapped price IDs log an error instead of silently downgrading users | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity before returning portal URL | All |
 | Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql | All |
-| DB-level machine limit trigger (free=5, guest=3) | ✅ | scalability_hardening.sql, profiles.tier | Free |
+| DB-level machine limit trigger (free=5, guest=3) | ✅ | scalability_hardening.sql, profiles.tier — enforce_machine_limit uses FOR UPDATE on profiles row to serialize concurrent inserts (prevents race condition bypassing the cap) | Free |
 | Critical DB indexes (machines, services, bookings, permissions) | ✅ | scalability_hardening.sql | All |
 | Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
@@ -190,7 +190,7 @@ Stripe
 | Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Business |
 | Time log (save sessions with label + notes) | ✅ | machines.time_log (jsonb) | Free |
 | Running timer badge in Jobs tab | ✅ | machines.job_timer status | Free |
-| Invoice generation (labour + parts) | ✅ | time_log, inventory, company rates | Free |
+| Invoice generation (labour + parts) | ✅ | time_log, inventory, company rates — sequential invoice numbers via next_invoice_number RPC (run supabase/invoice_number_rpc.sql; stores per-year counter in profiles.preferences with FOR UPDATE); falls back to year+random if RPC unavailable | Free |
 | Parts markup on invoice | ✅ | inventory buy/sell price | Free |
 | Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Business |
 | Invoice number auto-increment | ✅ | invoices.js — next_invoice_number RPC (DB-only, no local fallback) | Free |
