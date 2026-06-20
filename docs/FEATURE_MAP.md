@@ -43,10 +43,10 @@ Stripe
 | Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession | Free |
 | Password reset | ✅ | auth | Free |
 | Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
-| Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT for all authenticated (usernames public for wiki/member lists); UPDATE own only | Free |
+| Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT for all authenticated (usernames public for wiki/member lists); UPDATE own row only, but column-level GRANT restricts writable columns to display_name/username/units/default_status/tab_order/preferences/storage_policy_enabled/storage_tiers — tier, stripe fields, and pending_* cannot be self-updated; SECURITY DEFINER functions bypass column grants | Free |
 | Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
 | Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing also verifies company membership before creating session; success_url/cancel_url validated against ratbench.net allowlist (blocks open-redirect abuse) | All |
-| Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; unmapped price IDs log an error instead of silently downgrading users | All |
+| Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; unmapped price IDs log an error; subscription.updated checks sub.status — past_due/incomplete/unpaid/paused immediately downgrade to free (not just subscription.deleted) | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity before returning portal URL; 30s cooldown via profiles.preferences.last_portal_session_at prevents spam-creating portal sessions | All |
 | Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql | All |
@@ -72,7 +72,7 @@ Stripe
 | Android PWA: "Press back again to exit" toast | ✅ | src/lib/backGuard.js — installBackGuard() called in main.jsx before React renders; 2 s window | All |
 | Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
 | Photo storage — Supabase Storage bucket | ✅ | supabase/create_photos_bucket.sql + src/lib/storage.js — run SQL first, then deploy; PhotoAdder rejects files over 50MB client-side before canvas resize attempt | All |
-| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port photos from machines table + plug/job photos from services table before row delete), vehicles, tools, equipment, clients, parts, consumables (deleteConsumable fetches photos column before row delete) | All |
+| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port photos from machines table + plug/job photos from services table before row delete), vehicles (fetches photos + service_log plugPhoto/jobPhotos), equipment (same), tools (same), clients, parts (fetches payload.photos before row delete), consumables (deleteConsumable fetches photos column before row delete) | All |
 | Photo cleanup on service log entry delete | ✅ | MachineCard delSvc: collects plugPhoto + jobPhotos from svc state before deleteServiceApi; VehiclesTab removeSvcEntry: same (vehicle entries use ServiceModal which adds photos); tools/equipment service log entries are inline-only (no photos, no cleanup needed) | All |
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
 | Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing | All |
@@ -316,6 +316,7 @@ Stripe
 | Roles: owner / admin / technician / viewer | ✅ | company_members.role | Business |
 | Edit member roles | ✅ | updateMemberRole() RPC | Business |
 | Remove member | ✅ | rpc_remove_member() — run supabase/delete_cascade_fixes.sql; verifies caller is owner/admin of the company before removing anyone; cleans machine_permissions, asset_permissions, vehicle crew assignments | Business |
+| Leave company (self) | ✅ | rpc_leave_company(p_company_id) — run supabase/rpc_leave_company.sql; cleans machine_permissions and asset_permissions for that company before removing the company_members row and clearing profiles.company_id; previously leaveCompany only deleted the members row, leaving orphaned provisioned access | Business |
 | Delete company | ✅ | deleteCompany() → rpc_delete_company SECURITY DEFINER — run supabase/company_rpcs.sql; clears profiles.company_id for all members, removes asset_permissions, company_members, then company row (FK SET NULL handles machines/vehicles/etc.) | Business |
 | Regenerate invite code | ✅ | regenerateInviteCode() — uses crypto.randomUUID() (CSPRNG) for the 8-char code | Business |
 | Company logo upload | ✅ | companies.logo (base64) | Business |
@@ -332,6 +333,7 @@ Stripe
 | wiki_entries table | ✅ | — | Free |
 | wiki_revisions table | ✅ | wiki_entries | Enthusiast+ |
 | Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only (run supabase/wiki_rls.sql); authors can delete their own public entries (run supabase/wiki_author_delete.sql) | Free |
+| Wiki collaborative rev pointer | ✅ | update_wiki_rev_pointer(p_entry_id, p_rev_id) RPC — run supabase/wiki_advance_rev_rpc.sql; SECURITY DEFINER bypasses the author-only UPDATE RLS policy to advance current_rev_id after any authenticated user saves a revision; wiki.js saveWikiRevision/saveWikiFieldEdit/deleteWikiRevision all call this RPC instead of direct table update (which silently failed for non-authors, making collaborative edits appear lost) | Free |
 | View count tracking | ✅ | wiki_entries.view_count | Free |
 | Create / edit wiki entry | ✅ | wiki_entries | Enthusiast+ |
 | Field-level editing with edit summary | ✅ | wiki_revisions | Enthusiast+ |
