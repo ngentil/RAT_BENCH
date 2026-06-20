@@ -47,7 +47,7 @@ Stripe
 | Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
 | Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing also verifies company membership before creating session | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; unmapped price IDs log an error instead of silently downgrading users | All |
-| Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity before returning portal URL | All |
+| Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity before returning portal URL; 30s cooldown via profiles.preferences.last_portal_session_at prevents spam-creating portal sessions | All |
 | Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql | All |
 | DB-level machine limit trigger (free=5, guest=3) | ✅ | scalability_hardening.sql, profiles.tier — enforce_machine_limit uses FOR UPDATE on profiles row to serialize concurrent inserts (prevents race condition bypassing the cap) | Free |
@@ -60,6 +60,7 @@ Stripe
 | Admin: delete individual wiki entry | ✅ | WikiEntryPage — admin delete button visible when VITE_ADMIN_EMAIL matches; deleteWikiEntry() manually deletes contributions + revisions before entry | Admin only |
 | Admin: bulk-delete all wiki entries | ✅ | admin_delete_all_wiki() RPC — run supabase/admin_delete_wiki.sql; deletes contributions, revisions, and entries in order | Admin only |
 | upgrade_grants table + RLS | ✅ | Stores admin-issued tier grants (email + tier + expiry); run supabase/upgrade_grants_rls.sql — admin-only SELECT/INSERT/UPDATE/DELETE; without RLS any authenticated user could read all grant records | Admin only |
+| Upgrade grant RPCs (grant / revoke / apply) | ✅ | run supabase/apply_pending_upgrade_rpc.sql — creates upgrade_grants table + pending_* columns on profiles; grant_upgrade(email, tier): admin-only, generates code, sets pending_code/pending_tier/pending_code_expires_at on target profile; revoke_upgrade(email): admin-only, expires grant and clears pending columns; apply_pending_upgrade(): called by user from ProfileSettings, validates code against upgrade_grants (redeemed_at IS NULL, not expired), upgrades profile tier, marks grant redeemed, audits | Admin + All |
 | Towing allocation tables (depots, tow_trucks, tow_allocation_log) | ✅ | supabase/create_towing_tables.sql + supabase/add_tow_allocation_log.sql — admin-only RLS using auth.email() = 'nathan.gentil.ai@gmail.com' | Admin only |
 | Photo viewer: X button + Android back button closes viewer | ✅ | PhotoViewer.jsx — manualClose() pattern (stopPropagation on X prevents double history.back), 52px tap target | All |
 | Machine card: Android back button collapses expanded card | ✅ | MachineCard.jsx — pushState({ cardOpen: id }) on expand, popstate listener collapses it | All |
