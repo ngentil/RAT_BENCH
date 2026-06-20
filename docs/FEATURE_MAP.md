@@ -63,7 +63,7 @@ Stripe
 | Android PWA: "Press back again to exit" toast | ✅ | src/lib/backGuard.js — installBackGuard() called in main.jsx before React renders; 2 s window | All |
 | Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
 | Photo storage — Supabase Storage bucket | ✅ | supabase/create_photos_bucket.sql + src/lib/storage.js — run SQL first, then deploy | All |
-| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port+service log photos from DB before row delete), vehicles (VehiclesTab remove), tools (ToolsTab remove), equipment (EquipmentTab remove), clients (CustomersTab deleteClient), parts/consumables (StockItemTab remove) | All |
+| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port photos from machines table + plug/job photos from services table before row delete), vehicles, tools, equipment, clients, parts/consumables | All |
 | Photo cleanup on service log entry delete | ✅ | MachineCard delSvc: collects plugPhoto + jobPhotos from svc state before deleteServiceApi; VehiclesTab removeSvcEntry: same (vehicle entries use ServiceModal which adds photos); tools/equipment service log entries are inline-only (no photos, no cleanup needed) | All |
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
 | Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing | All |
@@ -140,7 +140,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| services table + RLS | ✅ | machines | Free |
+| services table + RLS | ✅ | machines — run supabase/services_rls.sql; policies: full access for service creator or machine owner, read-only for provisioned members via _provisioned_machine_ids() helper | Free |
 | Log service entry (date, types, notes) | ✅ | services table | Free |
 | Spark plug photo log | ✅ | services, photos (base64) | Free |
 | Job photos per service | ✅ | services, photos | Free |
@@ -346,7 +346,7 @@ Stripe
 | Workshop visibility + order UI under Settings → ⇅ Tabs | ✅ | TabOrderSettings.jsx WorkshopReorderList (checkboxes + ↑/↓ + DEFAULT badge) | Free |
 | Users tab moved into Settings (Business only) | ✅ | SettingsPage, UsersTab | Business |
 | User preferences cross-device sync (sort, view, cols, active tab, tutorial flags) | ✅ | profiles.preferences JSONB + upsert_preference RPC — run supabase/preferences_migration.sql | Free |
-| One-time localStorage → preferences migration | ✅ | migrateLocalPreferences() in preferences.js — runs on first profile load; migrates all known LS pref keys (tutorial flags, dismissed anns, sort/view/cols, active tab) to profiles.preferences; sets _lsMigrated guard to prevent re-runs; removes migrated LS keys | Free |
+| One-time localStorage → preferences migration | ✅ | migrateLocalPreferences() in preferences.js — runs on first profile load before prefsSynced is set (blocking the tab-save effects until migration completes, preventing old LS values overwriting new DB values); migrates all known LS pref keys to profiles.preferences; sets _lsMigrated guard; removes migrated LS keys | Free |
 | Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
 | Per-account tab reordering (main nav, workshop, settings) | ✅ | profiles.tab_order JSONB, applyTabOrder(), TabOrderSettings.jsx | Free |
 | Tab order UI under Settings → ⇅ Tabs (↑/↓ reorder + reset) | ✅ | TabOrderSettings.jsx | Free |
