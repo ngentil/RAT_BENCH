@@ -23,6 +23,32 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing price_id or user_id" }), { status: 400, headers: CORS });
     }
 
+    // Verify the caller is who they claim to be
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: CORS });
+    }
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: CORS });
+    }
+    if (user.id !== user_id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS });
+    }
+
+    // If billing for a company, verify the caller is a member
+    if (company_id) {
+      const { data: membership } = await supabase
+        .from("company_members")
+        .select("user_id")
+        .eq("company_id", company_id)
+        .eq("user_id", user_id)
+        .single();
+      if (!membership) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS });
+      }
+    }
+
     // Get or create Stripe customer
     let customerId: string | undefined;
 
