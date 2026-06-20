@@ -6,7 +6,8 @@ export async function getAssignedTo(parentType, parentId) {
     .select('*')
     .eq('parent_type', parentType)
     .eq('parent_id', parentId)
-    .order('assigned_at', { ascending: true });
+    .order('assigned_at', { ascending: true })
+    .limit(200);
   if (error) throw error;
   return data || [];
 }
@@ -17,7 +18,8 @@ export async function getAssignedIn(childType, childId) {
     .select('*')
     .eq('child_type', childType)
     .eq('child_id', childId)
-    .order('assigned_at', { ascending: true });
+    .order('assigned_at', { ascending: true })
+    .limit(200);
   if (error) throw error;
   return data || [];
 }

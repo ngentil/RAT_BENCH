@@ -15,16 +15,14 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
 ALTER TABLE admin_audit_log ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS audit_log_admin_only ON admin_audit_log;
+DROP POLICY IF EXISTS audit_log_admin_read ON admin_audit_log;
 
--- Only admin can read the audit log — it contains user emails and upgrade codes
-CREATE POLICY audit_log_admin_only ON admin_audit_log
-  FOR ALL TO authenticated
-  USING     (auth.email() = 'nathan.gentil.ai@gmail.com')
-  WITH CHECK (auth.email() = 'nathan.gentil.ai@gmail.com');
-
--- SECURITY DEFINER functions (admin_delete_user, grant_upgrade, etc.) run as
--- the DB owner and bypass RLS when they INSERT into this table — no extra
--- GRANT is needed for those writes.
+-- Audit log is append-only even for admin: no UPDATE or DELETE policy exists.
+-- SECURITY DEFINER RPCs (admin_delete_user, grant_upgrade, etc.) run as the DB
+-- owner and bypass RLS — they write rows without needing an INSERT policy here.
+CREATE POLICY audit_log_admin_read ON admin_audit_log
+  FOR SELECT TO authenticated
+  USING (auth.email() = 'nathan.gentil.ai@gmail.com');
 
 -- ─── feature_flags ───────────────────────────────────────────────────────────
 

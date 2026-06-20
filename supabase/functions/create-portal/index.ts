@@ -8,13 +8,16 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const PORTAL_COOLDOWN_MS = 30_000;
 const ALLOWED_ORIGINS = ["https://www.ratbench.net", "https://ratbench.net"];
+const PORTAL_COOLDOWN_MS = 30_000;
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+}
 
 function isSafeUrl(url: string | undefined): boolean {
   if (!url) return true;
@@ -26,6 +29,7 @@ function isSafeUrl(url: string | undefined): boolean {
 }
 
 serve(async (req) => {
+  const CORS = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
@@ -52,20 +56,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS });
     }
 
-    // If billing for a company, verify the caller is a member
+    // If billing for a company, verify the caller is an owner or admin
     if (company_id) {
       const { data: membership } = await supabase
         .from("company_members")
-        .select("user_id")
+        .select("role")
         .eq("company_id", company_id)
         .eq("user_id", user_id)
         .single();
-      if (!membership) {
+      if (!membership || !["owner", "admin"].includes(membership.role)) {
         return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS });
       }
     }
 
-    // Fetch profile once for rate-limit check and stripe_customer_id
+    // Fetch profile for rate-limit check and stripe_customer_id (service_role bypasses column grants)
     const { data: profData } = await supabase
       .from("profiles")
       .select("preferences, stripe_customer_id")
@@ -110,6 +114,7 @@ serve(async (req) => {
       headers: { ...CORS, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+    console.error("create-portal error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: CORS });
   }
 });

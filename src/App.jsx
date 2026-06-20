@@ -95,8 +95,7 @@ function App(){
     let profileData = null;
     let companyData = null;
     try {
-      const {data} = await supabase
-        .from("profiles").select("*").eq("id",session.user.id).single();
+      const {data} = await supabase.rpc("get_my_profile").single();
       profileData = data;
       if(profileData){
         setProfile(profileData);

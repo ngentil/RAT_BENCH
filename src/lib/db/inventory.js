@@ -72,7 +72,8 @@ export async function getInventory(userId) {
     .from('inventory_items')
     .select('*')
     .eq('user_id', userId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(1000);
   if (error) throw error;
   return (data || []).map(fromDb);
 }
