@@ -18,10 +18,8 @@ BEGIN
     'make',              m.make,
     'model',             m.model,
     'year',              m.year,
-    'notes',             m.notes,
     'last_service_date', m.last_service_date,
     'last_service_odo',  m.last_service_odo,
-    'time_log',          COALESCE(m.time_log, '[]'::jsonb),
     'photos',            COALESCE(m.photos,   '[]'::jsonb)
   )
   INTO v_machine
