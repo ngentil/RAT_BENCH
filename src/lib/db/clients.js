@@ -29,17 +29,22 @@ export async function getClients() {
 export async function upsertClient(client) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
-  const { error } = await supabase.from("clients").upsert({
-    id:      client.id,
-    user_id: user.id,
+  const isNew = !client.id;
+  const payload = {
     name:    client.name,
     phone:   client.phone   || null,
     email:   client.email   || null,
     address: client.address || null,
     notes:   client.notes   || null,
     photos:  client.photos  || [],
-  }, { onConflict: "id" });
-  if (error) { console.error("upsertClient:", error); throw error; }
+  };
+  if (isNew) {
+    const { error } = await supabase.from("clients").insert({ ...payload, user_id: user.id });
+    if (error) { console.error("upsertClient:", error); throw error; }
+  } else {
+    const { error } = await supabase.from("clients").update(payload).eq("id", client.id);
+    if (error) { console.error("upsertClient:", error); throw error; }
+  }
 }
 
 export async function deleteClientApi(id) {

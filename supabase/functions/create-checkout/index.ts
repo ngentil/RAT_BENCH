@@ -59,15 +59,15 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS });
     }
 
-    // If billing for a company, verify the caller is a member
+    // If billing for a company, verify the caller is an owner or admin
     if (company_id) {
       const { data: membership } = await supabase
         .from("company_members")
-        .select("user_id")
+        .select("role")
         .eq("company_id", company_id)
         .eq("user_id", user_id)
         .single();
-      if (!membership) {
+      if (!membership || !["owner", "admin"].includes(membership.role)) {
         return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS });
       }
     }

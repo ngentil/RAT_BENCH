@@ -11,6 +11,8 @@ AS $$
   SELECT auth.email() = 'nathan.gentil.ai@gmail.com'
 $$;
 
+GRANT EXECUTE ON FUNCTION is_admin_user() TO authenticated;
+
 CREATE POLICY "admin delete any photo"
 ON storage.objects FOR DELETE TO authenticated
 USING (bucket_id = 'photos' AND is_admin_user());
