@@ -268,8 +268,8 @@ ${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to
 }
 
 const timerSel = {
-  width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2,
-  color: TXT, fontSize: 10, padding: "5px 6px", fontFamily: "'IBM Plex Mono',monospace",
+  width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3,
+  color: TXT, fontSize: 13, padding: "12px 10px", fontFamily: "'IBM Plex Mono',monospace",
   cursor: "pointer", outline: "none",
 };
 
@@ -335,8 +335,8 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
         >
           {log.length} session{log.length !== 1 ? "s" : ""} · {fmtDuration(totalSecs)} total
         </span>
-        <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote')} style={{ ...btnG, ...sm, fontSize: 8 }}>Quote</button>
-        <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice')} style={{ ...btnA, ...sm, fontSize: 8 }}>Invoice</button>
+        <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote')} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Quote</button>
+        <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice')} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Invoice</button>
       </div>
       {expanded && (
         <div style={{ marginTop: 8 }}>
@@ -818,24 +818,21 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
 
   if (t.status === "idle" && !t.duration) {
     const modeBtn = (key, label) => (
-      <button key={key} onClick={() => setMode(key)} style={{ padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", border: "none", fontFamily: "'IBM Plex Mono',monospace", background: mode === key ? ACC : "none", color: mode === key ? "#000" : MUT }}>
+      <button key={key} onClick={() => setMode(key)} style={{ flex: 1, padding: "14px 4px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", border: "none", fontFamily: "'IBM Plex Mono',monospace", background: mode === key ? ACC+"22" : "transparent", color: mode === key ? ACC : "#555", borderBottom: "2px solid " + (mode === key ? ACC : "transparent") }}>
         {label}
       </button>
     );
     return (
-      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>Job Timer</div>
-          <div style={{ display: "flex", border: "1px solid #333", borderRadius: 2, overflow: "hidden" }}>
-            {modeBtn("countdown", "↓ Countdown")}
-            <div style={{ width: 1, background: "#333", flexShrink: 0 }} />
-            {modeBtn("countup", "↑ Count Up")}
-            <div style={{ width: 1, background: "#333", flexShrink: 0 }} />
-            {modeBtn("manual", "✎ Log")}
-          </div>
+      <div style={{ marginTop: 10, padding: "12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ display: "flex", margin: "-12px -12px 14px", borderBottom: "1px solid #252525" }}>
+          {modeBtn("countdown", "↓ Countdown")}
+          <div style={{ width: 1, background: "#252525", flexShrink: 0 }} />
+          {modeBtn("countup", "↑ Count Up")}
+          <div style={{ width: 1, background: "#252525", flexShrink: 0 }} />
+          {modeBtn("manual", "✎ Log")}
         </div>
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" }}>Job / Task</div>
           <select style={timerSel} value={jobLabel} onChange={e => setJobLabel(e.target.value)}>
             <option value="">— select or leave blank —</option>
             {jobOptions.map(o => (
@@ -854,45 +851,41 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
         </div>
         {mode === "manual" ? (
           <div>
-            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 6 }}>LOG TIME WITHOUT TIMER</div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.08em", marginBottom: 10, textTransform: "uppercase" }}>Log Time Without Timer</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
                 <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
-                  style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
-                <span style={{ fontSize: 9, color: MUT }}>h</span>
+                  style={{ flex: 1, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: TXT, fontSize: 20, padding: "10px 0", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 12, color: MUT }}>h</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
                 <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
-                  style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
-                <span style={{ fontSize: 9, color: MUT }}>m</span>
+                  style={{ flex: 1, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: TXT, fontSize: 20, padding: "10px 0", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 12, color: MUT }}>m</span>
               </div>
-              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
-                style={{ background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: MUT, fontSize: 10, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", outline: "none" }} />
-              <button onClick={handleManualLog} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>+ Log Time</button>
             </div>
+            <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: MUT, fontSize: 13, padding: "11px 10px", fontFamily: "'IBM Plex Mono',monospace", outline: "none", marginBottom: 10 }} />
+            <button onClick={handleManualLog} disabled={!hours && !mins} style={{ ...btnA, width: "100%", padding: "14px", fontSize: 13, borderRadius: 3, opacity: (!hours && !mins) ? 0.4 : 1 }}>+ Log Time</button>
           </div>
         ) : mode === "countdown" ? (
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <input
-                type="number" min="0" max="99" placeholder="0"
-                value={hours} onChange={e => setHours(e.target.value)}
-                style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }}
-              />
-              <span style={{ fontSize: 9, color: MUT }}>h</span>
+          <div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+                <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
+                  style={{ flex: 1, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: TXT, fontSize: 20, padding: "10px 0", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 12, color: MUT }}>h</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+                <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
+                  style={{ flex: 1, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: TXT, fontSize: 20, padding: "10px 0", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 12, color: MUT }}>m</span>
+              </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <input
-                type="number" min="0" max="59" placeholder="0"
-                value={mins} onChange={e => setMins(e.target.value)}
-                style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }}
-              />
-              <span style={{ fontSize: 9, color: MUT }}>m</span>
-            </div>
-            <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
+            <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, width: "100%", padding: "14px", fontSize: 13, borderRadius: 3, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
           </div>
         ) : (
-          <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Start</button>
+          <button onClick={handleStart} style={{ ...btnA, width: "100%", padding: "14px", fontSize: 13, borderRadius: 3 }}>▶ Start</button>
         )}
       </div>
     );
@@ -931,11 +924,11 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
           }} />
         </div>
       )}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {t.status === "running" && <button onClick={handlePause} style={{ ...btnG, ...sm }}>⏸ Pause</button>}
-        {t.status === "paused"  && <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Resume</button>}
-        <button onClick={handleStop} style={{ ...btnG, ...sm }}>⏹ Reset</button>
-        <button onClick={handleFinish} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>✓ Finish Job</button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {t.status === "running" && <button onClick={handlePause} style={{ ...btnG, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>⏸ Pause</button>}
+        {t.status === "paused"  && <button onClick={handleStart} style={{ ...btnA, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>▶ Resume</button>}
+        <button onClick={handleStop} style={{ ...btnG, padding: "13px 16px", fontSize: 12, borderRadius: 3 }}>⏹ Reset</button>
+        <button onClick={handleFinish} style={{ ...btnA, flex: 2, padding: "13px", fontSize: 13, borderRadius: 3, background: GRN, borderColor: GRN, color: "#000", fontWeight: 700 }}>✓ Finish Job</button>
       </div>
     </div>
   );
@@ -948,20 +941,20 @@ function MachineNotes({ machine, onSave }) {
 
   if (editing) {
     return (
-      <div style={{ marginBottom: 8 }}>
-        <textarea style={inpS} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Job notes…" autoFocus />
-        <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-          <button onClick={() => { onSave(draft); setEditing(false); }} style={{ ...btnA, ...sm, fontSize: 8 }}>Save</button>
-          <button onClick={() => { setDraft(machine.notes || ""); setEditing(false); }} style={{ ...btnG, ...sm, fontSize: 8 }}>Cancel</button>
+      <div style={{ marginBottom: 10 }}>
+        <textarea style={{ ...inpS, fontSize: 13, padding: "12px", minHeight: 80 }} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Job notes…" autoFocus />
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <button onClick={() => { onSave(draft); setEditing(false); }} style={{ ...btnA, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>Save</button>
+          <button onClick={() => { setDraft(machine.notes || ""); setEditing(false); }} style={{ ...btnG, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>Cancel</button>
         </div>
       </div>
     );
   }
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div style={{ marginBottom: 10 }}>
       {machine.notes
-        ? <div style={{ fontSize: 11, color: TXT, lineHeight: 1.5, cursor: "pointer", opacity: 0.7 }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
-        : <button onClick={() => setEditing(true)} style={{ ...btnA, ...sm, fontSize: 9 }}>✏ Notes</button>}
+        ? <div style={{ fontSize: 12, color: TXT, lineHeight: 1.6, cursor: "pointer", opacity: 0.8, padding: "10px 0" }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
+        : <button onClick={() => setEditing(true)} style={{ ...btnA, width: "100%", padding: "13px", fontSize: 12, borderRadius: 3 }}>✏ Notes</button>}
     </div>
   );
 }
@@ -1024,7 +1017,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
 
       {/* Expanded body */}
       {open && (
-        <div className="card-expand" style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
+        <div className="card-expand" style={{ padding: "0 14px 16px", borderTop: "1px solid #1a1a1a" }}>
           {jobGuide && (
             <div style={{ background: "#0a0f0a", border: "1px solid #1a2a1a", borderRadius: 2, padding: "10px 12px", margin: "10px 0 8px" }}>
               <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Job Card</div>
@@ -1052,9 +1045,9 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
             </div>
           )}
           <Divider />
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {STATUSES.filter(s => s !== status).map(s => (
-              <button key={s} onClick={() => onUpdateStatus(m, s)} style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
+              <button key={s} onClick={() => onUpdateStatus(m, s)} style={{ flex: 1, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "14px 10px", borderRadius: 3, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
                 → {s}
               </button>
             ))}
