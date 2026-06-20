@@ -36,6 +36,9 @@ serve(async (req) => {
     if (session.mode === "subscription") {
       const sub = await stripe.subscriptions.retrieve(session.subscription as string);
       const priceId = sub.items.data[0].price.id;
+      if (!(priceId in PRICE_TO_TIER)) {
+        console.error(`[stripe-webhook] Unknown price ID: ${priceId} — defaulting to free. Check PRICE_ENTHUSIAST / PRICE_PRO env vars.`);
+      }
       const tier = PRICE_TO_TIER[priceId] || "free";
 
       if (userId) {
@@ -55,6 +58,9 @@ serve(async (req) => {
   } else if (event.type === "customer.subscription.updated") {
     const sub = obj as Stripe.Subscription;
     const priceId = sub.items.data[0].price.id;
+    if (!(priceId in PRICE_TO_TIER)) {
+      console.error(`[stripe-webhook] Unknown price ID: ${priceId} — defaulting to free. Check PRICE_ENTHUSIAST / PRICE_PRO env vars.`);
+    }
     const tier = PRICE_TO_TIER[priceId] || "free";
     const customerId = sub.customer as string;
     await supabase.from("profiles").update({ tier, stripe_subscription_id: sub.id }).eq("stripe_customer_id", customerId);
