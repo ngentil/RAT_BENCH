@@ -54,7 +54,7 @@ Stripe
 | Critical DB indexes (machines, services, bookings, permissions) | ✅ | scalability_hardening.sql | All |
 | Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
-| Admin panel analytics (users, active, machines, signups trend) | ✅ | AdminPanel.jsx OverviewTab + admin_get_stats() RPC — run supabase/admin_get_stats.sql to update; server-side auth.email() check blocks non-admin calls; GRANT EXECUTE TO authenticated added (was missing, caused silent 403 failures) | Admin only |
+| Admin panel analytics (users, active, machines, signups trend) | ✅ | AdminPanel.jsx OverviewTab + admin_get_stats() RPC — run supabase/admin_get_stats.sql to update; server-side auth.email() check blocks non-admin calls; GRANT EXECUTE TO authenticated added (was missing, caused silent 403 failures); VITE_ADMIN_EMAIL fallback corrected to nathan.gentil.ai@gmail.com to match SQL (all three client files: AdminPanel, SettingsPage, WikiEntryPage) | Admin only |
 | Admin: list / search users | ✅ | AdminPanel.jsx UsersTab + admin_list_users(p_search, p_limit, p_offset) RPC — run supabase/admin_rpcs.sql; returns id, email, display_name, username, tier, created_at, last_sign_in_at, machine_count; server-side auth.email() check | Admin only |
 | Admin: set user tier | ✅ | AdminPanel.jsx UsersTab tier select + admin_set_tier(p_email, p_tier) RPC — run supabase/admin_rpcs.sql; server-side auth.email() check; p_tier validated against allowlist (free/enthusiast/team/business) — arbitrary strings rejected; audited to admin_audit_log | Admin only |
 | Admin: deactivate user (reset to free) | ✅ | AdminPanel.jsx UsersTab Deactivate button + admin_deactivate_user(p_email) RPC — run supabase/admin_rpcs.sql; clears stripe_subscription_id; audited | Admin only |
@@ -72,10 +72,10 @@ Stripe
 | Android PWA: "Press back again to exit" toast | ✅ | src/lib/backGuard.js — installBackGuard() called in main.jsx before React renders; 2 s window | All |
 | Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
 | Photo storage — Supabase Storage bucket | ✅ | supabase/create_photos_bucket.sql + src/lib/storage.js — run SQL first, then deploy; PhotoAdder rejects files over 50MB client-side before canvas resize attempt | All |
-| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port photos from machines table + plug/job photos from services table before row delete), vehicles (fetches photos + service_log plugPhoto/jobPhotos), equipment (same), tools (same), clients, parts (fetches payload.photos before row delete), consumables (deleteConsumable fetches photos column before row delete) | All |
+| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port photos from machines table + plug/job photos from services table before row delete), vehicles (fetches photos + service_log plugPhoto/jobPhotos), equipment (same), tools (same), clients (deleteClientApi now fetches photos column before row delete), parts (fetches payload.photos before row delete), consumables (deleteConsumable fetches photos column before row delete) | All |
 | Photo cleanup on service log entry delete | ✅ | MachineCard delSvc: collects plugPhoto + jobPhotos from svc state before deleteServiceApi; VehiclesTab removeSvcEntry: same (vehicle entries use ServiceModal which adds photos); tools/equipment service log entries are inline-only (no photos, no cleanup needed) | All |
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
-| Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing | All |
+| Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing — tier filter uses effectiveTier(profileData, companyData) so company-billed users see announcements targeted at their effective tier (previously used profile.tier alone which is 'free' for company members) | All |
 | Auto-retry on total load failure + friendly slow-connection message | ✅ | App.jsx loadForSession — if 4+ parallel fetches fail, waits 2 s and retries once silently; loading screen shows "Taking a bit longer than usual… slow connection — giving it another go" during the wait instead of alarming the user | All |
 | Service worker / PWA static asset cache (repeat-visit perf) | ✅ | vite-plugin-pwa, dist/sw.js | All |
 | Shared `UpgradeBanner` component (green box, label, Upgrade → button) | ✅ | src/components/ui/UpgradeBanner.jsx — used in JobBoard, ServiceReminders, VehiclesTab, EquipmentTab, ToolsTab, StockItemTab, WikiTab | All |
@@ -182,7 +182,7 @@ Stripe
 | Storage Settings tab (toggle + editable tier table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
 | Booking history per machine | ✅ | getBookingHistory(), machine_bookings | Enthusiast+ |
 | Custom daily rate override per visit | ✅ | machine_bookings.storage_fee_override | Enthusiast+ |
-| Storage revenue in Revenue Dashboard | ✅ | getClosedBookings(), getClosedBookingFee(), RevenueDashboard | Enthusiast+ |
+| Storage revenue in Revenue Dashboard | ✅ | getClosedBookings(), getClosedBookingFee(), RevenueDashboard — getClosedBookings and getAllActiveBookings both capped at .limit(500) (previously unbounded) | Enthusiast+ |
 | Storage revenue card (realized, per period) | ✅ | filteredBookings, storageRev | Enthusiast+ |
 | Storage revenue per-machine breakdown | ✅ | storageByMachineId, byMachine | Enthusiast+ |
 | Storage included in Gross Profit total | ✅ | grossProfit = labour + parts + storage − cost | Enthusiast+ |
@@ -333,9 +333,9 @@ Stripe
 |---------|--------|-----------|------|
 | wiki_entries table | ✅ | — | Free |
 | wiki_revisions table | ✅ | wiki_entries | Enthusiast+ |
-| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only; UPDATE RLS restricted to entry author; column-level REVOKE/GRANT limits author updates to make/model/type/slug (prevents flipping is_sample or sample_owner_id to inject into another user's sample list); run supabase/wiki_rls.sql; authors can delete their own public entries (run supabase/wiki_author_delete.sql) | Free |
+| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only; UPDATE RLS restricted to entry author; column-level REVOKE/GRANT limits author updates to make/model/type/slug (prevents flipping is_sample or sample_owner_id); slug column enforced by CHECK constraint (^[a-z0-9][a-z0-9-]*$ — prevents empty/invalid slugs that would break URL routing); run supabase/wiki_rls.sql; authors can delete their own public entries (run supabase/wiki_author_delete.sql) | Free |
 | Wiki collaborative rev pointer | ✅ | update_wiki_rev_pointer(p_entry_id, p_rev_id) RPC — run supabase/wiki_advance_rev_rpc.sql; SECURITY DEFINER bypasses the author-only UPDATE RLS policy to advance current_rev_id; caller must be entry author or have contributed a revision to the entry AND must be the target revision's author or entry author (prevents random users from vandalizing entries by blanking the pointer or rolling back to old revisions) | Free |
-| View count tracking | ✅ | wiki_entries.view_count + increment_wiki_views() RPC — run supabase/wiki_view_count_rpc.sql (adds view_count column + SECURITY DEFINER RPC granted to anon+authenticated); WHERE clause includes AND NOT is_sample so sample entries never accumulate view counts; previously the RPC was called but undefined so view counts never incremented | Free |
+| View count tracking | ✅ | wiki_entries.view_count + increment_wiki_views() RPC — run supabase/wiki_view_count_rpc.sql (adds view_count column + SECURITY DEFINER RPC granted to anon+authenticated); WHERE clause includes AND NOT is_sample so sample entries never accumulate view counts; client-side per-session Set in wiki.js prevents the same entry from being incremented more than once per page load (bot/spam mitigation) | Free |
 | Create / edit wiki entry | ✅ | wiki_entries | Enthusiast+ |
 | Field-level editing with edit summary | ✅ | wiki_revisions | Enthusiast+ |
 | Full revision history | ✅ | wiki_revisions | Enthusiast+ |
