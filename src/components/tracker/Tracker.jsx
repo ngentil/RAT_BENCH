@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
-import { atMachineLimit } from '../../lib/gates';
+import { atMachineLimit, machineLimit } from '../../lib/gates';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
@@ -187,7 +187,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <SL t="Machines" />
           {sortBy&&<span style={{fontSize:10,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
-          {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:10,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em"}}>{machines.length}/10</span>}
+          {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:10,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em"}}>{machines.length}/{machineLimit(profile,company)}</span>}
           {totalHrsAll>0&&<span style={{fontSize:10,color:GRN,letterSpacing:"0.06em"}}>{totalHrsAll.toFixed(1)}h{rate>0?" · $"+(totalHrsAll*rate).toFixed(0):""}</span>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -200,7 +200,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
               </div>
             : !isGuest&&atMachineLimit(machines.length,profile,company)
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>10 machines — nice work</span>
+                <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>{machineLimit(profile,company)} machines — nice work</span>
                 <button style={{...btnA}} onClick={onGoToBilling}>Go unlimited →</button>
               </div>
             : <button style={{...btnA, minHeight:44, display:"flex", alignItems:"center"}} onClick={()=>setShowAdd(true)}>+ Add</button>}
