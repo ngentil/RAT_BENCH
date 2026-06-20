@@ -45,7 +45,7 @@ Stripe
 | Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
 | Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT for all authenticated (usernames public for wiki/member lists); UPDATE own only | Free |
 | Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
-| Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing also verifies company membership before creating session | All |
+| Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing also verifies company membership before creating session; success_url/cancel_url validated against ratbench.net allowlist (blocks open-redirect abuse) | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; unmapped price IDs log an error instead of silently downgrading users | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity before returning portal URL; 30s cooldown via profiles.preferences.last_portal_session_at prevents spam-creating portal sessions | All |
 | Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
@@ -55,10 +55,16 @@ Stripe
 | Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
 | Admin panel analytics (users, active, machines, signups trend) | ✅ | AdminPanel.jsx OverviewTab + admin_get_stats() RPC — run supabase/admin_get_stats.sql to update; server-side auth.email() check blocks non-admin calls | Admin only |
+| Admin: list / search users | ✅ | AdminPanel.jsx UsersTab + admin_list_users(p_search, p_limit, p_offset) RPC — run supabase/admin_rpcs.sql; returns id, email, display_name, username, tier, created_at, last_sign_in_at, machine_count; server-side auth.email() check | Admin only |
+| Admin: set user tier | ✅ | AdminPanel.jsx UsersTab tier select + admin_set_tier(p_email, p_tier) RPC — run supabase/admin_rpcs.sql; server-side auth.email() check; audited to admin_audit_log | Admin only |
+| Admin: deactivate user (reset to free) | ✅ | AdminPanel.jsx UsersTab Deactivate button + admin_deactivate_user(p_email) RPC — run supabase/admin_rpcs.sql; clears stripe_subscription_id; audited | Admin only |
 | Admin: hard-delete user from Supabase + all data + storage photos | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC + deleteUserPhotos() — run supabase/admin_delete_user.sql AND supabase/admin_storage_policy.sql — cleans: company_members, machine_permissions, asset_permissions, services, machine_bookings, machines, clients, inventory_items, vehicles, equipment, tools, consumables, wiki_contributions, wiki_revisions, wiki_entries, asset_assignments, profiles, auth.users; if user was sole owner of a company, that company's tier is reset to free and stripe_subscription_id cleared — admin account (VITE_ADMIN_EMAIL) is blocked from deletion | Admin only |
-| Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql | Admin only |
+| Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql; server-side auth.email() check prevents any authenticated user from calling it | Admin only |
 | Admin: delete individual wiki entry | ✅ | WikiEntryPage — admin delete button visible when VITE_ADMIN_EMAIL matches; deleteWikiEntry() manually deletes contributions + revisions before entry | Admin only |
-| Admin: bulk-delete all wiki entries | ✅ | admin_delete_all_wiki() RPC — run supabase/admin_delete_wiki.sql; deletes contributions, revisions, and entries in order | Admin only |
+| Admin: bulk-delete all wiki entries | ✅ | admin_delete_all_wiki() RPC — run supabase/admin_delete_wiki.sql; deletes contributions, revisions, and entries in order; server-side auth.email() check | Admin only |
+| Admin audit log | ✅ | admin_audit_log table — run supabase/admin_tables_rls.sql; admin-only RLS (SELECT + INSERT); all admin RPCs write here; AuditTab in AdminPanel reads last 200 entries | Admin only |
+| Feature flags table | ✅ | feature_flags table — run supabase/admin_tables_rls.sql; admin can create/toggle/delete; all authenticated users can SELECT (for client-side gating); managed from AdminPanel FlagsTab | Admin only |
+| Admin: storage photo cleanup on user delete | ✅ | is_admin_user() storage policy — run supabase/admin_storage_policy.sql; now checks auth.email() = admin email (previously checked account_type='admin' which was never set, so admin photo deletes always silently failed) | Admin only |
 | upgrade_grants table + RLS | ✅ | Stores admin-issued tier grants (email + tier + expiry); run supabase/upgrade_grants_rls.sql — admin-only SELECT/INSERT/UPDATE/DELETE; without RLS any authenticated user could read all grant records | Admin only |
 | Upgrade grant RPCs (grant / revoke / apply) | ✅ | run supabase/apply_pending_upgrade_rpc.sql — creates upgrade_grants table + pending_* columns on profiles; grant_upgrade(email, tier): admin-only, generates code, sets pending_code/pending_tier/pending_code_expires_at on target profile; revoke_upgrade(email): admin-only, expires grant and clears pending columns; apply_pending_upgrade(): called by user from ProfileSettings, validates code against upgrade_grants (redeemed_at IS NULL, not expired), upgrades profile tier, marks grant redeemed, audits | Admin + All |
 | Towing allocation tables (depots, tow_trucks, tow_allocation_log) | ✅ | supabase/create_towing_tables.sql + supabase/add_tow_allocation_log.sql — admin-only RLS using auth.email() = 'nathan.gentil.ai@gmail.com' | Admin only |
@@ -310,9 +316,9 @@ Stripe
 | company_members table | ✅ | companies, profiles — RLS: members read own company list; admins manage; users can leave (run supabase/org_and_profiles_rls.sql) | Business |
 | Roles: owner / admin / technician / viewer | ✅ | company_members.role | Business |
 | Edit member roles | ✅ | updateMemberRole() RPC | Business |
-| Remove member | ✅ | removeMember() RPC — run supabase/delete_cascade_fixes.sql | Business |
+| Remove member | ✅ | rpc_remove_member() — run supabase/delete_cascade_fixes.sql; verifies caller is owner/admin of the company before removing anyone; cleans machine_permissions, asset_permissions, vehicle crew assignments | Business |
 | Delete company | ✅ | deleteCompany() → rpc_delete_company SECURITY DEFINER — run supabase/company_rpcs.sql; clears profiles.company_id for all members, removes asset_permissions, company_members, then company row (FK SET NULL handles machines/vehicles/etc.) | Business |
-| Regenerate invite code | ✅ | regenerateInviteCode() RPC | Business |
+| Regenerate invite code | ✅ | regenerateInviteCode() — uses crypto.randomUUID() (CSPRNG) for the 8-char code | Business |
 | Company logo upload | ✅ | companies.logo (base64) | Business |
 | Hourly rate / tax rate / currency config | ✅ | companies fields | Business |
 | Machine provisioning panel (CompanySettings) | ✅ | machine_permissions | Business |
@@ -350,7 +356,7 @@ Stripe
 | Per-user Workshop default sub-tab | ✅ | First visible tab in ordered workshop list (implicit, no separate setting) | Free |
 | Workshop visibility + order UI under Settings → ⇅ Tabs | ✅ | TabOrderSettings.jsx WorkshopReorderList (checkboxes + ↑/↓ + DEFAULT badge) | Free |
 | Users tab moved into Settings (Business only) | ✅ | SettingsPage, UsersTab | Business |
-| User preferences cross-device sync (sort, view, cols, active tab, tutorial flags) | ✅ | profiles.preferences JSONB + upsert_preference RPC — run supabase/preferences_migration.sql | Free |
+| User preferences cross-device sync (sort, view, cols, active tab, tutorial flags) | ✅ | profiles.preferences JSONB + upsert_preference RPC — run supabase/preferences_migration.sql; RPC verifies p_user_id = auth.uid() to prevent cross-user preference writes | Free |
 | One-time localStorage → preferences migration | ✅ | migrateLocalPreferences() in preferences.js — runs on first profile load before prefsSynced is set (blocking the tab-save effects until migration completes, preventing old LS values overwriting new DB values); migrates all known LS pref keys to profiles.preferences; sets _lsMigrated guard; removes migrated LS keys | Free |
 | Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
 | Per-account tab reordering (main nav, workshop, settings) | ✅ | profiles.tab_order JSONB, applyTabOrder(), TabOrderSettings.jsx | Free |
