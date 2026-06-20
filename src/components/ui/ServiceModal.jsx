@@ -15,13 +15,26 @@ function ServiceModal({machine,existing,onSave,onClose}){
   const [pp,setPp]=useState(e.plugPhoto||null);
   const [jp,setJp]=useState(e.jobPhotos||[]);
   const [pb,setPb]=useState(false);
+  const [saving,setSaving]=useState(false);
   const [openCats,setOpenCats]=useState({general:true});
   const tog=t=>setTy(prev=>prev.includes(t)?prev.filter(x=>x!==t):[...prev,t]);
   const togCat=id=>setOpenCats(prev=>({...prev,[id]:!prev[id]}));
-  const handlePlug=async ev=>{const f=ev.target.files[0];if(!f)return;setPb(true);if(pp)deletePhoto(pp);try{setPp(await uploadPhoto(f));}catch{setPb(false);}setPb(false);};
-  const save=()=>onSave({id:e.id||uid(),completedAt:ca,types:types.length?types:["General Service"],
-    notes:notes.trim(),plugPhoto:pp,jobPhotos:jp,
-    createdAt:e.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+  const handlePlug=async ev=>{
+    const f=ev.target.files[0];if(!f)return;setPb(true);
+    try{
+      const newUrl=await uploadPhoto(f);
+      if(pp)deletePhoto(pp);
+      setPp(newUrl);
+    }catch{}
+    setPb(false);
+  };
+  const save=()=>{
+    if(saving)return;
+    setSaving(true);
+    onSave({id:e.id||uid(),completedAt:ca,types:types.length?types:["General Service"],
+      notes:notes.trim(),plugPhoto:pp,jobPhotos:jp,
+      createdAt:e.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+  };
 
   const mType = machine.type||"";
   const sType = machine.strokeType||"";
@@ -88,7 +101,7 @@ function ServiceModal({machine,existing,onSave,onClose}){
         </div>
         <div style={mdlF}>
           <button style={btnG} onClick={onClose}>Cancel</button>
-          <button style={btnA} onClick={save}>{existing?"Save Changes":"Save Entry"}</button>
+          <button style={{...btnA,opacity:saving?0.5:1}} disabled={saving} onClick={save}>{existing?"Save Changes":"Save Entry"}</button>
         </div>
       </div>
     </div>
