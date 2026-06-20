@@ -75,8 +75,10 @@ DECLARE
   v_tier   text;
   v_count  int;
 BEGIN
+  -- FOR UPDATE locks the profiles row so concurrent inserts for the same user
+  -- are serialized — prevents two simultaneous inserts both passing a count of 4.
   SELECT COALESCE(tier, 'free') INTO v_tier
-  FROM profiles WHERE id = NEW.user_id;
+  FROM profiles WHERE id = NEW.user_id FOR UPDATE;
 
   IF v_tier = 'free' THEN
     SELECT COUNT(*) INTO v_count
