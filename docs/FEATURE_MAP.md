@@ -40,14 +40,14 @@ Stripe
 | OAuth: Apple sign-in | 📋 | Queued — code removed for now, add back when needed | Free |
 | Signup: confirm password + username validation | ✅ | AuthScreen | Free |
 | Signup: live username availability check (✓/✗) + 🎲 dice generator | ✅ | AuthScreen, lib/username.js | Free |
-| Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession — account_type removed from all profile upserts (guest + auto + OnboardingScreen); field is not in the column-level GRANT UPDATE so including it caused the UPDATE path to fail with permission denied for returning users | Free |
+| Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession — uses get_my_profile() SECURITY DEFINER RPC to fetch own profile (bypasses column-level SELECT restriction to return stripe/pending fields); account_type removed from all upserts | Free |
 | Password reset | ✅ | auth | Free |
 | Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
-| Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT for all authenticated (usernames public for wiki/member lists); UPDATE own row only, but column-level GRANT restricts writable columns to display_name/username/units/default_status/tab_order/preferences/storage_policy_enabled/storage_tiers — tier, stripe fields, and pending_* cannot be self-updated; SECURITY DEFINER functions bypass column grants; same protection applied to companies table (only safe profile columns grantable by admins; tier/stripe_customer_id/stripe_subscription_id require SECURITY DEFINER path) | Free |
+| Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT restricted by column-level GRANT to safe public fields (id, display_name, username, units, default_status, tab_order, preferences, storage_policy_enabled, storage_tiers, tier, company_id, created_at) — sensitive fields (pending_code, stripe_customer_id, stripe_subscription_id) hidden from other users; get_my_profile() SECURITY DEFINER RPC returns full own-row data including sensitive fields; UPDATE own row only with column-level GRANT restricting writable columns to safe fields; tier/stripe/pending_* require SECURITY DEFINER path; same column-level protection on companies table | Free |
 | Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
-| Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing verifies caller is owner or admin (viewers/technicians blocked); success_url/cancel_url validated against ratbench.net allowlist; price_id validated against PRICE_ENTHUSIAST/PRICE_PRO env vars | All |
+| Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing verifies caller is owner or admin; success_url/cancel_url validated against ratbench.net allowlist; price_id validated against env vars; CORS restricted to ratbench.net origins; internal errors return generic 500 | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; PRICE_ENTHUSIAST → 'enthusiast', PRICE_PRO → 'business' (was 'team' which never unlocked org features gated on tier==='business'); unmapped price IDs log an error; subscription.updated checks sub.status — past_due/incomplete/unpaid/paused immediately downgrade to free | All |
-| Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity before returning portal URL; 30s cooldown via profiles.preferences.last_portal_session_at prevents spam-creating portal sessions; timestamp stamped via internal _set_portal_session_at() RPC (NOT in upsert_preference allowlist — users cannot reset the cooldown by calling upsert_preference directly); run supabase/portal_rate_limit.sql | All |
+| Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity; company billing restricted to owner/admin role (viewers/technicians blocked); 30s cooldown via _set_portal_session_at() RPC; CORS restricted to ratbench.net origins; internal errors return generic 500 (not err.message); run supabase/portal_rate_limit.sql | All |
 | Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql + supabase/provisioned_update_checks.sql — run provisioned_update_checks.sql to add WITH CHECK to machines/vehicles/equipment/tools provisioned UPDATE policies (prevents provisioned users from changing user_id to steal asset ownership); also adds SECURITY DEFINER _machine/vehicle/equipment/tool_owner() helpers and asset_permissions.asset_type CHECK constraint | All |
 | DB-level machine limit trigger (free=5, guest=3) | ✅ | scalability_hardening.sql, profiles.tier — enforce_machine_limit uses FOR UPDATE on profiles row to serialize concurrent inserts (prevents race condition bypassing the cap) | Free |
@@ -62,7 +62,7 @@ Stripe
 | Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql; server-side auth.email() check prevents any authenticated user from calling it; wiki deletion order: contributions+revisions on user's entries first (prevents FK violation when other contributors have rows referencing those entries), then entries, then user's own revisions/contributions on other entries | Admin only |
 | Admin: delete individual wiki entry | ✅ | WikiEntryPage — admin delete button visible when VITE_ADMIN_EMAIL matches; deleteWikiEntry() manually deletes contributions + revisions before entry | Admin only |
 | Admin: bulk-delete all wiki entries | ✅ | admin_delete_all_wiki() RPC — run supabase/admin_delete_wiki.sql; deletes contributions, revisions, and entries in order; server-side auth.email() check | Admin only |
-| Admin audit log | ✅ | admin_audit_log table — run supabase/admin_tables_rls.sql; admin-only RLS (SELECT + INSERT); all admin RPCs write here; AuditTab in AdminPanel reads last 200 entries | Admin only |
+| Admin audit log | ✅ | admin_audit_log table — run supabase/admin_tables_rls.sql; append-only: admin has SELECT only (no UPDATE/DELETE policy — prevents admin from erasing their own audit trail); SECURITY DEFINER RPCs bypass RLS for INSERT writes; AuditTab reads last 200 entries | Admin only |
 | Feature flags table | ✅ | feature_flags table — run supabase/admin_tables_rls.sql; admin can create/toggle/delete; all authenticated users can SELECT (for client-side gating); managed from AdminPanel FlagsTab | Admin only |
 | Admin: storage photo cleanup on user delete | ✅ | is_admin_user() storage policy — run supabase/admin_storage_policy.sql; checks auth.email() = admin email; GRANT EXECUTE ON FUNCTION is_admin_user() TO authenticated added (without it, storage policy evaluation fails for authenticated role and admin photo deletions silently no-op on other users' folders) | Admin only |
 | upgrade_grants table + RLS | ✅ | Stores admin-issued tier grants (email + tier + expiry); run supabase/upgrade_grants_rls.sql — admin-only SELECT/INSERT/UPDATE/DELETE; without RLS any authenticated user could read all grant records | Admin only |
@@ -149,7 +149,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| services table + RLS | ✅ | machines — run supabase/services_rls.sql; policies: full access for service creator or machine owner, read-only for provisioned members via _provisioned_machine_ids() helper; upsertService split into insert/update paths — user_id stripped from UPDATE so machine owners editing provisioned users' entries don't silently re-attribute the service log entry to themselves | Free |
+| services table + RLS | ✅ | machines — run supabase/services_rls.sql; policies: full access for service creator or machine owner, read-only for provisioned members via _provisioned_machine_ids() helper; upsertService split into insert/update paths — user_id stripped from UPDATE; getServices() capped at .limit(500) | Free |
 | Log service entry (date, types, notes) | ✅ | services table | Free |
 | Spark plug photo log | ✅ | services, photos (base64) | Free |
 | Job photos per service | ✅ | services, photos | Free |
@@ -180,7 +180,7 @@ Stripe
 | ServiceReminders: consumable stock alerts (LOW / OUT / OVER) | ✅ | getConsumables(), ServiceReminders.jsx | Free |
 | Invoice: storage fees line item | ✅ | getActiveBooking(), exportClientInvoice() | Enthusiast+ |
 | Storage Settings tab (toggle + editable tier table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
-| Booking history per machine | ✅ | getBookingHistory(), machine_bookings | Enthusiast+ |
+| Booking history per machine | ✅ | getBookingHistory(), machine_bookings — capped at .limit(200) | Enthusiast+ |
 | Custom daily rate override per visit | ✅ | machine_bookings.storage_fee_override | Enthusiast+ |
 | Storage revenue in Revenue Dashboard | ✅ | getClosedBookings(), getClosedBookingFee(), RevenueDashboard — getClosedBookings and getAllActiveBookings both capped at .limit(500) (previously unbounded) | Enthusiast+ |
 | Storage revenue card (realized, per period) | ✅ | filteredBookings, storageRev | Enthusiast+ |
@@ -231,7 +231,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| inventory_items table + RLS | ✅ | profiles — run supabase/inventory_items_rls.sql (table had no RLS; any auth user could read all rows) | Free |
+| inventory_items table + RLS | ✅ | profiles — run supabase/inventory_items_rls.sql; getInventory() capped at .limit(1000) | Free |
 | Create / edit / delete parts | ✅ | inventory_items | Free |
 | Buy price / sell price / stock qty | ✅ | inventory_items.payload (jsonb) | Free |
 | Min par / max par levels with LOW/OVER badges | ✅ | inventory_items.payload minQuantity/maxQuantity | Free |
@@ -254,7 +254,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| clients table + RLS | ✅ | profiles, companies — user_id FK has ON DELETE CASCADE (run supabase/clients_fk_cascade.sql); upsertClient split into insert/update paths, user_id stripped from UPDATE (consistent with all other asset upserts) | Enthusiast+ |
+| clients table + RLS | ✅ | profiles, companies — user_id FK has ON DELETE CASCADE (run supabase/clients_fk_cascade.sql); upsertClient split into insert/update paths, user_id stripped from UPDATE; getClients() capped at .limit(500) | Enthusiast+ |
 | Create / edit / delete clients | ✅ | clients table | Enthusiast+ |
 | Photos per client (clients.photos jsonb column) | ✅ | clients table, add_photos_to_clients.sql | Enthusiast+ |
 | Cover photo selection (☆ Cover) for clients | ✅ | CustomersTab | Enthusiast+ |
@@ -284,7 +284,7 @@ Stripe
 | Free-tier item limits (vehicles=1, tools=5, equipment=5, consumables=5, parts=5) | ✅ | gates.js TIERS.free + StockItemTab FREE_LIMIT | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
 | Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Business |
-| **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql; run supabase/asset_assignments_add_member.sql to expand child_type CHECK to include 'member' and 'part' (original constraint omitted these, causing crew-to-vehicle assignments to fail silently on INSERT) | Free |
+| **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql; run supabase/asset_assignments_add_member.sql to expand child_type CHECK to include 'member' and 'part'; getAssignedTo() and getAssignedIn() capped at .limit(200) | Free |
 | Vehicle loadout: assign tools/equipment/consumables/parts to a vehicle | ✅ | asset_assignments, LoadoutSection — assignment only from VehiclesTab; LoadoutSection removed from Tools/Equipment/StockItemTab | Free |
 | Vehicle loadout item limit (free=5, paid=unlimited) | ✅ | LoadoutSection maxItems prop — VehiclesTab passes 5 for free tier; shows n/5 count and disables + Assign at limit with upgrade nudge | Free |
 | Unassign items from vehicle loadout | ✅ | unassignAsset(), LoadoutSection | Free |
@@ -293,7 +293,7 @@ Stripe
 | Sort modal + list/grid view toggle (Consumables) | ✅ | ConsumablesTab, AssetTile | Free |
 | 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
 | Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
-| ± stock adjustment inline on card | ✅ | adjustConsumableQty() calls adjust_consumable_qty() RPC (run supabase/adjust_stock_rpcs.sql); atomic UPDATE eliminates read-modify-write race under concurrent adjustments | Free |
+| ± stock adjustment inline on card | ✅ | adjustConsumableQty() calls adjust_consumable_qty() RPC (run supabase/adjust_stock_rpcs.sql); atomic UPDATE eliminates read-modify-write race; getConsumables() capped at .limit(1000) | Free |
 | Cover photo selection (☆ Cover sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab, MachineCard | Free |
 | Photos for consumables (add via form, thumbnail in card, cover selection) | ✅ | ConsumablesTab, consumables table photos column | Free |
 | Machine card collapsed header shows cover photo thumbnail | ✅ | MachineCard | Free |
@@ -333,7 +333,7 @@ Stripe
 |---------|--------|-----------|------|
 | wiki_entries table | ✅ | — | Free |
 | wiki_revisions table | ✅ | wiki_entries | Enthusiast+ |
-| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only; UPDATE RLS restricted to entry author; column-level REVOKE/GRANT limits author updates to make/model/type/slug (prevents flipping is_sample or sample_owner_id); slug column enforced by CHECK constraint (^[a-z0-9][a-z0-9-]*$ — prevents empty/invalid slugs that would break URL routing); run supabase/wiki_rls.sql; authors can delete their own public entries (run supabase/wiki_author_delete.sql) | Free |
+| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only; INSERT WITH CHECK: created_by = auth.uid() AND (NOT is_sample OR sample_owner_id = auth.uid()) — blocks injecting fake sample entries into another user's sample library; UPDATE RLS restricted to entry author; column-level REVOKE/GRANT limits author updates to make/model/type/slug; slug CHECK constraint (^[a-z0-9][a-z0-9-]*$); run supabase/wiki_rls.sql | Free |
 | Wiki collaborative rev pointer | ✅ | update_wiki_rev_pointer(p_entry_id, p_rev_id) RPC — run supabase/wiki_advance_rev_rpc.sql; SECURITY DEFINER bypasses the author-only UPDATE RLS policy to advance current_rev_id; caller must be entry author or have contributed a revision to the entry AND must be the target revision's author or entry author (prevents random users from vandalizing entries by blanking the pointer or rolling back to old revisions) | Free |
 | View count tracking | ✅ | wiki_entries.view_count + increment_wiki_views() RPC — run supabase/wiki_view_count_rpc.sql (adds view_count column + SECURITY DEFINER RPC granted to anon+authenticated); WHERE clause includes AND NOT is_sample so sample entries never accumulate view counts; client-side per-session Set in wiki.js prevents the same entry from being incremented more than once per page load (bot/spam mitigation) | Free |
 | Create / edit wiki entry | ✅ | wiki_entries | Enthusiast+ |
