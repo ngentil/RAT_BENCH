@@ -155,3 +155,7 @@ BEGIN
   RETURN jsonb_build_object('ok', true, 'tier', v_tier);
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION grant_upgrade(text, text)     TO authenticated;
+GRANT EXECUTE ON FUNCTION revoke_upgrade(text)          TO authenticated;
+GRANT EXECUTE ON FUNCTION apply_pending_upgrade()       TO authenticated;

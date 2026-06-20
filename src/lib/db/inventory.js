@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
+import { deletePhoto } from '../storage';
 
 
 function fromDb(r) {
@@ -92,6 +93,8 @@ export async function saveInventoryItem(userId, item) {
 
 export async function deleteInventoryItem(userId, itemId) {
   try {
+    const { data } = await supabase.from('inventory_items').select('payload').eq('id', itemId).eq('user_id', userId).single();
+    (data?.payload?.photos || []).forEach(url => deletePhoto(url));
     await unassignAllByChild('part', itemId);
     await supabase.from('inventory_items').delete().eq('id', itemId).eq('user_id', userId);
   } catch (e) { console.warn('deleteInventoryItem Supabase failed:', e); }

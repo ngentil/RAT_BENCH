@@ -224,8 +224,7 @@ export async function saveWikiRevision(entryId, data, editSummary, profile) {
     data,
   }).select().single();
   if (error) throw error;
-  await supabase.from("wiki_entries")
-    .update({ current_rev_id: rev.id }).eq("id", entryId);
+  await supabase.rpc("update_wiki_rev_pointer", { p_entry_id: entryId, p_rev_id: rev.id });
   return rev;
 }
 
@@ -243,8 +242,7 @@ export async function saveWikiFieldEdit(entryId, currentData, fieldKey, oldValue
     new_value:    newValue != null ? String(newValue) : "",
   }).select().single();
   if (error) throw error;
-  await supabase.from("wiki_entries")
-    .update({ current_rev_id: rev.id }).eq("id", entryId);
+  await supabase.rpc("update_wiki_rev_pointer", { p_entry_id: entryId, p_rev_id: rev.id });
   return rev;
 }
 
@@ -253,8 +251,7 @@ export async function deleteWikiRevision(revId, entryId) {
   if (error) throw error;
   const { data: remaining } = await supabase.from("wiki_revisions")
     .select("id").eq("entry_id", entryId).order("created_at", { ascending: false }).limit(1);
-  await supabase.from("wiki_entries")
-    .update({ current_rev_id: remaining?.[0]?.id || null }).eq("id", entryId);
+  await supabase.rpc("update_wiki_rev_pointer", { p_entry_id: entryId, p_rev_id: remaining?.[0]?.id || null });
 }
 
 export async function deleteWikiEntry(entryId) {
@@ -441,7 +438,7 @@ export async function seedSampleWikiEntries(profile) {
       data:         sample.spec,
     }).select().single();
     if (!revErr && rev) {
-      await supabase.from("wiki_entries").update({ current_rev_id: rev.id }).eq("id", entry.id);
+      await supabase.rpc("update_wiki_rev_pointer", { p_entry_id: entry.id, p_rev_id: rev.id });
     }
   }
 }
