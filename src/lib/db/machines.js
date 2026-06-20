@@ -54,7 +54,7 @@ export async function deleteMachineApi(id) {
   try {
     const [{ data: mach }, { data: svc }] = await Promise.all([
       supabase.from('machines').select('photos, i_p_photos, e_p_photos').eq('id', id).single(),
-      supabase.from('machine_service_log').select('plug_photo, job_photos').eq('machine_id', id),
+      supabase.from('services').select('plug_photo, job_photos').eq('machine_id', id),
     ]);
     const urls = [
       ...(mach?.photos || []),

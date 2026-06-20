@@ -199,7 +199,6 @@ function App(){
     if(!profile) return;
     if(!prefsSynced){
       const prefs=profile.preferences||{};
-      migrateLocalPreferences(profile.id, prefs);
       const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue"]);
       if(prefs.tab&&prefs.tab!=="users"){
         if(WS_IDS.has(prefs.tab)){setTab("workshop");if(prefs.workshopTab)setWorkshopTab(prefs.workshopTab);}
@@ -208,7 +207,7 @@ function App(){
         setWorkshopTab(prefs.workshopTab);
       }
       if(prefs.dismissedAnns) setDismissedAnns(prefs.dismissedAnns);
-      setPrefsSynced(true);
+      migrateLocalPreferences(profile.id, prefs).then(()=>setPrefsSynced(true));
     }
     const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings"]));
     if(!validTopIds.has(tab)) setTab("tracker");
