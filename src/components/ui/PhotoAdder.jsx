@@ -12,6 +12,11 @@ function PhotoAdder({ photos, setPhotos, label = "Photos" }) {
   const handle = async e => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+    const oversized = files.find(f => f.size > 50 * 1024 * 1024);
+    if (oversized) {
+      setErr(`File too large (${(oversized.size / 1024 / 1024).toFixed(0)}MB). Max 50MB.`);
+      e.target.value = ''; return;
+    }
     setBusy(true); setErr(null);
     try {
       const urls = await Promise.all(files.map(f => uploadPhoto(f)));

@@ -18,6 +18,20 @@ BEGIN
     RETURN jsonb_build_object('error', 'User not found');
   END IF;
 
+  -- If user is the sole owner of any company, reset that company to free tier
+  -- so it doesn't keep a paid subscription with no owner to manage it.
+  UPDATE companies SET tier = 'free', stripe_subscription_id = NULL
+  WHERE id IN (
+    SELECT company_id FROM company_members
+    WHERE user_id = p_user_id AND role = 'owner'
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM company_members cm2
+    WHERE cm2.company_id = companies.id
+      AND cm2.user_id   != p_user_id
+      AND cm2.role = 'owner'
+  );
+
   -- Remove from teams (don't delete the company itself)
   DELETE FROM company_members    WHERE user_id = p_user_id;
   DELETE FROM machine_permissions WHERE user_id = p_user_id;

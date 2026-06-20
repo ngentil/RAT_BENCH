@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS depots (
 ALTER TABLE depots ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "depots_admin_only" ON depots
-  FOR ALL USING (auth.email() = 'ratbenchadmin@gmail.com')
-  WITH CHECK (auth.email() = 'ratbenchadmin@gmail.com');
+  FOR ALL USING (auth.email() = 'nathan.gentil.ai@gmail.com')
+  WITH CHECK (auth.email() = 'nathan.gentil.ai@gmail.com');
 
 CREATE TABLE IF NOT EXISTS tow_trucks (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS tow_trucks (
 ALTER TABLE tow_trucks ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "tow_trucks_admin_only" ON tow_trucks
-  FOR ALL USING (auth.email() = 'ratbenchadmin@gmail.com')
-  WITH CHECK (auth.email() = 'ratbenchadmin@gmail.com');
+  FOR ALL USING (auth.email() = 'nathan.gentil.ai@gmail.com')
+  WITH CHECK (auth.email() = 'nathan.gentil.ai@gmail.com');
 
 -- Grant table access to authenticated role (RLS handles restriction)
 GRANT SELECT, INSERT, UPDATE, DELETE ON depots     TO authenticated;
