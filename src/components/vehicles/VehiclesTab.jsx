@@ -265,6 +265,9 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
 
   const removeSvcEntry = async (id) => {
     if (!confirm('Remove this entry?')) return;
+    const entry = (vehicle.serviceLog || []).find(e => e.id === id);
+    if (entry?.plugPhoto) deletePhoto(entry.plugPhoto);
+    (entry?.jobPhotos || []).forEach(url => deletePhoto(url));
     await onUpdate({ ...vehicle, serviceLog: (vehicle.serviceLog || []).filter(e => e.id !== id) });
   };
 

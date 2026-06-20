@@ -5,6 +5,7 @@ import TabGuide from '../ui/TabGuide';
 import { mIcon, getStorageStatus, fmtMoney } from '../../lib/helpers';
 import { getPref } from '../../lib/db/preferences';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
+import { deletePhoto } from '../../lib/storage';
 import { effectiveTier, canUse } from '../../lib/gates';
 import { getActiveBooking } from '../../lib/db/bookings';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -145,6 +146,8 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
 
   const deleteClient = async (id) => {
     if (!confirm("Delete this client? Machines linked to them will be unlinked.")) return;
+    const client = clients.find(c => c.id === id);
+    (client?.photos || []).forEach(url => deletePhoto(url));
     await deleteClientApi(id).catch(() => {});
     setClients(prev => prev.filter(c => c.id !== id));
     const toUnlink = machines.filter(m => m.clientId === id);
