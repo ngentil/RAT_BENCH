@@ -45,9 +45,9 @@ Stripe
 | Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
 | Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT for all authenticated (usernames public for wiki/member lists); UPDATE own only | Free |
 | Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
-| Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles | All |
+| Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing also verifies company membership before creating session | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
-| Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
+| Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity before returning portal URL | All |
 | Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql | All |
 | DB-level machine limit trigger (free=5, guest=3) | ✅ | scalability_hardening.sql, profiles.tier | Free |
@@ -83,7 +83,7 @@ Stripe
 | First-run tab guides (all tabs) | ✅ | TabGuide.jsx shared component — two variants: "add" (right-aligned, arrow up-right toward + Add button) and "info" (centered, arrow down toward content); dismissed state stored per-key in profiles.preferences (rat_tut_jobs · rat_tut_search · rat_tut_revenue · rat_tut_clients etc.); same orange glow SVG arrow style as Tracker guide | Free |
 | Job card first-use inline guide | ✅ | JobBoard.jsx JobCard — green tip block shown on first expand (profiles.preferences.rat_tut_job_card); explains Notes / Timer / Parts / Status buttons; "got it" dismiss | Free |
 | Share machine link (🔗 copies /m/:id URL, 2-sec ✓ feedback) | ✅ | MachineCard.jsx copied state + clipboard API | Free |
-| Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql; shows cover photo hero banner (photos[0]) when available; accent-coloured QR code linking to ratbench.net; "Add this machine" button deep-links to /?template={id} which pre-fills the Add Machine form for the visiting user | Free |
+| Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql; exposes only: id, name, type, make, model, year, last_service_date, last_service_odo, photos (time_log and notes are intentionally excluded); shows cover photo hero banner; accent-coloured QR code; "Add this machine" deep-link pre-fills Add Machine form | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
 | Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — "more specs = more calcs" tip (bore+stroke → compression ratio & piston speed; lighting entries → charge load, all auto); lists 8 key sections with curved orange arrows; Service Intervals highlighted; prominent orange "got it ✓" dismiss button; dismissed state in profiles.preferences.rat_form_tut; auto-dismisses on first save | Free |
 | First-add field glow (Type + Name) | ✅ | MachineForm.jsx firstAdd flag (showFormGuide && !existing) — pulsing orange box-shadow on Type select and Name input; .field-guide CSS class in index.css; clears after guide dismissed | Free |
