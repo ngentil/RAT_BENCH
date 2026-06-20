@@ -206,13 +206,14 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const timerRunning = m.jobTimer?.status === "running";
   const svcStatus = getMachineServiceStatus(m);
 
-  const _jBase = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:6,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",border:"none",width:"100%",boxSizing:"border-box",minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"};
-  const _jEdit   = {..._jBase,background:"linear-gradient(180deg,#1a4d8f,#0f2d5c)",color:"#a8cff8",border:"1px solid #2a6bcc"};
-  const _jPdf    = {..._jBase,background:"linear-gradient(180deg,#4a1a7a,#2d0f50)",color:"#d4a0ff",border:"1px solid #7a3acc"};
-  const _jWiki   = {..._jBase,background:"linear-gradient(180deg,#155c38,#0a3320)",color:"#7ae8a0",border:"1px solid #1e8850"};
-  const _jShare  = {..._jBase,background:"linear-gradient(180deg,#0d4a5a,#072a35)",color:"#60d8ee",border:"1px solid #1090b0"};
-  const _jLayout = {..._jBase,background:"linear-gradient(180deg,#4a3000,#2d1a00)",color:"#f5b830",border:"1px solid #c07020"};
-  const _jTile   = {..._jBase,background:"linear-gradient(180deg,#2a2a3a,#181828)",color:"#b0b8d8",border:"1px solid #4a5080"};
+  const _jBase   = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:0,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",border:"none",width:"100%",boxSizing:"border-box",minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"};
+  const _jOrange = {..._jBase,background:"linear-gradient(180deg,#f07820,#c05000)",color:"#fff",border:"1px solid #e8670a"};
+  const _jEdit   = _jOrange;
+  const _jPdf    = _jOrange;
+  const _jWiki   = _jOrange;
+  const _jShare  = _jOrange;
+  const _jLayout = _jOrange;
+  const _jTile   = _jOrange;
   const _jDel    = {..._jBase,background:"linear-gradient(180deg,#6a0f0f,#3c0707)",color:"#ff8080",border:"1px solid #cc2020"};
 
   return (
