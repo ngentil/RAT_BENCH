@@ -43,7 +43,7 @@ Stripe
 | Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession | Free |
 | Password reset | ✅ | auth | Free |
 | Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
-| Profiles table + RLS | ✅ | auth.users | Free |
+| Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT for all authenticated (usernames public for wiki/member lists); UPDATE own only | Free |
 | Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
 | Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles | All |
 | Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
@@ -300,10 +300,10 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| companies table + RLS | ✅ | profiles | Business |
+| companies table + RLS | ✅ | profiles — run supabase/org_and_profiles_rls.sql; members read; admins update; _is_company_member / _is_company_admin SECURITY DEFINER helpers avoid asset_permissions recursion | Business |
 | Create / edit company | ✅ | companies | Business |
 | Invite code join flow | ✅ | companies.invite_code, RPC | Business |
-| company_members table | ✅ | companies, profiles | Business |
+| company_members table | ✅ | companies, profiles — RLS: members read own company list; admins manage; users can leave (run supabase/org_and_profiles_rls.sql) | Business |
 | Roles: owner / admin / technician / viewer | ✅ | company_members.role | Business |
 | Edit member roles | ✅ | updateMemberRole() RPC | Business |
 | Remove member | ✅ | removeMember() RPC | Business |
