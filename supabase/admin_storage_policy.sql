@@ -8,7 +8,7 @@ LANGUAGE sql
 SECURITY DEFINER
 STABLE
 AS $$
-  SELECT auth.email() = 'nathan.gentil.ai@gmail.com'
+  SELECT auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com')
 $$;
 
 GRANT EXECUTE ON FUNCTION is_admin_user() TO authenticated;

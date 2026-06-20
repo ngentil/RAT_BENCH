@@ -16,5 +16,5 @@ CREATE POLICY anns_read ON announcements
 -- Replace the email below if the admin email ever changes.
 CREATE POLICY anns_admin_write ON announcements
   FOR ALL TO authenticated
-  USING     (auth.email() = 'nathan.gentil.ai@gmail.com')
-  WITH CHECK (auth.email() = 'nathan.gentil.ai@gmail.com');
+  USING     (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'))
+  WITH CHECK (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'));

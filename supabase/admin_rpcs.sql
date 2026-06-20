@@ -26,7 +26,7 @@ SECURITY DEFINER
 STABLE
 AS $$
 BEGIN
-  IF auth.email() != 'nathan.gentil.ai@gmail.com' THEN
+  IF auth.email() NOT IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com') THEN
     RAISE EXCEPTION 'Access denied';
   END IF;
 
@@ -67,7 +67,7 @@ AS $$
 DECLARE
   v_uid uuid;
 BEGIN
-  IF auth.email() != 'nathan.gentil.ai@gmail.com' THEN
+  IF auth.email() NOT IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com') THEN
     RETURN jsonb_build_object('error', 'Access denied');
   END IF;
 
@@ -101,7 +101,7 @@ AS $$
 DECLARE
   v_uid uuid;
 BEGIN
-  IF auth.email() != 'nathan.gentil.ai@gmail.com' THEN
+  IF auth.email() NOT IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com') THEN
     RETURN jsonb_build_object('error', 'Access denied');
   END IF;
 

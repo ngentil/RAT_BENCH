@@ -13,7 +13,7 @@ AS $$
 DECLARE
   v_email text;
 BEGIN
-  IF auth.email() IS DISTINCT FROM 'nathan.gentil.ai@gmail.com' THEN
+  IF auth.email() NOT IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com') THEN
     RETURN jsonb_build_object('error', 'Access denied');
   END IF;
 

@@ -10,5 +10,5 @@ DROP POLICY IF EXISTS upgrade_grants_admin ON upgrade_grants;
 -- Only the admin account can read or manage grants
 CREATE POLICY upgrade_grants_admin ON upgrade_grants
   FOR ALL TO authenticated
-  USING     (auth.email() = 'nathan.gentil.ai@gmail.com')
-  WITH CHECK (auth.email() = 'nathan.gentil.ai@gmail.com');
+  USING     (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'))
+  WITH CHECK (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'));

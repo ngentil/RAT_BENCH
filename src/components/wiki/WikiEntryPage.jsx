@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
 import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry } from '../../lib/wiki';
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'nathan.gentil.ai@gmail.com';
+const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
 export function WikiHeader({ title, subtitle, backHref, backLabel }) {
   return (
@@ -18,7 +18,7 @@ export function WikiHeader({ title, subtitle, backHref, backLabel }) {
 }
 
 function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
-  const isAdmin = session?.user?.email === ADMIN_EMAIL;
+  const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
   const [entry, setEntry] = useState(null);
   const [revData, setRevData] = useState({});
   const [loading, setLoading] = useState(true);
