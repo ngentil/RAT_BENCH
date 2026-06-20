@@ -71,6 +71,10 @@ BEGIN
     RETURN jsonb_build_object('error', 'Access denied');
   END IF;
 
+  IF p_tier NOT IN ('free', 'enthusiast', 'team', 'business') THEN
+    RETURN jsonb_build_object('error', 'Invalid tier — must be free/enthusiast/team/business');
+  END IF;
+
   SELECT id INTO v_uid FROM auth.users WHERE email = p_email LIMIT 1;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('error', 'User not found');

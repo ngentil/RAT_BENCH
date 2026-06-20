@@ -27,7 +27,11 @@ CREATE POLICY "machine_perms_insert" ON machine_permissions
   );
 
 CREATE POLICY "machine_perms_update" ON machine_permissions
-  FOR UPDATE USING (
+  FOR UPDATE
+  USING (
+    EXISTS (SELECT 1 FROM machines WHERE id = machine_id AND user_id = auth.uid())
+  )
+  WITH CHECK (
     EXISTS (SELECT 1 FROM machines WHERE id = machine_id AND user_id = auth.uid())
   );
 

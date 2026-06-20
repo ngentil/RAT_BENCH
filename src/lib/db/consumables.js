@@ -86,17 +86,13 @@ export async function deleteConsumable(id) {
 }
 
 export async function adjustConsumableQty(id, delta) {
-  const { data, error } = await supabase.from('consumables').select('quantity').eq('id', id).single();
+  const { data, error } = await supabase.rpc('adjust_consumable_qty', { p_id: id, p_delta: delta });
   if (error) throw error;
-  const newQty = Math.max(0, (Number(data.quantity) || 0) + delta);
-  const { data: updated, error: e2 } = await supabase
-    .from('consumables')
-    .update({ quantity: newQty, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
+  if (data?.error) throw new Error(data.error);
+  // Re-fetch the full row so callers get the same shape as before
+  const { data: row, error: e2 } = await supabase.from('consumables').select('*').eq('id', id).single();
   if (e2) throw e2;
-  return fromDb(updated);
+  return fromDb(row);
 }
 
 // ── Permissions (asset_permissions) ─────────────────────────────────────────

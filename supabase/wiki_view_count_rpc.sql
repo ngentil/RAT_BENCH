@@ -15,7 +15,7 @@ AS $$
 BEGIN
   UPDATE wiki_entries
   SET view_count = view_count + 1
-  WHERE id = entry_id;
+  WHERE id = entry_id AND NOT is_sample;
 END;
 $$;
 

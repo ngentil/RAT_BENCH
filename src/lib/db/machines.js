@@ -46,9 +46,15 @@ export async function upsertMachine(machine) {
   const { data: { user } } = await supabase.auth.getUser();
   const isNew = !machine.id;
   const row = toDb(machine);
-  if (isNew) row.user_id = user?.id;
-  const { error } = await supabase.from("machines").upsert(row, { onConflict: "id" });
-  if (error) { console.error("upsertMachine:", error); throw error; }
+  if (isNew) {
+    row.user_id = user?.id;
+    const { error } = await supabase.from("machines").insert(row);
+    if (error) { console.error("upsertMachine:", error); throw error; }
+  } else {
+    const { user_id: _uid, ...updateRow } = row;
+    const { error } = await supabase.from("machines").update(updateRow).eq("id", row.id);
+    if (error) { console.error("upsertMachine:", error); throw error; }
+  }
 }
 
 export async function deleteMachineApi(id) {

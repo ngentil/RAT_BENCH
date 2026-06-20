@@ -64,9 +64,9 @@ BEGIN
   -- Remove from any vehicle crew assignments
   DELETE FROM asset_assignments
   WHERE child_type = 'member'
-    AND child_id   = p_user_id::text
+    AND child_id   = p_user_id
     AND parent_id  IN (
-      SELECT id::text FROM vehicles WHERE company_id = p_company_id
+      SELECT id FROM vehicles WHERE company_id = p_company_id
     );
 
   -- Remove from company
