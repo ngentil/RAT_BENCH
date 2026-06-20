@@ -22,7 +22,7 @@ DROP POLICY IF EXISTS audit_log_admin_read ON admin_audit_log;
 -- owner and bypass RLS — they write rows without needing an INSERT policy here.
 CREATE POLICY audit_log_admin_read ON admin_audit_log
   FOR SELECT TO authenticated
-  USING (auth.email() = 'nathan.gentil.ai@gmail.com');
+  USING (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'));
 
 -- ─── feature_flags ───────────────────────────────────────────────────────────
 
@@ -42,8 +42,8 @@ DROP POLICY IF EXISTS feature_flags_read        ON feature_flags;
 -- Admin has full access (insert, update, delete)
 CREATE POLICY feature_flags_admin_write ON feature_flags
   FOR ALL TO authenticated
-  USING     (auth.email() = 'nathan.gentil.ai@gmail.com')
-  WITH CHECK (auth.email() = 'nathan.gentil.ai@gmail.com');
+  USING     (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'))
+  WITH CHECK (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'));
 
 -- All authenticated users can read flags (needed to gate features client-side)
 CREATE POLICY feature_flags_read ON feature_flags

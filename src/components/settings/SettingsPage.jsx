@@ -10,10 +10,10 @@ import StorageSettings from './StorageSettings';
 import TabOrderSettings from './TabOrderSettings';
 import UsersTab from '../users/UsersTab';
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'nathan.gentil.ai@gmail.com';
+const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
 function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,vehicles,equipment,tools,initialTab}){
-  const isAdmin = session?.user?.email === ADMIN_EMAIL;
+  const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
   const tier = effectiveTier(profile, company);
   const isTeam = tier === "business";
   const [tab,setTab]=useState(initialTab||"profile");

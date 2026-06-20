@@ -11,7 +11,7 @@ STABLE
 AS $$
 BEGIN
   -- Server-side admin check — client-side email check alone is bypassable
-  IF auth.email() != 'nathan.gentil.ai@gmail.com' THEN
+  IF auth.email() NOT IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com') THEN
     RAISE EXCEPTION 'Access denied';
   END IF;
 
