@@ -63,6 +63,7 @@ Stripe
 | Android PWA: "Press back again to exit" toast | ✅ | src/lib/backGuard.js — installBackGuard() called in main.jsx before React renders; 2 s window | All |
 | Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
 | Photo storage — Supabase Storage bucket | ✅ | supabase/create_photos_bucket.sql + src/lib/storage.js — run SQL first, then deploy | All |
+| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting machines (deleteMachineApi — fetches main+port+service log photos from DB before row delete), vehicles (VehiclesTab remove), tools (ToolsTab remove), equipment (EquipmentTab remove) | All |
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
 | Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing | All |
 | Auto-retry on total load failure + friendly slow-connection message | ✅ | App.jsx loadForSession — if 4+ parallel fetches fail, waits 2 s and retries once silently; loading screen shows "Taking a bit longer than usual… slow connection — giving it another go" during the wait instead of alarming the user | All |
@@ -327,7 +328,7 @@ Stripe
 | Submit machine specs to wiki | ✅ | machines → wiki_entries | Enthusiast+ |
 | Author attribution | ✅ | wiki_revisions.author_id | Enthusiast+ |
 | Admin delete any wiki entry | ✅ | VITE_ADMIN_EMAIL env var check in WikiEntryPage, deleteWikiEntry() | Admin only |
-| Per-user sample wiki entries (Honda GX200, Husqvarna 455 Rancher, Yamaha YZ250) | ✅ | seedSampleWikiEntries() in wiki.js — seeded on first wiki visit (gate: profiles.preferences.rat_wiki_seeded); each user gets their own copies (slug: {base}-sample-{uid8}); is_sample + sample_owner_id columns on wiki_entries; users see only their own samples + global non-sample entries; "Remove Sample" delete button on own samples; run supabase/wiki_sample_entries.sql first | Free |
+| Per-user sample wiki entries (Honda GX200, Husqvarna 455 Rancher, Yamaha YZ250) | ✅ | seedSampleWikiEntries() in wiki.js — seeded on first wiki visit (gate: profiles.preferences.rat_wiki_seeded); each user gets their own copies (slug: {base}-sample-{uid8}); is_sample + sample_owner_id columns on wiki_entries; users see only their own samples + global non-sample entries; "Remove Sample" delete button on own samples; run supabase/wiki_sample_entries.sql first. Re-seed regression fix: WikiHomePage checks localStorage rat_wiki_seeded as fallback before seeding, migrates it to DB prefs and removes LS key on first load | Free |
 
 ---
 
@@ -344,6 +345,7 @@ Stripe
 | Workshop visibility + order UI under Settings → ⇅ Tabs | ✅ | TabOrderSettings.jsx WorkshopReorderList (checkboxes + ↑/↓ + DEFAULT badge) | Free |
 | Users tab moved into Settings (Business only) | ✅ | SettingsPage, UsersTab | Business |
 | User preferences cross-device sync (sort, view, cols, active tab, tutorial flags) | ✅ | profiles.preferences JSONB + upsert_preference RPC — run supabase/preferences_migration.sql | Free |
+| One-time localStorage → preferences migration | ✅ | migrateLocalPreferences() in preferences.js — runs on first profile load; migrates all known LS pref keys (tutorial flags, dismissed anns, sort/view/cols, active tab) to profiles.preferences; sets _lsMigrated guard to prevent re-runs; removes migrated LS keys | Free |
 | Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
 | Per-account tab reordering (main nav, workshop, settings) | ✅ | profiles.tab_order JSONB, applyTabOrder(), TabOrderSettings.jsx | Free |
 | Tab order UI under Settings → ⇅ Tabs (↑/↓ reorder + reset) | ✅ | TabOrderSettings.jsx | Free |
