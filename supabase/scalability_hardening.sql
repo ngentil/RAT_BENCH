@@ -82,8 +82,8 @@ BEGIN
     SELECT COUNT(*) INTO v_count
     FROM machines WHERE user_id = NEW.user_id;
 
-    IF v_count >= 10 THEN
-      RAISE EXCEPTION 'Machine limit reached: free tier allows up to 10 machines.';
+    IF v_count >= 5 THEN
+      RAISE EXCEPTION 'Machine limit reached: free tier allows up to 5 machines.';
     END IF;
   END IF;
 
