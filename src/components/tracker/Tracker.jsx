@@ -125,7 +125,11 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
     }catch(e){alert("Save failed: "+e.message);}
   };
   const deleteM=async m=>{
-    if(!confirm(`Delete "${m.name}" and all its history?`))return;
+    if(m.jobTimer?.status==="running"){
+      if(!confirm(`"${m.name}" has a running timer. Deleting will lose it. Continue?`))return;
+    } else {
+      if(!confirm(`Delete "${m.name}" and all its history?`))return;
+    }
     await deleteMachineApi(m.id);
     setMachines(prev=>prev.filter(x=>x.id!==m.id));
   };
