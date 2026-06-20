@@ -322,8 +322,8 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
 
           {!isShared && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 12 }}>
-              <button onClick={onEdit} style={{cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:6,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",width:"100%",boxSizing:"border-box",background:"linear-gradient(180deg,#1a4d8f,#0f2d5c)",color:"#a8cff8",border:"1px solid #2a6bcc"}}>Edit Tool</button>
-              <button onClick={onDelete} style={{cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:6,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",width:"100%",boxSizing:"border-box",background:"linear-gradient(180deg,#6a0f0f,#3c0707)",color:"#ff8080",border:"1px solid #cc2020"}}>Delete</button>
+              <button onClick={onEdit} style={{cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:0,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",width:"100%",boxSizing:"border-box",background:"linear-gradient(180deg,#f07820,#c05000)",color:"#fff",border:"1px solid #e8670a"}}>Edit Tool</button>
+              <button onClick={onDelete} style={{cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",padding:"9px 14px",borderRadius:0,fontFamily:"'IBM Plex Mono',monospace",boxShadow:"0 1px 0 rgba(255,255,255,0.08) inset",width:"100%",boxSizing:"border-box",background:"linear-gradient(180deg,#6a0f0f,#3c0707)",color:"#ff8080",border:"1px solid #cc2020"}}>Delete</button>
             </div>
           )}
         </div>
