@@ -42,9 +42,8 @@ function OnboardingScreen({ session, onComplete }) {
     if (availability === 'taken')                        { setError('That username is already taken.'); return; }
     setLoading(true); setError('');
     const { error } = await supabase.from('profiles').upsert({
-      id:           session.user.id,
-      username:     name,
-      account_type: 'personal',
+      id:       session.user.id,
+      username: name,
     }, { onConflict: 'id' });
     if (error) {
       if (error.code === '23505') setError('That username is already taken — try another.');

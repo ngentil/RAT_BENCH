@@ -109,7 +109,6 @@ function App(){
           id:session.user.id,
           username:`guest_${guestSuffix}`,
           display_name:"Guest",
-          account_type:"personal",
         },{onConflict:"id"}).select().single();
         profileData = guest;
         setProfile(guest||null);
@@ -121,7 +120,6 @@ function App(){
         const {data:autoProfile} = await supabase.from("profiles").upsert({
           id: session.user.id,
           username,
-          account_type: "personal",
         },{onConflict:"id"}).select().single();
         profileData = autoProfile;
         setProfile(autoProfile||null);
