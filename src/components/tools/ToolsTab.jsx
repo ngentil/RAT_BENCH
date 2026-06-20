@@ -6,6 +6,7 @@ import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
+import { deletePhoto } from '../../lib/storage';
 import { fmtDate, fmtMoney } from '../../lib/helpers';
 import LoadoutSection from '../ui/LoadoutSection';
 import AssetTile from '../ui/AssetTile';
@@ -429,6 +430,8 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
 
   const remove = async (toolId) => {
     if (!confirm("Delete this tool?")) return;
+    const t = tools.find(x => x.id === toolId);
+    (t?.photos || []).forEach(url => deletePhoto(url));
     await deleteToolItem(toolId);
     setTools(prev => prev.filter(t => t.id !== toolId));
   };

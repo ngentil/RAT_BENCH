@@ -6,6 +6,7 @@ import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
+import { deletePhoto } from '../../lib/storage';
 import { fmtDate } from '../../lib/helpers';
 import LoadoutSection from '../ui/LoadoutSection';
 import AssetTile from '../ui/AssetTile';
@@ -337,6 +338,8 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
 
   const remove = async (id) => {
     if (!confirm('Delete this equipment?')) return;
+    const eq = equipment.find(x => x.id === id);
+    (eq?.photos || []).forEach(url => deletePhoto(url));
     await deleteEquipmentItem(id);
     setEquipment(prev => prev.filter(e => e.id !== id));
   };

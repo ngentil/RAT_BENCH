@@ -11,13 +11,20 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    if (profile?.id && !getPref(profile, "rat_wiki_seeded", false)) {
+    if (!profile?.id) return;
+    const dbSeeded = getPref(profile, "rat_wiki_seeded", false);
+    const lsSeeded = localStorage.getItem('rat_wiki_seeded') === '1';
+    if (lsSeeded && !dbSeeded) {
+      savePref(profile.id, "rat_wiki_seeded", true);
+      localStorage.removeItem('rat_wiki_seeded');
+      searchWiki("", profile.id).then(r => setRecent(r || []));
+    } else if (!dbSeeded && !lsSeeded) {
       seedSampleWikiEntries(profile).then(() => {
         savePref(profile.id, "rat_wiki_seeded", true);
         searchWiki("", profile.id).then(r => setRecent(r || []));
       });
     } else {
-      searchWiki("", profile?.id).then(r => setRecent(r || []));
+      searchWiki("", profile.id).then(r => setRecent(r || []));
     }
   }, [profile?.id]);
 

@@ -9,7 +9,7 @@ import { fromDb } from './lib/db/transforms';
 import { TABS, WORKSHOP_TABS } from './lib/constants';
 import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
-import { savePref } from './lib/db/preferences';
+import { savePref, migrateLocalPreferences } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
 
 const TIER_GLOW = {
@@ -199,6 +199,7 @@ function App(){
     if(!profile) return;
     if(!prefsSynced){
       const prefs=profile.preferences||{};
+      migrateLocalPreferences(profile.id, prefs);
       const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue"]);
       if(prefs.tab&&prefs.tab!=="users"){
         if(WS_IDS.has(prefs.tab)){setTab("workshop");if(prefs.workshopTab)setWorkshopTab(prefs.workshopTab);}

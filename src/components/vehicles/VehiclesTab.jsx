@@ -6,6 +6,7 @@ import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
+import { deletePhoto } from '../../lib/storage';
 import { getAssignedTo, assignAsset, unassignAsset } from '../../lib/db/assetAssignments';
 import { getCompanyMembers } from '../../lib/db/users';
 import LoadoutSection from '../ui/LoadoutSection';
@@ -506,6 +507,8 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
 
   const remove = async (id) => {
     if (!confirm('Delete this vehicle?')) return;
+    const v = vehicles.find(x => x.id === id);
+    (v?.photos || []).forEach(url => deletePhoto(url));
     await deleteVehicle(id);
     setVehicles(prev => prev.filter(v => v.id !== id));
   };

@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { toDb, fromDb } from './transforms';
+import { deletePhoto } from '../storage';
 
 export async function getMachines() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -50,6 +51,19 @@ export async function upsertMachine(machine) {
 }
 
 export async function deleteMachineApi(id) {
-  const { error } = await supabase.from("machines").delete().eq("id", id);
+  try {
+    const [{ data: mach }, { data: svc }] = await Promise.all([
+      supabase.from('machines').select('photos, i_p_photos, e_p_photos').eq('id', id).single(),
+      supabase.from('machine_service_log').select('plug_photo, job_photos').eq('machine_id', id),
+    ]);
+    const urls = [
+      ...(mach?.photos || []),
+      ...(mach?.i_p_photos || []),
+      ...(mach?.e_p_photos || []),
+      ...(svc || []).flatMap(s => [...(s.job_photos || []), ...(s.plug_photo ? [s.plug_photo] : [])]),
+    ];
+    urls.forEach(url => deletePhoto(url));
+  } catch (e) { console.warn('deleteMachine photo cleanup:', e); }
+  const { error } = await supabase.from('machines').delete().eq('id', id);
   if (error) console.error("deleteMachine:", error);
 }
