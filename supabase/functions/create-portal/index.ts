@@ -13,6 +13,8 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const PORTAL_COOLDOWN_MS = 30_000;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -49,16 +51,31 @@ serve(async (req) => {
       }
     }
 
+    // Fetch profile once for rate-limit check and stripe_customer_id
+    const { data: profData } = await supabase
+      .from("profiles")
+      .select("preferences, stripe_customer_id")
+      .eq("id", user_id)
+      .single();
+
+    const prefs = (profData?.preferences as Record<string, string>) ?? {};
+    const lastPortal = prefs.last_portal_session_at;
+    if (lastPortal && Date.now() - new Date(lastPortal).getTime() < PORTAL_COOLDOWN_MS) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests — please wait before retrying" }),
+        { status: 429, headers: CORS }
+      );
+    }
+
     let customerId: string | null = null;
 
     if (company_id) {
-      const { data } = await supabase.from("companies").select("stripe_customer_id").eq("id", company_id).single();
-      customerId = data?.stripe_customer_id ?? null;
+      const { data: co } = await supabase.from("companies").select("stripe_customer_id").eq("id", company_id).single();
+      customerId = co?.stripe_customer_id ?? null;
     }
 
     if (!customerId) {
-      const { data } = await supabase.from("profiles").select("stripe_customer_id").eq("id", user_id).single();
-      customerId = data?.stripe_customer_id ?? null;
+      customerId = profData?.stripe_customer_id ?? null;
     }
 
     if (!customerId) {
@@ -69,6 +86,11 @@ serve(async (req) => {
       customer: customerId,
       return_url: return_url || "https://www.ratbench.net/",
     });
+
+    // Stamp last portal session time to rate-limit repeated calls
+    await supabase.from("profiles").update({
+      preferences: { ...prefs, last_portal_session_at: new Date().toISOString() },
+    }).eq("id", user_id);
 
     return new Response(JSON.stringify({ url: session.url }), {
       status: 200,
