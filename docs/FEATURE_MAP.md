@@ -55,7 +55,7 @@ Stripe
 | Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
 | Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
 | Admin panel analytics (users, active, machines, signups trend) | ✅ | AdminPanel.jsx OverviewTab + admin_get_stats() RPC — run supabase/admin_get_stats.sql to update | Admin only |
-| Admin: hard-delete user from Supabase + all data + storage photos | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC + deleteUserPhotos() — run supabase/admin_delete_user.sql AND supabase/admin_storage_policy.sql — admin account (VITE_ADMIN_EMAIL) is blocked from deletion | Admin only |
+| Admin: hard-delete user from Supabase + all data + storage photos | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC + deleteUserPhotos() — run supabase/admin_delete_user.sql AND supabase/admin_storage_policy.sql — cleans: company_members, machine_permissions, asset_permissions, services, machine_bookings, machines, clients, inventory_items, vehicles, equipment, tools, consumables, wiki_contributions, wiki_revisions, wiki_entries, asset_assignments, profiles, auth.users — admin account (VITE_ADMIN_EMAIL) is blocked from deletion | Admin only |
 | Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql | Admin only |
 | Admin: delete individual wiki entry | ✅ | WikiEntryPage — admin delete button visible when VITE_ADMIN_EMAIL matches | Admin only |
 | Photo viewer: X button + Android back button closes viewer | ✅ | PhotoViewer.jsx — manualClose() pattern (stopPropagation on X prevents double history.back), 52px tap target | All |
@@ -63,7 +63,7 @@ Stripe
 | Android PWA: "Press back again to exit" toast | ✅ | src/lib/backGuard.js — installBackGuard() called in main.jsx before React renders; 2 s window | All |
 | Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
 | Photo storage — Supabase Storage bucket | ✅ | supabase/create_photos_bucket.sql + src/lib/storage.js — run SQL first, then deploy | All |
-| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port photos from machines table + plug/job photos from services table before row delete), vehicles, tools, equipment, clients, parts/consumables | All |
+| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port photos from machines table + plug/job photos from services table before row delete), vehicles, tools, equipment, clients, parts, consumables (deleteConsumable fetches photos column before row delete) | All |
 | Photo cleanup on service log entry delete | ✅ | MachineCard delSvc: collects plugPhoto + jobPhotos from svc state before deleteServiceApi; VehiclesTab removeSvcEntry: same (vehicle entries use ServiceModal which adds photos); tools/equipment service log entries are inline-only (no photos, no cleanup needed) | All |
 | Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
 | Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing | All |
@@ -222,7 +222,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| inventory_items table + RLS | ✅ | profiles | Free |
+| inventory_items table + RLS | ✅ | profiles — run supabase/inventory_items_rls.sql (table had no RLS; any auth user could read all rows) | Free |
 | Create / edit / delete parts | ✅ | inventory_items | Free |
 | Buy price / sell price / stock qty | ✅ | inventory_items.payload (jsonb) | Free |
 | Min par / max par levels with LOW/OVER badges | ✅ | inventory_items.payload minQuantity/maxQuantity | Free |
@@ -301,12 +301,13 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | companies table + RLS | ✅ | profiles — run supabase/org_and_profiles_rls.sql; members read; admins update; _is_company_member / _is_company_admin SECURITY DEFINER helpers avoid asset_permissions recursion | Business |
-| Create / edit company | ✅ | companies | Business |
-| Invite code join flow | ✅ | companies.invite_code, RPC | Business |
+| Create / edit company | ✅ | companies — run supabase/company_rpcs.sql (defines rpc_create_company SECURITY DEFINER: creates row, seeds caller as owner in company_members, links profile) | Business |
+| Invite code join flow | ✅ | companies.invite_code — run supabase/company_rpcs.sql (defines join_company_by_invite SECURITY DEFINER: matches invite_code, inserts member row, links profile) | Business |
 | company_members table | ✅ | companies, profiles — RLS: members read own company list; admins manage; users can leave (run supabase/org_and_profiles_rls.sql) | Business |
 | Roles: owner / admin / technician / viewer | ✅ | company_members.role | Business |
 | Edit member roles | ✅ | updateMemberRole() RPC | Business |
-| Remove member | ✅ | removeMember() RPC | Business |
+| Remove member | ✅ | removeMember() RPC — run supabase/delete_cascade_fixes.sql | Business |
+| Delete company | ✅ | deleteCompany() → rpc_delete_company SECURITY DEFINER — run supabase/company_rpcs.sql; clears profiles.company_id for all members, removes asset_permissions, company_members, then company row (FK SET NULL handles machines/vehicles/etc.) | Business |
 | Regenerate invite code | ✅ | regenerateInviteCode() RPC | Business |
 | Company logo upload | ✅ | companies.logo (base64) | Business |
 | Hourly rate / tax rate / currency config | ✅ | companies fields | Business |
