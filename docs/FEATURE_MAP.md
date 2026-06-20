@@ -77,13 +77,13 @@ Stripe
 |---------|--------|-----------|------|
 | machines table (200+ columns, RLS) | ✅ | profiles, companies | Free |
 | Create / edit / delete machine | ✅ | machines table, transforms.js | Free |
-| First-run arrow guide (3-step tutorial: arrow → + Add · arrow → first card · in-card button key) | ✅ | Tracker.jsx GuideStep1/GuideStep2 + MachineCard showGuide prop — curved hand-drawn orange SVG arrows with pulsing glow; step 3 annotates each button (Edit Machine, PDF, Share, Layout, + LOG) inside the expanded card; dismissed to localStorage | Free |
-| First-run tab guides (all tabs) | ✅ | TabGuide.jsx shared component — two variants: "add" (right-aligned, arrow up-right toward + Add button) and "info" (centered, arrow down toward content); each tab has its own localStorage key (rat_tut_jobs · rat_tut_remind · rat_tut_search · rat_tut_wiki · rat_tut_revenue · rat_tut_vehicles · rat_tut_equip · rat_tut_tools · rat_tut_clients · rat_tut_parts · rat_tut_consumables); same orange glow SVG arrow style as Tracker guide | Free |
-| Job card first-use inline guide | ✅ | JobBoard.jsx JobCard — green tip block shown on first expand (rat_tut_job_card localStorage); explains Notes / Timer / Parts / Status buttons; "got it" dismiss | Free |
+| First-run arrow guide (3-step tutorial: arrow → + Add · arrow → first card · in-card button key) | ✅ | Tracker.jsx GuideStep1/GuideStep2 + MachineCard showGuide prop — curved hand-drawn orange SVG arrows with pulsing glow; step 3 annotates each button (Edit Machine, PDF, Share, Layout, + LOG) inside the expanded card; dismissed state stored in profiles.preferences | Free |
+| First-run tab guides (all tabs) | ✅ | TabGuide.jsx shared component — two variants: "add" (right-aligned, arrow up-right toward + Add button) and "info" (centered, arrow down toward content); dismissed state stored per-key in profiles.preferences (rat_tut_jobs · rat_tut_search · rat_tut_revenue · rat_tut_clients etc.); same orange glow SVG arrow style as Tracker guide | Free |
+| Job card first-use inline guide | ✅ | JobBoard.jsx JobCard — green tip block shown on first expand (profiles.preferences.rat_tut_job_card); explains Notes / Timer / Parts / Status buttons; "got it" dismiss | Free |
 | Share machine link (🔗 copies /m/:id URL, 2-sec ✓ feedback) | ✅ | MachineCard.jsx copied state + clipboard API | Free |
 | Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql; shows cover photo hero banner (photos[0]) when available; accent-coloured QR code linking to ratbench.net; "Add this machine" button deep-links to /?template={id} which pre-fills the Add Machine form for the visiting user | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
-| Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — "more specs = more calcs" tip (bore+stroke → compression ratio & piston speed; lighting entries → charge load, all auto); lists 8 key sections with curved orange arrows; Service Intervals highlighted; prominent orange "got it ✓" dismiss button; dismissed to localStorage rat_form_tut; auto-dismisses on first save | Free |
+| Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — "more specs = more calcs" tip (bore+stroke → compression ratio & piston speed; lighting entries → charge load, all auto); lists 8 key sections with curved orange arrows; Service Intervals highlighted; prominent orange "got it ✓" dismiss button; dismissed state in profiles.preferences.rat_form_tut; auto-dismisses on first save | Free |
 | First-add field glow (Type + Name) | ✅ | MachineForm.jsx firstAdd flag (showFormGuide && !existing) — pulsing orange box-shadow on Type select and Name input; .field-guide CSS class in index.css; clears after guide dismissed | Free |
 | List view + grid view | ✅ | machines, MachineTile, MachineCard | Free |
 | Search, sort, filter by status | ✅ | machines | Free |
@@ -191,7 +191,7 @@ Stripe
 | Invoice generation (labour + parts) | ✅ | time_log, inventory, company rates | Free |
 | Parts markup on invoice | ✅ | inventory buy/sell price | Free |
 | Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Business |
-| Invoice number auto-increment | ✅ | invoices.js RPC + localStorage fallback | Free |
+| Invoice number auto-increment | ✅ | invoices.js — next_invoice_number RPC (DB-only, no local fallback) | Free |
 | HTML invoice export | ✅ | time_log, parts, company details | Free |
 | Collapsed/expanded job card layout (matching asset tabs) | ✅ | JobBoard, JobCard | Free |
 | Common jobs autocomplete | ✅ | COMMON_JOBS constant | Free |
@@ -327,7 +327,7 @@ Stripe
 | Submit machine specs to wiki | ✅ | machines → wiki_entries | Enthusiast+ |
 | Author attribution | ✅ | wiki_revisions.author_id | Enthusiast+ |
 | Admin delete any wiki entry | ✅ | VITE_ADMIN_EMAIL env var check in WikiEntryPage, deleteWikiEntry() | Admin only |
-| Per-user sample wiki entries (Honda GX200, Husqvarna 455 Rancher, Yamaha YZ250) | ✅ | seedSampleWikiEntries() in wiki.js — seeded on first wiki visit (rat_wiki_seeded localStorage gate); each user gets their own copies (slug: {base}-sample-{uid8}); is_sample + sample_owner_id columns on wiki_entries; users see only their own samples + global non-sample entries; "Remove Sample" delete button on own samples; run supabase/wiki_sample_entries.sql first | Free |
+| Per-user sample wiki entries (Honda GX200, Husqvarna 455 Rancher, Yamaha YZ250) | ✅ | seedSampleWikiEntries() in wiki.js — seeded on first wiki visit (gate: profiles.preferences.rat_wiki_seeded); each user gets their own copies (slug: {base}-sample-{uid8}); is_sample + sample_owner_id columns on wiki_entries; users see only their own samples + global non-sample entries; "Remove Sample" delete button on own samples; run supabase/wiki_sample_entries.sql first | Free |
 
 ---
 
@@ -343,7 +343,7 @@ Stripe
 | Per-user Workshop default sub-tab | ✅ | First visible tab in ordered workshop list (implicit, no separate setting) | Free |
 | Workshop visibility + order UI under Settings → ⇅ Tabs | ✅ | TabOrderSettings.jsx WorkshopReorderList (checkboxes + ↑/↓ + DEFAULT badge) | Free |
 | Users tab moved into Settings (Business only) | ✅ | SettingsPage, UsersTab | Business |
-| localStorage migration (old flat tab IDs → workshop sub-tabs) | ✅ | App.jsx init state | Free |
+| User preferences cross-device sync (sort, view, cols, active tab, tutorial flags) | ✅ | profiles.preferences JSONB + upsert_preference RPC — run supabase/preferences_migration.sql | Free |
 | Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
 | Per-account tab reordering (main nav, workshop, settings) | ✅ | profiles.tab_order JSONB, applyTabOrder(), TabOrderSettings.jsx | Free |
 | Tab order UI under Settings → ⇅ Tabs (↑/↓ reorder + reset) | ✅ | TabOrderSettings.jsx | Free |
