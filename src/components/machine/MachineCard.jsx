@@ -10,6 +10,7 @@ import { WikiTrackerModal } from '../wiki/WikiModals';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { getTiers, TIER_NAMES } from '../../lib/storageTiers';
 import { getActiveBooking, createBooking, collectMachine, updateBooking } from '../../lib/db/bookings';
+import { deletePhoto } from '../../lib/storage';
 const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
@@ -122,6 +123,9 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   };
   const delSvc=async id=>{
     if(!confirm("Delete this entry?"))return;
+    const svc=svcs.find(s=>s.id===id);
+    if(svc?.plugPhoto) deletePhoto(svc.plugPhoto);
+    (svc?.jobPhotos||[]).forEach(url=>deletePhoto(url));
     await deleteServiceApi(id);
     setSvcs(svcs.filter(s=>s.id!==id));
   };

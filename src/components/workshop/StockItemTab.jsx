@@ -7,6 +7,7 @@ import { effectiveTier } from '../../lib/gates';
 import UpgradeBanner from '../ui/UpgradeBanner';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
+import { deletePhoto } from '../../lib/storage';
 import LoadoutSection from '../ui/LoadoutSection';
 import PhotoAdder from '../ui/PhotoAdder';
 import AssetTile from '../ui/AssetTile';
@@ -579,6 +580,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const remove = async item => {
     const noun = tableType === 'part' ? 'part' : 'consumable';
     if (!confirm(`Delete this ${noun}?`)) return;
+    (item?.photos || []).forEach(url => deletePhoto(url));
     if (tableType === 'part') {
       const updated = await deleteInventoryItem(userId, item.id);
       setItems(updated);
