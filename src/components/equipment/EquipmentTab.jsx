@@ -358,7 +358,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
           <button
             onClick={() => setFormItem({})}
             disabled={atLimit}
-            style={{ ...btnA, opacity: atLimit ? 0.4 : 1 }}
+            style={{ ...btnA, opacity: atLimit ? 0.4 : 1, minHeight: 44, display: 'flex', alignItems: 'center' }}
             title={atLimit ? `Upgrade to add more than ${limit} equipment items` : undefined}
           >
             + Add Equipment

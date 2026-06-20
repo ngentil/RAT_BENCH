@@ -704,7 +704,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
             {view === 'list' ? '☰' : `⊞${cols}`}
           </button>
           {!atLimit && (
-            <button onClick={() => setFormItem({})} style={{ ...btnA }}>+ Add</button>
+            <button onClick={() => setFormItem({})} style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}>+ Add</button>
           )}
         </div>
       </div>
