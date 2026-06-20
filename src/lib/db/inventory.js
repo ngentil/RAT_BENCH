@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
 
 const lsKey = uid => `rat_inventory_${uid}`;
 
@@ -91,12 +92,14 @@ export async function saveInventoryItem(userId, item) {
       { ...toDb(userId, item), id, updated_at: now, ...(isNew ? { created_at: now } : {}) },
       { onConflict: 'id' }
     );
+    if (!isNew && item.name) await syncAssignmentChildName('part', id, item.name);
   } catch (e) { console.warn('saveInventoryItem Supabase failed:', e); }
   return getInventory(userId);
 }
 
 export async function deleteInventoryItem(userId, itemId) {
   try {
+    await unassignAllByChild('part', itemId);
     await supabase.from('inventory_items').delete().eq('id', itemId).eq('user_id', userId);
   } catch (e) { console.warn('deleteInventoryItem Supabase failed:', e); }
   return getInventory(userId);

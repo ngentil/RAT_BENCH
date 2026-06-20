@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
 
 function fromDb(r) {
   return {
@@ -61,6 +62,7 @@ export async function upsertConsumable(item) {
   if (item.id) {
     const { data, error } = await supabase.from('consumables').update(payload).eq('id', item.id).select().single();
     if (error) throw error;
+    await syncAssignmentChildName('consumable', item.id, item.name);
     return fromDb(data);
   } else {
     const { data, error } = await supabase.from('consumables').insert({ ...payload, created_at: now }).select().single();
@@ -70,6 +72,7 @@ export async function upsertConsumable(item) {
 }
 
 export async function deleteConsumable(id) {
+  await unassignAllByChild('consumable', id);
   const { error } = await supabase.from('consumables').delete().eq('id', id);
   if (error) throw error;
 }

@@ -49,3 +49,30 @@ export async function unassignAsset(id) {
     .eq('id', id);
   if (error) throw error;
 }
+
+export async function unassignAllByParent(parentType, parentId) {
+  const { error } = await supabase
+    .from('asset_assignments')
+    .delete()
+    .eq('parent_type', parentType)
+    .eq('parent_id', parentId);
+  if (error) throw error;
+}
+
+export async function unassignAllByChild(childType, childId) {
+  const { error } = await supabase
+    .from('asset_assignments')
+    .delete()
+    .eq('child_type', childType)
+    .eq('child_id', childId);
+  if (error) throw error;
+}
+
+export async function syncAssignmentChildName(childType, childId, childName) {
+  if (!childId || !childName) return;
+  await supabase
+    .from('asset_assignments')
+    .update({ child_name: childName })
+    .eq('child_type', childType)
+    .eq('child_id', childId);
+}

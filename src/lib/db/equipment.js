@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
 
 function toDb(e) {
   return {
@@ -82,11 +83,13 @@ export async function upsertEquipment(item) {
   } else {
     const { error } = await supabase.from('equipment').update(row).eq('id', row.id);
     if (error) throw error;
+    await syncAssignmentChildName('equipment', row.id, row.name);
     return fromDb(row);
   }
 }
 
 export async function deleteEquipmentItem(id) {
+  await unassignAllByChild('equipment', id);
   const { error } = await supabase.from('equipment').delete().eq('id', id);
   if (error) throw error;
 }

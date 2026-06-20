@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { unassignAllByParent } from './assetAssignments';
 
 function toDb(v) {
   return {
@@ -93,6 +94,7 @@ export async function upsertVehicle(vehicle) {
 }
 
 export async function deleteVehicle(id) {
+  await unassignAllByParent('vehicle', id);
   const { error } = await supabase.from('vehicles').delete().eq('id', id);
   if (error) throw error;
 }
