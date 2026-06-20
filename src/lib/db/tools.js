@@ -112,6 +112,7 @@ export async function saveToolItem(tool) {
 
 export async function deleteToolItem(id) {
   await unassignAllByChild('tool', id);
+  await supabase.from('asset_permissions').delete().eq('asset_type', 'tool').eq('asset_id', id);
   const { error } = await supabase.from('tools').delete().eq('id', id);
   if (error) throw error;
 }

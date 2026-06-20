@@ -96,6 +96,7 @@ export async function upsertVehicle(vehicle) {
 
 export async function deleteVehicle(id) {
   await unassignAllByParent('vehicle', id);
+  await supabase.from('asset_permissions').delete().eq('asset_type', 'vehicle').eq('asset_id', id);
   const { error } = await supabase.from('vehicles').delete().eq('id', id);
   if (error) throw error;
 }
