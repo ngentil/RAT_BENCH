@@ -157,7 +157,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| machine_bookings table + RLS | ✅ | machines, auth.users | Enthusiast+ |
+| machine_bookings table + RLS | ✅ | machines, auth.users — own policy in storage_migration.sql; run supabase/machine_bookings_provisioned.sql to allow provisioned company members to read bookings for machines they have access to | Enthusiast+ |
 | Global enable toggle (`profiles.storage_policy_enabled`) | ✅ | profiles | Enthusiast+ |
 | Storage tiers (Bench/Small/Medium/Large/Extra Large/Custom) | ✅ | storageTiers.js DEFAULT_STORAGE_TIERS | Enthusiast+ |
 | Configurable tier rates (freeDays/dailyRate/escalateDays/minFee) | ✅ | profiles.storage_tiers JSONB, getTiers(), StorageSettings inline edit | Enthusiast+ |
@@ -322,7 +322,7 @@ Stripe
 |---------|--------|-----------|------|
 | wiki_entries table | ✅ | — | Free |
 | wiki_revisions table | ✅ | wiki_entries | Enthusiast+ |
-| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only (run supabase/wiki_rls.sql) | Free |
+| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only (run supabase/wiki_rls.sql); authors can delete their own public entries (run supabase/wiki_author_delete.sql) | Free |
 | View count tracking | ✅ | wiki_entries.view_count | Free |
 | Create / edit wiki entry | ✅ | wiki_entries | Enthusiast+ |
 | Field-level editing with edit summary | ✅ | wiki_revisions | Enthusiast+ |
