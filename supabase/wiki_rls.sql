@@ -36,6 +36,13 @@ CREATE POLICY wiki_entries_update ON wiki_entries
 REVOKE UPDATE ON wiki_entries FROM authenticated;
 GRANT UPDATE (make, model, type, slug) ON wiki_entries TO authenticated;
 
+-- Enforce slug format: lowercase alphanumeric + hyphens, minimum 1 char.
+-- Prevents empty slugs and slugs that would break URL routing.
+ALTER TABLE wiki_entries
+  DROP CONSTRAINT IF EXISTS chk_wiki_entries_slug,
+  ADD CONSTRAINT chk_wiki_entries_slug
+    CHECK (slug ~ '^[a-z0-9][a-z0-9\-]*$');
+
 -- (DELETE policies already exist from wiki_sample_entries.sql)
 
 

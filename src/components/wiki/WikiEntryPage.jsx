@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
 import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry } from '../../lib/wiki';
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'nathan.gentil.ai@gmail.com';
 
 export function WikiHeader({ title, subtitle, backHref, backLabel }) {
   return (

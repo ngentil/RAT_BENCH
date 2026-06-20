@@ -6,7 +6,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } fr
 const TIER_COLOR  = { free: MUT, enthusiast: '#e8670a', business: '#e8c20a' };
 const ALL_TIERS   = ['free', 'enthusiast', 'business'];
 const ADMIN_TABS  = ['Overview', 'Users', 'Grants', 'Flags', 'Announcements', 'Audit'];
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'nathan.gentil.ai@gmail.com';
 
 const lbl  = { fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 };
 const card = { background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '12px 14px' };
