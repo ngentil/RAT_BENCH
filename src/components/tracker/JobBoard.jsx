@@ -1018,7 +1018,10 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
 
         {/* Hero photo / icon placeholder */}
         {m.photos?.[0]
-          ? <img src={m.photos[0]} alt="" style={{ width: "100%", height: 170, objectFit: "cover", display: "block" }} />
+          ? <div style={{ position: "relative" }}>
+              <img src={m.photos[0]} alt="" style={{ width: "100%", height: 170, objectFit: "cover", display: "block" }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "65%", background: "linear-gradient(to bottom, transparent, #0d0d0d)", pointerEvents: "none" }} />
+            </div>
           : <div style={{ width: "100%", height: 120, background: "#0e0e0e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 56, borderBottom: "1px solid #1a1a1a" }}>{mIcon(m.type)}</div>}
 
         {/* Info panel */}
