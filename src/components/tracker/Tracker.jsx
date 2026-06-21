@@ -60,7 +60,6 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [showSort,setShowSort]=useState(false);
   const [sortBy,setSortBy]=useState(()=>getPref(profile,"trackerSort",null));
   const [view,setView]=useState(()=>getPref(profile,"trackerView","list"));
-  const [cols,setCols]=useState(()=>getPref(profile,"trackerCols",2));
   const [tileOpen,setTileOpen]=useState(null);
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
@@ -72,7 +71,6 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
   const setViewP=v=>{setView(v);savePref(profile?.id,"trackerView",v);};
   const setSortByP=v=>{setSortBy(v);savePref(profile?.id,"trackerSort",v??null);};
-  const setColsP=c=>{setCols(c);savePref(profile?.id,"trackerCols",c);setViewP("grid");};
 
   const SORT_OPTS=[
     {k:"name_az",l:"Name A → Z"},
@@ -197,7 +195,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button style={{...btnG,color:sortBy?ACC:MUT,alignSelf:"stretch"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
-          <button onClick={()=>{if(view==="list"){setColsP(2);}else if(cols<4){setColsP(cols+1);}else{setViewP("list");}}} style={{...btnG,minWidth:36,alignSelf:"stretch"}}>{view==="list"?"☰":`⊞${cols}`}</button>
+          <button onClick={()=>setViewP(view==="list"?"grid":"list")} style={{...btnG,minWidth:36,alignSelf:"stretch",color:view==="grid"?ACC:undefined}}>{view==="list"?"⊞":"☰"}</button>
           {isGuest&&machines.length>=3
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
@@ -227,23 +225,16 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       {tutStep===2&&!tutCardOpened&&<GuideStep2 onSkip={skipTut}/>}
       {view==="grid"?(
         <>
-          {sorted.length > 0 && (
-            <Virtuoso
-              useWindowScroll
-              data={sorted}
-              style={{display:"grid"}}
-              itemContent={(_idx, m) => (
-                <div key={m.id} style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8,marginBottom:0}}>
-                  <MachineTile machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
-                </div>
-              )}
-            />
-          )}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+            {sorted.map(m=>(
+              <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+            ))}
+          </div>
           {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
-            <div style={{position:"fixed",inset:0,background:"#000a",zIndex:200,overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setTileOpen(null);}}>
-              <div style={{maxWidth:640,margin:"24px auto",padding:"0 8px"}}>
-                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
-                <button onClick={()=>setTileOpen(null)} style={{...btnG,width:"100%",marginTop:8,fontSize:10}}>Close</button>
+            <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto"}}>
+              <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
+                <button onClick={()=>setTileOpen(null)} style={{...btnA,width:"100%",marginBottom:8,fontSize:12,background:ACC,borderColor:ACC,color:"#000",fontWeight:700}}>✕ Close</button>
+                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen/>
               </div>
             </div>
           ):null;})()}
