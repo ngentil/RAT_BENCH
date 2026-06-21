@@ -154,15 +154,18 @@ function VehicleMemberSection({ vehicle, company, isShared }) {
 
   useEffect(() => {
     if (!company?.id || !vehicle?.id) return;
+    let alive = true;
     setLoading(true);
     Promise.all([
       getCompanyMembers(company.id),
       getAssignedTo('vehicle', vehicle.id),
     ]).then(([mems, asgn]) => {
+      if (!alive) return;
       setMembers(mems);
       setAssigned(asgn.filter(a => a.child_type === 'member'));
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
   }, [company?.id, vehicle?.id]);
 
   if (!company) return null;
@@ -449,8 +452,12 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   const atLimit = atAssetLimit('vehicles', vehicles?.length ?? 0, profile, company);
 
   useEffect(() => {
+    let alive = true;
     setLoading(true);
-    getVehicles().then(vs => { setVehicles(vs); setLoading(false); }).catch(() => setLoading(false));
+    getVehicles()
+      .then(vs => { if (alive) { setVehicles(vs); setLoading(false); } })
+      .catch(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
   }, [userId]);
 
   const totalOdo = useMemo(() => (vehicles || []).reduce((s, v) => s + (v.odometer || 0), 0), [vehicles]);

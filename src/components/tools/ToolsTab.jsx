@@ -66,6 +66,7 @@ function ToolForm({ tool, onSave, onCancel }) {
     setErr(null);
     try {
       await onSave({ ...tool, ...f, name: f.name.trim(), brand: f.brand.trim(), model: f.model.trim(), purchasePrice: parseFloat(f.purchasePrice) || 0 });
+      setSaving(false);
     } catch (e) {
       setErr(e?.message || 'Save failed — check your connection');
       setSaving(false);
@@ -157,9 +158,11 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
   const addServiceEntry = async () => {
     if (!svcForm.notes.trim()) return;
     const entry = { id: crypto.randomUUID(), date: svcForm.date, notes: svcForm.notes.trim(), cost: parseFloat(svcForm.cost) || 0 };
-    await onUpdate({ ...tool, serviceLog: [...(tool.serviceLog || []), entry] });
-    setAddSvc(false);
-    setSvcForm({ date: new Date().toISOString().slice(0, 10), notes: "", cost: "" });
+    try {
+      await onUpdate({ ...tool, serviceLog: [...(tool.serviceLog || []), entry] });
+      setAddSvc(false);
+      setSvcForm({ date: new Date().toISOString().slice(0, 10), notes: "", cost: "" });
+    } catch { alert("Save failed — check your connection."); }
   };
 
   const removeSvcEntry = async (id) => {
@@ -367,8 +370,12 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
 
   useEffect(() => {
     if (!userId) return;
+    let alive = true;
     setLoading(true);
-    getTools().then(ts => { setTools(ts); setLoading(false); }).catch(() => { setErr("Failed to load tools. Refresh to try again."); setLoading(false); });
+    getTools()
+      .then(ts => { if (alive) { setTools(ts); setLoading(false); } })
+      .catch(() => { if (alive) { setErr("Failed to load tools. Refresh to try again."); setLoading(false); } });
+    return () => { alive = false; };
   }, [userId]);
 
   const totalValue  = useMemo(() => tools.reduce((s, t) => s + (t.purchasePrice || 0), 0), [tools]);
@@ -424,8 +431,10 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   };
 
   const update = async (tool) => {
-    const saved = await saveToolItem(tool);
-    setTools(prev => prev.map(t => t.id === saved.id ? saved : t));
+    try {
+      const saved = await saveToolItem(tool);
+      setTools(prev => prev.map(t => t.id === saved.id ? saved : t));
+    } catch (e) { console.error("update tool:", e); throw e; }
   };
 
   const remove = async (toolId) => {

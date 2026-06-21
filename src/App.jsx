@@ -179,6 +179,7 @@ function App(){
     // Fetch announcements after UI is visible — non-blocking
     (async()=>{
       try {
+        if (!profileData) return;
         const userTier = effectiveTier(profileData, companyData);
         const{data:anns}=await supabase.from("announcements").select("*")
           .eq("active",true).or(`tier_filter.eq.all,tier_filter.eq.${userTier}`);

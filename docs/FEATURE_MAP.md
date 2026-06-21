@@ -46,7 +46,7 @@ Stripe
 | Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT restricted by column-level GRANT to safe public fields (id, display_name, username, units, default_status, tab_order, preferences, storage_policy_enabled, storage_tiers, tier, company_id, created_at) — sensitive fields (pending_code, stripe_customer_id, stripe_subscription_id) hidden from other users; get_my_profile() SECURITY DEFINER RPC returns full own-row data including sensitive fields; UPDATE own row only with column-level GRANT restricting writable columns to safe fields; tier/stripe/pending_* require SECURITY DEFINER path; same column-level protection on companies table | Free |
 | Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
 | Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing verifies caller is owner or admin; success_url/cancel_url validated against ratbench.net allowlist; price_id validated against env vars; CORS restricted to ratbench.net origins; internal errors return generic 500 | All |
-| Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; PRICE_ENTHUSIAST → 'enthusiast', PRICE_PRO → 'business' (was 'team' which never unlocked org features gated on tier==='business'); unmapped price IDs log an error; subscription.updated checks sub.status — past_due/incomplete/unpaid/paused immediately downgrade to free | All |
+| Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; PRICE_ENTHUSIAST → 'enthusiast', PRICE_PRO → 'business' (was 'team' which never unlocked org features gated on tier==='business'); unmapped price IDs log an error; subscription.updated checks sub.status — past_due/incomplete/unpaid/paused immediately downgrade to free; signature failure returns generic message (no err.message leak) | All |
 | Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity; company billing restricted to owner/admin role (viewers/technicians blocked); 30s cooldown via _set_portal_session_at() RPC; CORS restricted to ratbench.net origins; internal errors return generic 500 (not err.message); run supabase/portal_rate_limit.sql | All |
 | Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
 | Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql + supabase/provisioned_update_checks.sql — run provisioned_update_checks.sql to add WITH CHECK to machines/vehicles/equipment/tools provisioned UPDATE policies (prevents provisioned users from changing user_id to steal asset ownership); also adds SECURITY DEFINER _machine/vehicle/equipment/tool_owner() helpers and asset_permissions.asset_type CHECK constraint | All |
@@ -195,7 +195,7 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | Jobs tab: shows first 3 machines only on free tier (FREE_LIMIT=3) | ✅ | JobBoard.jsx FREE_LIMIT | Free (limit) |
-| Job timer (start / stop / pause) | ✅ | machines.job_timer (jsonb) | Free |
+| Job timer (start / stop / pause) | ✅ | machines.job_timer (jsonb) — saving state disables Pause/Resume/Reset/Finish buttons during async save to prevent double-fire | Free |
 | Multiple timers per machine | ✅ | machines.job_timer array | Free |
 | Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Business |
 | Time log (save sessions with label + notes) | ✅ | machines.time_log (jsonb) | Free |
@@ -204,12 +204,12 @@ Stripe
 | Parts markup on invoice | ✅ | inventory buy/sell price | Free |
 | Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Business |
 | Invoice number auto-increment | ✅ | invoices.js — next_invoice_number RPC (DB-only, no local fallback) | Free |
-| HTML invoice export | ✅ | time_log, parts, company details | Free |
+| HTML invoice export | ✅ | time_log, parts, company details — company logo sanitised via safeImgSrc() (only data:image/ and https:// URLs allowed in img src; blocks javascript: and data:text/html XSS vectors) | Free |
 | Collapsed/expanded job card layout — poster style (full-width hero photo 170px with bottom fade gradient to card background, dark emoji placeholder when no photo, icon+name+source/make/model+type below, priority/client/due badges + stats row below info panel) | ✅ | JobBoard JobCard — replaced horizontal thumbnail layout with vertical poster layout matching MachineCard | Free |
 | Common jobs autocomplete | ✅ | COMMON_JOBS constant | Free |
 | Barcode scanner (keyboard detection) | ✅ | inventory items | Free |
-| Stock auto-deduct on part use (parts) | ✅ | adjustStock(), inventory | Free |
-| Stock auto-deduct on consumable use | ✅ | adjustConsumableQty(), consumables | Free |
+| Stock auto-deduct on part use (parts) | ✅ | adjustStock(), inventory — machineSaved flag: if machine saves but stock adjustment fails, machine is rolled back in DB to keep parts list and stock counts consistent | Free |
+| Stock auto-deduct on consumable use | ✅ | adjustConsumableQty(), consumables — same machineSaved rollback guard as parts | Free |
 | Jobs picker: Parts tab + Consumables tab | ✅ | inventory + consumables, sourceType on entries | Free |
 | Running cost total per job (parts + labour) | ✅ | machines.parts sellPrice, company.hourly_rate | Free |
 | Cost Summary row in expanded job card | ✅ | partsTotal + labourTotal = grandTotal | Free |
@@ -334,7 +334,7 @@ Stripe
 |---------|--------|-----------|------|
 | wiki_entries table | ✅ | — | Free |
 | wiki_revisions table | ✅ | wiki_entries — run supabase/wiki_revisions_rls_helper.sql; SELECT policy uses _wiki_entry_visible() SECURITY DEFINER helper (decouples revisions RLS from wiki_entries RLS — without the helper, future wiki_entries policies could silently break revision SELECT) | Enthusiast+ |
-| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only; INSERT WITH CHECK: created_by = auth.uid() AND (NOT is_sample OR sample_owner_id = auth.uid()) — blocks injecting fake sample entries into another user's sample library; UPDATE RLS restricted to entry author; column-level REVOKE/GRANT limits author updates to make/model/type/slug; slug CHECK constraint (^[a-z0-9][a-z0-9-]*$); run supabase/wiki_rls.sql | Free |
+| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only; INSERT WITH CHECK: created_by = auth.uid() AND (NOT is_sample OR sample_owner_id = auth.uid()) — blocks injecting fake sample entries into another user's sample library; UPDATE RLS restricted to entry author; column-level REVOKE/GRANT limits author updates to make/model/type/slug; slug CHECK constraint (^[a-z0-9][a-z0-9-]*$); run supabase/wiki_rls.sql; search query stripped to alphanumeric+space before PostgREST interpolation; userId validated as UUID before sample filter interpolation | Free |
 | Wiki collaborative rev pointer | ✅ | update_wiki_rev_pointer(p_entry_id, p_rev_id) RPC — run supabase/wiki_advance_rev_rpc.sql then supabase/wiki_rev_pointer_lock.sql; SECURITY DEFINER; caller must be entry author or contributor AND target revision author or entry author; FOR UPDATE row lock on wiki_entries serializes concurrent calls (eliminates TOCTOU race where two simultaneous edits could orphan one revision from current_rev_id); IS DISTINCT FROM guard makes duplicate calls idempotent | Free |
 | View count tracking | ✅ | wiki_entries.view_count + increment_wiki_views() RPC — run supabase/wiki_view_count_rpc.sql then supabase/wiki_view_count_anon_fix.sql; SECURITY DEFINER RPC restricted to authenticated only (anon grant removed — bots could inflate counts without authenticating); WHERE clause includes AND NOT is_sample so sample entries never accumulate view counts; client-side per-session Set in wiki.js prevents the same entry from being incremented more than once per page load | Free |
 | Create / edit wiki entry | ✅ | wiki_entries | Enthusiast+ |

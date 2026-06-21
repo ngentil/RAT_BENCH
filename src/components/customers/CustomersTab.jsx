@@ -122,8 +122,10 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "", photos: c.photos || [] }); setErr(""); setEditing(c); };
 
   const updateClient = async (c) => {
-    await upsertClient(c).catch(() => {});
-    setClients(prev => prev.map(x => x.id === c.id ? c : x));
+    try {
+      await upsertClient(c);
+      setClients(prev => prev.map(x => x.id === c.id ? c : x));
+    } catch (e) { console.error("updateClient:", e); }
   };
   const closeModal = () => { setEditing(null); setErr(""); setSaving(false); };
 
@@ -148,14 +150,16 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
     if (!confirm("Delete this client? Machines linked to them will be unlinked.")) return;
     const client = clients.find(c => c.id === id);
     (client?.photos || []).forEach(url => deletePhoto(url));
-    await deleteClientApi(id).catch(() => {});
-    setClients(prev => prev.filter(c => c.id !== id));
-    const toUnlink = machines.filter(m => m.clientId === id);
-    toUnlink.forEach(m => {
-      const updated = { ...m, clientId: null };
-      upsertMachine(updated).catch(() => {});
-      setMachines(prev => prev.map(x => x.id === m.id ? updated : x));
-    });
+    try {
+      await deleteClientApi(id);
+      setClients(prev => prev.filter(c => c.id !== id));
+      const toUnlink = machines.filter(m => m.clientId === id);
+      for (const m of toUnlink) {
+        const updated = { ...m, clientId: null };
+        try { await upsertMachine(updated); } catch {}
+        setMachines(prev => prev.map(x => x.id === m.id ? updated : x));
+      }
+    } catch (e) { alert("Delete failed: " + e.message); }
   };
 
   const linkMachine = async (clientId, machineId) => {
@@ -163,7 +167,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
     const machine = machines.find(m => m.id === machineId);
     if (!machine) return;
     const updated = { ...machine, clientId };
-    await upsertMachine(updated).catch(() => {});
+    try { await upsertMachine(updated); } catch {}
     setMachines(prev => prev.map(m => m.id === machineId ? updated : m));
   };
 
@@ -171,7 +175,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
     const machine = machines.find(m => m.id === machineId);
     if (!machine) return;
     const updated = { ...machine, clientId: null };
-    await upsertMachine(updated).catch(() => {});
+    try { await upsertMachine(updated); } catch {}
     setMachines(prev => prev.map(m => m.id === machineId ? updated : m));
   };
 
