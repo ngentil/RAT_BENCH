@@ -13,6 +13,7 @@ CREATE OR REPLACE FUNCTION create_my_profile(
 RETURNS SETOF profiles
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, auth
 AS $$
 DECLARE
   v_uid      uuid := auth.uid();
