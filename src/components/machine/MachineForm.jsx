@@ -545,6 +545,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       clutch2TType,clutchDrumDiameter:clutchDrumDiameter.toString(),clutchShoeCount,clutchEngageRpm:clutchEngageRpm.toString(),clutchBearingPart:clutchBearingPart.trim(),clutch2TNotes:clutch2TNotes.trim(),pulseLoc,pulsePos,pulseOffset:pulseOffset.toString().trim(),ptoDiameter,shaftType,threadDir,threadSize,sprocketType,boreDiameter:boreDiameter.toString().trim(),inputShaftDiameter:inputShaftDiameter.toString(),inputShaftSplines:inputShaftSplines.toString(),inputShaftThread,outputShaftDiameter:outputShaftDiameter.toString(),outputShaftSplines:outputShaftSplines.toString(),outputShaftThread,propShaftDiameter:propShaftDiameter.toString(),gearboxShaftNotes:gearboxShaftNotes.trim(),
       cBrand,cType,cModel:cModel.trim(),notes:notes.trim(),
       studs,customSections,tileFields:e.tileFields||[],tileColors:e.tileColors||{},expandFields:e.expandFields||[],rage:e.rage||0,createdAt:e.createdAt||new Date().toISOString(),
+      clientId:e.clientId||null,parts:e.parts||[],timeLog:e.timeLog||[],jobTimers:e.jobTimers||[],
       coolingType,coolantType:coolantType.trim(),coolantCapacity:coolantCapacity.toString(),thermostatTemp:thermostatTemp.toString(),coolingNotes:coolingNotes.trim(),
       turboFitted,turboType,turboBrand:turboBrand.trim(),turboBoost:turboBoost.toString(),intercooler,turboNotes:turboNotes.trim(),
       chargingType,chargeVoltage,chargeAmps:chargeAmps.toString(),totalLoadWatts:totalLoadWatts.toString().trim(),rectRegFitted,chargingNotes:chargingNotes.trim(),
