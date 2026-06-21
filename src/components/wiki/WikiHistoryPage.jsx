@@ -25,7 +25,8 @@ function WikiHistoryPage({ slug, profile }) {
 
   const doRevert = async (rev) => {
     if (!profile) return;
-    if (!confirm(`Revert to revision from ${new Date(rev.created_at).toLocaleDateString()} by ${rev.username || "unknown"}?`)) return;
+    const author = rev.edited_by === null && rev.username ? `${rev.username} (retired)` : rev.username || "unknown";
+    if (!confirm(`Revert to revision from ${new Date(rev.created_at).toLocaleDateString()} by ${author}?`)) return;
     setReverting(rev.id); setRevertErr(""); setRevertOk("");
     try {
       const newRev = await revertToRevision(entry.id, rev, profile);
@@ -78,7 +79,10 @@ function WikiHistoryPage({ slug, profile }) {
                       )}
                     </div>
                   )}
-                  <div style={{ fontSize: 9, color: MUT }}>{r.username || "unknown"}</div>
+                  <div style={{ fontSize: 9, color: r.edited_by === null ? "#555" : MUT }}>
+                    {r.username || "unknown"}
+                    {r.edited_by === null && r.username && " · user retired"}
+                  </div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
                   {isCurrent && <div style={{ fontSize: 8, color: ACC, letterSpacing: "0.08em", textTransform: "uppercase" }}>Current</div>}
