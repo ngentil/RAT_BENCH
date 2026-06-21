@@ -200,6 +200,7 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
         maxQuantity: f.maxQuantity !== '' ? parseFloat(f.maxQuantity) : null,
         photos,
       });
+      setSaving(false);
     } catch (e) {
       setErr(e?.message || 'Save failed — check your connection');
       setSaving(false);

@@ -66,6 +66,7 @@ function ToolForm({ tool, onSave, onCancel }) {
     setErr(null);
     try {
       await onSave({ ...tool, ...f, name: f.name.trim(), brand: f.brand.trim(), model: f.model.trim(), purchasePrice: parseFloat(f.purchasePrice) || 0 });
+      setSaving(false);
     } catch (e) {
       setErr(e?.message || 'Save failed — check your connection');
       setSaving(false);
@@ -424,8 +425,10 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   };
 
   const update = async (tool) => {
-    const saved = await saveToolItem(tool);
-    setTools(prev => prev.map(t => t.id === saved.id ? saved : t));
+    try {
+      const saved = await saveToolItem(tool);
+      setTools(prev => prev.map(t => t.id === saved.id ? saved : t));
+    } catch (e) { console.error("update tool:", e); }
   };
 
   const remove = async (toolId) => {

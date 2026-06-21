@@ -85,6 +85,10 @@ function fmtDuration(secs) {
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+function safeImgSrc(url) {
+  const s = String(url || '');
+  return (s.startsWith('data:image/') || /^https?:\/\//.test(s)) ? escHtml(s) : '';
+}
 
 async function exportInvoice(machine, company, clients, userId, docType = 'invoice') {
   const log   = machine.timeLog || [];
@@ -203,7 +207,7 @@ td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;vertical-alig
 
 <div class="top">
   <div class="co-side">
-    ${co.logo ? `<img class="co-logo" src="${escHtml(co.logo)}" alt=""/>` : ''}
+    ${co.logo && safeImgSrc(co.logo) ? `<img class="co-logo" src="${safeImgSrc(co.logo)}" alt=""/>` : ''}
     <div class="co-name">${escHtml(co.name || 'My Business')}</div>
     ${co.trading_name ? `<div class="co-sub" style="margin-bottom:2px">${escHtml(co.trading_name)}</div>` : ''}
     <div class="co-sub">
@@ -299,7 +303,7 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
     const order = ["logged", "quoted", "invoiced"];
     const updated = {
       ...machine,
-      timeLog: machine.timeLog.map(e => {
+      timeLog: (machine.timeLog || []).map(e => {
         if (e.id !== entryId) return e;
         const cur = e.billStatus || "logged";
         const next = order[(order.indexOf(cur) + 1) % order.length];
@@ -313,7 +317,7 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
   const saveNotes = async (entryId, notes) => {
     const updated = {
       ...machine,
-      timeLog: machine.timeLog.map(e => e.id === entryId ? { ...e, sessionNotes: notes.trim() } : e),
+      timeLog: (machine.timeLog || []).map(e => e.id === entryId ? { ...e, sessionNotes: notes.trim() } : e),
     };
     onUpdate(updated);
     await upsertMachine(updated);

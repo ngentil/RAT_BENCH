@@ -198,10 +198,11 @@ export async function searchWiki(query, userId) {
     .limit(30);
 
   if (query.trim()) {
-    q = q.or(`make.ilike.%${query}%,model.ilike.%${query}%`);
+    const safe = query.replace(/[^a-zA-Z0-9 _\-]/g, '');
+    if (safe) q = q.or(`make.ilike.%${safe}%,model.ilike.%${safe}%`);
   }
 
-  if (userId) {
+  if (userId && /^[0-9a-f-]{36}$/.test(userId)) {
     q = q.or(`is_sample.eq.false,and(is_sample.eq.true,sample_owner_id.eq.${userId})`);
   } else {
     q = q.eq("is_sample", false);
