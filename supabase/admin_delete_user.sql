@@ -54,14 +54,12 @@ BEGIN
   DELETE FROM tools           WHERE user_id = p_user_id;
   DELETE FROM consumables     WHERE user_id = p_user_id;
 
-  -- Wiki: delete all revisions and contributions on the user's ENTRIES first
-  -- (other users may have contributed — those rows must be removed before the entry is deleted).
-  DELETE FROM wiki_contributions WHERE entry_id IN (SELECT id FROM wiki_entries WHERE created_by = p_user_id);
-  DELETE FROM wiki_revisions     WHERE entry_id  IN (SELECT id FROM wiki_entries WHERE created_by = p_user_id);
-  DELETE FROM wiki_entries       WHERE created_by = p_user_id;
-  -- Then clean up the user's own revisions/contributions on OTHER users' entries.
-  DELETE FROM wiki_contributions WHERE user_id   = p_user_id;
-  DELETE FROM wiki_revisions     WHERE edited_by = p_user_id;
+  -- Wiki: preserve all community content — orphan the author references instead of deleting.
+  -- wiki_revisions.username is a text snapshot so author credit remains visible as "user retired".
+  -- Requires wiki_nullable_author_cols.sql to have been run first.
+  UPDATE wiki_entries       SET created_by = NULL WHERE created_by = p_user_id;
+  UPDATE wiki_revisions     SET edited_by  = NULL WHERE edited_by  = p_user_id;
+  UPDATE wiki_contributions SET user_id    = NULL WHERE user_id    = p_user_id;
 
   -- Asset assignments owned by this user
   DELETE FROM asset_assignments WHERE user_id = p_user_id;
