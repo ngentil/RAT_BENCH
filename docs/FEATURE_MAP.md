@@ -171,7 +171,7 @@ Stripe
 | Global enable toggle (`profiles.storage_policy_enabled`) | ✅ | profiles — run supabase/storage_policy_tier_trigger.sql; BEFORE UPDATE trigger rejects writes to storage_policy_enabled or storage_tiers if the profile's current tier is free (prevents free-tier bypass via direct API call) | Enthusiast+ |
 | Storage tiers (Bench/Small/Medium/Large/Extra Large/Custom) | ✅ | storageTiers.js DEFAULT_STORAGE_TIERS | Enthusiast+ |
 | Configurable tier rates (freeDays/dailyRate/escalateDays/minFee) | ✅ | profiles.storage_tiers JSONB, getTiers(), StorageSettings inline edit — server-side tier enforced by trg_storage_policy_tier trigger | Enthusiast+ |
-| Book In — create a booking with tier + received date | ✅ | machine_bookings, MachineCard | Enthusiast+ |
+| Book In — create a booking with tier + received date; touch-friendly: full-width 56px button with large 📥 emoji, single-column form with 48px inputs, 22px checkbox with full-row tap target, stacked action buttons | ✅ | machine_bookings, MachineCard | Enthusiast+ |
 | Per-visit storage toggle (charge/pause billing) | ✅ | machine_bookings.storage_enabled | Enthusiast+ |
 | Mark Collected — close booking, stop accrual | ✅ | collectMachine(), MachineCard | Enthusiast+ |
 | Tile badge: free days remaining (green) | ✅ | getStorageStatus(), MachineCard | Enthusiast+ |
