@@ -180,7 +180,7 @@ Stripe
 | ServiceReminders: escalation + billing alerts | ✅ | getAllActiveBookings(), getStorageStatus() | Enthusiast+ |
 | ServiceReminders: consumable stock alerts (LOW / OUT / OVER) | ✅ | getConsumables(), ServiceReminders.jsx | Free |
 | Invoice: storage fees line item | ✅ | getActiveBooking(), exportClientInvoice() | Enthusiast+ |
-| Storage Settings tab (toggle + editable tier table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
+| Billing & Storage tab (billing rates section at top requires org — shows org-required prompt otherwise; storage toggle + editable tier table requires Enthusiast+; tab renamed from "Storage") | ✅ | StorageSettings.jsx, SettingsPage — billing rates (hourlyRate/taxRate/taxLabel) moved here from CompanySettings with own Save Rates button; setCompany passed through for live update | Enthusiast+ (storage) / Any tier with org (billing rates) |
 | Booking history per machine | ✅ | getBookingHistory(), machine_bookings — capped at .limit(200) | Enthusiast+ |
 | Custom daily rate override per visit | ✅ | machine_bookings.storage_fee_override | Enthusiast+ |
 | Storage revenue in Revenue Dashboard | ✅ | getClosedBookings(), getClosedBookingFee(), RevenueDashboard — getClosedBookings and getAllActiveBookings both capped at .limit(500) (previously unbounded) | Enthusiast+ |
@@ -322,7 +322,7 @@ Stripe
 | Delete company | ✅ | deleteCompany() → rpc_delete_company SECURITY DEFINER — run supabase/company_rpcs.sql; clears profiles.company_id for all members, removes asset_permissions, company_members, then company row (FK SET NULL handles machines/vehicles/etc.) | Business |
 | Regenerate invite code | ✅ | regenerateInviteCode() — uses crypto.randomUUID() (CSPRNG) for the 8-char code | Business |
 | Company logo upload | ✅ | companies.logo (base64) | Business |
-| Hourly rate / tax rate / currency config | ✅ | companies fields | Business |
+| Hourly rate / tax rate / tax label config | ✅ | companies fields — edited in Settings → Billing & Storage (moved from CompanySettings; saved via updateCompany()) | Any tier with org |
 | Machine provisioning panel (CompanySettings) | ✅ | machine_permissions — run supabase/create_machine_permissions.sql; machine_perms_update policy now has explicit WITH CHECK (prevents machine owner changing machine_id to a machine they don't own in a single UPDATE) | Business |
 | Asset provisioning panel (vehicles/equip/tools) | ✅ | asset_permissions, CompanySettings | Business |
 
