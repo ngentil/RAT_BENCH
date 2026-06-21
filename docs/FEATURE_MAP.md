@@ -150,7 +150,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| services table + RLS | ✅ | machines — run supabase/services_rls.sql; policies: full access for service creator or machine owner, read-only for provisioned members via _provisioned_machine_ids() helper; upsertService split into insert/update paths — user_id stripped from UPDATE; getServices() capped at .limit(500) | Free |
+| services table + RLS | ✅ | machines — run supabase/services_rls.sql then supabase/services_rls_hardening.sql; policies: full access for service creator or machine owner, read-only for provisioned members; services_own WITH CHECK now verifies machine ownership on INSERT/UPDATE (prevents attaching a service to a machine the user doesn't own/isn't provisioned on); _service_owner() SECURITY DEFINER helper prevents RLS recursion; services_provisioned_update policy grants edit rights to provisioned team members; upsertService split into insert/update paths — user_id stripped from UPDATE; getServices() capped at .limit(500) | Free |
 | Log service entry (date, types, notes) | ✅ | services table | Free |
 | Spark plug photo log | ✅ | services, photos (base64) | Free |
 | Job photos per service | ✅ | services, photos | Free |
@@ -167,7 +167,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| machine_bookings table + RLS | ✅ | machines, auth.users — own policy in storage_migration.sql; run supabase/machine_bookings_provisioned.sql to allow provisioned company members to read bookings for machines they have access to | Enthusiast+ |
+| machine_bookings table + RLS | ✅ | machines, auth.users — own policy in storage_migration.sql; run supabase/machine_bookings_provisioned.sql (provisioned SELECT) and supabase/machine_bookings_ownership.sql (adds WITH CHECK on INSERT/UPDATE enforcing that the booked machine is owned by or provisioned to the booking user — prevents booking injection onto arbitrary machines by UUID) | Enthusiast+ |
 | Global enable toggle (`profiles.storage_policy_enabled`) | ✅ | profiles | Enthusiast+ |
 | Storage tiers (Bench/Small/Medium/Large/Extra Large/Custom) | ✅ | storageTiers.js DEFAULT_STORAGE_TIERS | Enthusiast+ |
 | Configurable tier rates (freeDays/dailyRate/escalateDays/minFee) | ✅ | profiles.storage_tiers JSONB, getTiers(), StorageSettings inline edit | Enthusiast+ |
@@ -232,7 +232,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| inventory_items table + RLS | ✅ | profiles — run supabase/inventory_items_rls.sql; getInventory() capped at .limit(1000) | Free |
+| inventory_items table + RLS | ✅ | profiles — run supabase/inventory_items_rls.sql then supabase/inventory_items_provisioned.sql; owner has full access; provisioned SELECT and UPDATE policies (with ownership-theft guard via _inventory_item_owner() SECURITY DEFINER helper) allow team members with asset_permissions entries for asset_type='part' to read and edit shared parts; getInventory() capped at .limit(1000) | Free |
 | Create / edit / delete parts | ✅ | inventory_items | Free |
 | Buy price / sell price / stock qty | ✅ | inventory_items.payload (jsonb) | Free |
 | Min par / max par levels with LOW/OVER badges | ✅ | inventory_items.payload minQuantity/maxQuantity | Free |
