@@ -21,7 +21,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
     {id:"profile",  label:"Profile"},
     {id:"company",  label:"Company / Org"},
     {id:"billing",  label:"Billing"},
-    {id:"storage",  label:"Storage"},
+    {id:"storage",  label:"Billing & Storage"},
     {id:"tabs",     label:"⇅ Tabs"},
     ...(isTeam?[{id:"users",label:"👥 Users"}]:[]),
   ];
@@ -38,7 +38,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
       {tab==="profile"&&<ProfileSettings profile={profile} setProfile={setProfile} session={session} onSignOut={onSignOut} isGuest={!!session?.user?.is_anonymous} machines={machines}/>}
       {tab==="company"&&<CompanySettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany} session={session} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/>}
       {tab==="billing"&&<BillingPage profile={profile} company={company} session={session}/>}
-      {tab==="storage"&&<StorageSettings profile={profile} setProfile={setProfile} company={company}/>}
+      {tab==="storage"&&<StorageSettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany}/>}
       {tab==="tabs"&&<TabOrderSettings profile={profile} setProfile={setProfile}/>}
       {tab==="users"&&isTeam&&<UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("billing")}/>}
       {tab==="admin"&&isAdmin&&<AdminPanel/>}
