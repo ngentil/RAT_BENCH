@@ -9,9 +9,11 @@ import { getPref, savePref } from '../../lib/db/preferences';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
+import StatusBadge from '../ui/StatusBadge';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
+import { getMachineServiceStatus, mIcon } from '../../lib/helpers';
 
 const _ARW = "#e8870a";
 const _M = { fontFamily:"'IBM Plex Mono',monospace" };
@@ -50,6 +52,41 @@ function GuideStep2({ onSkip }) {
     </div>
   );
 }
+function MachineRow({ machine: m, onClick, clientName, company }) {
+  const svc = getMachineServiceStatus(m);
+  const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
+  const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
+  const rev = hrs * (company?.hourly_rate||0);
+  return (
+    <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
+      <span style={{fontSize:22,flexShrink:0,lineHeight:1,marginTop:3}}>{mIcon(m.type)}</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:14,fontWeight:700,color:TXT,lineHeight:1.2}}>
+          {m.name}
+          {timerRunning&&<span style={{display:"inline-block",width:5,height:5,borderRadius:"50%",background:GRN,boxShadow:"0 0 5px "+GRN,marginLeft:6,verticalAlign:"middle"}}/>}
+        </div>
+        {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
+          <div style={{fontSize:10,color:MUT,marginTop:2}}>
+            {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
+            {m.source&&<span style={{color:"#444"}}> · {m.source}</span>}
+          </div>}
+        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{m.type}</div>}
+        <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap",alignItems:"center"}}>
+          <StatusBadge status={m.status||"Active"}/>
+          {svc.overdue&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44"}}>SERVICE</span>}
+          {!svc.overdue&&svc.dueSoon&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44"}}>DUE SOON</span>}
+          {clientName&&<span style={{fontSize:9,color:ACC}}>👤 {clientName}</span>}
+          {m.dueDate&&(()=>{const due=new Date(m.dueDate);const ov=due<new Date();return<span style={{fontSize:9,color:ov?"#e87a0a":MUT}}>{ov?"⚠ OVERDUE":"DUE "+due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
+          {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
+          {rev>0&&<span style={{fontSize:9,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}
+          {(m.rage||0)>0&&<span style={{fontSize:9,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}
+        </div>
+      </div>
+      <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:4}}>▶</span>
+    </div>
+  );
+}
+
 function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear}){
   const [showAdd,setShowAdd]=useState(false);
   const [prefill,setPrefill]=useState(null);
@@ -195,7 +232,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button style={{...btnG,color:sortBy?ACC:MUT,alignSelf:"stretch"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
-          <button onClick={()=>setViewP(view==="list"?"grid":"list")} style={{...btnG,minWidth:36,alignSelf:"stretch",color:view==="grid"?ACC:undefined}}>{view==="list"?"⊞":"☰"}</button>
+          <button onClick={()=>setViewP(view==="list"?"grid":view==="grid"?"compact":"list")} style={{...btnG,minWidth:36,alignSelf:"stretch",color:view!=="list"?ACC:undefined}} title={view==="list"?"Grid view":view==="grid"?"Compact list":"Standard list"}>{view==="list"?"⊞":view==="grid"?"≡":"☰"}</button>
           {isGuest&&machines.length>=3
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
@@ -223,22 +260,27 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       {tutStep===0&&machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
       {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
       {tutStep===2&&!tutCardOpened&&<GuideStep2 onSkip={skipTut}/>}
-      {view==="grid"?(
-        <>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
-            {sorted.map(m=>(
-              <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
-            ))}
+      {/* Shared tile overlay — used by both grid and compact views */}
+      {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
+        <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto"}}>
+          <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
+            <button onClick={()=>setTileOpen(null)} style={{...btnA,width:"100%",marginBottom:8,fontSize:12,background:ACC,borderColor:ACC,color:"#000",fontWeight:700}}>✕ Close</button>
+            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen/>
           </div>
-          {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
-            <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto"}}>
-              <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
-                <button onClick={()=>setTileOpen(null)} style={{...btnA,width:"100%",marginBottom:8,fontSize:12,background:ACC,borderColor:ACC,color:"#000",fontWeight:700}}>✕ Close</button>
-                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen/>
-              </div>
-            </div>
-          ):null;})()}
-        </>
+        </div>
+      ):null;})()}
+      {view==="grid"?(
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+          {sorted.map(m=>(
+            <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+          ))}
+        </div>
+      ):view==="compact"?(
+        <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
+          {sorted.map(m=>(
+            <MachineRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} company={company}/>
+          ))}
+        </div>
       ):sorted.length > 0 && (
         // Virtuoso for sorted/filtered lists (no drag reorder); fall back to plain map only for manual-drag mode with small lists
         sortBy || sorted.length > 30
