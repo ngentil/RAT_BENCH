@@ -537,7 +537,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
             style={{ ...btnA, opacity: atLimit ? 0.4 : 1, minHeight: 44, display: 'flex', alignItems: 'center' }}
             title={atLimit ? `Upgrade to add more than ${limit} vehicles` : undefined}
           >
-            + Add Vehicle
+            + Add
           </button>
         </div>
       </div>
