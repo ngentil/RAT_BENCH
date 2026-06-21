@@ -30,7 +30,6 @@ export async function getClients() {
 export async function upsertClient(client) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
-  const isNew = !client.id;
   const payload = {
     name:    client.name,
     phone:   client.phone   || null,
@@ -39,12 +38,16 @@ export async function upsertClient(client) {
     notes:   client.notes   || null,
     photos:  client.photos  || [],
   };
-  if (isNew) {
+  if (!client.id) {
     const { error } = await supabase.from("clients").insert({ ...payload, user_id: user.id });
     if (error) { console.error("upsertClient:", error); throw error; }
   } else {
-    const { error } = await supabase.from("clients").update(payload).eq("id", client.id);
+    const { data: updated, error } = await supabase.from("clients").update(payload).eq("id", client.id).select("id");
     if (error) { console.error("upsertClient:", error); throw error; }
+    if (!updated?.length) {
+      const { error: ie } = await supabase.from("clients").insert({ ...payload, id: client.id, user_id: user.id });
+      if (ie) { console.error("upsertClient insert:", ie); throw ie; }
+    }
   }
 }
 
