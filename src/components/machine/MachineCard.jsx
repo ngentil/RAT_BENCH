@@ -207,7 +207,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
     m.stumpGrinderSpec?.teethLastReplaced&&{label:"Teeth Last Replaced",value:m.stumpGrinderSpec.teethLastReplaced},
   ].filter(Boolean);
 
-  const timerRunning = m.jobTimer?.status === "running";
+  const timerRunning = m.jobTimers?.[0]?.status === "running";
   const svcStatus = getMachineServiceStatus(m);
 
   const _jBase   = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"9px 14px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",border:"none",width:"100%",boxSizing:"border-box",minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"};
@@ -230,61 +230,64 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
       {showExpandConfig&&<ExpandConfig machine={m} onSave={u=>{onUpdate(u);setShowExpandConfig(false);}} onClose={()=>setShowExpandConfig(false)} />}
       {(showSvc||editSvc)&&<ServiceModal machine={m} existing={editSvc} onSave={saveSvc} onClose={()=>{setShowSvc(false);setEditSvc(null);}} />}
 
-      <div style={{display:"flex",alignItems:"stretch"}}>
-        <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"flex-start",padding:"12px",gap:12,flex:1,cursor:"pointer",userSelect:"none",minWidth:0}}>
+      {/* ── Collapsed card — poster style ── */}
+      <div onClick={()=>setOpen(o=>!o)} style={{cursor:"pointer",userSelect:"none"}}>
 
-          {/* Large square photo / icon — eBay listing style */}
-          {m.photos?.[0]
-            ? <img src={m.photos[0]} alt="" style={{width:80,height:80,objectFit:"cover",borderRadius:6,flexShrink:0,border:"1px solid #2a2a2a"}} />
-            : <div style={{width:80,height:80,borderRadius:6,flexShrink:0,background:"#181818",border:"1px solid #2a2a2a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:34}}>{mIcon(m.type)}</div>}
+        {/* Hero photo / icon placeholder */}
+        {m.photos?.[0]
+          ? <img src={m.photos[0]} alt="" style={{width:"100%",height:170,objectFit:"cover",display:"block"}} />
+          : <div style={{width:"100%",height:120,background:"#0e0e0e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:56,borderBottom:"1px solid #1a1a1a"}}>{mIcon(m.type)}</div>}
 
-          {/* Right content column */}
-          <div style={{flex:1,minWidth:0,paddingTop:1}}>
+        {/* Info panel */}
+        <div style={{padding:"10px 12px 12px"}}>
 
-            {/* Name + chevron */}
-            <div style={{display:"flex",alignItems:"flex-start",gap:6}}>
-              <div className={timerRunning?"loading-rat":undefined} style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,color:TXT,lineHeight:1.3}}>
-                {m.name}
-                {timerRunning&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,marginLeft:7,verticalAlign:"middle"}}/>}
+          {/* Icon + name/subtitle row */}
+          <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+            {m.photos?.[0]&&<span style={{fontSize:24,flexShrink:0,marginTop:2,lineHeight:1}}>{mIcon(m.type)}</span>}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:6}}>
+                <div className={timerRunning?"loading-rat":undefined} style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,color:TXT,lineHeight:1.25}}>
+                  {m.name}
+                  {timerRunning&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,marginLeft:7,verticalAlign:"middle"}}/>}
+                </div>
+                <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:2,userSelect:"none"}}>{open?"▲":"▼"}</span>
               </div>
-              <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:3,userSelect:"none"}}>{open?"▲":"▼"}</span>
+              {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
+                <div style={{fontSize:11,color:MUT,marginTop:3,lineHeight:1.4}}>
+                  {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
+                  {m.source&&<span style={{color:"#444"}}> · {m.source}</span>}
+                </div>}
+              {m.type&&<div style={{fontSize:9,color:"#555",marginTop:2,letterSpacing:"0.06em",textTransform:"uppercase"}}>{m.type}</div>}
             </div>
-
-            {/* Make · Model · Year — muted subtitle */}
-            {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
-              <div style={{fontSize:11,color:MUT,marginTop:4,lineHeight:1.4}}>
-                {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
-                {m.source&&<span style={{color:"#444"}}> · {m.source}</span>}
-              </div>}
-
-            {/* Badges */}
-            <div style={{display:"flex",alignItems:"center",gap:4,marginTop:7,flexWrap:"wrap"}}>
-              {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
-                const tc=m.tileColors||{};
-                const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
-                const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
-                const bStyle={fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
-                if(k==="status"){const S=["Active","Queued","Complete"];const cur=m.status||"Active";const next=S[(S.indexOf(cur)+1)%S.length];return <StatusBadge key="status" status={cur} onClick={ev=>{ev.stopPropagation();const u={...m,status:next};upsertMachine(u).catch(()=>{});onUpdate(u);}} title={`Click to set ${next}`} />;};
-                if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55"),whiteSpace:"nowrap"}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
-                if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:10,letterSpacing:-2}}>{"☠️".repeat(m.rage)}</span>;
-                const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
-                if(field&&m[k]){const lbl=(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "));return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,14)}</span>;}
-                return null;
-              })}
-              {svcStatus.overdue&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap"}}>SERVICE</span>}
-              {!svcStatus.overdue&&svcStatus.dueSoon&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",whiteSpace:"nowrap"}}>DUE SOON</span>}
-              {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap",boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",whiteSpace:"nowrap"}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",whiteSpace:"nowrap"}}>${storageStatus.accrued.toFixed(0)}</span>)}
-            </div>
-
-            {/* Client / due / stats row — only if something to show */}
-            {(clientName||m.dueDate||(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)>0||(m.rage||0)>0)&&
-              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,flexWrap:"wrap"}}>
-                {clientName&&<span style={{fontSize:9,color:ACC,whiteSpace:"nowrap"}}>👤 {clientName}</span>}
-                {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const dueColor=overdue?"#e87a0a":now.toDateString()===due.toDateString()?"#4a9eff":MUT;return<span style={{fontSize:9,color:dueColor,whiteSpace:"nowrap"}}>{overdue?"⚠ OVERDUE":"DUE "}{!overdue&&due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
-                {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const rate=company?.hourly_rate||0;const rev=tHrs*rate;const hasHrs=tHrs>0;const hasRev=rate>0&&rev>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRev&&!hasRage)return null;return<>{hasHrs&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRev&&<span style={{fontSize:9,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}{hasRage&&<span style={{fontSize:9,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</>;})()}
-              </div>}
-
           </div>
+
+          {/* Badges — full width below info */}
+          <div style={{display:"flex",alignItems:"center",gap:4,marginTop:9,flexWrap:"wrap"}}>
+            {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
+              const tc=m.tileColors||{};
+              const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
+              const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
+              const bStyle={fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
+              if(k==="status"){const S=["Active","Queued","Complete"];const cur=m.status||"Active";const next=S[(S.indexOf(cur)+1)%S.length];return <StatusBadge key="status" status={cur} onClick={ev=>{ev.stopPropagation();const u={...m,status:next};upsertMachine(u).catch(()=>{});onUpdate(u);}} title={`Click to set ${next}`} />;};
+              if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55"),whiteSpace:"nowrap"}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
+              if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:10,letterSpacing:-2}}>{"☠️".repeat(m.rage)}</span>;
+              const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
+              if(field&&m[k]){const lbl=(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "));return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,14)}</span>;}
+              return null;
+            })}
+            {svcStatus.overdue&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap"}}>SERVICE</span>}
+            {!svcStatus.overdue&&svcStatus.dueSoon&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",whiteSpace:"nowrap"}}>DUE SOON</span>}
+            {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap",boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",whiteSpace:"nowrap"}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",whiteSpace:"nowrap"}}>${storageStatus.accrued.toFixed(0)}</span>)}
+          </div>
+
+          {/* Client / due / stats */}
+          {(clientName||m.dueDate||(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)>0||(m.rage||0)>0)&&
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,flexWrap:"wrap"}}>
+              {clientName&&<span style={{fontSize:9,color:ACC,whiteSpace:"nowrap"}}>👤 {clientName}</span>}
+              {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const dueColor=overdue?"#e87a0a":now.toDateString()===due.toDateString()?"#4a9eff":MUT;return<span style={{fontSize:9,color:dueColor,whiteSpace:"nowrap"}}>{overdue?"⚠ OVERDUE":"DUE "}{!overdue&&due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
+              {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const rate=company?.hourly_rate||0;const rev=tHrs*rate;const hasHrs=tHrs>0;const hasRev=rate>0&&rev>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRev&&!hasRage)return null;return<>{hasHrs&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRev&&<span style={{fontSize:9,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}{hasRage&&<span style={{fontSize:9,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</>;})()}
+            </div>}
+
         </div>
       </div>
 
