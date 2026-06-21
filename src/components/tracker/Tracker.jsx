@@ -156,7 +156,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [dragOver,setDragOver]=useState(null);
   const [showSort,setShowSort]=useState(false);
   const [sortBy,setSortBy]=useState(()=>getPref(profile,"trackerSort",null));
-  const [view,setView]=useState(()=>getPref(profile,"trackerView","grid"));
+  const [view,setView]=useState(()=>getPref(profile,"trackerView","photo"));
   const [tileOpen,setTileOpen]=useState(null);
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
