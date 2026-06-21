@@ -457,7 +457,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
             style={{ ...btnA, opacity: atLimit ? 0.4 : 1, minHeight: 44, display: 'flex', alignItems: 'center' }}
             title={atLimit ? `Upgrade to add more than ${limit} tools` : undefined}
           >
-            + Add Tool
+            + Add
           </button>
         </div>
       </div>

@@ -208,7 +208,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
         <SL t="Clients" />
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{ fontSize: 9, color: MUT }}>{clients.length} client{clients.length !== 1 ? "s" : ""}</span>
-          <button onClick={openNew} style={{ ...btnA, ...sm }}>+ Add Client</button>
+          <button onClick={openNew} style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}>+ Add</button>
         </div>
       </div>
       <TabGuide storageKey="rat_tut_clients" title="start here" lines={["tap + Add Client to save customer details","link machines to clients for invoicing"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_clients",false)} />
