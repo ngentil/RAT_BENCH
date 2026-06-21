@@ -44,16 +44,23 @@ export async function revokeMachinePermission(machineId, userId) {
 
 export async function upsertMachine(machine) {
   const { data: { user } } = await supabase.auth.getUser();
-  const isNew = !machine.id;
   const row = toDb(machine);
-  if (isNew) {
+  if (!machine.id) {
     row.user_id = user?.id;
     const { error } = await supabase.from("machines").insert(row);
     if (error) { console.error("upsertMachine:", error); throw error; }
   } else {
+    // Strip user_id so ownership can't be transferred via UPDATE.
+    // Use .select("id") to detect 0-row matches (new machine with pre-generated UUID)
+    // and fall back to INSERT in that case.
     const { user_id: _uid, ...updateRow } = row;
-    const { error } = await supabase.from("machines").update(updateRow).eq("id", row.id);
+    const { data: updated, error } = await supabase.from("machines").update(updateRow).eq("id", row.id).select("id");
     if (error) { console.error("upsertMachine:", error); throw error; }
+    if (!updated?.length) {
+      row.user_id = user?.id;
+      const { error: ie } = await supabase.from("machines").insert(row);
+      if (ie) { console.error("upsertMachine:", ie); throw ie; }
+    }
   }
 }
 
