@@ -195,7 +195,7 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | Jobs tab: shows first 3 machines only on free tier (FREE_LIMIT=3) | ✅ | JobBoard.jsx FREE_LIMIT | Free (limit) |
-| Job timer (start / stop / pause) | ✅ | machines.job_timer (jsonb) | Free |
+| Job timer (start / stop / pause) | ✅ | machines.job_timer (jsonb) — saving state disables Pause/Resume/Reset/Finish buttons during async save to prevent double-fire | Free |
 | Multiple timers per machine | ✅ | machines.job_timer array | Free |
 | Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Business |
 | Time log (save sessions with label + notes) | ✅ | machines.time_log (jsonb) | Free |
@@ -208,8 +208,8 @@ Stripe
 | Collapsed/expanded job card layout — poster style (full-width hero photo 170px with bottom fade gradient to card background, dark emoji placeholder when no photo, icon+name+source/make/model+type below, priority/client/due badges + stats row below info panel) | ✅ | JobBoard JobCard — replaced horizontal thumbnail layout with vertical poster layout matching MachineCard | Free |
 | Common jobs autocomplete | ✅ | COMMON_JOBS constant | Free |
 | Barcode scanner (keyboard detection) | ✅ | inventory items | Free |
-| Stock auto-deduct on part use (parts) | ✅ | adjustStock(), inventory | Free |
-| Stock auto-deduct on consumable use | ✅ | adjustConsumableQty(), consumables | Free |
+| Stock auto-deduct on part use (parts) | ✅ | adjustStock(), inventory — machineSaved flag: if machine saves but stock adjustment fails, machine is rolled back in DB to keep parts list and stock counts consistent | Free |
+| Stock auto-deduct on consumable use | ✅ | adjustConsumableQty(), consumables — same machineSaved rollback guard as parts | Free |
 | Jobs picker: Parts tab + Consumables tab | ✅ | inventory + consumables, sourceType on entries | Free |
 | Running cost total per job (parts + labour) | ✅ | machines.parts sellPrice, company.hourly_rate | Free |
 | Cost Summary row in expanded job card | ✅ | partsTotal + labourTotal = grandTotal | Free |
