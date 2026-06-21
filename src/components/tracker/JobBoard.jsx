@@ -1013,36 +1013,58 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
 
   return (
     <div style={{ background: "#0d0d0d", border: "1px solid " + (timerLocked ? "#1a1a1a" : "#252525"), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden", opacity: timerLocked ? 0.65 : 1 }}>
-      {/* Collapsed header — always visible */}
-      <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer" }}>
+      {/* Collapsed header — poster style */}
+      <div onClick={() => setOpen(o => !o)} style={{ cursor: "pointer", userSelect: "none" }}>
+
+        {/* Hero photo / icon placeholder */}
         {m.photos?.[0]
-          ? <img src={m.photos[0]} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 2, border: "1px solid #252525", flexShrink: 0 }} />
-          : <span style={{ fontSize: 18, flexShrink: 0, width: 36, textAlign: "center" }}>{mIcon(m.type)}</span>}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</span>
+          ? <img src={m.photos[0]} alt="" style={{ width: "100%", height: 170, objectFit: "cover", display: "block" }} />
+          : <div style={{ width: "100%", height: 120, background: "#0e0e0e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 56, borderBottom: "1px solid #1a1a1a" }}>{mIcon(m.type)}</div>}
+
+        {/* Info panel */}
+        <div style={{ padding: "10px 12px 12px" }}>
+
+          {/* Icon + name row */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            {m.photos?.[0] && <span style={{ fontSize: 24, flexShrink: 0, marginTop: 2, lineHeight: 1 }}>{mIcon(m.type)}</span>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                <div className={isRunning ? "loading-rat" : undefined} style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, color: timerLocked ? MUT : TXT, lineHeight: 1.25 }}>
+                  {m.name}
+                  {isRunning && <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 6px " + GRN, marginLeft: 7, verticalAlign: "middle" }} />}
+                </div>
+                <span style={{ fontSize: 10, color: "#555", flexShrink: 0, marginTop: 2, userSelect: "none" }}>{open ? "▲" : "▼"}</span>
+              </div>
+              {[m.source, m.make, m.model].filter(Boolean).length > 0 &&
+                <div style={{ fontSize: 11, color: MUT, marginTop: 3, lineHeight: 1.4 }}>
+                  {[m.source, m.make, m.model].filter(Boolean).join(" · ")}
+                </div>}
+              {m.type && <div style={{ fontSize: 9, color: "#555", marginTop: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>{m.type}</div>}
+            </div>
+          </div>
+
+          {/* Badges — full width below info */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 9, flexWrap: "wrap" }}>
             {m.priority && (
-              <span style={{ fontSize: 7, fontWeight: 700, padding: "2px 5px", borderRadius: 2, letterSpacing: "0.08em",
-                background: m.priority === "High" ? RED+"18" : m.priority === "Medium" ? ACC+"18" : MUT+"18",
+              <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 3, letterSpacing: "0.08em",
+                background: m.priority === "High" ? RED + "18" : m.priority === "Medium" ? ACC + "18" : MUT + "18",
                 color:      m.priority === "High" ? RED      : m.priority === "Medium" ? ACC      : MUT }}>
                 {m.priority}
               </span>
             )}
-            {isRunning && <span style={{ fontSize: 7, fontWeight: 700, color: GRN, letterSpacing: "0.08em" }}>● RUNNING</span>}
+            {m.clientId && clientMap[m.clientId] && <span style={{ fontSize: 9, color: ACC }}>👤 {clientMap[m.clientId]}</span>}
+            {due && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: isOverdue ? "#e87a0a" : "#4a9eff" }}>{isOverdue ? "⚠ OVERDUE" : "DUE"} {due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>}
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 8, color: MUT }}>{[m.source, m.make, m.model].filter(Boolean).join(" · ")}</span>
-            {m.clientId && clientMap[m.clientId] && <span style={{ fontSize: 8, color: ACC }}>👤 {clientMap[m.clientId]}</span>}
-            {due && <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", color: isOverdue ? "#e87a0a" : "#4a9eff" }}>{isOverdue ? "OVERDUE" : "DUE"} {due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>}
-          </div>
-        </div>
-        <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-          {totalSecs > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtDuration(totalSecs)}</span>}
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            {grandTotal > 0 && <span style={{ fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>${grandTotal.toFixed(0)}</span>}
-            {partsCount > 0 && <span style={{ fontSize: 7, color: MUT }}>{partsCount} item{partsCount !== 1 ? "s" : ""}</span>}
-            <span style={{ fontSize: 9, color: MUT }}>{open ? "▲" : "▼"}</span>
-          </div>
+
+          {/* Stats */}
+          {(totalSecs > 0 || grandTotal > 0 || partsCount > 0) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+              {totalSecs > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtDuration(totalSecs)}</span>}
+              {grandTotal > 0 && <span style={{ fontSize: 9, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>${grandTotal.toFixed(0)}</span>}
+              {partsCount > 0 && <span style={{ fontSize: 9, color: MUT }}>{partsCount} item{partsCount !== 1 ? "s" : ""}</span>}
+            </div>
+          )}
+
         </div>
       </div>
 
