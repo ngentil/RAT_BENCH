@@ -208,7 +208,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
     if(!joinCode.trim()){setErr("Enter an invite code.");return;}
     setSaving(true);setErr("");
     try{
-      const compId=await joinCompanyByCode(joinCode,session.user.id);
+      const compId=await joinCompanyByCode(joinCode);
       const co=await getMyCompany(compId);
       setCompany(co);setProfile(prev=>({...prev,company_id:compId}));setMode("view");
     }catch(e){setErr(e.message);}

@@ -124,9 +124,11 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
   const addServiceEntry = async () => {
     if (!svcForm.notes.trim()) return;
     const entry = { id: crypto.randomUUID(), date: svcForm.date, notes: svcForm.notes.trim(), cost: parseFloat(svcForm.cost) || 0, hours: svcForm.hours ? parseFloat(svcForm.hours) : null };
-    await onUpdate({ ...item, serviceLog: [...(item.serviceLog || []), entry] });
-    setAddSvc(false);
-    setSvcForm({ date: new Date().toISOString().slice(0, 10), notes: '', cost: '', hours: '' });
+    try {
+      await onUpdate({ ...item, serviceLog: [...(item.serviceLog || []), entry] });
+      setAddSvc(false);
+      setSvcForm({ date: new Date().toISOString().slice(0, 10), notes: '', cost: '', hours: '' });
+    } catch { alert("Save failed — check your connection."); }
   };
 
   const removeSvcEntry = async (id) => {
@@ -283,8 +285,12 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
   const atLimit = atAssetLimit('equipment', equipment?.length ?? 0, profile, company);
 
   useEffect(() => {
+    let alive = true;
     setLoading(true);
-    getEquipment().then(items => { setEquipment(items); setLoading(false); }).catch(() => { setErr('Failed to load equipment. Refresh to try again.'); setLoading(false); });
+    getEquipment()
+      .then(items => { if (alive) { setEquipment(items); setLoading(false); } })
+      .catch(() => { if (alive) { setErr('Failed to load equipment. Refresh to try again.'); setLoading(false); } });
+    return () => { alive = false; };
   }, [userId]);
 
   const activeTypes = useMemo(() => {
@@ -335,7 +341,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
     try {
       const saved = await upsertEquipment(item);
       setEquipment(prev => prev.map(e => e.id === saved.id ? saved : e));
-    } catch (e) { console.error("update equipment:", e); }
+    } catch (e) { console.error("update equipment:", e); throw e; }
   };
 
   const remove = async (id) => {
