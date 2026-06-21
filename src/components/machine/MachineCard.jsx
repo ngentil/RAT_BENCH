@@ -15,8 +15,8 @@ const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened}){
-  const [open,setOpen]=useState(false);
+function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen}){
+  const [open,setOpen]=useState(!!initialOpen);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
   const [showEdit,setShowEdit]=useState(false);
