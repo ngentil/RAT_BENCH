@@ -2,7 +2,7 @@ import { supabase } from '../supabase';
 
 export async function getMyCompany(companyId) {
   if (!companyId) return null;
-  const { data, error } = await supabase.from("companies").select("*").eq("id", companyId).single();
+  const { data, error } = await supabase.rpc("get_my_company", { p_company_id: companyId }).single();
   if (error) { console.error("[getMyCompany]", error); return null; }
   return data;
 }

@@ -266,7 +266,7 @@ function App(){
     let attempts=0;
     const poll=setInterval(async()=>{
       attempts++;
-      const {data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+      const {data:p}=await supabase.rpc("get_my_profile").single();
       if(p) setProfile(p);
       if(attempts>=8) clearInterval(poll);
     },2000);
@@ -279,6 +279,7 @@ function App(){
     const channel=supabase
       .channel("machines-sync")
       .on("postgres_changes",{event:"UPDATE",schema:"public",table:"machines",filter:`company_id=eq.${company.id}`},(payload)=>{
+        if(payload.new.company_id!==company.id) return;
         setMachines(prev=>prev.map(m=>m.id===payload.new.id?fromDb(payload.new):m));
       })
       .subscribe();

@@ -203,7 +203,7 @@ td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;vertical-alig
 
 <div class="top">
   <div class="co-side">
-    ${co.logo ? `<img class="co-logo" src="${co.logo}" alt=""/>` : ''}
+    ${co.logo ? `<img class="co-logo" src="${escHtml(co.logo)}" alt=""/>` : ''}
     <div class="co-name">${escHtml(co.name || 'My Business')}</div>
     ${co.trading_name ? `<div class="co-sub" style="margin-bottom:2px">${escHtml(co.trading_name)}</div>` : ''}
     <div class="co-sub">
