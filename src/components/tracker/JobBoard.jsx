@@ -470,8 +470,10 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: [...parts, entry] };
     setSaving(true);
     onUpdate(updated);
+    let machineSaved = false;
     try {
       await upsertMachine(updated);
+      machineSaved = true;
       if (pickerSource === "part") {
         setInv(await adjustStock(userId, selected.id, -useQty));
       } else {
@@ -481,6 +483,7 @@ function PartsSection({ machine, onUpdate, userId }) {
       setMode(null); setSelected(null); setQty("1"); setSearch("");
     } catch (e) {
       console.error("useFromInventory:", e);
+      if (machineSaved) await upsertMachine(original).catch(() => {});
       onUpdate(original);
     } finally {
       setSaving(false);
@@ -713,6 +716,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const [customLabel, setCustomLabel] = useState("");
   const [mode, setMode] = useState("countdown");
   const [manualDate, setManualDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [saving, setSaving] = useState(false);
 
   const jobOptions = getJobOptions(machine);
   const isCustom = jobLabel === "__custom__";
@@ -737,12 +741,15 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const save = async (updates) => {
     const original = machine;
     const updated = { ...machine, jobTimers: [{ ...t, ...updates }] };
+    setSaving(true);
     onUpdate(updated);
     try {
       await upsertMachine(updated);
     } catch (e) {
       console.error("timer save:", e);
       onUpdate(original);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -960,10 +967,10 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
         </div>
       )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {t.status === "running" && <button onClick={handlePause} style={{ ...btnG, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>⏸ Pause</button>}
-        {t.status === "paused"  && <button onClick={handleStart} style={{ ...btnA, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>▶ Resume</button>}
-        <button onClick={handleStop} style={{ ...btnG, padding: "13px 16px", fontSize: 12, borderRadius: 3 }}>⏹ Reset</button>
-        <button onClick={handleFinish} style={{ ...btnA, flex: 2, padding: "13px", fontSize: 13, borderRadius: 3, background: GRN, borderColor: GRN, color: "#000", fontWeight: 700 }}>✓ Finish Job</button>
+        {t.status === "running" && <button onClick={handlePause} disabled={saving} style={{ ...btnG, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3, opacity: saving ? 0.5 : 1 }}>⏸ Pause</button>}
+        {t.status === "paused"  && <button onClick={handleStart} disabled={saving} style={{ ...btnA, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3, opacity: saving ? 0.5 : 1 }}>▶ Resume</button>}
+        <button onClick={handleStop} disabled={saving} style={{ ...btnG, padding: "13px 16px", fontSize: 12, borderRadius: 3, opacity: saving ? 0.5 : 1 }}>⏹ Reset</button>
+        <button onClick={handleFinish} disabled={saving} style={{ ...btnA, flex: 2, padding: "13px", fontSize: 13, borderRadius: 3, background: GRN, borderColor: GRN, color: "#000", fontWeight: 700, opacity: saving ? 0.5 : 1 }}>✓ Finish Job</button>
       </div>
     </div>
   );
