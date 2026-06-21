@@ -205,7 +205,7 @@ Stripe
 | Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Business |
 | Invoice number auto-increment | ✅ | invoices.js — next_invoice_number RPC (DB-only, no local fallback) | Free |
 | HTML invoice export | ✅ | time_log, parts, company details | Free |
-| Collapsed/expanded job card layout (matching asset tabs) | ✅ | JobBoard, JobCard | Free |
+| Collapsed/expanded job card layout — poster style (full-width hero photo 170px, dark emoji placeholder when no photo, icon+name+source/make/model+type below, priority/client/due badges + stats row below info panel) | ✅ | JobBoard JobCard — replaced horizontal thumbnail layout with vertical poster layout matching MachineCard | Free |
 | Common jobs autocomplete | ✅ | COMMON_JOBS constant | Free |
 | Barcode scanner (keyboard detection) | ✅ | inventory items | Free |
 | Stock auto-deduct on part use (parts) | ✅ | adjustStock(), inventory | Free |
