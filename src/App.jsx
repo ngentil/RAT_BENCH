@@ -105,11 +105,10 @@ function App(){
         }
       } else if(session.user.is_anonymous){
         const guestSuffix=session.user.id.replace(/-/g,"").slice(0,6);
-        const {data:guest, error:guestErr}=await supabase.from("profiles").upsert({
-          id:session.user.id,
-          username:`guest_${guestSuffix}`,
-          display_name:"Guest",
-        },{onConflict:"id"}).select().single();
+        const {data:guest, error:guestErr}=await supabase.rpc('create_my_profile',{
+          p_username:`guest_${guestSuffix}`,
+          p_display_name:'Guest',
+        }).single();
         if(guestErr) throw guestErr;
         profileData = guest;
         setProfile(guest||null);
@@ -118,10 +117,9 @@ function App(){
         const rawUsername = session.user.user_metadata?.username || "";
         const username = rawUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g,"").slice(0,20)
           || `user_${session.user.id.replace(/-/g,"").slice(0,6)}`;
-        const {data:autoProfile, error:autoErr} = await supabase.from("profiles").upsert({
-          id: session.user.id,
-          username,
-        },{onConflict:"id"}).select().single();
+        const {data:autoProfile, error:autoErr} = await supabase.rpc('create_my_profile',{
+          p_username: username,
+        }).single();
         if(autoErr) throw autoErr;
         profileData = autoProfile;
         setProfile(autoProfile||null);
