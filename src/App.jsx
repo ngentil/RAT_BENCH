@@ -18,7 +18,6 @@ const TIER_GLOW = {
   business:   { color: "#e8c20a", label: "Pro"        },
 };
 import AuthScreen from './components/auth/AuthScreen';
-import OnboardingScreen from './components/auth/OnboardingScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
 import TermsPage from './components/legal/TermsPage';
 import PrivacyPage from './components/legal/PrivacyPage';
@@ -125,7 +124,7 @@ function App(){
         profileData = autoProfile;
         setProfile(autoProfile||null);
       }
-    } catch(e){ if(first) setProfile(null); }
+    } catch(e){ if(first){ setProfile(null); setError("Could not load your profile. Please refresh the page."); } }
     setProfileChecked(true);
     setAuthChecked(true);
 
@@ -317,14 +316,11 @@ function App(){
   // Not logged in
   if(!session) return <AuthScreen />;
 
-  // Logged in but no profile — show onboarding
-  if(!profile) return <OnboardingScreen session={session} onComplete={p=>setProfile(p)} />;
-
-  if(error){
+  if(error || !profile){
     return (
       <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:20}}>
         <div style={{fontSize:32}}>⚠️</div>
-        <div style={{fontSize:11,color:RED,fontFamily:"'IBM Plex Mono',monospace",textAlign:"center",lineHeight:1.6,maxWidth:320}}>{error}</div>
+        <div style={{fontSize:11,color:RED,fontFamily:"'IBM Plex Mono',monospace",textAlign:"center",lineHeight:1.6,maxWidth:320}}>{error || "Could not load your profile. Please refresh the page."}</div>
       </div>
     );
   }
