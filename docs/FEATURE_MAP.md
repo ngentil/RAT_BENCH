@@ -205,7 +205,7 @@ Stripe
 | Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Business |
 | Invoice number auto-increment | ✅ | invoices.js — next_invoice_number RPC (DB-only, no local fallback) | Free |
 | HTML invoice export | ✅ | time_log, parts, company details | Free |
-| Collapsed/expanded job card layout — poster style (full-width hero photo 170px, dark emoji placeholder when no photo, icon+name+source/make/model+type below, priority/client/due badges + stats row below info panel) | ✅ | JobBoard JobCard — replaced horizontal thumbnail layout with vertical poster layout matching MachineCard | Free |
+| Collapsed/expanded job card layout — poster style (full-width hero photo 170px with bottom fade gradient to card background, dark emoji placeholder when no photo, icon+name+source/make/model+type below, priority/client/due badges + stats row below info panel) | ✅ | JobBoard JobCard — replaced horizontal thumbnail layout with vertical poster layout matching MachineCard | Free |
 | Common jobs autocomplete | ✅ | COMMON_JOBS constant | Free |
 | Barcode scanner (keyboard detection) | ✅ | inventory items | Free |
 | Stock auto-deduct on part use (parts) | ✅ | adjustStock(), inventory | Free |
@@ -297,7 +297,7 @@ Stripe
 | ± stock adjustment inline on card | ✅ | adjustConsumableQty() calls adjust_consumable_qty() RPC (run supabase/adjust_stock_rpcs.sql); atomic UPDATE eliminates read-modify-write race; getConsumables() capped at .limit(1000) | Free |
 | Cover photo selection (☆ Cover sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab, MachineCard | Free |
 | Photos for consumables (add via form, thumbnail in card, cover selection) | ✅ | ConsumablesTab, consumables table photos column | Free |
-| Machine card collapsed header — poster style (full-width hero photo 170px, dark emoji placeholder when no photo, icon+name+make/model/year+type below, badges below info panel) | ✅ | MachineCard — replaced horizontal thumbnail+info layout with vertical poster layout | Free |
+| Machine card collapsed header — poster style (full-width hero photo 170px with bottom fade gradient to card background, dark emoji placeholder when no photo, icon+name+make/model/year+type below, badges below info panel) | ✅ | MachineCard — replaced horizontal thumbnail+info layout with vertical poster layout | Free |
 | Low-stock / out-of-stock badge + overstock badge | ✅ | qtyLabel(), min_quantity / max_quantity thresholds | Free |
 | Configurable min par (reorder point) and max par (ceiling) | ✅ | consumables.min_quantity, consumables.max_quantity | Free |
 | Buy price / sell price / supplier / part number / location | ✅ | consumables.buy_price, sell_price, supplier, part_number, location | Free |
