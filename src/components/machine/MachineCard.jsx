@@ -421,40 +421,45 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             <div style={{padding:"0 14px 12px"}}>
               <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8,marginBottom:10}}><SL t="Storage" /></div>
               {!booking&&!showBookIn&&(
-                <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();const now=new Date();const pad=n=>String(n).padStart(2,"0");setBookForm(f=>({...f,receivedAt:now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+"T"+pad(now.getHours())+":"+pad(now.getMinutes())}));setShowBookIn(true);}}>📥 Book In</button>
+                <button style={{width:"100%",background:"none",border:"1px solid "+BRD,borderRadius:3,padding:"16px 14px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:12,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:MUT,fontSize:12,minHeight:56}} onClick={ev=>{ev.stopPropagation();const now=new Date();const pad=n=>String(n).padStart(2,"0");setBookForm(f=>({...f,receivedAt:now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+"T"+pad(now.getHours())+":"+pad(now.getMinutes())}));setShowBookIn(true);}}>
+                  <span style={{fontSize:28,lineHeight:1}}>📥</span>
+                  Book In
+                </button>
               )}
               {showBookIn&&(
-                <div style={{background:"#0a0a0a",border:"1px solid "+BRD,borderRadius:2,padding:"12px 14px"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                <div style={{background:"#0a0a0a",border:"1px solid "+BRD,borderRadius:3,padding:"16px 14px"}}>
+                  <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:14}}>
                     <div>
-                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Storage Tier</div>
-                      <select value={bookForm.storageTier} onChange={e=>setBookForm(f=>({...f,storageTier:e.target.value}))} style={{...inp,fontSize:11,padding:"6px 8px"}}>
+                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Storage Tier</div>
+                      <select value={bookForm.storageTier} onChange={e=>setBookForm(f=>({...f,storageTier:e.target.value}))} style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}}>
                         {TIER_NAMES.map(t=><option key={t} value={t}>{t}{activeTiers[t]?.dailyRate!=null?" — $"+activeTiers[t].dailyRate+"/day after "+activeTiers[t].freeDays+"d free":""}</option>)}
                       </select>
                     </div>
                     <div>
-                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Received</div>
-                      <input type="datetime-local" value={bookForm.receivedAt} onChange={e=>setBookForm(f=>({...f,receivedAt:e.target.value}))} style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Received</div>
+                      <input type="datetime-local" value={bookForm.receivedAt} onChange={e=>setBookForm(f=>({...f,receivedAt:e.target.value}))} style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
                     </div>
                     {bookForm.storageTier==="Custom"&&(
                       <div>
-                        <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Custom Daily Rate ($)</div>
-                        <input type="number" min="0" step="0.01" value={bookForm.storageFeeOverride} onChange={e=>setBookForm(f=>({...f,storageFeeOverride:e.target.value}))} placeholder="0.00" style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                        <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Custom Daily Rate ($)</div>
+                        <input type="number" min="0" step="0.01" value={bookForm.storageFeeOverride} onChange={e=>setBookForm(f=>({...f,storageFeeOverride:e.target.value}))} placeholder="0.00" style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
                       </div>
                     )}
                     <div>
-                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Notes</div>
-                      <input value={bookForm.notes} onChange={e=>setBookForm(f=>({...f,notes:e.target.value}))} placeholder="Optional" style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Notes</div>
+                      <input value={bookForm.notes} onChange={e=>setBookForm(f=>({...f,notes:e.target.value}))} placeholder="Optional" style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
                     </div>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <input type="checkbox" id={"se-"+m.id} checked={bookForm.storageEnabled} onChange={e=>setBookForm(f=>({...f,storageEnabled:e.target.checked}))} />
-                    <label htmlFor={"se-"+m.id} style={{fontSize:9,color:MUT,cursor:"pointer"}}>Charge storage for this visit</label>
-                  </div>
-                  {bookErr&&<div style={{fontSize:9,color:RED,marginBottom:6}}>{bookErr}</div>}
-                  <div style={{display:"flex",gap:6}}>
-                    <button style={{...btnA,...sm}} onClick={doBookIn} disabled={bookSaving}>{bookSaving?"Saving…":"✓ Book In"}</button>
-                    <button style={{...btnG,...sm}} onClick={()=>{setShowBookIn(false);setBookErr("");}}>Cancel</button>
+                  <label htmlFor={"se-"+m.id} style={{display:"flex",alignItems:"center",gap:14,padding:"12px 0",cursor:"pointer",borderTop:"1px solid #1a1a1a",borderBottom:"1px solid #1a1a1a",marginBottom:14}}>
+                    <input type="checkbox" id={"se-"+m.id} checked={bookForm.storageEnabled} onChange={e=>setBookForm(f=>({...f,storageEnabled:e.target.checked}))} style={{width:22,height:22,accentColor:ACC,cursor:"pointer",flexShrink:0}} />
+                    <span style={{fontSize:12,color:MUT}}>Charge storage for this visit</span>
+                  </label>
+                  {bookErr&&<div style={{fontSize:9,color:RED,marginBottom:10}}>{bookErr}</div>}
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <button style={{...btnA,width:"100%",padding:"14px",fontSize:12,minHeight:50,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={doBookIn} disabled={bookSaving}>
+                      <span style={{fontSize:20}}>📥</span>{bookSaving?"Saving…":"Book In"}
+                    </button>
+                    <button style={{...btnG,width:"100%",padding:"12px",fontSize:11,minHeight:44}} onClick={()=>{setShowBookIn(false);setBookErr("");}}>Cancel</button>
                   </div>
                 </div>
               )}
