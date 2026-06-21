@@ -2794,10 +2794,10 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
           })()}
 
         </div>
-        <div style={mdlF}>
-          <button style={btnG} onClick={onClose}>Cancel</button>
-          {!isGuest&&effectiveTier(profile,company)!=="free"&&existing&&profile&&make&&model&&<button style={{...btnG,...sm}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
-          <button style={btnA} onClick={save}>{existing?"Save Changes":"Add Machine"}</button>
+        <div style={{...mdlF,gap:8,justifyContent:"stretch"}}>
+          <button style={{...btnG,flex:1,minHeight:52,fontSize:13}} onClick={onClose}>Cancel</button>
+          {!isGuest&&effectiveTier(profile,company)!=="free"&&existing&&profile&&make&&model&&<button style={{...btnG,flex:1,minHeight:52,fontSize:13}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
+          <button style={{...btnA,flex:1,minHeight:52,fontSize:13,fontWeight:700}} onClick={save}>{existing?"Save Changes":"Add Machine"}</button>
         </div>
       </div>
       {showWikiModal&&<WikiTrackerModal machine={{...existing,make,model}} profile={profile} onClose={()=>setShowWikiModal(false)}/>}
