@@ -88,7 +88,7 @@ function App(){
       return;
     }
     setSession(session);
-    if(first) setProfileChecked(false);
+    setProfileChecked(false);
 
     // profileData/companyData declared here so they're in scope for the announcements fetch below
     let profileData = null;
@@ -105,11 +105,12 @@ function App(){
         }
       } else if(session.user.is_anonymous){
         const guestSuffix=session.user.id.replace(/-/g,"").slice(0,6);
-        const {data:guest}=await supabase.from("profiles").upsert({
+        const {data:guest, error:guestErr}=await supabase.from("profiles").upsert({
           id:session.user.id,
           username:`guest_${guestSuffix}`,
           display_name:"Guest",
         },{onConflict:"id"}).select().single();
+        if(guestErr) throw guestErr;
         profileData = guest;
         setProfile(guest||null);
       } else {
@@ -117,13 +118,15 @@ function App(){
         const rawUsername = session.user.user_metadata?.username || "";
         const username = rawUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g,"").slice(0,20)
           || `user_${session.user.id.replace(/-/g,"").slice(0,6)}`;
-        const {data:autoProfile} = await supabase.from("profiles").upsert({
+        const {data:autoProfile, error:autoErr} = await supabase.from("profiles").upsert({
           id: session.user.id,
           username,
         },{onConflict:"id"}).select().single();
+        if(autoErr) throw autoErr;
         profileData = autoProfile;
         setProfile(autoProfile||null);
       }
+      if(!profileData && first) throw new Error("Profile unavailable");
     } catch(e){ if(first){ setProfile(null); setError("Could not load your profile. Please refresh the page."); } }
     setProfileChecked(true);
     setAuthChecked(true);
