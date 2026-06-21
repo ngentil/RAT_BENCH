@@ -344,6 +344,7 @@ Stripe
 | Author attribution | ✅ | wiki_revisions.author_id | Enthusiast+ |
 | Admin delete any wiki entry | ✅ | VITE_ADMIN_EMAIL env var check in WikiEntryPage, deleteWikiEntry() | Admin only |
 | Per-user sample wiki entries (Honda GX200, Husqvarna 455 Rancher, Yamaha YZ250) | ✅ | seedSampleWikiEntries() in wiki.js — seeded on first wiki visit (gate: profiles.preferences.rat_wiki_seeded); each user gets their own copies (slug: {base}-sample-{uid8}); is_sample + sample_owner_id columns on wiki_entries; users see only their own samples + global non-sample entries; "Remove Sample" delete button on own samples; run supabase/wiki_sample_entries.sql first. Re-seed regression fix: WikiHomePage checks localStorage rat_wiki_seeded as fallback before seeding, migrates it to DB prefs and removes LS key on first load | Free |
+| Wiki bulk import scripts | ✅ | scripts/wiki-import/ — three Node.js ESM scripts for bulk-populating the wiki from free public databases: nhtsa.mjs (NHTSA VPIC API → 100k+ vehicle/motorcycle make+model skeletons, no download needed, rate-limited to ~8 req/sec); kaggle-motos.mjs (Kaggle CSV → ~10k motorcycles with full engine specs: bore/stroke/compression/cooling/tyres/brakes); epa-engines.mjs (EPA NRSI CSV → certified small engines: Honda GX/GC, Briggs & Stratton, Kawasaki FJ/FX, Kohler, Yamaha etc.); all scripts idempotent (skip by slug), batch-insert 500 at a time, support --dry-run and --limit=N; require SUPABASE_SERVICE_KEY in .env | Admin only |
 
 ---
 
