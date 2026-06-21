@@ -265,7 +265,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto"}}>
           <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
             <button onClick={()=>setTileOpen(null)} style={{...btnA,width:"100%",marginBottom:8,fontSize:12,background:ACC,borderColor:ACC,color:"#000",fontWeight:700}}>✕ Close</button>
-            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen/>
+            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse/>
           </div>
         </div>
       ):null;})()}

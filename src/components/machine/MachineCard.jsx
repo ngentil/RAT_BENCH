@@ -15,7 +15,7 @@ const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen}){
+function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse}){
   const [open,setOpen]=useState(!!initialOpen);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -253,7 +253,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
                   {m.name}
                   {timerRunning&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,marginLeft:7,verticalAlign:"middle"}}/>}
                 </div>
-                <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:2,userSelect:"none"}}>{open?"▲":"▼"}</span>
+                {!hideCollapse&&<span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:2,userSelect:"none"}}>{open?"▲":"▼"}</span>}
               </div>
               {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
                 <div style={{fontSize:11,color:MUT,marginTop:3,lineHeight:1.4}}>
