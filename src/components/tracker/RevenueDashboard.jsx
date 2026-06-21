@@ -1,7 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, btnA, btnG, sm } from '../../lib/styles';
 import { SL } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import { canUse, effectiveTier } from '../../lib/gates';
+import { getPref } from '../../lib/db/preferences';
 import { mIcon, getClosedBookingFee } from '../../lib/helpers';
 import { getClosedBookings } from '../../lib/db/bookings';
 
@@ -158,10 +160,10 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
         <div style={{ fontSize: 28 }}>📊</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Revenue Dashboard</div>
         <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Track billable hours, revenue, and work sessions across all machines. Available on the Enthusiast plan and above.
+          Track your billable hours and see what you're actually making per machine. Worth it once you're charging for your time.
         </div>
         <button onClick={onGoToBilling} style={{ ...btnA, ...sm, color: "#fff" }}>
-          View Plans
+          Upgrade to Enthusiast →
         </button>
       </div>
     );
@@ -179,6 +181,7 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
           ))}
         </div>
       </div>
+      <TabGuide storageKey="rat_tut_revenue" variant="info" title="your revenue" lines={["log jobs with time + parts in Tracker","earnings flow here — filter by week · month · all"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_revenue",false)} />
 
       {period === "custom" && (
         <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>

@@ -1,8 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
-import { mIcon, getStorageStatus } from '../../lib/helpers';
+import TabGuide from '../ui/TabGuide';
+import { mIcon, getStorageStatus, fmtMoney } from '../../lib/helpers';
+import { getPref } from '../../lib/db/preferences';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
+import { deletePhoto } from '../../lib/storage';
 import { effectiveTier, canUse } from '../../lib/gates';
 import { getActiveBooking } from '../../lib/db/bookings';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -21,7 +24,6 @@ function escHtml(s) {
   return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-function fmtMoney(n) { return "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
 
 async function exportClientInvoice(client, linked, company, storagePolicyEnabled) {
   const rate = company?.hourly_rate || 0;
@@ -144,6 +146,8 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
 
   const deleteClient = async (id) => {
     if (!confirm("Delete this client? Machines linked to them will be unlinked.")) return;
+    const client = clients.find(c => c.id === id);
+    (client?.photos || []).forEach(url => deletePhoto(url));
     await deleteClientApi(id).catch(() => {});
     setClients(prev => prev.filter(c => c.id !== id));
     const toUnlink = machines.filter(m => m.clientId === id);
@@ -204,9 +208,10 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
         <SL t="Clients" />
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{ fontSize: 9, color: MUT }}>{clients.length} client{clients.length !== 1 ? "s" : ""}</span>
-          <button onClick={openNew} style={{ ...btnA, ...sm }}>+ Add Client</button>
+          <button onClick={openNew} style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}>+ Add</button>
         </div>
       </div>
+      <TabGuide storageKey="rat_tut_clients" title="start here" lines={["tap + Add Client to save customer details","link machines to clients for invoicing"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_clients",false)} />
 
       {clients.length > 0 && (
         <input

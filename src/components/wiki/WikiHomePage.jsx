@@ -1,43 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
-import { searchWiki } from '../../lib/wiki';
+import { searchWiki, seedSampleWikiEntries } from '../../lib/wiki';
+import { getPref, savePref } from '../../lib/db/preferences';
 import { WikiHeader } from './WikiEntryPage';
 
-// onSelect(slug) — called when user clicks an entry.
-// In standalone mode (wiki.ratbench.net) this is undefined and <a> tags handle navigation.
-// In embedded mode (app Wiki tab) the parent passes onSelect to navigate inline.
-function WikiHomePage({ onSelect, embedded = false }) {
+function WikiHomePage({ onSelect, embedded = false, profile }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [recent, setRecent] = useState([]);
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    searchWiki("").then(r => setRecent(r || []));
-  }, []);
+    if (!profile?.id) return;
+    const dbSeeded = getPref(profile, "rat_wiki_seeded", false);
+    const lsSeeded = localStorage.getItem('rat_wiki_seeded') === '1';
+    if (lsSeeded && !dbSeeded) {
+      savePref(profile.id, "rat_wiki_seeded", true);
+      localStorage.removeItem('rat_wiki_seeded');
+      searchWiki("", profile.id).then(r => setRecent(r || []));
+    } else if (!dbSeeded && !lsSeeded) {
+      seedSampleWikiEntries(profile).then(() => {
+        savePref(profile.id, "rat_wiki_seeded", true);
+        searchWiki("", profile.id).then(r => setRecent(r || []));
+      });
+    } else {
+      searchWiki("", profile.id).then(r => setRecent(r || []));
+    }
+  }, [profile?.id]);
 
   useEffect(() => {
     if (!query.trim()) { setResults([]); return; }
     const t = setTimeout(async () => {
       setSearching(true);
-      const r = await searchWiki(query);
+      const r = await searchWiki(query, profile?.id);
       setResults(r || []);
       setSearching(false);
     }, 300);
     return () => clearTimeout(t);
-  }, [query]);
+  }, [query, profile?.id]);
 
   const list = query.trim() ? results : recent;
 
   const EntryRow = ({ e }) => {
     const inner = (
-      <div style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + ACC, padding: "12px 16px", borderRadius: 2, cursor: "pointer" }}>
+      <div style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + (e.is_sample ? "#555" : ACC), padding: "12px 16px", borderRadius: 2, cursor: "pointer" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{e.make} <span style={{ color: ACC }}>{e.model}</span></div>
-          {e.year && <span style={{ fontSize: 9, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{e.year}</span>}
+          <div style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{e.make} <span style={{ color: e.is_sample ? "#888" : ACC }}>{e.model}</span></div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {e.is_sample && <span style={{ fontSize: 7, color: "#666", border: "1px solid #333", padding: "1px 5px", borderRadius: 2, letterSpacing: "0.1em", textTransform: "uppercase" }}>sample</span>}
+            {e.year && <span style={{ fontSize: 9, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{e.year}</span>}
+          </div>
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-          {e.type && <span style={{ fontSize: 8, color: ACC, background: ACC+"12", border: "1px solid "+ACC+"33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{e.type}</span>}
+          {e.type && <span style={{ fontSize: 8, color: e.is_sample ? "#666" : ACC, background: (e.is_sample ? "#333" : ACC) + "12", border: "1px solid " + (e.is_sample ? "#333" : ACC) + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{e.type}</span>}
           <span style={{ fontSize: 8, color: MUT, marginLeft: "auto" }}>👁 {e.view_count || 0}</span>
         </div>
       </div>

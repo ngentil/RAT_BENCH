@@ -137,15 +137,15 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
   useEffect(() => {
     if (session?.user?.id) getConsumables().then(setConsumables).catch(() => {});
   }, [session?.user?.id]);
-  const isOwner=company&&company.owner_id===session?.user?.id;
-  const isAdmin=isOwner; // kept for backward compat in JSX below
-  const canMultiUser=["team","business"].includes(effectiveTier(profile,company));
+  const canMultiUser=effectiveTier(profile,company)==="business";
   const [myRole,setMyRole]=useState(null);
   useEffect(()=>{
     if(!company?.id||!session?.user?.id) return;
     supabase.from("company_members").select("role").eq("company_id",company.id).eq("user_id",session.user.id).single()
       .then(({data})=>setMyRole(data?.role||null));
   },[company?.id,session?.user?.id]);
+  const isOwner=myRole==="owner";
+  const isAdmin=isOwner; // kept for backward compat in JSX below
   const canProvision=canMultiUser&&(isOwner||myRole==="admin");
   const [mode,setMode]=useState("view"); // view|create|join
   const [err,setErr]=useState("");
@@ -167,9 +167,6 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
   const [country,setCountry]=useState("Australia");
   const [industry,setIndustry]=useState("");
   const [logo,setLogo]=useState("");
-  const [hourlyRate,setHourlyRate]=useState("");
-  const [taxRate,setTaxRate]=useState("");
-  const [taxLabel,setTaxLabel]=useState("");
 
   // Populate fields when editing existing company
   useEffect(()=>{
@@ -179,9 +176,6 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
       setAddress(company.address||"");setCity(company.city||"");setState(company.state||"");
       setPostcode(company.postcode||"");setCountry(company.country||"Australia");
       setIndustry(company.industry||"");setLogo(company.logo||"");
-      setHourlyRate(company.hourly_rate!=null?String(company.hourly_rate):"");
-      setTaxRate(company.tax_rate!=null?String(company.tax_rate):"");
-      setTaxLabel(company.tax_label||"");
     }
   },[company?.id]);
 
@@ -195,7 +189,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
   const saveCompany=async()=>{
     if(!name.trim()){setErr("Company name is required.");return;}
     setSaving(true);setErr("");setSaved(false);
-    const fields={name:name.trim(),trading_name:tradingName.trim()||null,abn:abn.trim()||null,phone:phone.trim()||null,email:email.trim()||null,website:website.trim()||null,address:address.trim()||null,city:city.trim()||null,state:state.trim()||null,postcode:postcode.trim()||null,country:country||null,industry:industry||null,logo:logo||null,hourly_rate:hourlyRate!==""?parseFloat(hourlyRate):null,tax_rate:taxRate!==""?parseFloat(taxRate):null,tax_label:taxLabel.trim()||null};
+    const fields={name:name.trim(),trading_name:tradingName.trim()||null,abn:abn.trim()||null,phone:phone.trim()||null,email:email.trim()||null,website:website.trim()||null,address:address.trim()||null,city:city.trim()||null,state:state.trim()||null,postcode:postcode.trim()||null,country:country||null,industry:industry||null,logo:logo||null};
     try{
       if(company){
         const updated=await updateCompany(company.id,fields);
@@ -223,7 +217,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
 
   const handleLeave=async()=>{
     if(!confirm("Leave this organisation? Your machines will remain."))return;
-    await leaveCompany(company.id,session.user.id);
+    await leaveCompany(company.id);
     setCompany(null);setProfile(prev=>({...prev,company_id:null}));
   };
 
@@ -267,14 +261,6 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
         <div style={col}><div style={lbl}>City / Town</div><input style={inp} value={city} onChange={e=>setCity(e.target.value)}/></div>
         {cfg.state&&<div style={col}><div style={lbl}>{cfg.state}</div><input style={inp} value={state} onChange={e=>setState(e.target.value)}/></div>}
         <div style={col}><div style={lbl}>{cfg.postcode}</div><input style={inp} value={postcode} onChange={e=>setPostcode(e.target.value)}/></div>
-      </div>
-      <div style={{marginTop:4,paddingTop:14,borderTop:"1px solid #1a1a1a"}}>
-        <div style={{fontSize:8,color:ACC,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8,fontWeight:700}}>Billing Rates</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-          <div style={col}><div style={lbl}>Labour Rate ($/hr)</div><input style={inp} type="number" min="0" step="0.5" value={hourlyRate} onChange={e=>setHourlyRate(e.target.value)} placeholder="e.g. 85"/></div>
-          <div style={col}><div style={lbl}>Tax Rate (%)</div><input style={inp} type="number" min="0" max="100" step="0.5" value={taxRate} onChange={e=>setTaxRate(e.target.value)} placeholder="e.g. 10"/></div>
-          <div style={col}><div style={lbl}>Tax Label</div><input style={inp} value={taxLabel} onChange={e=>setTaxLabel(e.target.value)} placeholder="e.g. GST"/></div>
-        </div>
       </div>
     </>
   );
@@ -362,7 +348,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
           <div style={secHd}>Asset Provisioning</div>
           <div style={{fontSize:10,color:MUT,lineHeight:1.6,marginBottom:14}}>Grant org members access to your assets. Revoke at any time.</div>
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Machines</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Machines</div>
           <AssetProvisioningPanel
             assets={(machines||[]).filter(m=>m.companyId===company?.id)}
             emptyMsg="No org machines to provision. Add machines and tag them to this organisation from the Tracker tab."
@@ -372,7 +358,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeMachinePermission}
           />
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Vehicles</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Vehicles</div>
           <AssetProvisioningPanel
             assets={vehicles||[]}
             emptyMsg="No vehicles to provision yet. Add vehicles from the Vehicles tab."
@@ -382,7 +368,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeVehiclePermission}
           />
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Equipment</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Equipment</div>
           <AssetProvisioningPanel
             assets={equipment||[]}
             emptyMsg="No equipment to provision yet. Add equipment from the Equipment tab."
@@ -392,7 +378,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeEquipmentPermission}
           />
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Tools</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Tools</div>
           <AssetProvisioningPanel
             assets={tools||[]}
             emptyMsg="No tools to provision yet. Add tools from the Tools tab."
@@ -402,7 +388,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
             revokeFn={revokeToolPermission}
           />
 
-          <div style={{fontSize:8,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Consumables</div>
+          <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginTop:14,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Consumables</div>
           <AssetProvisioningPanel
             assets={consumables||[]}
             emptyMsg="No consumables to provision yet. Add supplies from the Consumables tab."

@@ -1,14 +1,18 @@
 import { supabase } from '../supabase';
 import { toDb, fromDb } from './transforms';
+import { deletePhoto } from '../storage';
 
 export async function getMachines() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: own, error } = await supabase.from("machines").select("*").order("created_at", { ascending: false });
+  // Fetch own machines and permission list in parallel
+  const [{ data: own, error }, { data: perms }] = await Promise.all([
+    supabase.from("machines").select("*").order("created_at", { ascending: false }).limit(500),
+    supabase.from("machine_permissions").select("machine_id").eq("user_id", user.id),
+  ]);
   if (error) { console.error("getMachines:", error); return []; }
 
-  const { data: perms } = await supabase.from("machine_permissions").select("machine_id").eq("user_id", user.id);
   let provisioned = [];
   if (perms?.length) {
     const ids = perms.map(p => p.machine_id);
@@ -40,12 +44,40 @@ export async function revokeMachinePermission(machineId, userId) {
 
 export async function upsertMachine(machine) {
   const { data: { user } } = await supabase.auth.getUser();
-  const row = { ...toDb(machine), user_id: user?.id };
-  const { error } = await supabase.from("machines").upsert(row, { onConflict: "id" });
-  if (error) { console.error("upsertMachine:", error); throw error; }
+  const row = toDb(machine);
+  if (!machine.id) {
+    row.user_id = user?.id;
+    const { error } = await supabase.from("machines").insert(row);
+    if (error) { console.error("upsertMachine:", error); throw error; }
+  } else {
+    // Strip user_id so ownership can't be transferred via UPDATE.
+    // Use .select("id") to detect 0-row matches (new machine with pre-generated UUID)
+    // and fall back to INSERT in that case.
+    const { user_id: _uid, ...updateRow } = row;
+    const { data: updated, error } = await supabase.from("machines").update(updateRow).eq("id", row.id).select("id");
+    if (error) { console.error("upsertMachine:", error); throw error; }
+    if (!updated?.length) {
+      row.user_id = user?.id;
+      const { error: ie } = await supabase.from("machines").insert(row);
+      if (ie) { console.error("upsertMachine:", ie); throw ie; }
+    }
+  }
 }
 
 export async function deleteMachineApi(id) {
-  const { error } = await supabase.from("machines").delete().eq("id", id);
+  try {
+    const [{ data: mach }, { data: svc }] = await Promise.all([
+      supabase.from('machines').select('photos, i_p_photos, e_p_photos').eq('id', id).single(),
+      supabase.from('services').select('plug_photo, job_photos').eq('machine_id', id),
+    ]);
+    const urls = [
+      ...(mach?.photos || []),
+      ...(mach?.i_p_photos || []),
+      ...(mach?.e_p_photos || []),
+      ...(svc || []).flatMap(s => [...(s.job_photos || []), ...(s.plug_photo ? [s.plug_photo] : [])]),
+    ];
+    urls.forEach(url => deletePhoto(url));
+  } catch (e) { console.warn('deleteMachine photo cleanup:', e); }
+  const { error } = await supabase.from('machines').delete().eq('id', id);
   if (error) console.error("deleteMachine:", error);
 }

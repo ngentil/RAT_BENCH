@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
+import { deletePhoto } from '../storage';
 
 function toDb(t) {
   return {
@@ -69,15 +71,12 @@ export async function getTools() {
 
   await migrateLocalTools(user.id);
 
-  const { data: own } = await supabase
-    .from('tools').select('*').eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  const { data: perms } = await supabase
-    .from('asset_permissions')
-    .select('asset_id')
-    .eq('user_id', user.id)
-    .eq('asset_type', 'tool');
+  const [{ data: own }, { data: perms }] = await Promise.all([
+    supabase.from('tools').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(500),
+    supabase.from('asset_permissions').select('asset_id')
+      .eq('user_id', user.id).eq('asset_type', 'tool'),
+  ]);
 
   let provisioned = [];
   if (perms?.length) {
@@ -105,13 +104,23 @@ export async function saveToolItem(tool) {
     if (error) throw error;
     return fromDb({ ...row, id: data.id, created_at: row.updated_at });
   } else {
-    const { error } = await supabase.from('tools').update(row).eq('id', row.id);
+    const { user_id: _uid, ...updateRow } = row;
+    const { error } = await supabase.from('tools').update(updateRow).eq('id', row.id);
     if (error) throw error;
+    await syncAssignmentChildName('tool', row.id, row.name);
     return fromDb(row);
   }
 }
 
 export async function deleteToolItem(id) {
+  const { data } = await supabase.from('tools').select('photos, service_log').eq('id', id).single();
+  (data?.photos || []).forEach(url => deletePhoto(url));
+  (data?.service_log || []).forEach(entry => {
+    if (entry.plugPhoto) deletePhoto(entry.plugPhoto);
+    (entry.jobPhotos || []).forEach(url => deletePhoto(url));
+  });
+  await unassignAllByChild('tool', id);
+  await supabase.from('asset_permissions').delete().eq('asset_type', 'tool').eq('asset_id', id);
   const { error } = await supabase.from('tools').delete().eq('id', id);
   if (error) throw error;
 }

@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import TabGuide from '../ui/TabGuide';
+import { getPref, savePref } from '../../lib/db/preferences';
 import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
 import { getNextInvoiceNumber } from '../../lib/db/invoices';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
-import { SL, Empty, SkullRating, Divider } from '../ui/shared';
+import { SL, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
 import StatusBadge from '../ui/StatusBadge';
 import { effectiveTier } from '../../lib/gates';
+import UpgradeBanner from '../ui/UpgradeBanner';
 
 const ORANGE = "#e8a20a";
 
@@ -200,7 +203,7 @@ td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;vertical-alig
 
 <div class="top">
   <div class="co-side">
-    ${co.logo ? `<img class="co-logo" src="${co.logo}" alt=""/>` : ''}
+    ${co.logo ? `<img class="co-logo" src="${escHtml(co.logo)}" alt=""/>` : ''}
     <div class="co-name">${escHtml(co.name || 'My Business')}</div>
     ${co.trading_name ? `<div class="co-sub" style="margin-bottom:2px">${escHtml(co.trading_name)}</div>` : ''}
     <div class="co-sub">
@@ -265,8 +268,8 @@ ${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to
 }
 
 const timerSel = {
-  width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2,
-  color: TXT, fontSize: 10, padding: "5px 6px", fontFamily: "'IBM Plex Mono',monospace",
+  width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3,
+  color: TXT, fontSize: 13, padding: "12px 10px", fontFamily: "'IBM Plex Mono',monospace",
   cursor: "pointer", outline: "none",
 };
 
@@ -332,8 +335,8 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
         >
           {log.length} session{log.length !== 1 ? "s" : ""} · {fmtDuration(totalSecs)} total
         </span>
-        <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote')} style={{ ...btnG, ...sm, fontSize: 8 }}>Quote</button>
-        <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice')} style={{ ...btnA, ...sm, fontSize: 8 }}>Invoice</button>
+        <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote')} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Quote</button>
+        <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice')} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Invoice</button>
       </div>
       {expanded && (
         <div style={{ marginTop: 8 }}>
@@ -413,6 +416,7 @@ function PartsSection({ machine, onUpdate, userId }) {
   const [inv, setInv]             = useState([]);
   const [cons, setCons]           = useState([]);
   const [search, setSearch]       = useState("");
+  const [saving, setSaving]       = useState(false);
 
   useEffect(() => { getInventory(userId).then(setInv); }, [userId]);
   useEffect(() => { getConsumables().then(setCons); }, []);
@@ -428,7 +432,7 @@ function PartsSection({ machine, onUpdate, userId }) {
   const totalCost    = parts.reduce((s,p)=>(s+(parseFloat(p.buyPrice)||0)*(Number(p.qty)||1)),0);
 
   const inpS = { background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, outline:"none", boxSizing:"border-box", width:"100%" };
-  const L = ({ t }) => <div style={{ fontSize:8, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{t}</div>;
+  const L = ({ t }) => <div style={{ fontSize:10, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{t}</div>;
 
   // Combined search list for the picker
   const pickerList = pickerSource === "part" ? inv : cons;
@@ -444,7 +448,7 @@ function PartsSection({ machine, onUpdate, userId }) {
   );
 
   const useFromInventory = async () => {
-    if (!selected) return;
+    if (!selected || saving) return;
     const useQty = Math.max(1, parseInt(qty) || 1);
     const entry = {
       id: crypto.randomUUID(),
@@ -458,27 +462,45 @@ function PartsSection({ machine, onUpdate, userId }) {
       sellPrice: parseFloat(selected.sellPrice) || 0,
       usedAt: new Date().toISOString(),
     };
+    const original = machine;
     const updated = { ...machine, parts: [...parts, entry] };
+    setSaving(true);
     onUpdate(updated);
-    await upsertMachine(updated);
-    if (pickerSource === "part") {
-      setInv(await adjustStock(userId, selected.id, -useQty));
-    } else {
-      const updatedItem = await adjustConsumableQty(selected.id, -useQty);
-      setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+    try {
+      await upsertMachine(updated);
+      if (pickerSource === "part") {
+        setInv(await adjustStock(userId, selected.id, -useQty));
+      } else {
+        const updatedItem = await adjustConsumableQty(selected.id, -useQty);
+        setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+      }
+      setMode(null); setSelected(null); setQty("1"); setSearch("");
+    } catch (e) {
+      console.error("useFromInventory:", e);
+      onUpdate(original);
+    } finally {
+      setSaving(false);
     }
-    setMode(null); setSelected(null); setQty("1"); setSearch("");
   };
 
   const addStandalone = async () => {
-    if (!saForm.name.trim()) return;
+    if (!saForm.name.trim() || saving) return;
     const entry = { ...saForm, id: crypto.randomUUID(), qty: parseInt(saForm.qty)||1, buyPrice: parseFloat(saForm.buyPrice)||0, sellPrice: parseFloat(saForm.sellPrice)||0, usedAt: new Date().toISOString() };
     if (saMatchedInvId) { entry.inventoryId = saMatchedInvId; entry.sourceType = "part"; }
+    const original = machine;
     const updated = { ...machine, parts: [...parts, entry] };
+    setSaving(true);
     onUpdate(updated);
-    await upsertMachine(updated);
-    if (saMatchedInvId) setInv(await adjustStock(userId, saMatchedInvId, -(parseInt(saForm.qty)||1)));
-    setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" }); setSaSuggestions([]); setSaMatchedInvId(null);
+    try {
+      await upsertMachine(updated);
+      if (saMatchedInvId) setInv(await adjustStock(userId, saMatchedInvId, -(parseInt(saForm.qty)||1)));
+      setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" }); setSaSuggestions([]); setSaMatchedInvId(null);
+    } catch (e) {
+      console.error("addStandalone:", e);
+      onUpdate(original);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onSaNameChange = (val) => {
@@ -498,15 +520,21 @@ function PartsSection({ machine, onUpdate, userId }) {
   const remove = async (idx) => {
     if (!confirm("Remove this part usage? Stock will be returned if it came from inventory.")) return;
     const p = parts[idx];
+    const original = machine;
     const updated = { ...machine, parts: parts.filter((_,i) => i !== idx) };
     onUpdate(updated);
-    await upsertMachine(updated);
-    const sourceType = p.sourceType || (p.inventoryId ? "part" : null);
-    if (sourceType === "consumable" && p.consumableId) {
-      const updatedItem = await adjustConsumableQty(p.consumableId, Number(p.qty) || 1);
-      setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
-    } else if (p.inventoryId) {
-      setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+    try {
+      await upsertMachine(updated);
+      const sourceType = p.sourceType || (p.inventoryId ? "part" : null);
+      if (sourceType === "consumable" && p.consumableId) {
+        const updatedItem = await adjustConsumableQty(p.consumableId, Number(p.qty) || 1);
+        setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+      } else if (p.inventoryId) {
+        setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+      }
+    } catch (e) {
+      console.error("remove part:", e);
+      onUpdate(original);
     }
   };
 
@@ -516,12 +544,12 @@ function PartsSection({ machine, onUpdate, userId }) {
         <div style={{ fontSize:9, color:ACC, letterSpacing:"0.12em", textTransform:"uppercase", fontWeight:700 }}>
           Parts &amp; Consumables {parts.length > 0 && `(${parts.length})`}
           {totalRevenue > 0 && <span style={{ color:GRN, marginLeft:8 }}>${totalRevenue.toFixed(2)}</span>}
-          {totalCost > 0 && totalRevenue > 0 && <span style={{ color:MUT, marginLeft:4, fontSize:8 }}>cost ${totalCost.toFixed(2)}</span>}
+          {totalCost > 0 && totalRevenue > 0 && <span style={{ color:MUT, marginLeft:4, fontSize:10 }}>cost ${totalCost.toFixed(2)}</span>}
         </div>
         {!mode && (
           <div style={{ display:"flex", gap:5 }}>
-            {(inv.length > 0 || cons.length > 0) && <button onClick={() => { setMode("inv"); setSearch(""); setSelected(null); }} style={{ ...btnA, ...sm, fontSize:8 }}>Use from Stock</button>}
-            <button onClick={() => setMode("standalone")} style={{ ...btnG, ...sm, fontSize:8 }}>+ One-off</button>
+            {(inv.length > 0 || cons.length > 0) && <button onClick={() => { setMode("inv"); setSearch(""); setSelected(null); }} style={{ ...btnA, ...sm, fontSize:10 }}>Use from Stock</button>}
+            <button onClick={() => setMode("standalone")} style={{ ...btnG, ...sm, fontSize:10 }}>+ One-off</button>
           </div>
         )}
       </div>
@@ -534,7 +562,7 @@ function PartsSection({ machine, onUpdate, userId }) {
             <div style={{ display:"flex", gap:0 }}>
               {[["part","🔩 Parts"],["consumable","📦 Consumables"]].map(([v,l], i) => (
                 <button key={v} onClick={() => { setPickerSource(v); setSearch(""); setSelected(null); }}
-                  style={{ ...btnG, ...sm, fontSize:8, borderRadius: i===0?"2px 0 0 2px":"0 2px 2px 0", borderRight: i===0?"none":undefined, ...(pickerSource===v?{background:ACC+"18",color:ACC}:{}) }}>
+                  style={{ ...btnG, ...sm, fontSize:10, borderRadius: i===0?"2px 0 0 2px":"0 2px 2px 0", borderRight: i===0?"none":undefined, ...(pickerSource===v?{background:ACC+"18",color:ACC}:{}) }}>
                   {l}
                 </button>
               ))}
@@ -549,11 +577,11 @@ function PartsSection({ machine, onUpdate, userId }) {
                   style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 8px", borderRadius:2, cursor:"pointer", background: selected?.id===i.id ? ACC+"22" : "transparent", border:"1px solid "+(selected?.id===i.id ? ACC+"55" : "transparent"), marginBottom:3 }}>
                   <div>
                     <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
-                    <div style={{ fontSize:8, color:MUT }}>{[i.category, i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
+                    <div style={{ fontSize:10, color:MUT }}>{[i.category, i.brand, i.partNumber].filter(Boolean).join(" · ")}</div>
                   </div>
                   <div style={{ textAlign:"right", flexShrink:0 }}>
                     <div style={{ fontSize:10, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} {pickerSource==="part"?"in stock":i.unit||"in stock"}</div>
-                    {i.sellPrice && <div style={{ fontSize:8, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
+                    {i.sellPrice && <div style={{ fontSize:10, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
                   </div>
                 </div>
               );
@@ -564,10 +592,10 @@ function PartsSection({ machine, onUpdate, userId }) {
             <div style={{ display:"flex", gap:8, alignItems:"center", padding:"8px", background:"#0a0a0a", borderRadius:2, marginBottom:8 }}>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{selected.name}</div>
-                <div style={{ fontSize:8, color:MUT }}>Cost ${(parseFloat(selected.buyPrice)||0).toFixed(2)} · Sell ${(parseFloat(selected.sellPrice)||0).toFixed(2)}</div>
+                <div style={{ fontSize:10, color:MUT }}>Cost ${(parseFloat(selected.buyPrice)||0).toFixed(2)} · Sell ${(parseFloat(selected.sellPrice)||0).toFixed(2)}</div>
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                <div style={{ fontSize:8, color:MUT }}>Qty</div>
+                <div style={{ fontSize:10, color:MUT }}>Qty</div>
                 <input style={{ ...inpS, width:50, textAlign:"center" }} type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)}/>
               </div>
             </div>
@@ -588,7 +616,7 @@ function PartsSection({ machine, onUpdate, userId }) {
               <L t="Name *"/>
               <div style={{ position:"relative" }}>
                 <input style={inpS} value={saForm.name} onChange={e=>onSaNameChange(e.target.value)} placeholder="e.g. Air filter" autoFocus onBlur={()=>setTimeout(()=>setSaSuggestions([]),150)}/>
-                {saMatchedInvId && (() => { const i=inv.find(x=>x.id===saMatchedInvId); const s=Number(i?.stockQty)||0; return i ? <span style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",fontSize:8,color:s>0?GRN:RED,letterSpacing:"0.06em",pointerEvents:"none"}}>{s} in stock</span> : null; })()}
+                {saMatchedInvId && (() => { const i=inv.find(x=>x.id===saMatchedInvId); const s=Number(i?.stockQty)||0; return i ? <span style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",fontSize:10,color:s>0?GRN:RED,letterSpacing:"0.06em",pointerEvents:"none"}}>{s} in stock</span> : null; })()}
                 {saSuggestions.length > 0 && (
                   <div style={{ position:"absolute", top:"100%", left:0, right:0, background:SURF, border:"1px solid "+ACC+"55", borderRadius:2, zIndex:50, maxHeight:180, overflowY:"auto" }}>
                     {saSuggestions.map(i => {
@@ -598,11 +626,11 @@ function PartsSection({ machine, onUpdate, userId }) {
                           onMouseEnter={e=>e.currentTarget.style.background=BRD} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                           <div>
                             <div style={{ fontSize:10, color:TXT, fontWeight:700 }}>{i.name}</div>
-                            {(i.brand||i.partNumber) && <div style={{ fontSize:8, color:MUT }}>{[i.brand,i.partNumber].filter(Boolean).join(" · ")}</div>}
+                            {(i.brand||i.partNumber) && <div style={{ fontSize:10, color:MUT }}>{[i.brand,i.partNumber].filter(Boolean).join(" · ")}</div>}
                           </div>
                           <div style={{ textAlign:"right", flexShrink:0, marginLeft:10 }}>
                             <div style={{ fontSize:9, color:stockQty>0?GRN:RED, fontWeight:700 }}>{stockQty} in stock</div>
-                            {i.sellPrice && <div style={{ fontSize:8, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
+                            {i.sellPrice && <div style={{ fontSize:10, color:MUT }}>${parseFloat(i.sellPrice).toFixed(2)} ea</div>}
                           </div>
                         </div>
                       );
@@ -643,13 +671,13 @@ function PartsSection({ machine, onUpdate, userId }) {
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                 <span style={{ fontSize:10, color:TXT, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
-                {Number(p.qty)>1 && <span style={{ fontSize:8, color:MUT, flexShrink:0 }}>×{p.qty}</span>}
-                {p.partNumber && <span style={{ fontSize:8, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background: SURF, padding:"1px 4px", borderRadius:2, border:"1px solid " + BRD }}>{p.partNumber}</span>}
-                {(p.sourceType === "consumable" || p.consumableId) && <span style={{ fontSize:7, color:"#3a7bd5", letterSpacing:"0.06em" }}>CONS</span>}
-                {(p.sourceType === "part" || (!p.sourceType && p.inventoryId)) && <span style={{ fontSize:7, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
+                {Number(p.qty)>1 && <span style={{ fontSize:10, color:MUT, flexShrink:0 }}>×{p.qty}</span>}
+                {p.partNumber && <span style={{ fontSize:10, color:MUT, flexShrink:0, fontFamily:"'IBM Plex Mono',monospace", background: SURF, padding:"1px 4px", borderRadius:2, border:"1px solid " + BRD }}>{p.partNumber}</span>}
+                {(p.sourceType === "consumable" || p.consumableId) && <span style={{ fontSize:9, color:"#3a7bd5", letterSpacing:"0.06em" }}>CONS</span>}
+                {(p.sourceType === "part" || (!p.sourceType && p.inventoryId)) && <span style={{ fontSize:9, color:ACC, letterSpacing:"0.06em" }}>INV</span>}
               </div>
               {(rev > 0 || cost > 0) && (
-                <div style={{ fontSize:8, color:MUT }}>
+                <div style={{ fontSize:10, color:MUT }}>
                   {cost > 0 && <span>Cost ${cost.toFixed(2)}</span>}
                   {rev > 0  && <span style={{ color:GRN }}>{cost>0?" · ":""}Sell ${rev.toFixed(2)}</span>}
                   {rev > 0 && cost > 0 && <span style={{ color: rev-cost>=0?"#3d9e50":"#c94040" }}> ({rev-cost>=0?"+":""}${(rev-cost).toFixed(2)})</span>}
@@ -665,7 +693,7 @@ function PartsSection({ machine, onUpdate, userId }) {
 }
 
 function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
-  const t = machine.jobTimer || { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" };
+  const t = machine.jobTimers?.[0] || { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" };
 
   const getElapsed = () => {
     if (t.status === "running" && t.startedAt) {
@@ -703,9 +731,15 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   }, [t.status, t.startedAt, t.elapsed, t.duration]);
 
   const save = async (updates) => {
-    const updated = { ...machine, jobTimer: { ...t, ...updates } };
+    const original = machine;
+    const updated = { ...machine, jobTimers: [{ ...t, ...updates }] };
     onUpdate(updated);
-    await upsertMachine(updated);
+    try {
+      await upsertMachine(updated);
+    } catch (e) {
+      console.error("timer save:", e);
+      onUpdate(original);
+    }
   };
 
   const handleStart = async () => {
@@ -760,7 +794,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
       ...machine,
       status: "Complete",
       timeLog: [...(machine.timeLog || []), newEntry],
-      jobTimer: { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" },
+      jobTimers: [],
     };
     onUpdate(updated);
     await upsertMachine(updated);
@@ -778,7 +812,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
     const updated = {
       ...machine,
       timeLog: [...(machine.timeLog || []), newEntry],
-      jobTimer: { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" },
+      jobTimers: [],
     };
     onUpdate(updated);
     await upsertMachine(updated);
@@ -791,10 +825,8 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
 
   if (locked) {
     return (
-      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-        <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Job Timer</div>
-        <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6, marginBottom: 8 }}>🔒 Job timers require an Enthusiast subscription.</div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, fontSize: 8 }}>Upgrade</button>}
+      <div style={{ marginTop: 10 }}>
+        <UpgradeBanner text="Job timers require an Enthusiast subscription." onUpgrade={onGoToBilling} />
       </div>
     );
   }
@@ -816,21 +848,22 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   }
 
   if (t.status === "idle" && !t.duration) {
-    const tabStyle = (active) => ({
-      padding: "2px 8px", fontSize: 8, fontWeight: 700, letterSpacing: "0.07em",
-      textTransform: "uppercase", cursor: "pointer", border: "1px solid #333", fontFamily: "'IBM Plex Mono',monospace",
-      background: active ? ACC : "none", color: active ? "#000" : MUT,
-    });
+    const modeBtn = (key, label) => (
+      <button key={key} onClick={() => setMode(key)} style={{ flex: 1, padding: "14px 4px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer", border: "none", fontFamily: "'IBM Plex Mono',monospace", background: mode === key ? ACC+"22" : "transparent", color: mode === key ? ACC : "#555", borderBottom: "2px solid " + (mode === key ? ACC : "transparent") }}>
+        {label}
+      </button>
+    );
     return (
-      <div style={{ marginTop: 10, padding: "10px 12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", flex: 1 }}>Job Timer</div>
-          <button onClick={() => setMode("countdown")} style={{ ...tabStyle(mode === "countdown"), borderRadius: "2px 0 0 2px", borderRight: "none" }}>↓ Countdown</button>
-          <button onClick={() => setMode("countup")}   style={{ ...tabStyle(mode === "countup"),   borderRadius: "0", borderRight: "none" }}>↑ Count Up</button>
-          <button onClick={() => setMode("manual")}    style={{ ...tabStyle(mode === "manual"),    borderRadius: "0 2px 2px 0" }}>✎ Log</button>
+      <div style={{ marginTop: 10, padding: "12px", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ display: "flex", margin: "-12px -12px 14px", borderBottom: "1px solid #252525" }}>
+          {modeBtn("countdown", "↓ Countdown")}
+          <div style={{ width: 1, background: "#252525", flexShrink: 0 }} />
+          {modeBtn("countup", "↑ Count Up")}
+          <div style={{ width: 1, background: "#252525", flexShrink: 0 }} />
+          {modeBtn("manual", "✎ Log")}
         </div>
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 4 }}>JOB / TASK</div>
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" }}>Job / Task</div>
           <select style={timerSel} value={jobLabel} onChange={e => setJobLabel(e.target.value)}>
             <option value="">— select or leave blank —</option>
             {jobOptions.map(o => (
@@ -849,45 +882,41 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
         </div>
         {mode === "manual" ? (
           <div>
-            <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.08em", marginBottom: 6 }}>LOG TIME WITHOUT TIMER</div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.08em", marginBottom: 10, textTransform: "uppercase" }}>Log Time Without Timer</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
                 <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
-                  style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
-                <span style={{ fontSize: 9, color: MUT }}>h</span>
+                  style={{ flex: 1, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: TXT, fontSize: 20, padding: "10px 0", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 12, color: MUT }}>h</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
                 <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
-                  style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
-                <span style={{ fontSize: 9, color: MUT }}>m</span>
+                  style={{ flex: 1, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: TXT, fontSize: 20, padding: "10px 0", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 12, color: MUT }}>m</span>
               </div>
-              <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
-                style={{ background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: MUT, fontSize: 10, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", outline: "none" }} />
-              <button onClick={handleManualLog} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>+ Log Time</button>
             </div>
+            <input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)}
+              style={{ width: "100%", boxSizing: "border-box", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: MUT, fontSize: 13, padding: "11px 10px", fontFamily: "'IBM Plex Mono',monospace", outline: "none", marginBottom: 10 }} />
+            <button onClick={handleManualLog} disabled={!hours && !mins} style={{ ...btnA, width: "100%", padding: "14px", fontSize: 13, borderRadius: 3, opacity: (!hours && !mins) ? 0.4 : 1 }}>+ Log Time</button>
           </div>
         ) : mode === "countdown" ? (
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <input
-                type="number" min="0" max="99" placeholder="0"
-                value={hours} onChange={e => setHours(e.target.value)}
-                style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }}
-              />
-              <span style={{ fontSize: 9, color: MUT }}>h</span>
+          <div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+                <input type="number" min="0" max="99" placeholder="0" value={hours} onChange={e => setHours(e.target.value)}
+                  style={{ flex: 1, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: TXT, fontSize: 20, padding: "10px 0", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 12, color: MUT }}>h</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+                <input type="number" min="0" max="59" placeholder="0" value={mins} onChange={e => setMins(e.target.value)}
+                  style={{ flex: 1, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3, color: TXT, fontSize: 20, padding: "10px 0", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }} />
+                <span style={{ fontSize: 12, color: MUT }}>m</span>
+              </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <input
-                type="number" min="0" max="59" placeholder="0"
-                value={mins} onChange={e => setMins(e.target.value)}
-                style={{ width: 44, background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, color: TXT, fontSize: 11, padding: "4px 6px", fontFamily: "'IBM Plex Mono',monospace", textAlign: "center", outline: "none" }}
-              />
-              <span style={{ fontSize: 9, color: MUT }}>m</span>
-            </div>
-            <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, ...sm, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
+            <button onClick={handleStart} disabled={!hours && !mins} style={{ ...btnA, width: "100%", padding: "14px", fontSize: 13, borderRadius: 3, opacity: (!hours && !mins) ? 0.4 : 1 }}>▶ Start</button>
           </div>
         ) : (
-          <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Start</button>
+          <button onClick={handleStart} style={{ ...btnA, width: "100%", padding: "14px", fontSize: 13, borderRadius: 3 }}>▶ Start</button>
         )}
       </div>
     );
@@ -926,11 +955,11 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
           }} />
         </div>
       )}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {t.status === "running" && <button onClick={handlePause} style={{ ...btnG, ...sm }}>⏸ Pause</button>}
-        {t.status === "paused"  && <button onClick={handleStart} style={{ ...btnA, ...sm }}>▶ Resume</button>}
-        <button onClick={handleStop} style={{ ...btnG, ...sm }}>⏹ Reset</button>
-        <button onClick={handleFinish} style={{ ...btnA, ...sm, background: GRN, borderColor: GRN, color: "#000" }}>✓ Finish Job</button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {t.status === "running" && <button onClick={handlePause} style={{ ...btnG, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>⏸ Pause</button>}
+        {t.status === "paused"  && <button onClick={handleStart} style={{ ...btnA, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>▶ Resume</button>}
+        <button onClick={handleStop} style={{ ...btnG, padding: "13px 16px", fontSize: 12, borderRadius: 3 }}>⏹ Reset</button>
+        <button onClick={handleFinish} style={{ ...btnA, flex: 2, padding: "13px", fontSize: 13, borderRadius: 3, background: GRN, borderColor: GRN, color: "#000", fontWeight: 700 }}>✓ Finish Job</button>
       </div>
     </div>
   );
@@ -943,20 +972,20 @@ function MachineNotes({ machine, onSave }) {
 
   if (editing) {
     return (
-      <div style={{ marginBottom: 8 }}>
-        <textarea style={inpS} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Job notes…" autoFocus />
-        <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-          <button onClick={() => { onSave(draft); setEditing(false); }} style={{ ...btnA, ...sm, fontSize: 8 }}>Save</button>
-          <button onClick={() => { setDraft(machine.notes || ""); setEditing(false); }} style={{ ...btnG, ...sm, fontSize: 8 }}>Cancel</button>
+      <div style={{ marginBottom: 10 }}>
+        <textarea style={{ ...inpS, fontSize: 13, padding: "12px", minHeight: 80 }} value={draft} onChange={e => setDraft(e.target.value)} placeholder="Job notes…" autoFocus />
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <button onClick={() => { onSave(draft); setEditing(false); }} style={{ ...btnA, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>Save</button>
+          <button onClick={() => { setDraft(machine.notes || ""); setEditing(false); }} style={{ ...btnG, flex: 1, padding: "13px", fontSize: 12, borderRadius: 3 }}>Cancel</button>
         </div>
       </div>
     );
   }
   return (
-    <div style={{ marginBottom: 8 }}>
+    <div style={{ marginBottom: 10 }}>
       {machine.notes
-        ? <div style={{ fontSize: 11, color: TXT, lineHeight: 1.5, cursor: "pointer", opacity: 0.7 }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
-        : <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 9, color: MUT, padding: 0, fontFamily: "'IBM Plex Mono',monospace", fontStyle: "italic" }}>+ job notes</button>}
+        ? <div style={{ fontSize: 12, color: TXT, lineHeight: 1.6, cursor: "pointer", opacity: 0.8, padding: "10px 0" }} onClick={() => setEditing(true)} title="Click to edit notes">{machine.notes}</div>
+        : <button onClick={() => setEditing(true)} style={{ ...btnA, width: "100%", padding: "13px", fontSize: 12, borderRadius: 3 }}>✏ Notes</button>}
     </div>
   );
 }
@@ -967,14 +996,16 @@ const STATUS_COLOR = {
   "Complete": MUT,
 };
 
-function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, session, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
+function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
   const [open, setOpen] = useState(false);
+  const [jobGuide, setJobGuide] = useState(() => !getPref(profile, "rat_tut_job_card", false));
+  const dismissJobGuide = () => { setJobGuide(false); savePref(profile?.id, "rat_tut_job_card", true); };
 
   const totalSecs   = (m.timeLog||[]).reduce((s, e) => s + (e.seconds||0), 0);
   const partsCount  = (m.parts||[]).length;
   const due         = m.dueDate ? new Date(m.dueDate) : null;
   const isOverdue   = due && due < new Date();
-  const isRunning   = m.jobTimer?.status === "running";
+  const isRunning   = m.jobTimers?.[0]?.status === "running";
   const hourlyRate  = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
   const partsTotal  = (m.parts||[]).reduce((s,p) => s + (parseFloat(p.sellPrice)||0)*(Number(p.qty)||1), 0);
   const labourTotal = hourlyRate ? (totalSecs / 3600) * hourlyRate : null;
@@ -982,52 +1013,84 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
 
   return (
     <div style={{ background: "#0d0d0d", border: "1px solid " + (timerLocked ? "#1a1a1a" : "#252525"), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden", opacity: timerLocked ? 0.65 : 1 }}>
-      {/* Collapsed header — always visible */}
-      <div onClick={() => setOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer" }}>
+      {/* Collapsed header — poster style */}
+      <div onClick={() => setOpen(o => !o)} style={{ cursor: "pointer", userSelect: "none" }}>
+
+        {/* Hero photo / icon placeholder */}
         {m.photos?.[0]
-          ? <img src={m.photos[0]} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 2, border: "1px solid #252525", flexShrink: 0 }} />
-          : <span style={{ fontSize: 18, flexShrink: 0, width: 36, textAlign: "center" }}>{mIcon(m.type)}</span>}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: timerLocked ? MUT : TXT }}>{m.name}</span>
+          ? <div style={{ position: "relative" }}>
+              <img src={m.photos[0]} alt="" style={{ width: "100%", height: 170, objectFit: "cover", display: "block" }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "65%", background: "linear-gradient(to bottom, transparent, #0d0d0d)", pointerEvents: "none" }} />
+            </div>
+          : <div style={{ width: "100%", height: 120, background: "#0e0e0e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 56, borderBottom: "1px solid #1a1a1a" }}>{mIcon(m.type)}</div>}
+
+        {/* Info panel */}
+        <div style={{ padding: "10px 12px 12px" }}>
+
+          {/* Icon + name row */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            {m.photos?.[0] && <span style={{ fontSize: 24, flexShrink: 0, marginTop: 2, lineHeight: 1 }}>{mIcon(m.type)}</span>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                <div className={isRunning ? "loading-rat" : undefined} style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, color: timerLocked ? MUT : TXT, lineHeight: 1.25 }}>
+                  {m.name}
+                  {isRunning && <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 6px " + GRN, marginLeft: 7, verticalAlign: "middle" }} />}
+                </div>
+                <span style={{ fontSize: 10, color: "#555", flexShrink: 0, marginTop: 2, userSelect: "none" }}>{open ? "▲" : "▼"}</span>
+              </div>
+              {[m.source, m.make, m.model].filter(Boolean).length > 0 &&
+                <div style={{ fontSize: 11, color: MUT, marginTop: 3, lineHeight: 1.4 }}>
+                  {[m.source, m.make, m.model].filter(Boolean).join(" · ")}
+                </div>}
+              {m.type && <div style={{ fontSize: 9, color: "#555", marginTop: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>{m.type}</div>}
+            </div>
+          </div>
+
+          {/* Badges — full width below info */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 9, flexWrap: "wrap" }}>
             {m.priority && (
-              <span style={{ fontSize: 7, fontWeight: 700, padding: "2px 5px", borderRadius: 2, letterSpacing: "0.08em",
-                background: m.priority === "High" ? RED+"18" : m.priority === "Medium" ? ACC+"18" : MUT+"18",
+              <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 3, letterSpacing: "0.08em",
+                background: m.priority === "High" ? RED + "18" : m.priority === "Medium" ? ACC + "18" : MUT + "18",
                 color:      m.priority === "High" ? RED      : m.priority === "Medium" ? ACC      : MUT }}>
                 {m.priority}
               </span>
             )}
-            {isRunning && <span style={{ fontSize: 7, fontWeight: 700, color: GRN, letterSpacing: "0.08em" }}>● RUNNING</span>}
+            {m.clientId && clientMap[m.clientId] && <span style={{ fontSize: 9, color: ACC }}>👤 {clientMap[m.clientId]}</span>}
+            {due && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: isOverdue ? "#e87a0a" : "#4a9eff" }}>{isOverdue ? "⚠ OVERDUE" : "DUE"} {due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>}
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 8, color: MUT }}>{[m.source, m.make, m.model].filter(Boolean).join(" · ")}</span>
-            {m.clientId && clientMap[m.clientId] && <span style={{ fontSize: 8, color: ACC }}>👤 {clientMap[m.clientId]}</span>}
-            {due && <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", color: isOverdue ? "#e87a0a" : "#4a9eff" }}>{isOverdue ? "OVERDUE" : "DUE"} {due.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>}
-          </div>
-        </div>
-        <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-          {totalSecs > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtDuration(totalSecs)}</span>}
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-            {grandTotal > 0 && <span style={{ fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>${grandTotal.toFixed(0)}</span>}
-            {partsCount > 0 && <span style={{ fontSize: 7, color: MUT }}>{partsCount} item{partsCount !== 1 ? "s" : ""}</span>}
-            <span style={{ fontSize: 9, color: MUT }}>{open ? "▲" : "▼"}</span>
-          </div>
+
+          {/* Stats */}
+          {(totalSecs > 0 || grandTotal > 0 || partsCount > 0) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+              {totalSecs > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: GRN, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtDuration(totalSecs)}</span>}
+              {grandTotal > 0 && <span style={{ fontSize: 9, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>${grandTotal.toFixed(0)}</span>}
+              {partsCount > 0 && <span style={{ fontSize: 9, color: MUT }}>{partsCount} item{partsCount !== 1 ? "s" : ""}</span>}
+            </div>
+          )}
+
         </div>
       </div>
 
       {/* Expanded body */}
       {open && (
-        <div style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
-          <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; onUpdate(u); await upsertMachine(u); }} />
-          {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
-          {!timerLocked && <TimeLogSection machine={m} company={company} clients={[]} userId={session?.user?.id} onUpdate={onUpdate} />}
-          {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
-          {timerLocked && (
-            <div style={{ marginTop: 10, fontSize: 9, color: MUT, fontStyle: "italic" }}>
-              🔒 Timer &amp; parts unlock on Enthusiast —{" "}
-              <span onClick={onGoToBilling} style={{ color: ACC, cursor: "pointer", textDecoration: "underline" }}>upgrade</span>
+        <div className="card-expand" style={{ padding: "0 14px 16px", borderTop: "1px solid #1a1a1a" }}>
+          {jobGuide && (
+            <div style={{ background: "#0a0f0a", border: "1px solid #1a2a1a", borderRadius: 2, padding: "10px 12px", margin: "10px 0 8px" }}>
+              <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Job Card</div>
+              <div style={{ fontSize: 9, color: MUT, lineHeight: 2 }}>
+                <span style={{ color: TXT }}>✏ Notes</span> — save job notes for this machine<br/>
+                <span style={{ color: TXT }}>Timer</span> — countdown, count up, or log time manually<br/>
+                <span style={{ color: TXT }}>Parts</span> — add stock items used on this job<br/>
+                <span style={{ color: TXT }}>Status buttons</span> — move the job between Active · Queued · Complete
+              </div>
+              <button onClick={dismissJobGuide} style={{ marginTop: 8, background: "none", border: "none", color: "#444", fontSize: 8, cursor: "pointer", padding: 0, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "0.05em" }}>got it</button>
             </div>
           )}
+          <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; onUpdate(u); await upsertMachine(u); }} />
+          {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
+          {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={onUpdate} />}
+          {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
+          {timerLocked && <UpgradeBanner text="Timer & parts log unlocks on Enthusiast." onUpgrade={onGoToBilling} marginBottom={0} />}
           {grandTotal > 0 && (
             <div style={{ marginTop: 10, padding: "8px 10px", background: "#0a0f0a", border: "1px solid #1e2e1e", borderRadius: 2, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>Cost Summary</span>
@@ -1038,9 +1101,9 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
             </div>
           )}
           <Divider />
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {STATUSES.filter(s => s !== status).map(s => (
-              <button key={s} onClick={() => onUpdateStatus(m, s)} style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "4px 9px", borderRadius: 2, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
+              <button key={s} onClick={() => onUpdateStatus(m, s)} style={{ flex: 1, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "14px 10px", borderRadius: 3, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
                 → {s}
               </button>
             ))}
@@ -1096,7 +1159,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
   const rate         = company?.hourly_rate || 0;
   const labourRevAll = totalHrsAll * rate;
-  const runningTimer = machines.find(m => m.jobTimer?.status === "running");
+  const runningTimer = machines.find(m => m.jobTimers?.[0]?.status === "running");
 
   return (
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
@@ -1123,6 +1186,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           </div>
         )}
       </div>
+      <TabGuide storageKey="rat_tut_jobs" variant="info" title="your job board" lines={["start a timer from any machine card in Tracker","time + parts log here automatically"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_jobs",false)} />
       {machines.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 24px" }}>
           <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
@@ -1139,11 +1203,10 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
               return (
                 <button key={s || "all"} onClick={() => setStatusFilter(s)} style={{ ...btnG, ...sm,
                   borderRadius: i === 0 ? "2px 0 0 2px" : i === arr.length - 1 ? "0 2px 2px 0" : "0",
-                  borderRight: i < arr.length - 1 ? "none" : "1px solid " + BRD,
+                  borderRight: i < arr.length - 1 ? "none" : undefined,
                   background: isActive ? (s ? STATUS_COLOR[s] + "22" : ACC + "18") : "none",
                   color: isActive ? (s ? STATUS_COLOR[s] : ACC) : MUT,
-                  borderColor: isActive ? (s ? STATUS_COLOR[s] + "66" : ACC + "66") : BRD,
-                  borderTopWidth: "1px", borderBottomWidth: "1px", borderLeftWidth: "1px",
+                  boxShadow: isActive ? ("inset 0 0 0 1px " + (s ? STATUS_COLOR[s] + "99" : ACC)) : "none",
                 }}>
                   {s || "All"}
                 </button>
@@ -1153,13 +1216,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
         </div>
       )}
       {isFree && machines.length > 0 && (
-        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 3 }}>Free Plan — Jobs Preview</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Showing {Math.min(machines.length, FREE_LIMIT)} of {machines.length} machines. First machine has full timer &amp; parts access.</div>
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade</button>}
-        </div>
+        <UpgradeBanner label="Free Plan" text={`Showing ${Math.min(machines.length, FREE_LIMIT)} of ${machines.length} machines. First machine has full timer & parts access.`} onUpgrade={onGoToBilling} />
       )}
       {cappedGroups.map(({ status, items }) => items.length === 0 ? null : (
         <div key={status} style={{ marginBottom: 20 }}>
@@ -1173,19 +1230,14 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
             const locked = isFree && freeIdx > 0;
             return (
               <JobCard key={m.id} m={m} status={status} timerLocked={locked} partsLocked={locked}
-                clientMap={clientMap} company={company} session={session}
+                clientMap={clientMap} clients={clients} company={company} session={session} profile={profile}
                 onUpdate={updateM} onUpdateStatus={updateStatus} onUpdateRage={updateRage}
                 onGoToBilling={onGoToBilling} />
             );
           })}
         </div>
       ))}
-      {hiddenCount > 0 && (
-        <div style={{ border: "1px dashed #2a2a2a", borderRadius: 3, padding: "16px 14px", textAlign: "center", marginBottom: 8 }}>
-          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenCount} more machine{hiddenCount !== 1 ? "s" : ""} hidden — upgrade to see all jobs</div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to Enthusiast</button>}
-        </div>
-      )}
+      {hiddenCount > 0 && <UpgradeBanner text={`+${hiddenCount} more machine${hiddenCount !== 1 ? "s" : ""} hidden — upgrade to see all jobs`} onUpgrade={onGoToBilling} marginBottom={8} />}
     </div>
   );
 }

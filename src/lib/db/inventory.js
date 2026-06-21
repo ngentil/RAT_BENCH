@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
+import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
+import { deletePhoto } from '../storage';
 
-const lsKey = uid => `rat_inventory_${uid}`;
 
 function fromDb(r) {
   const p = r.payload || {};
@@ -67,19 +68,14 @@ export async function getInventoryItems() {
 
 export async function getInventory(userId) {
   if (!userId) return [];
-  try {
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    const items = (data || []).map(fromDb);
-    localStorage.setItem(lsKey(userId), JSON.stringify(items));
-    return items;
-  } catch {
-    try { return JSON.parse(localStorage.getItem(lsKey(userId)) || '[]'); } catch { return []; }
-  }
+  const { data, error } = await supabase
+    .from('inventory_items')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(1000);
+  if (error) throw error;
+  return (data || []).map(fromDb);
 }
 
 export async function saveInventoryItem(userId, item) {
@@ -87,16 +83,26 @@ export async function saveInventoryItem(userId, item) {
   const isNew = !item.id;
   const id = item.id || crypto.randomUUID();
   try {
-    await supabase.from('inventory_items').upsert(
-      { ...toDb(userId, item), id, updated_at: now, ...(isNew ? { created_at: now } : {}) },
-      { onConflict: 'id' }
-    );
+    const { user_id: _uid, ...updateRow } = toDb(userId, item);
+    if (isNew) {
+      await supabase.from('inventory_items').insert(
+        { user_id: userId, ...updateRow, id, created_at: now, updated_at: now }
+      );
+    } else {
+      await supabase.from('inventory_items').update(
+        { ...updateRow, updated_at: now }
+      ).eq('id', id);
+      if (item.name) await syncAssignmentChildName('part', id, item.name);
+    }
   } catch (e) { console.warn('saveInventoryItem Supabase failed:', e); }
   return getInventory(userId);
 }
 
 export async function deleteInventoryItem(userId, itemId) {
   try {
+    const { data } = await supabase.from('inventory_items').select('payload').eq('id', itemId).eq('user_id', userId).single();
+    (data?.payload?.photos || []).forEach(url => deletePhoto(url));
+    await unassignAllByChild('part', itemId);
     await supabase.from('inventory_items').delete().eq('id', itemId).eq('user_id', userId);
   } catch (e) { console.warn('deleteInventoryItem Supabase failed:', e); }
   return getInventory(userId);
@@ -105,20 +111,9 @@ export async function deleteInventoryItem(userId, itemId) {
 // delta: negative to deduct (use), positive to restock
 export async function adjustStock(userId, itemId, delta) {
   try {
-    const { data, error } = await supabase
-      .from('inventory_items')
-      .select('payload')
-      .eq('id', itemId)
-      .eq('user_id', userId)
-      .single();
+    const { data, error } = await supabase.rpc('adjust_inventory_stock', { p_item_id: itemId, p_delta: delta });
     if (error) throw error;
-    const p = data?.payload || {};
-    const newQty = Math.max(0, (Number(p.stockQty) || 0) + delta);
-    await supabase
-      .from('inventory_items')
-      .update({ payload: { ...p, stockQty: newQty }, updated_at: new Date().toISOString() })
-      .eq('id', itemId)
-      .eq('user_id', userId);
+    if (data?.error) throw new Error(data.error);
   } catch (e) { console.warn('adjustStock Supabase failed:', e); }
   return getInventory(userId);
 }
@@ -129,7 +124,7 @@ export async function getInventoryPermissions(itemId) {
   const { data, error } = await supabase
     .from('asset_permissions')
     .select('*')
-    .eq('asset_type', 'consumable')
+    .eq('asset_type', 'part')
     .eq('asset_id', itemId);
   if (error) throw error;
   return data || [];
@@ -137,7 +132,7 @@ export async function getInventoryPermissions(itemId) {
 
 export async function upsertInventoryPermission(itemId, userId, companyId, canEdit) {
   const { error } = await supabase.from('asset_permissions').upsert({
-    asset_type: 'consumable',
+    asset_type: 'part',
     asset_id:   itemId,
     user_id:    userId,
     company_id: companyId,
@@ -149,7 +144,7 @@ export async function upsertInventoryPermission(itemId, userId, companyId, canEd
 export async function revokeInventoryPermission(itemId, userId) {
   const { error } = await supabase.from('asset_permissions')
     .delete()
-    .eq('asset_type', 'consumable')
+    .eq('asset_type', 'part')
     .eq('asset_id', itemId)
     .eq('user_id', userId);
   if (error) throw error;

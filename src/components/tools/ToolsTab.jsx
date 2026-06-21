@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
+import UpgradeBanner from '../ui/UpgradeBanner';
+import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
+import { deletePhoto } from '../../lib/storage';
+import { fmtDate, fmtMoney } from '../../lib/helpers';
 import LoadoutSection from '../ui/LoadoutSection';
 import AssetTile from '../ui/AssetTile';
 
@@ -25,13 +29,6 @@ const TOOL_SORT_OPTS = [
   { k: 'warranty', l: 'Warranty Expiry (Soonest)' },
 ];
 
-function fmtDate(s) {
-  if (!s) return null;
-  return new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-function fmtMoney(n) {
-  return "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
@@ -59,14 +56,20 @@ function ToolForm({ tool, onSave, onCancel }) {
     photos:          tool.photos          || [],
   } : EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState(null);
 
   const s = (k, v) => setF(prev => ({ ...prev, [k]: v }));
 
   const save = async () => {
     if (!f.name.trim()) return;
     setSaving(true);
-    await onSave({ ...tool, ...f, name: f.name.trim(), brand: f.brand.trim(), model: f.model.trim(), purchasePrice: parseFloat(f.purchasePrice) || 0 });
-    setSaving(false);
+    setErr(null);
+    try {
+      await onSave({ ...tool, ...f, name: f.name.trim(), brand: f.brand.trim(), model: f.model.trim(), purchasePrice: parseFloat(f.purchasePrice) || 0 });
+    } catch (e) {
+      setErr(e?.message || 'Save failed — check your connection');
+      setSaving(false);
+    }
   };
 
   return (
@@ -116,6 +119,7 @@ function ToolForm({ tool, onSave, onCancel }) {
             <PhotoAdder photos={f.photos} setPhotos={ps => s("photos", typeof ps === "function" ? ps(f.photos) : ps)} label="Photos" />
           </div>
         </div>
+        {err && <div style={{ padding: '8px 16px', color: '#ff6b6b', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }}>⚠ {err}</div>}
         <div style={mdlF}>
           <button style={btnG} onClick={onCancel}>Cancel</button>
           <button style={{ ...btnA, opacity: f.name.trim() && !saving ? 1 : 0.4 }} disabled={!f.name.trim() || saving} onClick={save}>
@@ -217,7 +221,7 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
       </div>
 
       {open && (
-        <div style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
+        <div className="card-expand" style={{ padding: "0 12px 12px", borderTop: "1px solid #1a1a1a" }}>
           {tool.photos?.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginTop: 10 }}>
               {tool.photos.map((p, i) => (
@@ -318,12 +322,10 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
             ))}
           </div>
 
-          <LoadoutSection parentType="tool" parentId={tool.id} parentName={tool.name} isShared={isShared} />
-
           {!isShared && (
-            <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-              <button onClick={onEdit} style={{ ...btnG, ...sm }}>Edit</button>
-              <button onClick={onDelete} style={{ ...btnD, ...sm }}>Delete</button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 12 }}>
+              <button onClick={onEdit}   style={{...btnA,width:"100%",padding:"9px 14px"}}>Edit Tool</button>
+              <button onClick={onDelete} style={{...btnA,width:"100%",padding:"9px 14px",background:RED}}>Delete</button>
             </div>
           )}
         </div>
@@ -350,18 +352,18 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const [catFilter, setCatFilter] = useState(null);
   const [showLoaned, setShowLoaned] = useState(false);
   const [showSort, setShowSort] = useState(false);
-  const [sortBy, setSortBy] = useState(() => localStorage.getItem('toolsSort') || null);
-  const [view, setView] = useState(() => localStorage.getItem('toolsView') || 'list');
-  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('toolsCols') || '2'));
+  const [sortBy, setSortBy] = useState(() => getPref(profile, 'toolsSort', null));
+  const [view, setView] = useState(() => getPref(profile, 'toolsView', 'list'));
+  const [cols, setCols] = useState(() => getPref(profile, 'toolsCols', 2));
   const [tileOpen, setTileOpen] = useState(null);
 
-  const setViewP = v => { setView(v); localStorage.setItem('toolsView', v); };
-  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('toolsSort', v) : localStorage.removeItem('toolsSort'); };
-  const setColsP = c => { setCols(c); localStorage.setItem('toolsCols', String(c)); setViewP('grid'); };
+  const setViewP = v => { setView(v); savePref(profile?.id, 'toolsView', v); };
+  const setSortByP = v => { setSortBy(v); savePref(profile?.id, 'toolsSort', v ?? null); };
+  const setColsP = c => { setCols(c); savePref(profile?.id, 'toolsCols', c); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === "free";
-  const limit   = assetLimit('tool', profile, company);
-  const atLimit = atAssetLimit('tool', tools.length, profile, company);
+  const limit   = assetLimit('tools', profile, company);
+  const atLimit = atAssetLimit('tools', tools.length, profile, company);
 
   useEffect(() => {
     if (!userId) return;
@@ -428,41 +430,34 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
 
   const remove = async (toolId) => {
     if (!confirm("Delete this tool?")) return;
+    const t = tools.find(x => x.id === toolId);
+    (t?.photos || []).forEach(url => deletePhoto(url));
     await deleteToolItem(toolId);
     setTools(prev => prev.filter(t => t.id !== toolId));
   };
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      {isFree && (
-        <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 3 }}>Free Plan</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>
-              {limit} tool limit · upgrade for unlimited tools, vehicles, equipment &amp; more.
-            </div>
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: "nowrap" }}>Upgrade →</button>}
-        </div>
-      )}
+      {atLimit && <UpgradeBanner text={`You're at the ${limit}-tool limit on the free plan.`} onUpgrade={onGoToBilling} />}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <SL t="Tools" />
-          <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.06em" }}>
-            {tools.length}{isFree ? `/${limit}` : ""} tool{tools.length !== 1 ? "s" : ""}
-          </span>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🔧 Tools</div>
+          <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
+            {tools.length} tool{tools.length !== 1 ? 's' : ''}
+            {isFree && <span style={{ marginLeft: 8, color: atLimit ? RED : MUT }}>· {tools.length}/{limit} (free limit)</span>}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
-          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
+          <button style={{ ...btnG, color: sortBy ? ACC : MUT, alignSelf: 'stretch' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36, alignSelf: 'stretch' }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
           <button
             onClick={() => setFormTool({})}
             disabled={atLimit}
-            style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
+            style={{ ...btnA, opacity: atLimit ? 0.4 : 1, minHeight: 44, display: 'flex', alignItems: 'center' }}
             title={atLimit ? `Upgrade to add more than ${limit} tools` : undefined}
           >
-            + Add Tool
+            + Add
           </button>
         </div>
       </div>

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { MUT, ACC, BRD, BRD2, SURF, TXT, inp, btnG, sm } from '../../lib/styles';
 import { SL, Empty } from '../ui/shared';
+import TabGuide from '../ui/TabGuide';
 import { mIcon } from '../../lib/helpers';
+import { getPref } from '../../lib/db/preferences';
 import StatusBadge from '../ui/StatusBadge';
 
 const FIELDS=[
@@ -127,7 +129,7 @@ const FIELDS=[
   {k:"obAnodeMaterial",  l:"Anode Material",                    u:""},
 ];
 
-function SpecSearch({machines}){
+function SpecSearch({machines, profile}){
   const [query,setQuery]=useState("");
   const q=query.trim().toLowerCase();
 
@@ -167,6 +169,7 @@ function SpecSearch({machines}){
     <div style={{padding:16,flex:1}}>
       <SL t="Spec Search" />
       <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Search any spec across your inventory — stud spacing, carb brand, plug type, bolt size.</div>
+      <TabGuide storageKey="rat_tut_search" variant="info" title="cross-machine search" lines={["search any spec across all your machines","plug gap · compression · bar length & more"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_search",false)} />
       <div style={{display:"flex",gap:8,marginBottom:14}}>
         <input style={{...inp,fontSize:13}} placeholder="e.g.  28  /  Walbro  /  NGK  /  M5..." value={query} onChange={e=>setQuery(e.target.value)} />
         {query&&<button style={{...btnG,...sm,whiteSpace:"nowrap"}} onClick={()=>setQuery("")}>Clear</button>}
@@ -188,11 +191,11 @@ function SpecSearch({machines}){
                 {hits.map(f=>(
                   f.isFastener
                     ? <div key={f.k} style={{background:ACC+"0a",border:"1px solid "+ACC+"33",borderRadius:2,padding:"6px 9px",gridColumn:"1/-1"}}>
-                        <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
+                        <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
                         <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{f.value}</div>
                       </div>
                     : <div key={f.k} style={{background:ACC+"0a",border:"1px solid "+ACC+"33",borderRadius:2,padding:"6px 9px"}}>
-                        <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
+                        <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
                         <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
                       </div>
                 ))}
@@ -201,7 +204,7 @@ function SpecSearch({machines}){
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:4}}>
                   {FIELDS.filter(f=>m[f.k]&&!hits.find(h=>h.k===f.k)).map(f=>(
                     <div key={f.k} style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"6px 9px"}}>
-                      <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>{f.l}</div>
+                      <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>{f.l}</div>
                       <div style={{fontSize:11,color:"#484848",fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
                     </div>
                   ))}

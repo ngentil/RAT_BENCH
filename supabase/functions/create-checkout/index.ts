@@ -8,12 +8,31 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = ["https://www.ratbench.net", "https://ratbench.net"];
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+}
+
+const VALID_PRICE_IDS = new Set(
+  [Deno.env.get("PRICE_ENTHUSIAST"), Deno.env.get("PRICE_PRO")].filter(Boolean)
+);
+
+function isSafeUrl(url: string | undefined): boolean {
+  if (!url) return true;
+  try {
+    return ALLOWED_ORIGINS.some(o => new URL(url).origin === o);
+  } catch {
+    return false;
+  }
+}
 
 serve(async (req) => {
+  const CORS = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
@@ -23,9 +42,44 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing price_id or user_id" }), { status: 400, headers: CORS });
     }
 
+    if (VALID_PRICE_IDS.size > 0 && !VALID_PRICE_IDS.has(price_id)) {
+      return new Response(JSON.stringify({ error: "Invalid price_id" }), { status: 400, headers: CORS });
+    }
+
+    if (!isSafeUrl(success_url) || !isSafeUrl(cancel_url)) {
+      return new Response(JSON.stringify({ error: "Invalid redirect URL" }), { status: 400, headers: CORS });
+    }
+
+    // Verify the caller is who they claim to be
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: CORS });
+    }
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: CORS });
+    }
+    if (user.id !== user_id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS });
+    }
+
+    // If billing for a company, verify the caller is an owner or admin
+    if (company_id) {
+      const { data: membership } = await supabase
+        .from("company_members")
+        .select("role")
+        .eq("company_id", company_id)
+        .eq("user_id", user_id)
+        .single();
+      if (!membership || !["owner", "admin"].includes(membership.role)) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: CORS });
+      }
+    }
+
     // Get or create Stripe customer
     let customerId: string | undefined;
 
+    // Resolve customer first so we can rate-check before hitting Stripe checkout
     if (company_id) {
       const { data: company } = await supabase.from("companies").select("stripe_customer_id, name").eq("id", company_id).single();
       customerId = company?.stripe_customer_id || undefined;
@@ -44,6 +98,18 @@ serve(async (req) => {
       }
     }
 
+    // Rate-limit: reject if this customer already has an open checkout session
+    // (prevents spam-clicking that floods Stripe with duplicate sessions)
+    if (customerId) {
+      const recent = await stripe.checkout.sessions.list({ customer: customerId, status: "open", limit: 1 });
+      if (recent.data.length > 0) {
+        return new Response(
+          JSON.stringify({ error: "A checkout is already in progress. Complete it or wait a moment before trying again." }),
+          { status: 429, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
@@ -55,6 +121,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ url: session.url }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+    console.error("create-checkout error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: CORS });
   }
 });

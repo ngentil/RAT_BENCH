@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import PhotoViewer from '../ui/PhotoViewer';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
 import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, inp, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
@@ -9,11 +10,12 @@ import { WikiTrackerModal } from '../wiki/WikiModals';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { getTiers, TIER_NAMES } from '../../lib/storageTiers';
 import { getActiveBooking, createBooking, collectMachine, updateBooking } from '../../lib/db/bookings';
-import PdfExportModal from '../pdf/PdfExportModal';
+import { deletePhoto } from '../../lib/storage';
+const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}){
+function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened}){
   const [open,setOpen]=useState(false);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -32,8 +34,23 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
   const [showBookIn,setShowBookIn]=useState(false);
   const [bookForm,setBookForm]=useState({storageTier:"Bench",receivedAt:"",storageEnabled:true,storageFeeOverride:"",notes:""});
   const [bookSaving,setBookSaving]=useState(false);
+  const [copied,setCopied]=useState(false);
   const [bookErr,setBookErr]=useState("");
   const m=machine;
+  // Notify parent when card opens so the above-card guide arrow can hide
+  useEffect(()=>{if(open&&showGuide)onCardOpened?.();},[open]);
+  const withGuide=(desc,el)=>showGuide?(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+      {el}
+      <svg className="arrow-guide" width="18" height="14" viewBox="0 0 18 14" style={{display:"block"}}>
+        <path d="M 9 12 C 12 7, 6 5, 9 2" stroke="#e8870a" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+        <path d="M 6 4 L 9 1 L 12 4" stroke="#e8870a" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span style={{fontSize:7,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",textAlign:"center",lineHeight:"1.3",whiteSpace:"pre-line"}}>{desc}</span>
+    </div>
+  ):el;
+  const openRef = useRef(false);
+  openRef.current = open;
 
   const clientName = useMemo(() => {
     if (!m.clientId || !clients?.length) return null;
@@ -50,6 +67,21 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
     if(!storagePolicyEnabled||bookingLoaded) return;
     getActiveBooking(m.id).then(b=>{setBooking(b);setBookingLoaded(true);});
   },[storagePolicyEnabled,m.id]);
+
+  // Android back button collapses this card when it's open.
+  // Pushing { cardOpen: id } means: back closes photo first (if open), then collapses card.
+  useEffect(()=>{
+    if(!open) return;
+    history.pushState({ cardOpen: m.id }, '');
+    const onPop = e => {
+      // If we landed on our own state somehow, ignore. Otherwise we were just popped.
+      if (!openRef.current) return;
+      if (e.state?.cardOpen === m.id) return;
+      setOpen(false);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  },[open]);
 
   const activeTiers = useMemo(()=>getTiers(profile?.storage_tiers),[profile?.storage_tiers]);
   const storageStatus = useMemo(()=>booking?getStorageStatus(booking,activeTiers):null,[booking,activeTiers]);
@@ -91,6 +123,9 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
   };
   const delSvc=async id=>{
     if(!confirm("Delete this entry?"))return;
+    const svc=svcs.find(s=>s.id===id);
+    if(svc?.plugPhoto) deletePhoto(svc.plugPhoto);
+    (svc?.jobPhotos||[]).forEach(url=>deletePhoto(url));
     await deleteServiceApi(id);
     setSvcs(svcs.filter(s=>s.id!==id));
   };
@@ -172,11 +207,22 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
     m.stumpGrinderSpec?.teethLastReplaced&&{label:"Teeth Last Replaced",value:m.stumpGrinderSpec.teethLastReplaced},
   ].filter(Boolean);
 
-  const timerRunning = m.jobTimer?.status === "running";
+  const timerRunning = m.jobTimers?.[0]?.status === "running";
   const svcStatus = getMachineServiceStatus(m);
+
+  const _jBase   = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"9px 14px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",border:"none",width:"100%",boxSizing:"border-box",minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"};
+  const _jAct    = {..._jBase,background:ACC,color:"#fff"};
+  const _jEdit   = _jAct;
+  const _jPdf    = _jAct;
+  const _jWiki   = _jAct;
+  const _jShare  = _jAct;
+  const _jLayout = _jAct;
+  const _jTile   = _jAct;
+  const _jDel    = {..._jBase,background:RED,color:"#fff"};
+
   return (
     <div style={{background:SURF,border:"1px solid "+(timerRunning?GRN+"55":BRD),borderRadius:3,marginBottom:8,overflow:"hidden",boxShadow:timerRunning?"0 0 8px "+GRN+"22":undefined}}>
-      {fullImg&&<div onClick={()=>setFullImg(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.97)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}><img src={fullImg} alt="" style={{maxWidth:"95vw",maxHeight:"95vh",objectFit:"contain"}} /></div>}
+      {fullImg&&<PhotoViewer src={fullImg} onClose={()=>setFullImg(null)} />}
       {showEdit&&<MachineForm existing={m} onSave={u=>{onUpdate(u);setShowEdit(false);}} onClose={()=>setShowEdit(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/>}
       {showWiki&&<WikiTrackerModal machine={m} profile={profile} onClose={()=>setShowWiki(false)}/>}
       {showConfig&&<TileConfig machine={m} onSave={u=>{onUpdate(u);setShowConfig(false);}} onClose={()=>setShowConfig(false)} />
@@ -184,48 +230,72 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
       {showExpandConfig&&<ExpandConfig machine={m} onSave={u=>{onUpdate(u);setShowExpandConfig(false);}} onClose={()=>setShowExpandConfig(false)} />}
       {(showSvc||editSvc)&&<ServiceModal machine={m} existing={editSvc} onSave={saveSvc} onClose={()=>{setShowSvc(false);setEditSvc(null);}} />}
 
-      <div style={{display:"flex",alignItems:"center",padding:"11px 14px",gap:10}}>
-        <div onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer",userSelect:"none",minWidth:0}}>
-          {m.photos?.[0]
-            ? <img src={m.photos[0]} alt="" style={{width:44,height:44,objectFit:"cover",borderRadius:2,flexShrink:0,border:"1px solid #252525"}} />
-            : <span style={{fontSize:16}}>{mIcon(m.type)}</span>}
-          <div style={{flex:1,minWidth:0}}>
-            <div className={timerRunning?"loading-rat":undefined} style={{fontSize:14,fontWeight:700,color:TXT,display:"flex",alignItems:"center",gap:6}}>
-              {m.name}
-              {timerRunning&&<span style={{width:7,height:7,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,flexShrink:0,display:"inline-block"}}/>}
+      {/* ── Collapsed card — poster style ── */}
+      <div onClick={()=>setOpen(o=>!o)} style={{cursor:"pointer",userSelect:"none"}}>
+
+        {/* Hero photo / icon placeholder */}
+        {m.photos?.[0]
+          ? <div style={{position:"relative"}}>
+              <img src={m.photos[0]} alt="" style={{width:"100%",height:170,objectFit:"cover",display:"block"}} />
+              <div style={{position:"absolute",bottom:0,left:0,right:0,height:"65%",background:"linear-gradient(to bottom, transparent, #161616)",pointerEvents:"none"}} />
             </div>
-            <div style={{fontSize:9,color:MUT,marginTop:2}}>{[m.make,m.model,m.year,m.source].filter(Boolean).join(" · ")}</div>
-            {clientName&&<div style={{fontSize:8,color:ACC,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>👤 {clientName}</div>}
-            {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const today=now.toDateString()===due.toDateString();const dueColor=overdue?"#e87a0a":today?"#4a9eff":MUT;return<div style={{fontSize:8,color:dueColor,marginTop:1}}>{overdue?"OVERDUE ":"DUE "}{due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>;})()}
-            {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const rate=company?.hourly_rate||0;const rev=tHrs*rate;const hasHrs=tHrs>0;const hasRev=rate>0&&rev>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRev&&!hasRage)return null;return<div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>{hasHrs&&<span style={{fontSize:8,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRev&&<span style={{fontSize:8,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}{hasRage&&<span style={{fontSize:8,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</div>;})()}
+          : <div style={{width:"100%",height:120,background:"#0e0e0e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:56,borderBottom:"1px solid #1a1a1a"}}>{mIcon(m.type)}</div>}
+
+        {/* Info panel */}
+        <div style={{padding:"10px 12px 12px"}}>
+
+          {/* Icon + name/subtitle row */}
+          <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+            {m.photos?.[0]&&<span style={{fontSize:24,flexShrink:0,marginTop:2,lineHeight:1}}>{mIcon(m.type)}</span>}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:6}}>
+                <div className={timerRunning?"loading-rat":undefined} style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,color:TXT,lineHeight:1.25}}>
+                  {m.name}
+                  {timerRunning&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,marginLeft:7,verticalAlign:"middle"}}/>}
+                </div>
+                <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:2,userSelect:"none"}}>{open?"▲":"▼"}</span>
+              </div>
+              {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
+                <div style={{fontSize:11,color:MUT,marginTop:3,lineHeight:1.4}}>
+                  {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
+                  {m.source&&<span style={{color:"#444"}}> · {m.source}</span>}
+                </div>}
+              {m.type&&<div style={{fontSize:9,color:"#555",marginTop:2,letterSpacing:"0.06em",textTransform:"uppercase"}}>{m.type}</div>}
+            </div>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap",justifyContent:"flex-end",maxWidth:"55%",overflow:"hidden"}}>
+
+          {/* Badges — full width below info */}
+          <div style={{display:"flex",alignItems:"center",gap:4,marginTop:9,flexWrap:"wrap"}}>
             {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
               const tc=m.tileColors||{};
               const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
               const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
-              const bStyle={fontSize:8,fontWeight:700,letterSpacing:"0.1em",padding:"2px 6px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
+              const bStyle={fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
               if(k==="status"){const S=["Active","Queued","Complete"];const cur=m.status||"Active";const next=S[(S.indexOf(cur)+1)%S.length];return <StatusBadge key="status" status={cur} onClick={ev=>{ev.stopPropagation();const u={...m,status:next};upsertMachine(u).catch(()=>{});onUpdate(u);}} title={`Click to set ${next}`} />;};
-              if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:8,fontWeight:700,letterSpacing:"0.1em",padding:"2px 6px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55")}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
+              if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55"),whiteSpace:"nowrap"}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
               if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:10,letterSpacing:-2}}>{"☠️".repeat(m.rage)}</span>;
               const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
-              if(field&&m[k]){
-                const lbl=(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "));
-                return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,14)}</span>;
-              }
+              if(field&&m[k]){const lbl=(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "));return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,14)}</span>;}
               return null;
             })}
-            {svcStatus.overdue  && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0}}>SERVICE</span>}
-            {!svcStatus.overdue && svcStatus.dueSoon && <span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",flexShrink:0}}>DUE SOON</span>}
-            {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:RED+"22",color:RED,border:"1px solid "+RED+"44",flexShrink:0,boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",flexShrink:0}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:7,fontWeight:700,letterSpacing:"0.08em",padding:"2px 5px",borderRadius:2,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",flexShrink:0}}>${storageStatus.accrued.toFixed(0)}</span>)}
+            {svcStatus.overdue&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap"}}>SERVICE</span>}
+            {!svcStatus.overdue&&svcStatus.dueSoon&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",whiteSpace:"nowrap"}}>DUE SOON</span>}
+            {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap",boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",whiteSpace:"nowrap"}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",whiteSpace:"nowrap"}}>${storageStatus.accrued.toFixed(0)}</span>)}
           </div>
-          <span style={{fontSize:10,color:MUT,flexShrink:0,marginLeft:6}}>{open?"▲":"▼"}</span>
+
+          {/* Client / due / stats */}
+          {(clientName||m.dueDate||(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)>0||(m.rage||0)>0)&&
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,flexWrap:"wrap"}}>
+              {clientName&&<span style={{fontSize:9,color:ACC,whiteSpace:"nowrap"}}>👤 {clientName}</span>}
+              {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const dueColor=overdue?"#e87a0a":now.toDateString()===due.toDateString()?"#4a9eff":MUT;return<span style={{fontSize:9,color:dueColor,whiteSpace:"nowrap"}}>{overdue?"⚠ OVERDUE":"DUE "}{!overdue&&due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
+              {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const rate=company?.hourly_rate||0;const rev=tHrs*rate;const hasHrs=tHrs>0;const hasRev=rate>0&&rev>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRev&&!hasRage)return null;return<>{hasHrs&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRev&&<span style={{fontSize:9,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}{hasRage&&<span style={{fontSize:9,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</>;})()}
+            </div>}
+
         </div>
-        <button onClick={ev=>{ev.stopPropagation();setShowConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:9,padding:"4px 6px",flexShrink:0,fontFamily:"'IBM Plex Mono',monospace"}} title="Configure tile badges">⚙️ Tile</button>
       </div>
 
       {open&&(
-        <div style={{borderTop:"1px solid "+BRD2}}>
+        <div className="card-expand" style={{borderTop:"1px solid "+BRD2}}>
           {(()=>{
             const ef = m.expandFields&&m.expandFields.length>0 ? m.expandFields : DEFAULT_EXPAND;
             const show = k => ef.includes(k);
@@ -354,40 +424,45 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
             <div style={{padding:"0 14px 12px"}}>
               <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8,marginBottom:10}}><SL t="Storage" /></div>
               {!booking&&!showBookIn&&(
-                <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();const now=new Date();const pad=n=>String(n).padStart(2,"0");setBookForm(f=>({...f,receivedAt:now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+"T"+pad(now.getHours())+":"+pad(now.getMinutes())}));setShowBookIn(true);}}>📥 Book In</button>
+                <button style={{width:"100%",background:"none",border:"1px solid "+BRD,borderRadius:3,padding:"16px 14px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:12,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:MUT,fontSize:12,minHeight:56}} onClick={ev=>{ev.stopPropagation();const now=new Date();const pad=n=>String(n).padStart(2,"0");setBookForm(f=>({...f,receivedAt:now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+"T"+pad(now.getHours())+":"+pad(now.getMinutes())}));setShowBookIn(true);}}>
+                  <span style={{fontSize:28,lineHeight:1}}>📥</span>
+                  Book In
+                </button>
               )}
               {showBookIn&&(
-                <div style={{background:"#0a0a0a",border:"1px solid "+BRD,borderRadius:2,padding:"12px 14px"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                <div style={{background:"#0a0a0a",border:"1px solid "+BRD,borderRadius:3,padding:"16px 14px"}}>
+                  <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:14}}>
                     <div>
-                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Storage Tier</div>
-                      <select value={bookForm.storageTier} onChange={e=>setBookForm(f=>({...f,storageTier:e.target.value}))} style={{...inp,fontSize:11,padding:"6px 8px"}}>
+                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Storage Tier</div>
+                      <select value={bookForm.storageTier} onChange={e=>setBookForm(f=>({...f,storageTier:e.target.value}))} style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}}>
                         {TIER_NAMES.map(t=><option key={t} value={t}>{t}{activeTiers[t]?.dailyRate!=null?" — $"+activeTiers[t].dailyRate+"/day after "+activeTiers[t].freeDays+"d free":""}</option>)}
                       </select>
                     </div>
                     <div>
-                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Received</div>
-                      <input type="datetime-local" value={bookForm.receivedAt} onChange={e=>setBookForm(f=>({...f,receivedAt:e.target.value}))} style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Received</div>
+                      <input type="datetime-local" value={bookForm.receivedAt} onChange={e=>setBookForm(f=>({...f,receivedAt:e.target.value}))} style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
                     </div>
                     {bookForm.storageTier==="Custom"&&(
                       <div>
-                        <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Custom Daily Rate ($)</div>
-                        <input type="number" min="0" step="0.01" value={bookForm.storageFeeOverride} onChange={e=>setBookForm(f=>({...f,storageFeeOverride:e.target.value}))} placeholder="0.00" style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                        <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Custom Daily Rate ($)</div>
+                        <input type="number" min="0" step="0.01" value={bookForm.storageFeeOverride} onChange={e=>setBookForm(f=>({...f,storageFeeOverride:e.target.value}))} placeholder="0.00" style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
                       </div>
                     )}
                     <div>
-                      <div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>Notes</div>
-                      <input value={bookForm.notes} onChange={e=>setBookForm(f=>({...f,notes:e.target.value}))} placeholder="Optional" style={{...inp,fontSize:11,padding:"6px 8px"}} />
+                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Notes</div>
+                      <input value={bookForm.notes} onChange={e=>setBookForm(f=>({...f,notes:e.target.value}))} placeholder="Optional" style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
                     </div>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <input type="checkbox" id={"se-"+m.id} checked={bookForm.storageEnabled} onChange={e=>setBookForm(f=>({...f,storageEnabled:e.target.checked}))} />
-                    <label htmlFor={"se-"+m.id} style={{fontSize:9,color:MUT,cursor:"pointer"}}>Charge storage for this visit</label>
-                  </div>
-                  {bookErr&&<div style={{fontSize:9,color:RED,marginBottom:6}}>{bookErr}</div>}
-                  <div style={{display:"flex",gap:6}}>
-                    <button style={{...btnA,...sm}} onClick={doBookIn} disabled={bookSaving}>{bookSaving?"Saving…":"✓ Book In"}</button>
-                    <button style={{...btnG,...sm}} onClick={()=>{setShowBookIn(false);setBookErr("");}}>Cancel</button>
+                  <label htmlFor={"se-"+m.id} style={{display:"flex",alignItems:"center",gap:14,padding:"12px 0",cursor:"pointer",borderTop:"1px solid #1a1a1a",borderBottom:"1px solid #1a1a1a",marginBottom:14}}>
+                    <input type="checkbox" id={"se-"+m.id} checked={bookForm.storageEnabled} onChange={e=>setBookForm(f=>({...f,storageEnabled:e.target.checked}))} style={{width:22,height:22,accentColor:ACC,cursor:"pointer",flexShrink:0}} />
+                    <span style={{fontSize:12,color:MUT}}>Charge storage for this visit</span>
+                  </label>
+                  {bookErr&&<div style={{fontSize:9,color:RED,marginBottom:10}}>{bookErr}</div>}
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <button style={{...btnA,width:"100%",padding:"14px",fontSize:12,minHeight:50,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={doBookIn} disabled={bookSaving}>
+                      <span style={{fontSize:20}}>📥</span>{bookSaving?"Saving…":"Book In"}
+                    </button>
+                    <button style={{...btnG,width:"100%",padding:"12px",fontSize:11,minHeight:44}} onClick={()=>{setShowBookIn(false);setBookErr("");}}>Cancel</button>
                   </div>
                 </div>
               )}
@@ -422,14 +497,21 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest}
               )}
             </div>
           )}
-          <div style={{padding:"0 14px 12px",display:"flex",gap:8,justifyContent:"flex-end",alignItems:"center"}}>
-            <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>
-            <button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>
-            {showPdfOpts&&<PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/>}
-            {!isGuest&&effectiveTier(profile,company)!=="free"&&m.make&&m.model&&<button style={{...btnG,...sm}} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
-            <button style={btnD} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
-            <button onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:MUT,cursor:"pointer",fontSize:9,padding:"4px 6px",fontFamily:"'IBM Plex Mono',monospace"}} title="Configure expanded sections">⚙️ Layout</button>
+          {showPdfOpts&&<Suspense fallback={null}><PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/></Suspense>}
+          <div style={{padding:"0 10px 14px",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+            {withGuide("all specs\n& intervals",<button style={_jEdit} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>)}
+            {withGuide("export\nspec sheet",<button style={_jPdf} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>)}
+            {!isGuest&&effectiveTier(profile,company)!=="free"&&m.make&&m.model&&<button style={_jWiki} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
+            {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
+            {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
+            {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
+            <button style={_jDel} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
           </div>
+          {showGuide&&(
+            <div style={{padding:"0 14px 14px",textAlign:"right"}}>
+              <button onClick={ev=>{ev.stopPropagation();onTutDismiss?.();}} style={{background:"none",border:"none",color:"#333",fontSize:8,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:0,letterSpacing:"0.05em"}}>got it</button>
+            </div>
+          )}
         </div>
       )}
     </div>

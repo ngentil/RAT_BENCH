@@ -27,8 +27,8 @@ export const BELT_TYPES        = ["V-Belt","Flat Belt","Toothed / Timing","Poly-
 export const ATTACH_TYPES      = ["Bucket","Blade","Scraper","Trenching Bucket","Grading Bucket","Rock Bucket","Auger","Hammer / Breaker","Grapple","Ripper","Compactor","Thumb","Quick Hitch","Rake","Tilt Rotator","Other"];
 export const SOURCES     = ["Client Owned","Own","Found","Facebook Marketplace","Friend","Gumtree","Other"];
 export const STATUSES    = ["Active","Queued","Complete"];
-export const SCOL        = {Active:"#e8670a",Queued:"#3a7bd5",Complete:"#3d9e50"};
-export const SBG_        = {Active:"#2a1200",Queued:"#0e1a2a",Complete:"#0e2410"};
+export const SCOL        = {Active:"#ff8c2a",Queued:"#5599ff",Complete:"#44cc66"};
+export const SBG_        = {Active:"#3a1800",Queued:"#0a1a38",Complete:"#082d14"};
 export const SVC_CATEGORIES = [
   {id:"filters",    label:"Filters",
     items:["Air filter","Fuel filter","Oil filter","Hydraulic filter","Cabin air filter","Other"],

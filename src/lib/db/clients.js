@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { deletePhoto } from '../storage';
 
 function fromDb(r) {
   return {
@@ -20,7 +21,8 @@ export async function getClients() {
     .from("clients")
     .select("*")
     .eq("user_id", user.id)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(500);
   if (error) { console.error("getClients:", error); return []; }
   return (data || []).map(fromDb);
 }
@@ -28,20 +30,32 @@ export async function getClients() {
 export async function upsertClient(client) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
-  const { error } = await supabase.from("clients").upsert({
-    id:      client.id,
-    user_id: user.id,
+  const payload = {
     name:    client.name,
     phone:   client.phone   || null,
     email:   client.email   || null,
     address: client.address || null,
     notes:   client.notes   || null,
     photos:  client.photos  || [],
-  }, { onConflict: "id" });
-  if (error) { console.error("upsertClient:", error); throw error; }
+  };
+  if (!client.id) {
+    const { error } = await supabase.from("clients").insert({ ...payload, user_id: user.id });
+    if (error) { console.error("upsertClient:", error); throw error; }
+  } else {
+    const { data: updated, error } = await supabase.from("clients").update(payload).eq("id", client.id).select("id");
+    if (error) { console.error("upsertClient:", error); throw error; }
+    if (!updated?.length) {
+      const { error: ie } = await supabase.from("clients").insert({ ...payload, id: client.id, user_id: user.id });
+      if (ie) { console.error("upsertClient insert:", ie); throw ie; }
+    }
+  }
 }
 
 export async function deleteClientApi(id) {
+  try {
+    const { data } = await supabase.from('clients').select('photos').eq('id', id).single();
+    (data?.photos || []).forEach(url => deletePhoto(url));
+  } catch {}
   const { error } = await supabase.from("clients").delete().eq("id", id);
   if (error) console.error("deleteClient:", error);
 }

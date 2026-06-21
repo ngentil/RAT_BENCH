@@ -34,15 +34,52 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | Supabase Auth (email/pass, anon guest) | ✅ | — | Free |
-| Onboarding (username, account type) | ✅ | auth | Free |
+| Branded email templates (confirm signup + reset password) | ✅ | supabase/email-templates/ — paste into Supabase Auth → Email Templates | Free |
+| OAuth: Google sign-in | ✅ | AuthScreen, Supabase Auth | Free |
+| OAuth: Facebook sign-in | ❌ | Removed — Meta requires business verification | — |
+| OAuth: Apple sign-in | 📋 | Queued — code removed for now, add back when needed | Free |
+| Signup: confirm password + username validation | ✅ | AuthScreen | Free |
+| Signup: live username availability check (✓/✗) + 🎲 dice generator | ✅ | AuthScreen, lib/username.js | Free |
+| Auto-create profile on first login (no onboarding screen) | ✅ | App.jsx loadForSession — uses get_my_profile() SECURITY DEFINER RPC to fetch own profile (bypasses column-level SELECT restriction to return stripe/pending fields); account_type removed from all upserts | Free |
 | Password reset | ✅ | auth | Free |
-| Guest upgrade modal | ✅ | auth | Free |
-| Profiles table + RLS | ✅ | auth.users | Free |
-| Tier system (`gates.js`) | ✅ | profiles.tier | All |
-| Stripe Checkout | ✅ | Stripe, profiles | All |
-| Stripe webhook → tier update | ✅ | Stripe, profiles/companies | All |
-| Billing portal (manage/cancel) | ✅ | Stripe customer ID | All |
-| Announcements (in-app banners) | ✅ | profiles.tier | All |
+| Guest upgrade modal + profile banner | ✅ | auth — "Save Your Data" green banner shown at top of Profile settings page for anonymous users, above all other sections | Free |
+| Profiles table + RLS | ✅ | auth.users — run supabase/org_and_profiles_rls.sql; SELECT restricted by column-level GRANT to safe public fields (id, display_name, username, units, default_status, tab_order, preferences, storage_policy_enabled, storage_tiers, tier, company_id, created_at) — sensitive fields (pending_code, stripe_customer_id, stripe_subscription_id) hidden from other users; get_my_profile() SECURITY DEFINER RPC returns full own-row data including sensitive fields; UPDATE own row only with column-level GRANT restricting writable columns to safe fields; tier/stripe/pending_* require SECURITY DEFINER path; same column-level protection on companies table | Free |
+| Tier system (`gates.js`) — Free / Enthusiast $3.50wk / Business $10wk | ✅ | profiles.tier | All |
+| Stripe Checkout (3 plans: Free / Enthusiast / Business) | ✅ | Stripe, profiles — create-checkout edge fn verifies JWT + confirms caller matches user_id; company billing verifies caller is owner or admin; success_url/cancel_url validated against ratbench.net allowlist; price_id validated against env vars; CORS restricted to ratbench.net origins; internal errors return generic 500 | All |
+| Stripe webhook → tier update | ✅ | Stripe, profiles/companies — signature verified with constructEventAsync; PRICE_ENTHUSIAST → 'enthusiast', PRICE_PRO → 'business' (was 'team' which never unlocked org features gated on tier==='business'); unmapped price IDs log an error; subscription.updated checks sub.status — past_due/incomplete/unpaid/paused immediately downgrade to free | All |
+| Billing portal (manage/cancel) | ✅ | Stripe customer ID — create-portal edge fn verifies JWT + caller identity; company billing restricted to owner/admin role (viewers/technicians blocked); 30s cooldown via _set_portal_session_at() RPC; CORS restricted to ratbench.net origins; internal errors return generic 500 (not err.message); run supabase/portal_rate_limit.sql | All |
+| Announcements (in-app banners) | ✅ | profiles.tier — RLS: SELECT for all authenticated; INSERT/UPDATE/DELETE restricted to admin email only (run supabase/announcements_rls.sql) | All |
+| Machines RLS (own + provisioned policies) | ✅ | scalability_hardening.sql + supabase/provisioned_update_checks.sql — run provisioned_update_checks.sql to add WITH CHECK to machines/vehicles/equipment/tools provisioned UPDATE policies (prevents provisioned users from changing user_id to steal asset ownership); also adds SECURITY DEFINER _machine/vehicle/equipment/tool_owner() helpers and asset_permissions.asset_type CHECK constraint | All |
+| DB-level machine limit trigger (free=5, guest=3) | ✅ | scalability_hardening.sql + supabase/guest_limit_is_anonymous_fix.sql — enforce_machine_limit uses FOR UPDATE on profiles row; enforce_guest_machine_limit updated to read auth.users.is_anonymous (DB-managed, non-writable column) instead of raw_user_meta_data->>'is_anonymous' (user-writable via supabase.auth.updateUser, allowing bypass of the 3-machine guest cap) | Free |
+| Critical DB indexes (machines, services, bookings, permissions) | ✅ | scalability_hardening.sql + supabase/missing_fk_indexes.sql — adds 9 missing indexes: company_id on company_members/asset_permissions/vehicles/equipment/tools/consumables/machine_permissions; wiki_revisions.entry_id; wiki_entries.created_by; without idx_company_members_company_id each _is_company_member/_is_company_admin call (fired on every policy evaluation) was a sequential scan | All |
+| Checkout rate-limit (blocks duplicate Stripe sessions) | ✅ | create-checkout edge fn | All |
+| Sentry error tracking | ✅ | VITE_SENTRY_DSN env var | All |
+| Super admins | ✅ | Two hardcoded super admins: nathan.gentil.ai@gmail.com + nathan.gentil@gmail.com — all server-side checks use `auth.email() NOT IN (...)` / `IN (...)`; client-side uses `ADMIN_EMAILS.includes()` array in AdminPanel, SettingsPage, WikiEntryPage; re-run all admin SQL files to apply to DB | Admin only |
+| Admin panel analytics (users, active, machines, signups trend) | ✅ | AdminPanel.jsx OverviewTab + admin_get_stats() RPC — run supabase/admin_get_stats.sql to update; server-side auth.email() check blocks non-admin calls; GRANT EXECUTE TO authenticated added (was missing, caused silent 403 failures); VITE_ADMIN_EMAIL fallback corrected to nathan.gentil.ai@gmail.com to match SQL (all three client files: AdminPanel, SettingsPage, WikiEntryPage) | Admin only |
+| Admin: list / search users | ✅ | AdminPanel.jsx UsersTab + admin_list_users(p_search, p_limit, p_offset) RPC — run supabase/admin_rpcs.sql; returns id, email, display_name, username, tier, created_at, last_sign_in_at, machine_count; server-side auth.email() check | Admin only |
+| Admin: set user tier | ✅ | AdminPanel.jsx UsersTab tier select + admin_set_tier(p_email, p_tier) RPC — run supabase/admin_rpcs.sql; server-side auth.email() check; p_tier validated against allowlist (free/enthusiast/team/business) — arbitrary strings rejected; audited to admin_audit_log | Admin only |
+| Admin: deactivate user (reset to free) | ✅ | AdminPanel.jsx UsersTab Deactivate button + admin_deactivate_user(p_email) RPC — run supabase/admin_rpcs.sql; clears stripe_subscription_id; audited | Admin only |
+| Admin: hard-delete user from Supabase + all data + storage photos | ✅ | AdminPanel.jsx UsersTab Delete button + admin_delete_user() RPC + deleteUserPhotos() — run supabase/admin_delete_user.sql AND supabase/admin_storage_policy.sql — cleans: company_members, machine_permissions, asset_permissions, services, machine_bookings, machines, clients, inventory_items, vehicles, equipment, tools, consumables, wiki data, asset_assignments, profiles, auth.users; wiki deletion order: contributions+revisions on user's entries first (covers other contributors), then entries, then user's own revisions/contributions on others' entries; if sole company owner, company tier reset to free; server-side auth.email() admin guard | Admin only |
+| Admin: delete wiki entries by a specific user | ✅ | AdminPanel.jsx UsersTab Del Wiki button + admin_delete_user_wiki(uuid) RPC — run supabase/admin_delete_user_wiki.sql; server-side auth.email() check prevents any authenticated user from calling it; wiki deletion order: contributions+revisions on user's entries first (prevents FK violation when other contributors have rows referencing those entries), then entries, then user's own revisions/contributions on other entries | Admin only |
+| Admin: delete individual wiki entry | ✅ | WikiEntryPage — admin delete button visible when VITE_ADMIN_EMAIL matches; deleteWikiEntry() manually deletes contributions + revisions before entry | Admin only |
+| Admin: bulk-delete all wiki entries | ✅ | admin_delete_all_wiki() RPC — run supabase/admin_delete_wiki.sql; deletes contributions, revisions, and entries in order; server-side auth.email() check | Admin only |
+| Admin audit log | ✅ | admin_audit_log table — run supabase/admin_tables_rls.sql; append-only: admin has SELECT only (no UPDATE/DELETE policy — prevents admin from erasing their own audit trail); SECURITY DEFINER RPCs bypass RLS for INSERT writes; AuditTab reads last 200 entries | Admin only |
+| Feature flags table | ✅ | feature_flags table — run supabase/admin_tables_rls.sql; admin can create/toggle/delete; all authenticated users can SELECT (for client-side gating); managed from AdminPanel FlagsTab | Admin only |
+| Admin: storage photo cleanup on user delete | ✅ | is_admin_user() storage policy — run supabase/admin_storage_policy.sql; checks auth.email() = admin email; GRANT EXECUTE ON FUNCTION is_admin_user() TO authenticated added (without it, storage policy evaluation fails for authenticated role and admin photo deletions silently no-op on other users' folders) | Admin only |
+| upgrade_grants table + RLS | ✅ | Stores admin-issued tier grants (email + tier + expiry); run supabase/upgrade_grants_rls.sql — admin-only SELECT/INSERT/UPDATE/DELETE; without RLS any authenticated user could read all grant records | Admin only |
+| Upgrade grant RPCs (grant / revoke / apply) | ✅ | run supabase/apply_pending_upgrade_rpc.sql — creates upgrade_grants table + pending_* columns on profiles; grant_upgrade(email, tier): admin-only, generates code, sets pending_code/pending_tier/pending_code_expires_at on target profile; revoke_upgrade(email): admin-only, expires grant and clears pending columns; apply_pending_upgrade(): called by user from ProfileSettings, validates code; uses profiles FOR UPDATE lock + atomic UPDATE upgrade_grants SET redeemed_at = now() RETURNING id to claim the grant in a single statement (prevents TOCTOU where two concurrent callers could both pass the redeemed_at IS NULL check); upgrades profile tier, audits | Admin + All |
+| Photo viewer: X button + Android back button closes viewer | ✅ | PhotoViewer.jsx — manualClose() pattern (stopPropagation on X prevents double history.back), 52px tap target | All |
+| Machine card: Android back button collapses expanded card | ✅ | MachineCard.jsx — pushState({ cardOpen: id }) on expand, popstate listener collapses it | All |
+| Android PWA: "Press back again to exit" toast | ✅ | src/lib/backGuard.js — installBackGuard() called in main.jsx before React renders; 2 s window | All |
+| Wipe all base64 photos from DB | ✅ | supabase/wipe_photos.sql — run once in SQL Editor (irreversible) | Admin only |
+| Photo storage — Supabase Storage bucket | ✅ | supabase/create_photos_bucket.sql + src/lib/storage.js — run SQL first, then deploy; PhotoAdder rejects files over 50MB client-side before canvas resize attempt | All |
+| Photo cleanup on asset delete | ✅ | deletePhoto() in storage.js called when deleting: machines (deleteMachineApi — fetches main+port photos from machines table + plug/job photos from services table before row delete), vehicles (fetches photos + service_log plugPhoto/jobPhotos), equipment (same), tools (same), clients (deleteClientApi now fetches photos column before row delete), parts (fetches payload.photos before row delete), consumables (deleteConsumable fetches photos column before row delete) | All |
+| Photo cleanup on service log entry delete | ✅ | MachineCard delSvc: collects plugPhoto + jobPhotos from svc state before deleteServiceApi; VehiclesTab removeSvcEntry: same (vehicle entries use ServiceModal which adds photos); tools/equipment service log entries are inline-only (no photos, no cleanup needed) | All |
+| Preconnect hints (Fonts + Supabase dns-prefetch) | ✅ | index.html | All |
+| Non-blocking announcements fetch (deferred after first paint) | ✅ | App.jsx IIFE after setInitializing — tier filter uses effectiveTier(profileData, companyData) so company-billed users see announcements targeted at their effective tier (previously used profile.tier alone which is 'free' for company members) | All |
+| Auto-retry on total load failure + friendly slow-connection message | ✅ | App.jsx loadForSession — if 4+ parallel fetches fail, waits 2 s and retries once silently; loading screen shows "Taking a bit longer than usual… slow connection — giving it another go" during the wait instead of alarming the user | All |
+| Service worker / PWA static asset cache (repeat-visit perf) | ✅ | vite-plugin-pwa, dist/sw.js | All |
+| Shared `UpgradeBanner` component (green box, label, Upgrade → button) | ✅ | src/components/ui/UpgradeBanner.jsx — used in JobBoard, ServiceReminders, VehiclesTab, EquipmentTab, ToolsTab, StockItemTab, WikiTab | All |
 
 ---
 
@@ -52,18 +89,25 @@ Stripe
 |---------|--------|-----------|------|
 | machines table (200+ columns, RLS) | ✅ | profiles, companies | Free |
 | Create / edit / delete machine | ✅ | machines table, transforms.js | Free |
+| First-run arrow guide (3-step tutorial: arrow → + Add · arrow → first card · in-card button key) | ✅ | Tracker.jsx GuideStep1/GuideStep2 + MachineCard showGuide prop — curved hand-drawn orange SVG arrows with pulsing glow; step 3 annotates each button (Edit Machine, PDF, Share, Layout, + LOG) inside the expanded card; dismissed state stored in profiles.preferences | Free |
+| First-run tab guides (all tabs) | ✅ | TabGuide.jsx shared component — two variants: "add" (right-aligned, arrow up-right toward + Add button) and "info" (centered, arrow down toward content); dismissed state stored per-key in profiles.preferences (rat_tut_jobs · rat_tut_search · rat_tut_revenue · rat_tut_clients etc.); same orange glow SVG arrow style as Tracker guide | Free |
+| Job card first-use inline guide | ✅ | JobBoard.jsx JobCard — green tip block shown on first expand (profiles.preferences.rat_tut_job_card); explains Notes / Timer / Parts / Status buttons; "got it" dismiss | Free |
+| Share machine link (🔗 copies /m/:id URL, 2-sec ✓ feedback) | ✅ | MachineCard.jsx copied state + clipboard API | Free |
+| Public machine page (ratbench.net/m/:id, no auth required) | ✅ | PublicMachinePage.jsx + main.jsx route check + get_public_machine() RPC — run supabase/public_machine.sql; exposes only: id, name, type, make, model, year, last_service_date, last_service_odo, photos (time_log and notes are intentionally excluded); shows cover photo hero banner; accent-coloured QR code; "Add this machine" deep-link pre-fills Add Machine form | Free |
 | Machine form (all 200+ spec fields) | ✅ | machines, machineTypes constants | Free |
+| Machine form sections guide (first-run callout above section list) | ✅ | MachineForm.jsx showFormGuide state — "more specs = more calcs" tip (bore+stroke → compression ratio & piston speed; lighting entries → charge load, all auto); lists 8 key sections with curved orange arrows; Service Intervals highlighted; prominent orange "got it ✓" dismiss button; dismissed state in profiles.preferences.rat_form_tut; auto-dismisses on first save | Free |
+| First-add field glow (Type + Name) | ✅ | MachineForm.jsx firstAdd flag (showFormGuide && !existing) — pulsing orange box-shadow on Type select and Name input; .field-guide CSS class in index.css; clears after guide dismissed | Free |
 | List view + grid view | ✅ | machines, MachineTile, MachineCard | Free |
 | Search, sort, filter by status | ✅ | machines | Free |
 | Drag-to-reorder | ✅ | machines | Free |
-| Machine limit enforcement (30 free) | ✅ | gates.js, machines count | Free |
+| Machine limit enforcement (5 free, 3 guest) | ✅ | gates.js, machines count | Free |
 | Configurable tile fields + colours | ✅ | machines, ui.js constants | Free |
 | Configurable expand sections | ✅ | machines, ui.js constants | Free |
 | PDF spec sheet export | ✅ | machines, jspdf | Free |
 | Machine → client linking | ✅ | machines, clients table | Enthusiast+ |
-| Machine → company tagging | ✅ | machines, companies | Team+ |
-| Real-time sync (org machines) | ✅ | Supabase channel, company_id | Team+ |
-| "Shared" badge on provisioned machines | ✅ | machine_permissions | Team+ |
+| Machine → company tagging | ✅ | machines, companies | Business |
+| Real-time sync (org machines) | ✅ | Supabase channel, company_id | Business |
+| "Shared" badge on provisioned machines | ✅ | machine_permissions | Business |
 | Wiki submission from machine | ✅ | wiki_entries, machines | Enthusiast+ |
 | Rage rating (☠️ skulls) | ✅ | machines.rage | Free |
 | Custom sections (user-defined spec blocks) | ✅ | machines.custom_sections (jsonb) | Free |
@@ -94,11 +138,11 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| machine_permissions table + RLS | ✅ | machines, company_members | Team+ |
-| getMachines() returns provisioned machines | ✅ | machine_permissions | Team+ |
-| Provisioning panel in CompanySettings | ✅ | machine_permissions, company_members | Team+ |
-| Grant View / Grant Edit / Revoke per member | ✅ | machine_permissions | Team+ |
-| Read-only machine card for View-only members | ✅ | machine_permissions, can_edit flag | Team+ |
+| machine_permissions table + RLS | ✅ | machines, company_members | Business |
+| getMachines() returns provisioned machines | ✅ | machine_permissions | Business |
+| Provisioning panel in CompanySettings | ✅ | machine_permissions, company_members | Business |
+| Grant View / Grant Edit / Revoke per member | ✅ | machine_permissions | Business |
+| Read-only machine card for View-only members | ✅ | machine_permissions, can_edit flag | Business |
 
 ---
 
@@ -106,7 +150,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| services table + RLS | ✅ | machines | Free |
+| services table + RLS | ✅ | machines — run supabase/services_rls.sql then supabase/services_rls_hardening.sql; policies: full access for service creator or machine owner, read-only for provisioned members; services_own WITH CHECK now verifies machine ownership on INSERT/UPDATE (prevents attaching a service to a machine the user doesn't own/isn't provisioned on); _service_owner() SECURITY DEFINER helper prevents RLS recursion; services_provisioned_update policy grants edit rights to provisioned team members; upsertService split into insert/update paths — user_id stripped from UPDATE; getServices() capped at .limit(500) | Free |
 | Log service entry (date, types, notes) | ✅ | services table | Free |
 | Spark plug photo log | ✅ | services, photos (base64) | Free |
 | Job photos per service | ✅ | services, photos | Free |
@@ -115,6 +159,7 @@ Stripe
 | Overdue / due-soon badge in tab bar | ✅ | getMachineServiceStatus() helper | Free |
 | Progress bar (green → red) | ✅ | service intervals, last service date | Free |
 | Service history timeline on machine card | ✅ | services table | Free |
+| Mark Serviced auto-logs to service history (3-tap flow from reminder) | ✅ | ServiceReminders.jsx markServiced calls upsertService with General Service entry | Free |
 
 ---
 
@@ -122,11 +167,11 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| machine_bookings table + RLS | ✅ | machines, auth.users | Enthusiast+ |
-| Global enable toggle (`profiles.storage_policy_enabled`) | ✅ | profiles | Enthusiast+ |
+| machine_bookings table + RLS | ✅ | machines, auth.users — own policy in storage_migration.sql; run supabase/machine_bookings_provisioned.sql (provisioned SELECT) and supabase/machine_bookings_ownership.sql (adds WITH CHECK on INSERT/UPDATE enforcing that the booked machine is owned by or provisioned to the booking user — prevents booking injection onto arbitrary machines by UUID) | Enthusiast+ |
+| Global enable toggle (`profiles.storage_policy_enabled`) | ✅ | profiles — run supabase/storage_policy_tier_trigger.sql; BEFORE UPDATE trigger rejects writes to storage_policy_enabled or storage_tiers if the profile's current tier is free (prevents free-tier bypass via direct API call) | Enthusiast+ |
 | Storage tiers (Bench/Small/Medium/Large/Extra Large/Custom) | ✅ | storageTiers.js DEFAULT_STORAGE_TIERS | Enthusiast+ |
-| Configurable tier rates (freeDays/dailyRate/escalateDays/minFee) | ✅ | profiles.storage_tiers JSONB, getTiers(), StorageSettings inline edit | Enthusiast+ |
-| Book In — create a booking with tier + received date | ✅ | machine_bookings, MachineCard | Enthusiast+ |
+| Configurable tier rates (freeDays/dailyRate/escalateDays/minFee) | ✅ | profiles.storage_tiers JSONB, getTiers(), StorageSettings inline edit — server-side tier enforced by trg_storage_policy_tier trigger | Enthusiast+ |
+| Book In — create a booking with tier + received date; touch-friendly: full-width 56px button with large 📥 emoji, single-column form with 48px inputs, 22px checkbox with full-row tap target, stacked action buttons | ✅ | machine_bookings, MachineCard | Enthusiast+ |
 | Per-visit storage toggle (charge/pause billing) | ✅ | machine_bookings.storage_enabled | Enthusiast+ |
 | Mark Collected — close booking, stop accrual | ✅ | collectMachine(), MachineCard | Enthusiast+ |
 | Tile badge: free days remaining (green) | ✅ | getStorageStatus(), MachineCard | Enthusiast+ |
@@ -135,10 +180,10 @@ Stripe
 | ServiceReminders: escalation + billing alerts | ✅ | getAllActiveBookings(), getStorageStatus() | Enthusiast+ |
 | ServiceReminders: consumable stock alerts (LOW / OUT / OVER) | ✅ | getConsumables(), ServiceReminders.jsx | Free |
 | Invoice: storage fees line item | ✅ | getActiveBooking(), exportClientInvoice() | Enthusiast+ |
-| Storage Settings tab (toggle + editable tier table) | ✅ | StorageSettings.jsx, SettingsPage | Enthusiast+ |
-| Booking history per machine | ✅ | getBookingHistory(), machine_bookings | Enthusiast+ |
+| Billing & Storage tab (billing rates section at top requires org — shows org-required prompt otherwise; storage toggle + editable tier table requires Enthusiast+; tab renamed from "Storage") | ✅ | StorageSettings.jsx, SettingsPage — billing rates (hourlyRate/taxRate/taxLabel) moved here from CompanySettings with own Save Rates button; setCompany passed through for live update | Enthusiast+ (storage) / Any tier with org (billing rates) |
+| Booking history per machine | ✅ | getBookingHistory(), machine_bookings — capped at .limit(200) | Enthusiast+ |
 | Custom daily rate override per visit | ✅ | machine_bookings.storage_fee_override | Enthusiast+ |
-| Storage revenue in Revenue Dashboard | ✅ | getClosedBookings(), getClosedBookingFee(), RevenueDashboard | Enthusiast+ |
+| Storage revenue in Revenue Dashboard | ✅ | getClosedBookings(), getClosedBookingFee(), RevenueDashboard — getClosedBookings and getAllActiveBookings both capped at .limit(500) (previously unbounded) | Enthusiast+ |
 | Storage revenue card (realized, per period) | ✅ | filteredBookings, storageRev | Enthusiast+ |
 | Storage revenue per-machine breakdown | ✅ | storageByMachineId, byMachine | Enthusiast+ |
 | Storage included in Gross Profit total | ✅ | grossProfit = labour + parts + storage − cost | Enthusiast+ |
@@ -149,17 +194,18 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
+| Jobs tab: shows first 3 machines only on free tier (FREE_LIMIT=3) | ✅ | JobBoard.jsx FREE_LIMIT | Free (limit) |
 | Job timer (start / stop / pause) | ✅ | machines.job_timer (jsonb) | Free |
 | Multiple timers per machine | ✅ | machines.job_timer array | Free |
-| Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Team+ |
+| Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Business |
 | Time log (save sessions with label + notes) | ✅ | machines.time_log (jsonb) | Free |
 | Running timer badge in Jobs tab | ✅ | machines.job_timer status | Free |
-| Invoice generation (labour + parts) | ✅ | time_log, inventory, company rates | Free |
+| Invoice generation (labour + parts) | ✅ | time_log, inventory, company rates — sequential invoice numbers via next_invoice_number RPC (run supabase/invoice_number_rpc.sql; stores per-year counter in profiles.preferences with FOR UPDATE); falls back to year+random if RPC unavailable | Free |
 | Parts markup on invoice | ✅ | inventory buy/sell price | Free |
-| Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Team+ |
-| Invoice number auto-increment | ✅ | invoices.js RPC + localStorage fallback | Free |
+| Tax calculation on invoice | ✅ | companies.tax_rate, tax_label | Business |
+| Invoice number auto-increment | ✅ | invoices.js — next_invoice_number RPC (DB-only, no local fallback) | Free |
 | HTML invoice export | ✅ | time_log, parts, company details | Free |
-| Collapsed/expanded job card layout (matching asset tabs) | ✅ | JobBoard, JobCard | Free |
+| Collapsed/expanded job card layout — poster style (full-width hero photo 170px with bottom fade gradient to card background, dark emoji placeholder when no photo, icon+name+source/make/model+type below, priority/client/due badges + stats row below info panel) | ✅ | JobBoard JobCard — replaced horizontal thumbnail layout with vertical poster layout matching MachineCard | Free |
 | Common jobs autocomplete | ✅ | COMMON_JOBS constant | Free |
 | Barcode scanner (keyboard detection) | ✅ | inventory items | Free |
 | Stock auto-deduct on part use (parts) | ✅ | adjustStock(), inventory | Free |
@@ -177,8 +223,8 @@ Stripe
 | Revenue totals (labour, parts & consumables, profit) | ✅ | time_log, inventory, consumables, company.hourly_rate | Enthusiast+ |
 | Date filters (week / month / all / custom) | ✅ | time_log.completedAt, machine.parts[].usedAt | Enthusiast+ |
 | Per-machine breakdown | ✅ | time_log, machines | Enthusiast+ |
-| Tax deduction display | ✅ | companies.tax_rate | Team+ |
-| Currency formatting | ✅ | companies.currency | Team+ |
+| Tax deduction display | ✅ | companies.tax_rate | Business |
+| Currency formatting | ✅ | companies.currency | Business |
 
 ---
 
@@ -186,7 +232,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| inventory_items table + RLS | ✅ | profiles | Free |
+| inventory_items table + RLS | ✅ | profiles — run supabase/inventory_items_rls.sql then supabase/inventory_items_provisioned.sql; owner has full access; provisioned SELECT and UPDATE policies (with ownership-theft guard via _inventory_item_owner() SECURITY DEFINER helper) allow team members with asset_permissions entries for asset_type='part' to read and edit shared parts; getInventory() capped at .limit(1000) | Free |
 | Create / edit / delete parts | ✅ | inventory_items | Free |
 | Buy price / sell price / stock qty | ✅ | inventory_items.payload (jsonb) | Free |
 | Min par / max par levels with LOW/OVER badges | ✅ | inventory_items.payload minQuantity/maxQuantity | Free |
@@ -195,12 +241,13 @@ Stripe
 | Part category groups filter bar (Tyres & Wheels, Engine, Fuel & Induction, Ignition, Drive Train, etc.) | ✅ | partsTypes.js PART_CATEGORY_GROUPS | Free |
 | QR code label generation + print | ✅ | inventory_items, qrcode library | Free |
 | Barcode scanner input | ✅ | keyboard detection | Free |
-| Stock adjustment (use / restock) | ✅ | inventory_items.payload | Free |
+| Stock adjustment (use / restock) | ✅ | inventory_items.payload — adjustStock() calls adjust_inventory_stock() RPC (run supabase/adjust_stock_rpcs.sql); atomic single-statement UPDATE eliminates read-modify-write race condition under concurrent use by multiple technicians | Free |
 | Machine parts list (per-machine) | ✅ | machines.parts (jsonb) | Free |
 | localStorage → Supabase migration | ✅ | inventory_items | Free |
 | Photos per part (stored in payload JSONB) | ✅ | inventory_items.payload.photos | Free |
 | Cover photo selection (☆ Cover) for parts | ✅ | PartsTab | Free |
 | Shared UI (StockItemTab) with Consumables tab | ✅ | StockItemTab.jsx, tableType prop | Free |
+| Org provisioning for parts | ✅ | asset_permissions with asset_type='part' — inventory.js permissions functions corrected from 'consumable' to 'part' (namespace collision with consumables table fixed) | Business |
 
 ---
 
@@ -208,7 +255,7 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| clients table + RLS | ✅ | profiles, companies | Enthusiast+ |
+| clients table + RLS | ✅ | profiles, companies — user_id FK has ON DELETE CASCADE (run supabase/clients_fk_cascade.sql); upsertClient split into insert/update paths, user_id stripped from UPDATE; getClients() capped at .limit(500) | Enthusiast+ |
 | Create / edit / delete clients | ✅ | clients table | Enthusiast+ |
 | Photos per client (clients.photos jsonb column) | ✅ | clients table, add_photos_to_clients.sql | Enthusiast+ |
 | Cover photo selection (☆ Cover) for clients | ✅ | CustomersTab | Enthusiast+ |
@@ -223,42 +270,40 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| asset_permissions table + RLS | ✅ | auth.users, company_members | Team+ |
+| asset_permissions table + RLS | ✅ | auth.users, company_members — run supabase/provisioned_update_checks.sql to enforce CHECK constraint on asset_type (valid: vehicle/equipment/tool/consumable/part); provisioned UPDATE policies on all asset tables now have WITH CHECK to prevent ownership theft | Business |
 | **vehicles** table + RLS | ✅ | asset_permissions | Free |
-| Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (3 limit) |
-| Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab | Free |
+| Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (1 limit) |
+| Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab — saving guard prevents duplicate entries on double-click; plug photo replace uploads new first then deletes old (safe on network failure) | Free |
 | Sort modal + list/grid view toggle (Vehicles) | ✅ | VehiclesTab, AssetTile | Free |
 | **equipment** table + RLS | ✅ | asset_permissions | Free |
-| Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (3 limit) |
+| Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (5 limit) |
 | Sort modal + list/grid view toggle (Equipment) | ✅ | EquipmentTab, AssetTile | Free |
 | **tools** table + RLS | ✅ | asset_permissions | Free |
-| Tools tab: CRUD + warranty + loan tracking | ✅ | tools table | Free (3 limit) |
+| Tools tab: CRUD + warranty + loan tracking | ✅ | tools table | Free (5 limit) |
 | Sort modal + list/grid view toggle (Tools) | ✅ | ToolsTab, AssetTile | Free |
 | localStorage → Supabase migration (tools) | ✅ | tools table | — |
-| Free-tier item limit (3 per type) | ✅ | gates.js assetLimit() | Free |
+| Free-tier item limits (vehicles=1, tools=5, equipment=5, consumables=5, parts=5) | ✅ | gates.js TIERS.free + StockItemTab FREE_LIMIT | Free |
 | Upgrade banner at limit | ✅ | atAssetLimit() | Free |
-| Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Team+ |
-| **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql | Free |
-| All-to-all cross-assignment (vehicle/tool/equipment/consumable/part) | ✅ | asset_assignments, LoadoutSection | Free |
-| Forward loadout panel (Assigned Items + picker) | ✅ | LoadoutSection, VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab | Free |
-| Parts (inventory items) assignable via Loadout picker | ✅ | getInventoryItems() wrapper, LoadoutSection | Free |
-| Reverse lookup panel (Assigned To) | ✅ | getAssignedIn(), LoadoutSection | Free |
-| Unassign items from loadout | ✅ | unassignAsset(), LoadoutSection | Free |
+| Org provisioning (grant/revoke per member) | ✅ | asset_permissions, CompanySettings | Business |
+| **asset_assignments** table + RLS (replaces vehicle_assignments for cross-type) | ✅ | asset_assignments_migration.sql; run supabase/asset_assignments_add_member.sql to expand child_type CHECK to include 'member' and 'part'; getAssignedTo() and getAssignedIn() capped at .limit(200) | Free |
+| Vehicle loadout: assign tools/equipment/consumables/parts to a vehicle | ✅ | asset_assignments, LoadoutSection — assignment only from VehiclesTab; LoadoutSection removed from Tools/Equipment/StockItemTab | Free |
+| Vehicle loadout item limit (free=5, paid=unlimited) | ✅ | LoadoutSection maxItems prop — VehiclesTab passes 5 for free tier; shows n/5 count and disables + Assign at limit with upgrade nudge | Free |
+| Unassign items from vehicle loadout | ✅ | unassignAsset(), LoadoutSection | Free |
 | **consumables** table + RLS | ✅ | asset_permissions | Free |
 | Consumables tab: CRUD + qty tracking + stock alerts | ✅ | consumables table | Free (10 limit) |
 | Sort modal + list/grid view toggle (Consumables) | ✅ | ConsumablesTab, AssetTile | Free |
 | 80+ common presets (oils, fuels, coolants, welding, abrasives…) | ✅ | consumableTypes.js COMMON_CONSUMABLES | Free |
 | Category-specific spec fields (viscosity, octane, DOT, ISO grade…) | ✅ | consumableTypes.js CATEGORY_SPECS | Free |
-| ± stock adjustment inline on card | ✅ | adjustConsumableQty(), StockItemTab | Free |
+| ± stock adjustment inline on card | ✅ | adjustConsumableQty() calls adjust_consumable_qty() RPC (run supabase/adjust_stock_rpcs.sql); atomic UPDATE eliminates read-modify-write race; getConsumables() capped at .limit(1000) | Free |
 | Cover photo selection (☆ Cover sets card thumbnail) | ✅ | VehiclesTab, ToolsTab, EquipmentTab, ConsumablesTab, MachineCard | Free |
 | Photos for consumables (add via form, thumbnail in card, cover selection) | ✅ | ConsumablesTab, consumables table photos column | Free |
-| Machine card collapsed header shows cover photo thumbnail | ✅ | MachineCard | Free |
+| Machine card collapsed header — poster style (full-width hero photo 170px with bottom fade gradient to card background, dark emoji placeholder when no photo, icon+name+make/model/year+type below, badges below info panel) | ✅ | MachineCard — replaced horizontal thumbnail+info layout with vertical poster layout | Free |
 | Low-stock / out-of-stock badge + overstock badge | ✅ | qtyLabel(), min_quantity / max_quantity thresholds | Free |
 | Configurable min par (reorder point) and max par (ceiling) | ✅ | consumables.min_quantity, consumables.max_quantity | Free |
 | Buy price / sell price / supplier / part number / location | ✅ | consumables.buy_price, sell_price, supplier, part_number, location | Free |
 | Shared UI (StockItemTab) with Parts tab | ✅ | StockItemTab.jsx, tableType="consumable" | Free |
-| Org provisioning for consumables | ✅ | asset_permissions, CompanySettings | Team+ |
-| Assign org member to vehicle (VehicleMemberSection) | ✅ | getCompanyMembers(), assignAsset child_type='member', company prop | Team+ |
+| Org provisioning for consumables | ✅ | asset_permissions, CompanySettings — provisioned UPDATE policy now has WITH CHECK (user_id = _consumable_owner(id)) via supabase/provisioned_update_checks.sql; prevents provisioned users from changing user_id to steal consumable ownership | Business |
+| Assign org member to vehicle (VehicleMemberSection) | ✅ | getCompanyMembers(), assignAsset child_type='member', company prop — run supabase/asset_assignments_add_member.sql to enable (original CHECK constraint blocked 'member' inserts) | Business |
 
 ---
 
@@ -266,18 +311,20 @@ Stripe
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
-| companies table + RLS | ✅ | profiles | Team+ |
-| Create / edit company | ✅ | companies | Team+ |
-| Invite code join flow | ✅ | companies.invite_code, RPC | Team+ |
-| company_members table | ✅ | companies, profiles | Team+ |
-| Roles: owner / admin / technician / viewer | ✅ | company_members.role | Team+ |
-| Edit member roles | ✅ | updateMemberRole() RPC | Team+ |
-| Remove member | ✅ | removeMember() RPC | Team+ |
-| Regenerate invite code | ✅ | regenerateInviteCode() RPC | Team+ |
-| Company logo upload | ✅ | companies.logo (base64) | Team+ |
-| Hourly rate / tax rate / currency config | ✅ | companies fields | Team+ |
-| Machine provisioning panel (CompanySettings) | ✅ | machine_permissions | Team+ |
-| Asset provisioning panel (vehicles/equip/tools) | ✅ | asset_permissions, CompanySettings | Team+ |
+| companies table + RLS | ✅ | profiles — run supabase/org_and_profiles_rls.sql; members read; admins update (column-level REVOKE/GRANT blocks direct writes to tier/stripe_customer_id/stripe_subscription_id — only SECURITY DEFINER edge functions can write those); _is_company_member / _is_company_admin SECURITY DEFINER helpers avoid asset_permissions recursion; direct INSERT policy removed (rpc_create_company is SECURITY DEFINER and handles both the company row and company_members seeding atomically — open INSERT policy would create ownerless companies) | Business |
+| Create / edit company | ✅ | companies — run supabase/company_rpcs.sql then supabase/company_columns_restrict.sql; rpc_create_company SECURITY DEFINER creates row + seeds owner; REVOKE SELECT on companies restricts authenticated reads to safe columns (excludes stripe_customer_id/stripe_subscription_id); get_my_company(p_company_id) SECURITY DEFINER RPC returns full row for company members; getMyCompany() in users.js uses RPC instead of select("*") | Business |
+| Invite code join flow | ✅ | companies.invite_code — run supabase/company_rpcs.sql (defines join_company_by_invite SECURITY DEFINER: matches invite_code, inserts member as 'viewer' role, links profile; blocks joining if already a member of a different org — must leave first; original 'member' role violated the role CHECK constraint) | Business |
+| company_members table | ✅ | companies, profiles — RLS: members read own company list; admins manage; users can leave; run supabase/org_and_profiles_rls.sql then supabase/company_members_no_direct_insert.sql; cm_manage split into cm_manage_update + cm_manage_delete (no INSERT) — all member additions must go through join_company_by_invite SECURITY DEFINER RPC (direct INSERT allowed a compromised admin to add arbitrary users at any role, bypassing the invite flow's role='viewer' enforcement); CHECK constraint enforces valid role values at DB level | Business |
+| Roles: owner / admin / technician / viewer | ✅ | company_members.role — DB CHECK constraint enforces valid values; role='owner' cannot be set via direct UPDATE (requires SECURITY DEFINER RPC) | Business |
+| Edit member roles | ✅ | updateMemberRole() — UsersTab derives isOwner and isMemberOwner from company_members.role in the loaded members list (company.owner_id column never existed; using it made isOwner always false, locking the owner out of all management actions and exposing the owner's role to change) | Business |
+| Remove member | ✅ | rpc_remove_member() — run supabase/delete_cascade_fixes.sql; verifies caller is owner/admin; blocks removing the company owner (would orphan company permanently); cleans machine_permissions, asset_permissions, vehicle crew assignments; uuid columns in DELETE queries use direct uuid comparison (::text casts removed — casts prevented index use) | Business |
+| Leave company (self) | ✅ | rpc_leave_company(p_company_id) — run supabase/rpc_leave_company.sql; cleans machine_permissions and asset_permissions for that company before removing the company_members row and clearing profiles.company_id; previously leaveCompany only deleted the members row, leaving orphaned provisioned access; owner is blocked from leaving (must transfer ownership or delete company first) | Business |
+| Delete company | ✅ | deleteCompany() → rpc_delete_company SECURITY DEFINER — run supabase/company_rpcs.sql; clears profiles.company_id for all members, removes asset_permissions, company_members, then company row (FK SET NULL handles machines/vehicles/etc.) | Business |
+| Regenerate invite code | ✅ | regenerateInviteCode() — uses crypto.randomUUID() (CSPRNG) for the 8-char code | Business |
+| Company logo upload | ✅ | companies.logo (base64) | Business |
+| Hourly rate / tax rate / tax label config | ✅ | companies fields — edited in Settings → Billing & Storage (moved from CompanySettings; saved via updateCompany()) | Any tier with org |
+| Machine provisioning panel (CompanySettings) | ✅ | machine_permissions — run supabase/create_machine_permissions.sql; machine_perms_update policy now has explicit WITH CHECK (prevents machine owner changing machine_id to a machine they don't own in a single UPDATE) | Business |
+| Asset provisioning panel (vehicles/equip/tools) | ✅ | asset_permissions, CompanySettings | Business |
 
 ---
 
@@ -286,15 +333,17 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | wiki_entries table | ✅ | — | Free |
-| wiki_revisions table | ✅ | wiki_entries | Enthusiast+ |
-| Browse + search wiki | ✅ | wiki_entries | Free |
-| View count tracking | ✅ | wiki_entries.view_count | Free |
+| wiki_revisions table | ✅ | wiki_entries — run supabase/wiki_revisions_rls_helper.sql; SELECT policy uses _wiki_entry_visible() SECURITY DEFINER helper (decouples revisions RLS from wiki_entries RLS — without the helper, future wiki_entries policies could silently break revision SELECT) | Enthusiast+ |
+| Browse + search wiki | ✅ | wiki_entries — SELECT RLS: non-sample entries public; sample entries visible to owner only; INSERT WITH CHECK: created_by = auth.uid() AND (NOT is_sample OR sample_owner_id = auth.uid()) — blocks injecting fake sample entries into another user's sample library; UPDATE RLS restricted to entry author; column-level REVOKE/GRANT limits author updates to make/model/type/slug; slug CHECK constraint (^[a-z0-9][a-z0-9-]*$); run supabase/wiki_rls.sql | Free |
+| Wiki collaborative rev pointer | ✅ | update_wiki_rev_pointer(p_entry_id, p_rev_id) RPC — run supabase/wiki_advance_rev_rpc.sql then supabase/wiki_rev_pointer_lock.sql; SECURITY DEFINER; caller must be entry author or contributor AND target revision author or entry author; FOR UPDATE row lock on wiki_entries serializes concurrent calls (eliminates TOCTOU race where two simultaneous edits could orphan one revision from current_rev_id); IS DISTINCT FROM guard makes duplicate calls idempotent | Free |
+| View count tracking | ✅ | wiki_entries.view_count + increment_wiki_views() RPC — run supabase/wiki_view_count_rpc.sql then supabase/wiki_view_count_anon_fix.sql; SECURITY DEFINER RPC restricted to authenticated only (anon grant removed — bots could inflate counts without authenticating); WHERE clause includes AND NOT is_sample so sample entries never accumulate view counts; client-side per-session Set in wiki.js prevents the same entry from being incremented more than once per page load | Free |
 | Create / edit wiki entry | ✅ | wiki_entries | Enthusiast+ |
 | Field-level editing with edit summary | ✅ | wiki_revisions | Enthusiast+ |
 | Full revision history | ✅ | wiki_revisions | Enthusiast+ |
 | Submit machine specs to wiki | ✅ | machines → wiki_entries | Enthusiast+ |
 | Author attribution | ✅ | wiki_revisions.author_id | Enthusiast+ |
 | Admin delete any wiki entry | ✅ | VITE_ADMIN_EMAIL env var check in WikiEntryPage, deleteWikiEntry() | Admin only |
+| Per-user sample wiki entries (Honda GX200, Husqvarna 455 Rancher, Yamaha YZ250) | ✅ | seedSampleWikiEntries() in wiki.js — seeded on first wiki visit (gate: profiles.preferences.rat_wiki_seeded); each user gets their own copies (slug: {base}-sample-{uid8}); is_sample + sample_owner_id columns on wiki_entries; users see only their own samples + global non-sample entries; "Remove Sample" delete button on own samples; run supabase/wiki_sample_entries.sql first. Re-seed regression fix: WikiHomePage checks localStorage rat_wiki_seeded as fallback before seeding, migrates it to DB prefs and removes LS key on first load | Free |
 
 ---
 
@@ -304,13 +353,14 @@ Stripe
 |---------|--------|-----------|------|
 | 🔨 Workshop parent tab (nested sub-tab bar) | ✅ | App.jsx, WORKSHOP_TABS constant | Free |
 | Workshop sub-tabs: Parts, Clients, Tools, Vehicles, Equipment, Consumables, Revenue | ✅ | WORKSHOP_TABS, App.jsx content panels | Free / Ent+ |
-| Free-tier Workshop banner (5-item limit nudge + upgrade link) | ✅ | effectiveTier(), Workshop tab | Free |
+| Per-subtab upgrade banner (shows only when at item limit) | ✅ | VehiclesTab / EquipmentTab / ToolsTab / StockItemTab — each shows banner only when atLimit/atAssetLimit; global Workshop tab banner removed from App.jsx | Free |
 | Revenue sub-tab gated behind Enthusiast+ | ✅ | WORKSHOP_TABS enthusiastOnly flag | Enthusiast+ |
 | Per-user Workshop tab visibility preferences | ✅ | profiles.tab_order.workshop_visible (Supabase), TabOrderSettings.jsx checkboxes | Free |
 | Per-user Workshop default sub-tab | ✅ | First visible tab in ordered workshop list (implicit, no separate setting) | Free |
 | Workshop visibility + order UI under Settings → ⇅ Tabs | ✅ | TabOrderSettings.jsx WorkshopReorderList (checkboxes + ↑/↓ + DEFAULT badge) | Free |
-| Users tab moved into Settings (team/business only) | ✅ | SettingsPage, UsersTab | Team+ |
-| localStorage migration (old flat tab IDs → workshop sub-tabs) | ✅ | App.jsx init state | Free |
+| Users tab moved into Settings (Business only) | ✅ | SettingsPage, UsersTab | Business |
+| User preferences cross-device sync (sort, view, cols, active tab, tutorial flags) | ✅ | profiles.preferences JSONB + upsert_preference RPC — run supabase/preferences_migration.sql; RPC verifies p_user_id = auth.uid() to prevent cross-user writes; key allowlist enforced server-side to prevent overwriting rate-limit timestamps or injecting arbitrary keys | Free |
+| One-time localStorage → preferences migration | ✅ | migrateLocalPreferences() in preferences.js — runs on first profile load before prefsSynced is set (blocking the tab-save effects until migration completes, preventing old LS values overwriting new DB values); migrates all known LS pref keys to profiles.preferences; sets _lsMigrated guard; removes migrated LS keys | Free |
 | Settings tab bar horizontally scrollable on mobile | ✅ | SettingsPage.jsx overflowX:auto | Free |
 | Per-account tab reordering (main nav, workshop, settings) | ✅ | profiles.tab_order JSONB, applyTabOrder(), TabOrderSettings.jsx | Free |
 | Tab order UI under Settings → ⇅ Tabs (↑/↓ reorder + reset) | ✅ | TabOrderSettings.jsx | Free |
@@ -319,77 +369,7 @@ Stripe
 ---
 
 
-## 13. Towing Allocations (Admin Only)
-
-| Feature | Status | Depends on | Tier |
-|---------|--------|-----------|------|
-| Towing section — admin-gated (VITE_ADMIN_EMAIL) | ✅ | session.user.email check, App.jsx | Admin only |
-| **6-tab layout: Allocations · Pager · Alerts · Traffic · Analytics · Fleet** | ✅ | TowingSection.jsx | Admin only |
-| Tow Allocations tab — polls VicRoads disruptions API every 60s | ✅ | TowAllocationsTab.jsx, fetch + setInterval, VITE_VICROADS_KEY | Admin only |
-| Traffic signal indicator on allocation cards — logs non-TowAllocation VicRoads events to traffic_event_log; shows 🚦 +Xm badge (time gap between traffic first-seen and tow dispatch) and full Traffic Signal section in expanded view | ✅ | TowAllocationsTab.jsx, towing.js logTrafficEvents/getTrafficSignals, supabase/add_traffic_event_log.sql | Admin only |
-| Filter feed to TowAllocation source only | ✅ | properties.source.sourceName === 'TowAllocation' | Admin only |
-| Allocation cards (road, suburb, eventId, status badge, lanes, timestamps) | ✅ | TowAllocationsTab.jsx AllocationCard | Admin only |
-| Active / Inactive grouping with counts | ✅ | TowAllocationsTab.jsx | Admin only |
-| Live countdown + manual refresh button | ✅ | TowAllocationsTab.jsx | Admin only |
-| Sort picker (Most Recent, Oldest, Road Name, Suburb, Lanes, Event ID) | ✅ | TowAllocationsTab.jsx SORT_OPTIONS | Admin only |
-| Time-in duration badge on each card (elapsed since first seen) | ✅ | TowAllocationsTab.jsx timeIn() | Admin only |
-| Active / Cleared status badges — feed presence is source of truth | ✅ | TowAllocationsTab.jsx StatusBadge, liveIds | Admin only |
-| GPS proximity pulse — cards within 10km of user glow with slow pulsing red outline; uses watchPosition, cleans up on unmount; active allocations only | ✅ | TowAllocationsTab.jsx haversineKm(), pulse-nearby keyframe, userPos state | Admin only |
-| Assign Truck stub (Phase 2 placeholder) | ✅ | TowAllocationsTab.jsx — disabled button, ready for wiring | Admin only |
-| Fleet tab — depots CRUD | ✅ | depots table + RLS, FleetTab.jsx | Admin only |
-| Fleet tab — tow trucks CRUD grouped by depot | ✅ | tow_trucks table + RLS, FleetTab.jsx | Admin only |
-| Truck status badges (available / on job / unavailable) | ✅ | FleetTab.jsx statusColor() | Admin only |
-| tow_trucks.assigned_event_id column (Phase 2 ready) | ✅ | create_towing_tables.sql | Admin only |
-| Truck driver details — DA Number, Driver Name fields on truck form | ✅ | FleetTab.jsx TruckForm, add_truck_schedule.sql | Admin only |
-| Truck availability roster — interactive 5-week calendar (tap to cycle off/day/night/both) | ✅ | RosterCalendar.jsx RosterCalendar, tow_trucks.schedule JSONB date-keyed | Admin only |
-| Roster quick-fill buttons — Mon–Fri day/night, every weekend, alternating weekend A/B | ✅ | RosterCalendar.jsx QUICK fills, ISO week alternation | Admin only |
-| 14-day colour strip on truck row — orange=day, blue=night, split=both (MiniRoster) | ✅ | RosterCalendar.jsx MiniRoster, TruckRow | Admin only |
-| Relief driver roster calendar — same RosterCalendar in AvailabilityModal relief section | ✅ | RosterCalendar.jsx, AvailabilityModal | Admin only |
-| Availability override modal (📅 button) — mark truck temporarily unavailable with reason + return date | ✅ | FleetTab.jsx AvailabilityModal, add_truck_override.sql | Admin only |
-| Relief driver assignment — alternate driver name, DA number, and day/night schedule per truck | ✅ | FleetTab.jsx AvailabilityModal relief section, tow_trucks.relief_* columns | Admin only |
-| TruckRow override states — red/AWAY badge (unavailable, no cover), yellow/RELIEF badge (relief driver active) | ✅ | FleetTab.jsx TruckRow, override_active + relief_driver_name | Admin only |
-| Clear Override button — one-click restore to normal driver/schedule/available status | ✅ | FleetTab.jsx AvailabilityModal handleClear | Admin only |
-| tow_allocation_log table — persists every polled allocation by event_id | ✅ | add_tow_allocation_log.sql, logAllocations() | Admin only |
-| 24hr history loaded from log on mount (before first live poll) | ✅ | getRecentAllocations(24), TowAllocationsTab.jsx | Admin only |
-| Live + log merged by eventId — live wins on conflict | ✅ | mergeFeatures(), TowAllocationsTab.jsx | Admin only |
-| LOG purge cron job — deletes entries older than 365 days (daily at 03:00 UTC) | ✅ | tow_log_cleanup_cron.sql, pg_cron | Admin only |
-| LOG badge on historical-only cards (not in current live feed) | ✅ | fromLog prop, AllocationCard | Admin only |
-| PDF export with selectable period (15 min → 31 days) — A4 report with summary boxes + table | ✅ | TowAllocationsTab.jsx handleExport(), jsPDF, getRecentAllocations() | Admin only |
-| Incident type badge on card header (eventSubType: "Stationary vehicle" etc.) | ✅ | TowAllocationsTab.jsx AllocationCard, p.eventSubType | Admin only |
-| Cross street shown on card (startIntersectionRoadName @ suburb) | ✅ | TowAllocationsTab.jsx AllocationCard, p.reference.startIntersectionRoadName | Admin only |
-| Melway grid reference on card (e.g. Mel 2E B1) | ✅ | TowAllocationsTab.jsx AllocationCard, p.melway | Admin only |
-| Google Maps link in expanded card view (from geometry coordinates) | ✅ | TowAllocationsTab.jsx AllocationCard, feature.geometry.coordinates | Admin only |
-| Expanded detail grid: Event Type, Incident Type, Cross Street, Melway, Coordinates | ✅ | TowAllocationsTab.jsx AllocationCard expanded section | Admin only |
-| Analytics tab — KPI row (total jobs, avg/day, peak hour, top suburb, avg duration) | ✅ | TowAnalyticsTab.jsx, getAllocationsForAnalytics() | Admin only |
-| Analytics — incident map: orange hotspot clusters (historical), green active dots (live VicRoads), grey cleared dots (last 1hr from log) | ✅ | TowAnalyticsTab.jsx HeatMap, leaflet | Admin only |
-| Analytics — map legend overlay (bottom-left) click-to-toggle per layer with counts; viewport auto-fits visible layers | ✅ | TowAnalyticsTab.jsx legend overlay | Admin only |
-| Analytics — click active/cleared map dot → AllocationCard pops up at corner of dot within map (no screen dim); smart left/right/top/bottom anchoring; ✕ or background click to dismiss; popup tracks dot during pan/zoom via latLngToContainerPoint on map 'move' event | ✅ | TowAnalyticsTab.jsx inline popup, AllocationCard exported from TowAllocationsTab | Admin only |
-| Pager tab (📟) — merges Supabase pager_messages (SA GRN) + VicEmergency CFA incidents in parallel via Promise.allSettled; last 2h, newest-first, polls every 60s | ✅ | PagerTab.jsx, pager_messages table, /.netlify/functions/vic-emergency | Admin only |
-| Pager — VicEmergency incidents filtered to feedType=incident or has category1; time-windowed to last 2h | ✅ | PagerTab.jsx normaliseEmergency(), fetchAll() | Admin only |
-| Pager — filter pills (All / 🔥 VIC / CFS / MFS / SES / SAAS / MEDSTAR) colour-coded by agency | ✅ | PagerTab.jsx AGENCY_COLOR, FILTERS | Admin only |
-| Pager — cards: 📟 icon for SA GRN messages, fire/rescue icons for VIC incidents; agency badge, incident type, address, raw message, time-ago | ✅ | PagerTab.jsx PagerCard, incidentIcon() | Admin only |
-| Pager — expandable card body: raw pager message text + Google Maps link (VIC incidents with geometry) | ✅ | PagerTab.jsx PagerCard expanded | Admin only |
-| Pager — VicEmergency data live immediately (no VPS needed); SA GRN messages populate once VPS pipeline is running | ✅ | PagerTab.jsx | Admin only |
-| pager_messages table + RLS — service role insert (VPS), authenticated read (browser) | ✅ | supabase/add_pager_messages.sql | Admin only |
-| VPS pager service — connects to sapaging.com Socket.IO server-side (no CORS), writes to pager_messages | 📋 | Needs VPS; direct browser connection blocked by CORS | Admin only |
-| Waze tab (🚗) — dedicated Waze user-reported alerts feed; Melbourne metro bounding box; polls every 60s via /.netlify/functions/waze-alerts | ✅ | AlertsTab.jsx (renamed content), netlify/functions/waze-alerts.js | Admin only |
-| Waze — filter pills (All / 💥 Accident / ⚠️ Hazard / 🚗 Jam / 🚧 Road Closed) with live counts | ✅ | AlertsTab.jsx FILTERS, TYPE_COLOR | Admin only |
-| Waze — cards: type-coloured left border, confirm badge, street + suburb, time-ago; expandable with reliability score + Google Maps link | ✅ | AlertsTab.jsx WazeCard | Admin only |
-| radio_transcripts table + RLS — service role insert (VPS), authenticated read (browser); reserved for future VPS transcription pipeline | ✅ | supabase/add_radio_transcripts.sql | Admin only |
-| Traffic tab (🗺) — VicRoads unplanned disruptions + VicEmergency incidents merged, last 24h, sorted newest-first | ✅ | TrafficTab.jsx, VITE_VICROADS_KEY, EMERGENCY_URL, Promise.allSettled | Admin only |
-| Traffic — both feeds non-fatal: VicRoads still shows if VicEmergency fails and vice versa | ✅ | TrafficTab.jsx Promise.allSettled, try/catch per source | Admin only |
-| Traffic — filter pills (All / Accident / Breakdown / Flooding / Road Damage / Emergency / Other) with live counts | ✅ | TrafficTab.jsx FILTERS, toFilter() | Admin only |
-| Traffic — expandable incident cards: status badge, type icon, suburb, time ago, Google Maps link | ✅ | TrafficTab.jsx IncidentCard, incidentIcon() | Admin only |
-| Traffic — countdown timer + manual refresh; auto-refresh every 60 seconds | ✅ | TrafficTab.jsx setInterval, countdown state | Admin only |
-| Analytics — jobs by hour of day chart (24-bar) | ✅ | TowAnalyticsTab.jsx HourChart | Admin only |
-| Analytics — jobs by day of week chart | ✅ | TowAnalyticsTab.jsx DowChart | Admin only |
-| Analytics — hot suburbs + hot roads ranked bar lists | ✅ | TowAnalyticsTab.jsx BarList | Admin only |
-| Analytics — incident type + impact type breakdowns | ✅ | TowAnalyticsTab.jsx BarList | Admin only |
-| Analytics — period selector (7d / 30d / 90d / 1yr) | ✅ | TowAnalyticsTab.jsx PERIODS, getAllocationsForAnalytics(days) | Admin only |
-
----
-
-## 14. Queued Features
+## 13. Queued Features
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
@@ -399,11 +379,12 @@ Stripe
 | VPS radio transcription service — ffmpeg + silero-vad + faster-whisper large-v3 → Supabase radio_transcripts | 📋 | Needs Broadcastify Premium (or free stream URL); separate Python service, not in this repo |
 | Photo migration → Supabase Storage | 📋 | Currently base64 in DB rows — expensive |
 | Push notifications (service due) | 📋 | Needs FCM or similar |
-| Smart Mode cascade calculations | 📋 | Needs multiple sections complete |
+| Auto-calc: electrical load from lighting entries (always-on) | ✅ | MachineForm.jsx — smartMode toggle removed; load auto-sums from Lighting section entries, net charge rate auto-calculates when chargeAmps + chargeVoltage present | Free |
 | Invoice / Quote PDF (separate from spec PDF) | 📋 | Currently HTML export only |
-| General Terms of Service page | ✅ | TermsPage.jsx — linked from AuthScreen footer + signup consent |
-| Privacy Policy page | ✅ | PrivacyPage.jsx — linked from AuthScreen footer + signup consent |
-| API access (Business tier) | ❌ | Removed from billing copy — not being built |
+| General Terms of Service page | ✅ | TermsPage.jsx — public URL: ratbench.net/terms |
+| Privacy Policy page | ✅ | PrivacyPage.jsx — public URL: ratbench.net/privacy |
+| Data Retention Policy page | ✅ | DataRetentionPage.jsx — public URL: ratbench.net/data-retention |
+| API access | ❌ | Not being built — removed from billing copy |
 | Firebase migration | 📋 | Long-term — after features stable |
 
 ---

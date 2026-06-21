@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
+import { deletePhoto } from '../storage';
 
 function fromDb(r) {
   return {
@@ -26,11 +28,15 @@ function fromDb(r) {
 }
 
 export async function getConsumables() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
   const { data, error } = await supabase
     .from('consumables')
     .select('*')
+    .eq('user_id', user.id)
     .order('category', { ascending: true })
-    .order('name',     { ascending: true });
+    .order('name',     { ascending: true })
+    .limit(1000);
   if (error) throw error;
   return (data || []).map(fromDb);
 }
@@ -59,8 +65,10 @@ export async function upsertConsumable(item) {
     updated_at:   now,
   };
   if (item.id) {
-    const { data, error } = await supabase.from('consumables').update(payload).eq('id', item.id).select().single();
+    const { user_id: _uid, ...updatePayload } = payload;
+    const { data, error } = await supabase.from('consumables').update(updatePayload).eq('id', item.id).select().single();
     if (error) throw error;
+    await syncAssignmentChildName('consumable', item.id, item.name);
     return fromDb(data);
   } else {
     const { data, error } = await supabase.from('consumables').insert({ ...payload, created_at: now }).select().single();
@@ -70,22 +78,23 @@ export async function upsertConsumable(item) {
 }
 
 export async function deleteConsumable(id) {
+  try {
+    const { data } = await supabase.from('consumables').select('photos').eq('id', id).single();
+    (data?.photos || []).forEach(url => deletePhoto(url));
+  } catch {}
+  await unassignAllByChild('consumable', id);
   const { error } = await supabase.from('consumables').delete().eq('id', id);
   if (error) throw error;
 }
 
 export async function adjustConsumableQty(id, delta) {
-  const { data, error } = await supabase.from('consumables').select('quantity').eq('id', id).single();
+  const { data, error } = await supabase.rpc('adjust_consumable_qty', { p_id: id, p_delta: delta });
   if (error) throw error;
-  const newQty = Math.max(0, (Number(data.quantity) || 0) + delta);
-  const { data: updated, error: e2 } = await supabase
-    .from('consumables')
-    .update({ quantity: newQty, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
+  if (data?.error) throw new Error(data.error);
+  // Re-fetch the full row so callers get the same shape as before
+  const { data: row, error: e2 } = await supabase.from('consumables').select('*').eq('id', id).single();
   if (e2) throw e2;
-  return fromDb(updated);
+  return fromDb(row);
 }
 
 // ── Permissions (asset_permissions) ─────────────────────────────────────────

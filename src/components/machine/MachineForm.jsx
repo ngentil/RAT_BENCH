@@ -2,16 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, inp, sel, txa, btnA, btnG, btnD, sm, col, row, dvdr, empt, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, TYPE_PH, getPH, HANDHELD, WHEELED, MOTO, VEHICLE, TRACKED, isCustom, isVehicle, isTracked, isOutboard, isChipper, isStumpGrinder, showForCustom, ALL_SECTIONS, ALL_TYPES, showPTO, showPump, showGenOutput, showDrivetrain, showSuspension, showBrakes, showTyres, showElectrics, showBlade, BODY_TYPES_VEHICLE, BODY_TYPES_MOTO, DRIVE_CONFIGS, VEHICLE_MAKES, COMMON_COLOURS, CHAINSAW_CHAIN_PITCHES, CHAINSAW_GAUGES, SPROCKET_STYLES, BAR_MOUNT_TYPES, TRACKED_BRANDS, TRACKED_SUBTYPES, OPERATING_WEIGHTS, TRACK_TYPES, HYD_PUMP_COUNTS, HYD_PUMP_TYPES, RAM_LOCATIONS, COOLING_TYPES, TURBO_TYPES, CHARGING_TYPES, CHARGE_VOLTAGES, RECT_REG, BELT_TYPES, ATTACH_TYPES, SOURCES, STATUSES, CARB_BRANDS, CARB_CLONE_BRANDS, CARB_TYPES, CARB_BOLTS, OIL_BRANDS, OIL_SYNTH, JASO_2T, JASO_4T, EXH_BOLTS, RECOIL_BOLTS, RECOIL_COUNTS, VALVE_COUNTS, PULSE_LOC, PULSE_POS, PORT_CONDITION, SHAFT_TYPES, THREAD_DIR, THREAD_SIZES, PTO_DIAMETERS, SPROCKET_TYPES, CYLINDER_COUNTS, VALVE_TRAIN, CAM_TYPES, LOCKNUT_SIZES, SENSOR_STATUS, INJECTOR_COUNTS, STARTER_TYPES, DRIVE_TYPES, FASTENER_TYPES, FASTENER_LOCS, BOLT_DIAMETERS, CHAIN_PITCHES, TRANS_TYPES, CLUTCH_TYPES, CVT_BELT_TYPES, FORK_TYPES, SHOCK_TYPES, BRAKE_TYPES, BLADE_TYPES, PUMP_TYPES, INLET_SIZES, OUTLET_SIZES, VOLTAGE_OPTIONS, FRAME_TYPES, COIL_TYPES, ENG_BOLTS, ENG_COUNTS, STUD_N, RAGE_LBL, STUD_LOCS, OUTBOARD_SHAFT_LENGTHS, OUTBOARD_TILT_TRIM, OUTBOARD_STEERING, OUTBOARD_PROP_MAT, OUTBOARD_ANODES, OUTBOARD_GEAR_RATIOS, CHIPPER_TYPES, CHIPPER_BRANDS, STUMP_BRANDS, STUMP_DRIVE_TYPES } from '../../lib/constants';
-import { SL, FL, Tooltip, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm, FuseBoxCard, FuseBoxForm } from '../ui/shared';
+import { SL, FL, SkullRating, FastenerRow, StudCard, StudForm, SummaryCard, NotLogged, SectionPicker, HydRamCard, HydRamForm, AttachCard, AttachForm, LightingCard, LightingForm, BearingCard, BearingForm, BeltCard, BeltForm, BatteryCard, BatteryForm, FuseBoxCard, FuseBoxForm } from '../ui/shared';
 import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { effectiveTier } from '../../lib/gates';
+import { getPref, savePref } from '../../lib/db/preferences';
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
   const e=existing||{};
   const isNew=true;
-  const [smartMode,setSmartMode]=useState(e.smartMode||false);
+  const [showFormGuide,setShowFormGuide]=useState(()=>!getPref(profile,'rat_form_tut',false));
+  const dismissFormGuide=()=>{setShowFormGuide(false);savePref(profile?.id,'rat_form_tut',true);};
+  const firstAdd=showFormGuide&&!existing;
+
   const [companyId,setCompanyId]=useState(e.companyId||null);
   const [type,setType]=useState(e.type||"");
   const [name,setName]=useState(e.name||"");
@@ -407,6 +411,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [carbFuelInletBarbDiameter,setCarbFuelInletBarbDiameter]=useState(_cs.fuelInletBarbDiameter||"");
   const [carbFuelOutletBarbDiameter,setCarbFuelOutletBarbDiameter]=useState(_cs.fuelOutletBarbDiameter||"");
   const [carbFuelBulbDiameter,setCarbFuelBulbDiameter]=useState(_cs.fuelBulbDiameter||"");
+  const [carbThrottleCableDia,setCarbThrottleCableDia]=useState(_cs.throttleCableDia||"");
   const [secCarbSpec,setSecCarbSpec]=useState(false);
   const [editCarbSpec,setEditCarbSpec]=useState(isNew);
   const handleCarbBoltSpacing=v=>{
@@ -524,7 +529,8 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       setName(finalName);
     }
     if(!isTracked(type)&&!finalName){setNameErr(true);return;}
-    onSave({id:e.id||uid(),companyId:companyId||null,smartMode,type,name:finalName,make:make.trim(),model:model.trim(),
+    if(showFormGuide)dismissFormGuide();
+    onSave({id:e.id||uid(),companyId:companyId||null,type,name:finalName,make:make.trim(),model:model.trim(),
       desc:desc.trim(),source,status,photos,year:year.trim(),colour:colour.trim(),bodyType,driveConfig,plugType:plugType.trim(),strokeType,motorType,motorPower:motorPower.toString(),motorTorque:motorTorque.toString(),controllerBrand:controllerBrand.trim(),packVoltage:packVoltage.toString(),packCapacity:packCapacity.toString(),battChemistry,cellCount:cellCount.toString(),chargePort,maxChargeRate:maxChargeRate.toString(),evRange:evRange.toString(),regenBraking,cylCount,firingOrder:firingOrder.trim(),valveTrain,locknutSize,camType,
       intakeValveClear:intakeValveClear.toString().trim(),exhaustValveClear:exhaustValveClear.toString().trim(),intakeValveN,exhaustValveN,
       iValveFace:iValveFace.toString().trim(),iValveStem:iValveStem.toString().trim(),iValveLift:iValveLift.toString().trim(),iValveWeight:iValveWeight.toString().trim(),
@@ -539,6 +545,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       clutch2TType,clutchDrumDiameter:clutchDrumDiameter.toString(),clutchShoeCount,clutchEngageRpm:clutchEngageRpm.toString(),clutchBearingPart:clutchBearingPart.trim(),clutch2TNotes:clutch2TNotes.trim(),pulseLoc,pulsePos,pulseOffset:pulseOffset.toString().trim(),ptoDiameter,shaftType,threadDir,threadSize,sprocketType,boreDiameter:boreDiameter.toString().trim(),inputShaftDiameter:inputShaftDiameter.toString(),inputShaftSplines:inputShaftSplines.toString(),inputShaftThread,outputShaftDiameter:outputShaftDiameter.toString(),outputShaftSplines:outputShaftSplines.toString(),outputShaftThread,propShaftDiameter:propShaftDiameter.toString(),gearboxShaftNotes:gearboxShaftNotes.trim(),
       cBrand,cType,cModel:cModel.trim(),notes:notes.trim(),
       studs,customSections,tileFields:e.tileFields||[],tileColors:e.tileColors||{},expandFields:e.expandFields||[],rage:e.rage||0,createdAt:e.createdAt||new Date().toISOString(),
+      clientId:e.clientId||null,parts:e.parts||[],timeLog:e.timeLog||[],jobTimers:e.jobTimers||[],
       coolingType,coolantType:coolantType.trim(),coolantCapacity:coolantCapacity.toString(),thermostatTemp:thermostatTemp.toString(),coolingNotes:coolingNotes.trim(),
       turboFitted,turboType,turboBrand:turboBrand.trim(),turboBoost:turboBoost.toString(),intercooler,turboNotes:turboNotes.trim(),
       chargingType,chargeVoltage,chargeAmps:chargeAmps.toString(),totalLoadWatts:totalLoadWatts.toString().trim(),rectRegFitted,chargingNotes:chargingNotes.trim(),
@@ -556,7 +563,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
       trackType,trackWidth:trackWidth.toString(),trackPitch:trackPitch.toString(),trackLinks:trackLinks.toString(),sprocketTeeth:sprocketTeeth.toString(),undercarriageHours:undercarriageHours.toString(),groundContactLength:groundContactLength.toString(),
       hydPumpCount,hydPumpType,hydSystemPressure:hydSystemPressure.toString(),hydOilCapacity:hydOilCapacity.toString(),hydReliefValve:hydReliefValve.toString(),
       hydRams,attachments,lighting,
-      carbSpec:{brand:carbBrandSpec,cloneBrand:carbCloneBrand,cloneDerivative:carbCloneDerivative,oemPartNo:carbOemPartNo.trim(),clonePartNo:carbClonePartNo.trim(),repairKitPartNo:carbRepairKitPartNo.trim(),gasketPhotos:carbGasketPhotos,purchaseLinks:carbPurchaseLinks,thickness:carbThickness.toString().trim(),boltSpacing:carbBoltSpacing.toString().trim(),throatDiameter:carbThroatDiameter.toString().trim(),engravings:carbEngravings.trim(),needlePumpValveDiameter:carbNeedlePumpValveDiameter.toString().trim(),needleValveLength:carbNeedleValveLength.toString().trim(),fuelInletBarbDiameter:carbFuelInletBarbDiameter.toString().trim(),fuelOutletBarbDiameter:carbFuelOutletBarbDiameter.toString().trim(),fuelBulbDiameter:carbFuelBulbDiameter.toString().trim()},
+      carbSpec:{brand:carbBrandSpec,cloneBrand:carbCloneBrand,cloneDerivative:carbCloneDerivative,oemPartNo:carbOemPartNo.trim(),clonePartNo:carbClonePartNo.trim(),repairKitPartNo:carbRepairKitPartNo.trim(),gasketPhotos:carbGasketPhotos,purchaseLinks:carbPurchaseLinks,thickness:carbThickness.toString().trim(),boltSpacing:carbBoltSpacing.toString().trim(),throatDiameter:carbThroatDiameter.toString().trim(),engravings:carbEngravings.trim(),needlePumpValveDiameter:carbNeedlePumpValveDiameter.toString().trim(),needleValveLength:carbNeedleValveLength.toString().trim(),fuelInletBarbDiameter:carbFuelInletBarbDiameter.toString().trim(),fuelOutletBarbDiameter:carbFuelOutletBarbDiameter.toString().trim(),fuelBulbDiameter:carbFuelBulbDiameter.toString().trim(),throttleCableDia:carbThrottleCableDia.toString().trim()},
       obShaftLength,obTransomHeight,obTiltTrim,obSteering,obPropPitch:obPropPitch.toString().trim(),obPropDiameter:obPropDiameter.toString().trim(),obPropMaterial,obGearRatio,obLowerUnitOilType:obLowerUnitOilType.trim(),obLowerUnitOilCapacity:obLowerUnitOilCapacity.toString().trim(),obAnodeMaterial,obBreakInHours:obBreakInHours.toString().trim(),obImpellerLastChanged:obImpellerLastChanged.trim(),
       chipperSpec:{type:chipperType,brand:chipperBrand,brandOther:chipperBrandOther,inchSize:chipperInchSize.toString(),bladeCount:chipperBladeCount.toString(),hours:chipperHours.toString(),bladeLastSharpened:chipperBladeLastSharpened.trim()},
       stumpGrinderSpec:{brand:stumpBrand,brandOther:stumpBrandOther,wheelDiameter:stumpWheelDiameter.toString(),toothCount:stumpToothCount.toString(),hours:stumpHours.toString(),cuttingDepth:stumpCuttingDepth.toString(),cuttingWidth:stumpCuttingWidth.toString(),driveType:stumpDriveType,teethLastReplaced:stumpTeethLastReplaced.trim()}});
@@ -568,9 +575,6 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
         <div style={mdlH}>
           <b style={{fontSize:14,textTransform:"uppercase"}}>{existing?"Edit Machine":"Add Machine"}</b>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <Tooltip text={smartMode?"Smart Mode ON — linked fields auto-update from your inputs":"Enable Smart Mode to auto-calculate compression ratio, piston speed, fuel grade and other derived specs"} pos="bottom">
-              <button onClick={()=>setSmartMode(o=>!o)} style={{...btnG,...sm,fontSize:8,padding:"4px 8px",...(smartMode?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}}>⚡ Smart</button>
-            </Tooltip>
             <button style={{...btnG,...sm}} onClick={onClose}>✕</button>
           </div>
         </div>
@@ -584,6 +588,47 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
             </div>
           </div>}
 
+          {showFormGuide&&(
+            <div style={{background:"#0a0a0a",border:"1px solid #222",borderLeft:"2px solid #e8870a",borderRadius:2,padding:"10px 12px",marginBottom:10}}>
+              {/* How the form works */}
+              <div style={{marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                  <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0}}>
+                    <path d="M 1 4 C 3 2, 6 2, 9 4" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
+                    <path d="M 7 2 L 9 4 L 7 6" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700}}>more specs = more calcs</span>
+                </div>
+                <div style={{fontSize:9,color:"#666",fontFamily:"'IBM Plex Mono',monospace",lineHeight:"1.8",paddingLeft:2}}>
+                  The more you fill in, the more the app works out for you — automatically, with no extra steps.<br/><br/>
+                  Add <span style={{color:"#888"}}>bore and stroke</span> to unlock compression ratio, piston speed and rod ratio. Enter your <span style={{color:"#888"}}>compression ratio</span> and you'll get a fuel octane recommendation. Fill in <span style={{color:"#888"}}>sprocket teeth</span> to see your final drive ratio and an estimated top speed.<br/><br/>
+                  Add <span style={{color:"#888"}}>blade length and WOT rpm</span> for tip speed, <span style={{color:"#888"}}>tank size and mix ratio</span> for 2-stroke oil per fill, and <span style={{color:"#888"}}>lighting wattage entries</span> under Electrics to see your total load and whether your charging system is running a surplus or a deficit.
+                </div>
+              </div>
+              <div style={{borderTop:"1px solid #1a1a1a",margin:"8px 0"}}/>
+              <div style={{fontSize:10,color:"#444",fontFamily:"'IBM Plex Mono',monospace",marginBottom:7}}>sections guide — all optional</div>
+              {[
+                ["Basic Info","make, model & photos",false],
+                ["Engine","bore, stroke & auto-calcs",false],
+                ["Ignition System","spark plug gap & timing",false],
+                ["Fuel System","carb, mix ratio & tank size",false],
+                ["Service Intervals","⚡ this drives your reminders",true],
+                ["Fluids","oil type & capacity",false],
+                ["Bar & Chain","chainsaw bar, pitch & sprocket",false],
+                ["Notes","free-form notes & anything else",false],
+              ].map(([label,desc,hl])=>(
+                <div key={label} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+                  <svg className="arrow-guide" width="10" height="8" viewBox="0 0 10 8" style={{flexShrink:0}}>
+                    <path d="M 1 4 C 3 2, 6 2, 9 4" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round"/>
+                    <path d="M 7 2 L 9 4 L 7 6" stroke="#e8870a" strokeWidth="1.1" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span style={{fontSize:9,color:"#e8870a",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,minWidth:96,flexShrink:0}}>{label}</span>
+                  <span style={{fontSize:10,color:hl?"#e8870a":"#4a4a4a",fontFamily:"'IBM Plex Mono',monospace"}}>{desc}</span>
+                </div>
+              ))}
+              <button onClick={dismissFormGuide} style={{marginTop:10,background:"#e8870a",border:"none",color:"#000",fontSize:9,fontWeight:700,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",padding:"5px 14px",borderRadius:3,letterSpacing:"0.06em",display:"block",width:"100%"}}>got it ✓</button>
+            </div>
+          )}
           {/* ── Section header helper inline ── */}
           {/* Basic Info */}
           {(()=>{
@@ -601,7 +646,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}>
                     <FL t="Type" />
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <select style={{...sel,flex:1}} value={type} onChange={ev=>setType(ev.target.value)}>
+                      <select className={firstAdd?"field-guide":undefined} style={{...sel,flex:1}} value={type} onChange={ev=>setType(ev.target.value)}>
                         <option value="">— not set —</option>
                         {MACHINE_TYPES.map(m=><option key={m.label} value={m.label}>{m.icon} {m.label}</option>)}
                       </select>
@@ -612,7 +657,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 </div>
                 {!isTracked(type)&&<div style={col}>
                   <FL t="Name *" />
-                  <input style={{...inp,border:"1px solid "+(nameErr?RED:BRD)}} placeholder={getPH(type,"name")} value={name} onChange={ev=>{setName(ev.target.value);setNameErr(false);}} autoFocus />
+                  <input className={firstAdd?"field-guide":undefined} style={{...inp,border:"1px solid "+(nameErr?RED:BRD)}} placeholder={getPH(type,"name")} value={name} onChange={ev=>{setName(ev.target.value);setNameErr(false);}} autoFocus />
                   {nameErr&&<div style={{fontSize:9,color:RED,marginTop:3}}>Name is required</div>}
                 </div>}
                 {isTracked(type)&&<div style={{fontSize:9,color:MUT,marginBottom:8,lineHeight:1.5}}>Name auto-generated from Brand + Machine Type + Model.</div>}
@@ -849,8 +894,8 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                       </div>
                       {(intakeValveN&&exhaustValveN&&cylCount)&&<div style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"8px 10px",marginTop:6}}>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          <div><div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Total Valve Count</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseInt(intakeValveN)+parseInt(exhaustValveN))*parseInt(cylCount)}</div></div>
-                          <div><div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Valves per Cylinder</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{parseInt(intakeValveN)+parseInt(exhaustValveN)}</div></div>
+                          <div><div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Total Valve Count</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseInt(intakeValveN)+parseInt(exhaustValveN))*parseInt(cylCount)}</div></div>
+                          <div><div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Valves per Cylinder</div><div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{parseInt(intakeValveN)+parseInt(exhaustValveN)}</div></div>
                         </div>
                       </div>}
                     </div>}
@@ -1213,7 +1258,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}><FL t="Height (mm)" /><input style={inp} type="number" placeholder="e.g. 12" step="0.1" min="0" value={iPH} onChange={ev=>setIPH(ev.target.value)} /></div>
                 </div>
                 {iPW&&iPH&&<div style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"6px 10px",marginBottom:10}}>
-                  <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Intake Port Area</div>
+                  <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Intake Port Area</div>
                   <div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseFloat(iPW)*parseFloat(iPH)).toFixed(1)} mm²</div>
                 </div>}
                 <div style={col}><FL t="Condition" /><select style={sel} value={iPCond} onChange={ev=>setIPCond(ev.target.value)}>{PORT_CONDITION.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -1229,7 +1274,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}><FL t="Height (mm)" /><input style={inp} type="number" placeholder="e.g. 16" step="0.1" min="0" value={ePH} onChange={ev=>setEPH(ev.target.value)} /></div>
                 </div>
                 {ePW&&ePH&&<div style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"6px 10px",marginBottom:10}}>
-                  <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Exhaust Port Area</div>
+                  <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>Exhaust Port Area</div>
                   <div style={{fontSize:13,color:"#e8a060",fontFamily:"'IBM Plex Mono',monospace"}}>{(parseFloat(ePW)*parseFloat(ePH)).toFixed(1)} mm²</div>
                 </div>}
                 <div style={col}><FL t="Condition" /><select style={sel} value={ePCond} onChange={ev=>setEPCond(ev.target.value)}>{PORT_CONDITION.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -1414,7 +1459,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
           {/* Carburettor Spec */}
           {(strokeType==="2-stroke"||fuelSystem==="Carburetted")&&(()=>{
-            const hasData=!!(carbBrandSpec||carbOemPartNo||carbClonePartNo||carbRepairKitPartNo||carbThickness||carbBoltSpacing||carbThroatDiameter||carbGasketPhotos.length||carbPurchaseLinks.length);
+            const hasData=!!(carbBrandSpec||carbOemPartNo||carbClonePartNo||carbRepairKitPartNo||carbThickness||carbBoltSpacing||carbThroatDiameter||carbThrottleCableDia||carbGasketPhotos.length||carbPurchaseLinks.length);
             const carbSpecSum=[
               carbBrandSpec==="Clone"?`Clone (${carbCloneBrand||"?"} → ${carbCloneDerivative||"?"})`:carbBrandSpec,
               carbOemPartNo?"OEM: "+carbOemPartNo:null,
@@ -1478,6 +1523,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <div style={col}><FL t="Fuel bulb diameter (mm)" /><input style={inp} type="number" placeholder="e.g. 35" step="0.5" min="0" value={carbFuelBulbDiameter} onChange={ev=>setCarbFuelBulbDiameter(ev.target.value)} /></div>
                     <div style={col}><FL t="Fuel inlet barb ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 4" step="0.25" min="0" value={carbFuelInletBarbDiameter} onChange={ev=>setCarbFuelInletBarbDiameter(ev.target.value)} /></div>
                     <div style={col}><FL t="Fuel outlet barb ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 4" step="0.25" min="0" value={carbFuelOutletBarbDiameter} onChange={ev=>setCarbFuelOutletBarbDiameter(ev.target.value)} /></div>
+                    <div style={col}><FL t="Throttle cable ⌀ (mm)" /><input style={inp} type="number" placeholder="e.g. 1.2" step="0.1" min="0" value={carbThrottleCableDia} onChange={ev=>setCarbThrottleCableDia(ev.target.value)} /></div>
                   </div>
                   {/* Internal measurements */}
                   <div style={{height:1,background:"#1e1e1e",margin:"10px 0"}}/>
@@ -1947,12 +1993,12 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   const parseTyre=s=>{const m=s&&s.trim().match(/^(\d+)\/(\d+)[Rr-](\d+(?:\.\d+)?)$/);if(!m)return null;const w=parseFloat(m[1]),a=parseFloat(m[2]),rim=parseFloat(m[3]);const sw=w*a/100;const od=rim*25.4+2*sw;return{w,a,rim,sw:sw.toFixed(1),od_mm:od.toFixed(1),od_in:(od/25.4).toFixed(2),circ:(Math.PI*od/1000).toFixed(3)};};
                   const pf=parseTyre(tyreFront), pr=parseTyre(tyreRear);
                   const chip=(label,t)=>t?<div style={{display:"flex",gap:12,flexWrap:"wrap",padding:"6px 8px",background:"#0a0a0a",border:"1px solid #1a1a1a",borderRadius:2,marginTop:4,marginBottom:4}}>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>{label} width</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.w}mm</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Aspect</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.a}%</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rim</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.rim}"</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Sidewall</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.sw}mm</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Overall dia.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.od_mm}mm / {t.od_in}"</div></div>
-                    <div><div style={{fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rolling circ.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.circ}m</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>{label} width</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.w}mm</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Aspect</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.a}%</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rim</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.rim}"</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Sidewall</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.sw}mm</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Overall dia.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.od_mm}mm / {t.od_in}"</div></div>
+                    <div><div style={{fontSize:10,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:1}}>Rolling circ.</div><div style={{fontSize:10,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>⚡ {t.circ}m</div></div>
                   </div>:null;
                   return <>
                     <div style={row}>
@@ -2087,18 +2133,18 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                   <div style={{...col,flex:1}}><FL t="Rectifier / Regulator fitted" /><select style={sel} value={rectRegFitted} onChange={ev=>setRectRegFitted(ev.target.value)}><option value="">— not set —</option>{RECT_REG.map(r=><option key={r}>{r}</option>)}</select></div>
                 </div>
                 {(()=>{
-                  const smartLoad=smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0):null;
-                  const displayLoad=smartMode&&smartLoad>0?smartLoad.toString():totalLoadWatts;
+                  const smartLoad=lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0);
+                  const displayLoad=smartLoad>0?smartLoad.toString():totalLoadWatts;
                   return <div style={{...col,maxWidth:200}}>
-                    <FL t={smartMode&&smartLoad>0?"Total accessory load (W) ⚡ auto":"Total accessory load (W)"} />
-                    <input style={{...inp,...(smartMode&&smartLoad>0?{opacity:0.6}:{})}} type="number" placeholder="e.g. 120" step="5" min="0"
-                      value={displayLoad} disabled={smartMode&&smartLoad>0}
+                    <FL t={smartLoad>0?"Total accessory load (W) ⚡ auto":"Total accessory load (W)"} />
+                    <input style={{...inp,...(smartLoad>0?{opacity:0.6}:{})}} type="number" placeholder="e.g. 120" step="5" min="0"
+                      value={displayLoad} disabled={smartLoad>0}
                       onChange={ev=>setTotalLoadWatts(ev.target.value)} />
-                    {smartMode&&smartLoad>0&&<div style={{fontSize:8,color:MUT,marginTop:3}}>From {lighting.length} lighting {lighting.length===1?"entry":"entries"} — edit in Lighting section to change</div>}
+                    {smartLoad>0&&<div style={{fontSize:10,color:MUT,marginTop:3}}>From {lighting.length} lighting {lighting.length===1?"entry":"entries"} — edit in Lighting section to change</div>}
                   </div>;
                 })()}
-                {chargeAmps&&chargeVoltage&&chargeVoltage!=="Dual"&&(smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0)>0:totalLoadWatts)&&(()=>{
-                  const loadW=smartMode?lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0):parseFloat(totalLoadWatts);
+                {chargeAmps&&chargeVoltage&&chargeVoltage!=="Dual"&&(lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0)>0||totalLoadWatts)&&(()=>{
+                  const loadW=lighting.reduce((s,l)=>s+(parseFloat(l.wattage)||0),0)||parseFloat(totalLoadWatts);
                   const altW=parseFloat(chargeAmps)*parseFloat(chargeVoltage);
                   const net=altW-loadW;
                   const [label,clr]=net>=0?[`Surplus ${net.toFixed(0)}W — battery charging while running`,ACC]:[`Deficit ${Math.abs(net).toFixed(0)}W — battery draining`,"#e05252"];

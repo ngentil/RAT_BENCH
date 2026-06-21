@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { getCompanyMembers, removeMember, regenerateInviteCode, updateMemberRole } from '../../lib/db';
 import { SL } from '../ui/shared';
-import { effectiveTier } from '../../lib/gates';
+import { effectiveTier, seatLimit } from '../../lib/gates';
 
 const ROLES = ["admin", "technician", "viewer"];
 
@@ -48,9 +48,12 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
   const [updatingRole, setUpdatingRole] = useState(null);
   const [showInvite, setShowInvite] = useState(false);
 
-  const isOwner = company?.owner_id === session?.user?.id;
+  const myMember = members.find(m => m.user_id === session?.user?.id);
+  const isOwner = myMember?.role === 'owner';
   const tier = effectiveTier(profile, company);
-  const canManageUsers = ["team", "business"].includes(tier);
+  const canManageUsers = tier === "business";
+  const seats = seatLimit(profile, company);
+  const atSeatLimit = seats > 0 && members.length >= seats;
 
   useEffect(() => {
     if (!company || !canManageUsers) return;
@@ -65,7 +68,7 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
         <div style={{ fontSize: 28 }}>👥</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Team Management</div>
         <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Invite staff, assign roles, and manage access to your shop. Available on the Team plan and above.
+          Invite staff, assign roles, and manage access to your shop. Available on the Business plan.
         </div>
         {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
       </div>
@@ -124,12 +127,15 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
         <SL t="Users" />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em" }}>
-            {loading ? "…" : `${members.length} member${members.length !== 1 ? "s" : ""}`}
+            {loading ? "…" : `${members.length}${seats > 0 ? `/${seats}` : ""} seat${members.length !== 1 ? "s" : ""}`}
           </span>
-          {isOwner && (
+          {isOwner && !atSeatLimit && (
             <button onClick={() => setShowInvite(x => !x)} style={{ ...btnA, ...sm }}>
               {showInvite ? "✕ Close" : "+ Invite Member"}
             </button>
+          )}
+          {isOwner && atSeatLimit && (
+            <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>+ Add Seats</button>
           )}
         </div>
       </div>
@@ -174,7 +180,7 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
         {!loading && members.map(m => {
           const displayName = m.profile?.display_name || m.profile?.username || m.user_id.slice(0, 8);
           const isMe = m.user_id === session?.user?.id;
-          const isMemberOwner = m.user_id === company.owner_id;
+          const isMemberOwner = m.role === 'owner';
 
           const roleColor = isMemberOwner ? GRN : ROLE_COLOR[m.role] || MUT;
           return (

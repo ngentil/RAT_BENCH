@@ -60,7 +60,7 @@ export function SkullRating({value,onChange}){
 export function SpecCell({label,value,highlight}){
   return (
     <div style={{background:"#0d0d0d",border:"1px solid "+(highlight?"#3a2200":BRD2),borderRadius:2,padding:"6px 9px"}}>
-      <div style={{fontSize:8,letterSpacing:"0.12em",textTransform:"uppercase",color:highlight?ACC:MUT,marginBottom:2}}>{label}</div>
+      <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:highlight?ACC:MUT,marginBottom:2}}>{label}</div>
       <div style={{fontSize:11,color:highlight?"#e8a060":TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{value}</div>
     </div>
   );

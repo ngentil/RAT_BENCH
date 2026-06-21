@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
 import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry } from '../../lib/wiki';
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ratbenchadmin@gmail.com';
+const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
 export function WikiHeader({ title, subtitle, backHref, backLabel }) {
   return (
@@ -18,7 +18,7 @@ export function WikiHeader({ title, subtitle, backHref, backLabel }) {
 }
 
 function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
-  const isAdmin = session?.user?.email === ADMIN_EMAIL;
+  const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
   const [entry, setEntry] = useState(null);
   const [revData, setRevData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -98,8 +98,11 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
       <div style={{ maxWidth: embedded ? "none" : 680, margin: embedded ? 0 : "0 auto", padding: embedded ? "0 0 24px" : "24px 16px" }}>
         {embedded && (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{entry.make} <span style={{ color: ACC }}>{entry.model}</span></div>
-            {entry.type && <div style={{ display: "inline-block", marginTop: 4, fontSize: 8, color: ACC, background: ACC + "12", border: "1px solid " + ACC + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{entry.type}</div>}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{entry.make} <span style={{ color: entry.is_sample ? "#888" : ACC }}>{entry.model}</span></div>
+              {entry.is_sample && <span style={{ fontSize: 7, color: "#666", border: "1px solid #333", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.12em", textTransform: "uppercase", flexShrink: 0 }}>sample</span>}
+            </div>
+            {entry.type && <div style={{ display: "inline-block", fontSize: 8, color: entry.is_sample ? "#666" : ACC, background: (entry.is_sample ? "#333" : ACC) + "12", border: "1px solid " + (entry.is_sample ? "#333" : ACC) + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{entry.type}</div>}
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -113,7 +116,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
               : <a href={"/" + slug + "/history"} style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History</a>
             }
             {!profile && <span style={{ fontSize: 9, color: MUT }}>Log in to edit</span>}
-            {isAdmin && (
+            {(isAdmin || (entry.is_sample && entry.sample_owner_id === profile?.id)) && (
               <button
                 onClick={async () => {
                   if (!confirm(`Delete wiki entry "${entry.make} ${entry.model}"? This cannot be undone.`)) return;
@@ -121,7 +124,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
                   onBack();
                 }}
                 style={{ fontSize: 9, color: RED, border: '1px solid ' + RED + '55', background: RED + '11', padding: '4px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}
-              >🗑 Delete Entry</button>
+              >🗑 {entry.is_sample ? "Remove Sample" : "Delete Entry"}</button>
             )}
           </div>
         </div>

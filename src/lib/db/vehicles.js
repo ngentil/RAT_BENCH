@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import { unassignAllByParent, syncAssignmentParentName } from './assetAssignments';
+import { deletePhoto } from '../storage';
 
 function toDb(v) {
   return {
@@ -51,15 +53,12 @@ export async function getVehicles() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: own } = await supabase
-    .from('vehicles').select('*').eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  const { data: perms } = await supabase
-    .from('asset_permissions')
-    .select('asset_id')
-    .eq('user_id', user.id)
-    .eq('asset_type', 'vehicle');
+  const [{ data: own }, { data: perms }] = await Promise.all([
+    supabase.from('vehicles').select('*').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(500),
+    supabase.from('asset_permissions').select('asset_id')
+      .eq('user_id', user.id).eq('asset_type', 'vehicle'),
+  ]);
 
   let provisioned = [];
   if (perms?.length) {
@@ -88,14 +87,24 @@ export async function upsertVehicle(vehicle) {
     if (error) throw error;
     return fromDb({ ...row, id: data.id, created_at: row.updated_at });
   } else {
-    // Update: no round-trip select needed — reconstruct from what we sent
-    const { error } = await supabase.from('vehicles').update(row).eq('id', row.id);
+    // Update: omit user_id — provisioned users must not be able to change ownership
+    const { user_id: _uid, ...updateRow } = row;
+    const { error } = await supabase.from('vehicles').update(updateRow).eq('id', row.id);
     if (error) throw error;
+    await syncAssignmentParentName('vehicle', row.id, row.name);
     return fromDb(row);
   }
 }
 
 export async function deleteVehicle(id) {
+  const { data } = await supabase.from('vehicles').select('photos, service_log').eq('id', id).single();
+  (data?.photos || []).forEach(url => deletePhoto(url));
+  (data?.service_log || []).forEach(entry => {
+    if (entry.plugPhoto) deletePhoto(entry.plugPhoto);
+    (entry.jobPhotos || []).forEach(url => deletePhoto(url));
+  });
+  await unassignAllByParent('vehicle', id);
+  await supabase.from('asset_permissions').delete().eq('asset_type', 'vehicle').eq('asset_id', id);
   const { error } = await supabase.from('vehicles').delete().eq('id', id);
   if (error) throw error;
 }

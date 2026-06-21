@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { upsertService } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, GRN, TXT, inp, sel, txa, btnA, btnG, col, sm } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
-import { mIcon, nowL, uid, resizeImg, toB64 } from '../../lib/helpers';
+import { mIcon, nowL, uid } from '../../lib/helpers';
+import { uploadPhoto, deletePhoto } from '../../lib/storage';
 
 function PlugLog({machines}){
   const [selId,setSelId]=useState("");
@@ -13,7 +14,7 @@ function PlugLog({machines}){
   const [saved,setSaved]=useState(false);
   const machine=machines.find(m=>m.id===selId)||null;
 
-  const handlePhoto=async e=>{const f=e.target.files[0];if(!f)return;setBusy(true);setPhoto(await resizeImg(await toB64(f)));setBusy(false);setSaved(false);};
+  const handlePhoto=async e=>{const f=e.target.files[0];if(!f)return;setBusy(true);if(photo)deletePhoto(photo);try{setPhoto(await uploadPhoto(f));}catch{setPhoto(null);}setBusy(false);setSaved(false);};
   const doSave=async()=>{
     if(!machine||!photo)return;
     const entry={id:uid(),completedAt:ca,types:["Spark Plug"],notes:notes.trim(),plugPhoto:photo,jobPhotos:[],createdAt:new Date().toISOString()};
@@ -49,7 +50,7 @@ function PlugLog({machines}){
                 :photo?<img src={photo} alt="" style={{width:'100%',maxHeight:180,objectFit:'cover',borderRadius:2}} />
                 :<div><div style={{fontSize:26,marginBottom:6}}>📷</div><span style={{fontSize:9,color:MUT,letterSpacing:'0.1em',textTransform:'uppercase'}}>Tap to photograph plug</span></div>}
             </div>
-            {photo&&<button style={{...btnG,...sm,marginTop:5}} onClick={()=>{setPhoto(null);setSaved(false);}}>Retake</button>}
+            {photo&&<button style={{...btnG,...sm,marginTop:5}} onClick={()=>{deletePhoto(photo);setPhoto(null);setSaved(false);}}>Retake</button>}
           </div>
           <div style={col}><FL t="Notes (optional)" /><textarea style={txa} placeholder="Gap, brand, condition reading…" value={notes} onChange={e=>{setNotes(e.target.value);setSaved(false);}} /></div>
           {saved&&(

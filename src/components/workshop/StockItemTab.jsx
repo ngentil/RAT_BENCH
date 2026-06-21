@@ -2,9 +2,12 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import QRCode from 'qrcode';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { FL, Empty } from '../ui/shared';
+import { getPref, savePref } from '../../lib/db/preferences';
 import { effectiveTier } from '../../lib/gates';
+import UpgradeBanner from '../ui/UpgradeBanner';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
+import { deletePhoto } from '../../lib/storage';
 import LoadoutSection from '../ui/LoadoutSection';
 import PhotoAdder from '../ui/PhotoAdder';
 import AssetTile from '../ui/AssetTile';
@@ -162,6 +165,7 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
   const [f, setF]       = useState(initF);
   const [photos, setPhotos] = useState(item?.photos || []);
   const [saving, setSaving] = useState(false);
+  const [err, setErr]   = useState(null);
   const s = (k, v) => setF(p => ({ ...p, [k]: v }));
   const fld = { background: '#0a0a0a', border: '1px solid #252525', color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: '6px 8px', borderRadius: 2, outline: 'none', boxSizing: 'border-box', width: '100%' };
 
@@ -183,18 +187,23 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
   const save = async () => {
     if (!canSave) return;
     setSaving(true);
-    await onSave({
-      ...item,
-      ...f,
-      name:        f.name.trim(),
-      quantity:    parseFloat(f.quantity) || 0,
-      buyPrice:    f.buyPrice    !== '' ? parseFloat(f.buyPrice)    : null,
-      sellPrice:   f.sellPrice   !== '' ? parseFloat(f.sellPrice)   : null,
-      minQuantity: f.minQuantity !== '' ? parseFloat(f.minQuantity) : null,
-      maxQuantity: f.maxQuantity !== '' ? parseFloat(f.maxQuantity) : null,
-      photos,
-    });
-    setSaving(false);
+    setErr(null);
+    try {
+      await onSave({
+        ...item,
+        ...f,
+        name:        f.name.trim(),
+        quantity:    parseFloat(f.quantity) || 0,
+        buyPrice:    f.buyPrice    !== '' ? parseFloat(f.buyPrice)    : null,
+        sellPrice:   f.sellPrice   !== '' ? parseFloat(f.sellPrice)   : null,
+        minQuantity: f.minQuantity !== '' ? parseFloat(f.minQuantity) : null,
+        maxQuantity: f.maxQuantity !== '' ? parseFloat(f.maxQuantity) : null,
+        photos,
+      });
+    } catch (e) {
+      setErr(e?.message || 'Save failed — check your connection');
+      setSaving(false);
+    }
   };
 
   const noun = tableType === 'part' ? 'Part' : 'Consumable';
@@ -298,6 +307,7 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
             <PhotoAdder photos={photos} setPhotos={setPhotos} />
           </div>
         </div>
+        {err && <div style={{ padding: '8px 16px', color: '#ff6b6b', fontSize: 10, fontFamily: "'IBM Plex Mono',monospace" }}>⚠ {err}</div>}
         <div style={mdlF}>
           <button style={btnG} onClick={onCancel}>Cancel</button>
           <button style={{ ...btnA, opacity: canSave ? 1 : 0.4 }} disabled={!canSave} onClick={save}>
@@ -455,9 +465,7 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
             <div style={{ marginTop: 10, fontSize: 10, color: MUT, lineHeight: 1.5, background: '#0a0a0a', padding: '6px 8px', borderRadius: 2, border: '1px solid #1a1a1a' }}>{item.notes}</div>
           )}
 
-          {tableType === 'consumable' && (
-            <LoadoutSection parentType="consumable" parentId={item.id} parentName={item.name} isShared={isShared} />
-          )}
+
 
           {!isShared && (
             <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
@@ -499,18 +507,18 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const [groupFilter, setGroupFilter] = useState(null);
 
   const [showSort, setShowSort]       = useState(false);
-  const [sortBy, setSortBy]   = useState(() => localStorage.getItem(`${tableType}Sort`) || null);
-  const [view, setView]       = useState(() => localStorage.getItem(`${tableType}View`) || 'list');
-  const [cols, setCols]       = useState(() => parseInt(localStorage.getItem(`${tableType}Cols`) || '2'));
+  const [sortBy, setSortBy]   = useState(() => getPref(profile, `${tableType}Sort`, null));
+  const [view, setView]       = useState(() => getPref(profile, `${tableType}View`, 'list'));
+  const [cols, setCols]       = useState(() => getPref(profile, `${tableType}Cols`, 2));
   const [tileOpen, setTileOpen] = useState(null);
   const [lastScan, setLastScan] = useState(null);
 
-  const setViewP   = v => { setView(v);   localStorage.setItem(`${tableType}View`, v); };
-  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem(`${tableType}Sort`, v) : localStorage.removeItem(`${tableType}Sort`); };
-  const setColsP   = c => { setCols(c);  localStorage.setItem(`${tableType}Cols`, String(c)); setViewP('grid'); };
+  const setViewP   = v => { setView(v);   savePref(profile?.id, `${tableType}View`, v); };
+  const setSortByP = v => { setSortBy(v); savePref(profile?.id, `${tableType}Sort`, v ?? null); };
+  const setColsP   = c => { setCols(c);  savePref(profile?.id, `${tableType}Cols`, c); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
-  const FREE_LIMIT = 10;
+  const FREE_LIMIT = 5;
   const atLimit = isFree && items.length >= FREE_LIMIT;
 
   // ── Load ────────────────────────────────────────────────────────────────────
@@ -572,6 +580,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const remove = async item => {
     const noun = tableType === 'part' ? 'part' : 'consumable';
     if (!confirm(`Delete this ${noun}?`)) return;
+    (item?.photos || []).forEach(url => deletePhoto(url));
     if (tableType === 'part') {
       const updated = await deleteInventoryItem(userId, item.id);
       setItems(updated);
@@ -693,15 +702,12 @@ export default function StockItemTab({ tableType, label, machines, session, prof
               {lowItems.length} LOW — Print Reorder
             </button>
           )}
-          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
-          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>
+          <button style={{ ...btnG, color: sortBy ? ACC : MUT, alignSelf: 'stretch' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36, alignSelf: 'stretch' }}>
             {view === 'list' ? '☰' : `⊞${cols}`}
           </button>
           {!atLimit && (
-            <button onClick={() => setFormItem({})} style={{ ...btnA, ...sm, fontSize: 8 }}>+ Add</button>
-          )}
-          {atLimit && onGoToBilling && (
-            <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade for more</button>
+            <button onClick={() => setFormItem({})} style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}>+ Add</button>
           )}
         </div>
       </div>
@@ -749,16 +755,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
         </div>
       )}
 
-      {/* Free tier banner */}
-      {isFree && items.length > 0 && (
-        <div style={{ background: '#0a1a0a', border: '1px solid #1a3a1a', borderRadius: 2, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, color: '#4ade80', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 3 }}>Free Plan — {noun}s Preview</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Up to {FREE_LIMIT} {label.toLowerCase()} on free plan. Upgrade for unlimited.</div>
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: 'nowrap' }}>Upgrade</button>}
-        </div>
-      )}
+      {isFree && items.length >= FREE_LIMIT && <UpgradeBanner text={`You're at the ${FREE_LIMIT}-${label.toLowerCase()} limit on the free plan.`} onUpgrade={onGoToBilling} marginBottom={12} />}
 
       {/* Loading / empty */}
       {loading && <div style={{ fontSize: 10, color: MUT, padding: '24px 0', textAlign: 'center' }}>Loading…</div>}
@@ -818,12 +815,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
         ))
       )}
 
-      {hiddenCount > 0 && (
-        <div style={{ border: '1px dashed #2a2a2a', borderRadius: 2, padding: 14, textAlign: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 10, color: MUT, marginBottom: 8 }}>+{hiddenCount} more {label.toLowerCase()} hidden — upgrade for unlimited</div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>Upgrade to Enthusiast</button>}
-        </div>
-      )}
+      {hiddenCount > 0 && <UpgradeBanner text={`+${hiddenCount} more ${label.toLowerCase()} hidden — upgrade for unlimited`} onUpgrade={onGoToBilling} marginBottom={10} />}
 
       <div style={{ marginTop: 8, fontSize: 9, color: MUT, lineHeight: 1.7 }}>
         Stock is adjusted automatically when items are used on a job. Buy price = your cost, Sell price = what you charge.

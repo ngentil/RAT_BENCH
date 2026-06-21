@@ -1,32 +1,78 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Virtuoso } from 'react-virtuoso';
+import { supabase } from '../../lib/supabase';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_ } from '../../lib/constants';
-import { atMachineLimit } from '../../lib/gates';
+import { atMachineLimit, machineLimit } from '../../lib/gates';
+import { getPref, savePref } from '../../lib/db/preferences';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
 import { SL, Empty } from '../ui/shared';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
-function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling}){
+
+const _ARW = "#e8870a";
+const _M = { fontFamily:"'IBM Plex Mono',monospace" };
+
+function GuideStep1({ onSkip, isGuest, onUpgrade }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", marginBottom:20, paddingRight:2, userSelect:"none" }}>
+      <svg className="arrow-guide" width="62" height="54" viewBox="0 0 62 54">
+        <path d="M 8 51 C 14 35, 32 18, 54 8" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
+        <path d="M 49 4 L 56 9 L 51 15" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span style={{ ..._M, fontSize:13, color:_ARW, fontWeight:700, marginTop:4 }}>start here</span>
+      <span style={{ ..._M, fontSize:9, color:"#666", marginTop:4 }}>tap + Add to track your first machine</span>
+      <span style={{ ..._M, fontSize:9, color:"#555", marginTop:2 }}>name &amp; type is all you need to begin</span>
+      {isGuest && (
+        <span style={{ ..._M, fontSize:10, color:"#444", marginTop:8 }}>
+          guest: 3-machine limit ·{" "}
+          <span onClick={onUpgrade} style={{ color:_ARW, cursor:"pointer" }}>create a free account →</span>
+        </span>
+      )}
+      <button onClick={onSkip} style={{ ..._M, marginTop:12, background:"none", border:"none", color:"#333", fontSize:10, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>skip guide</button>
+    </div>
+  );
+}
+
+function GuideStep2({ onSkip }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:14, userSelect:"none" }}>
+      <span style={{ ..._M, fontSize:11, color:_ARW, fontWeight:700 }}>tap the card to explore</span>
+      <span style={{ ..._M, fontSize:9, color:"#555", marginTop:4, textAlign:"center" }}>service history · timers · photos · invoices</span>
+      <svg className="arrow-guide" width="30" height="42" viewBox="0 0 30 42" style={{ marginTop:8 }}>
+        <path d="M 15 4 C 20 16, 11 25, 15 36" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
+        <path d="M 11 32 L 15 38 L 19 32" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <button onClick={onSkip} style={{ ..._M, marginTop:10, background:"none", border:"none", color:"#333", fontSize:10, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>got it</button>
+    </div>
+  );
+}
+function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear}){
   const [showAdd,setShowAdd]=useState(false);
+  const [prefill,setPrefill]=useState(null);
   const [showUpgrade,setShowUpgrade]=useState(false);
   const [saving,setSaving]=useState(false);
   const [dragIdx,setDragIdx]=useState(null);
   const [dragOver,setDragOver]=useState(null);
   const [showSort,setShowSort]=useState(false);
-  const [sortBy,setSortBy]=useState(()=>localStorage.getItem("trackerSort")||null);
-  const [view,setView]=useState(()=>localStorage.getItem("trackerView")||"list");
-  const [cols,setCols]=useState(()=>parseInt(localStorage.getItem("trackerCols")||"2"));
+  const [sortBy,setSortBy]=useState(()=>getPref(profile,"trackerSort",null));
+  const [view,setView]=useState(()=>getPref(profile,"trackerView","list"));
+  const [cols,setCols]=useState(()=>getPref(profile,"trackerCols",2));
   const [tileOpen,setTileOpen]=useState(null);
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
+  const [tutDone,setTutDone]=useState(()=>getPref(profile,'rat_tut',false));
+  const [tutCardOpened,setTutCardOpened]=useState(false);
+  const skipTut=()=>{setTutDone(true);savePref(profile?.id,'rat_tut',true);};
+  const tutStep=!tutDone?(machines.length===0?1:machines.length===1?2:0):0;
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
-  const setViewP=v=>{setView(v);localStorage.setItem("trackerView",v);};
-  const setSortByP=v=>{setSortBy(v);if(v)localStorage.setItem("trackerSort",v);else localStorage.removeItem("trackerSort");};
-  const setColsP=c=>{setCols(c);localStorage.setItem("trackerCols",String(c));setViewP("grid");};
+  const setViewP=v=>{setView(v);savePref(profile?.id,"trackerView",v);};
+  const setSortByP=v=>{setSortBy(v);savePref(profile?.id,"trackerSort",v??null);};
+  const setColsP=c=>{setCols(c);savePref(profile?.id,"trackerCols",c);setViewP("grid");};
 
   const SORT_OPTS=[
     {k:"name_az",l:"Name A → Z"},
@@ -80,7 +126,11 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
     }catch(e){alert("Save failed: "+e.message);}
   };
   const deleteM=async m=>{
-    if(!confirm(`Delete "${m.name}" and all its history?`))return;
+    if(m.jobTimer?.status==="running"){
+      if(!confirm(`"${m.name}" has a running timer. Deleting will lose it. Continue?`))return;
+    } else {
+      if(!confirm(`Delete "${m.name}" and all its history?`))return;
+    }
     await deleteMachineApi(m.id);
     setMachines(prev=>prev.filter(x=>x.id!==m.id));
   };
@@ -98,23 +148,20 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   };
   const onDragEnd=()=>{setDragIdx(null);setDragOver(null);};
 
+  useEffect(()=>{
+    if(!templateMachineId) return;
+    supabase.rpc('get_public_machine',{p_id:templateMachineId}).then(({data})=>{
+      if(data){
+        setPrefill({name:data.name,type:data.type||"",make:data.make||"",model:data.model||"",year:data.year||"",desc:data.notes||""});
+        setShowAdd(true);
+      }
+      onTemplateClear?.();
+    });
+  },[templateMachineId]);
+
   return (
     <div style={{padding:16,flex:1}}>
-      {isGuest&&<div style={{background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:"12px 14px",marginBottom:14}}>
-        <div style={{fontSize:9,color:"#4ade80",letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:6}}>Guest Mode</div>
-        <div style={{fontSize:10,color:MUT,lineHeight:1.7,marginBottom:10}}>
-          Max 3 machines · No wiki publishing · Data may be lost if you clear your browser.
-        </div>
-        <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create account to save your data</button>
-      </div>}
-      {!isGuest&&(profile?.tier||"free")==="free"&&<div style={{background:"#0a1a0a",border:"1px solid #1a3a1a",borderRadius:2,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-        <div>
-          <div style={{fontSize:9,color:"#4ade80",letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:3}}>Free Plan</div>
-          <div style={{fontSize:10,color:MUT,lineHeight:1.6}}>30 machine limit · upgrade for unlimited machines, clients, revenue tracking &amp; more.</div>
-        </div>
-        <button onClick={onGoToBilling} style={{...btnA,...sm,whiteSpace:"nowrap"}}>Upgrade →</button>
-      </div>}
-      {showAdd&&<ErrorBoundary><MachineForm onSave={addM} onClose={()=>setShowAdd(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
+      {showAdd&&<ErrorBoundary><MachineForm existing={prefill||undefined} onSave={m=>{addM(m);setPrefill(null);}} onClose={()=>{setShowAdd(false);setPrefill(null);}} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
           <div style={{...mdl,maxHeight:"70vh"}} onClick={ev=>ev.stopPropagation()}>
@@ -144,24 +191,24 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <SL t="Machines" />
-          {sortBy&&<span style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
-          {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:8,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em"}}>{machines.length}/30</span>}
-          {totalHrsAll>0&&<span style={{fontSize:8,color:GRN,letterSpacing:"0.06em"}}>{totalHrsAll.toFixed(1)}h{rate>0?" · $"+(totalHrsAll*rate).toFixed(0):""}</span>}
+          {sortBy&&<span style={{fontSize:10,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
+          {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:10,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em"}}>{machines.length}/{machineLimit(profile,company)}</span>}
+          {totalHrsAll>0&&<span style={{fontSize:10,color:GRN,letterSpacing:"0.06em"}}>{totalHrsAll.toFixed(1)}h{rate>0?" · $"+(totalHrsAll*rate).toFixed(0):""}</span>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <button style={{background:"none",border:"1px solid #2a2a2a",borderRadius:2,color:sortBy?ACC:MUT,cursor:"pointer",fontSize:11,padding:"4px 6px"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
-          <button onClick={()=>{if(view==="list"){setColsP(2);}else if(cols<4){setColsP(cols+1);}else{setViewP("list");}}} style={{...btnG,...sm,fontSize:9,minWidth:36}}>{view==="list"?"☰":`⊞${cols}`}</button>
+          <button style={{...btnG,color:sortBy?ACC:MUT,alignSelf:"stretch"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
+          <button onClick={()=>{if(view==="list"){setColsP(2);}else if(cols<4){setColsP(cols+1);}else{setViewP("list");}}} style={{...btnG,minWidth:36,alignSelf:"stretch"}}>{view==="list"?"☰":`⊞${cols}`}</button>
           {isGuest&&machines.length>=3
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
-                <button style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}} onClick={()=>setShowUpgrade(true)}>Create account</button>
+                <button style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}} onClick={()=>setShowUpgrade(true)}>Create a free account →</button>
               </div>
             : !isGuest&&atMachineLimit(machines.length,profile,company)
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>30 machine free limit</span>
-                <button style={{...btnA,...sm}} onClick={onGoToBilling}>Upgrade</button>
+                <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>{machineLimit(profile,company)} machines — nice work</span>
+                <button style={{...btnA}} onClick={onGoToBilling}>Go unlimited →</button>
               </div>
-            : <button style={{...btnA,...sm}} onClick={()=>setShowAdd(true)}>+ Add</button>}
+            : <button style={{...btnA, minHeight:44, display:"flex", alignItems:"center"}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
       </div>
       {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
@@ -170,41 +217,61 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           const count=s?searched.filter(m=>(m.status||"Active")===s).length:searched.length;
           const active=statusFilter===s;
           const c=s?SCOL[s]:MUT;
-          return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:8,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:i===0?"2px 0 0 2px":i===arr.length-1?"0 2px 2px 0":0,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(active?c+"55":"#252525"),borderRight:i<arr.length-1?"none":undefined,background:active?c+"18":"transparent",color:active?c:c+"66"}}>{s||"All"} {count}</button>;
+          return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:10,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:i===0?"2px 0 0 2px":i===arr.length-1?"0 2px 2px 0":0,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(active?c+"55":"#252525"),borderRight:i<arr.length-1?"none":undefined,background:active?c+"18":"transparent",color:active?c:c+"66"}}>{s||"All"} {count}</button>;
         })}
       </div>}
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
-      {machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
+      {tutStep===1&&<GuideStep1 onSkip={skipTut} isGuest={isGuest} onUpgrade={()=>setShowUpgrade(true)}/>}
+      {tutStep===0&&machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
       {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
+      {tutStep===2&&!tutCardOpened&&<GuideStep2 onSkip={skipTut}/>}
       {view==="grid"?(
         <>
-          <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8}}>
-            {sorted.map(m=>(
-              <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
-            ))}
-          </div>
+          {sorted.length > 0 && (
+            <Virtuoso
+              useWindowScroll
+              data={sorted}
+              style={{display:"grid"}}
+              itemContent={(_idx, m) => (
+                <div key={m.id} style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:8,marginBottom:0}}>
+                  <MachineTile machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+                </div>
+              )}
+            />
+          )}
           {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
             <div style={{position:"fixed",inset:0,background:"#000a",zIndex:200,overflowY:"auto"}} onClick={e=>{if(e.target===e.currentTarget)setTileOpen(null);}}>
               <div style={{maxWidth:640,margin:"24px auto",padding:"0 8px"}}>
-                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
+                <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
                 <button onClick={()=>setTileOpen(null)} style={{...btnG,width:"100%",marginTop:8,fontSize:10}}>Close</button>
               </div>
             </div>
           ):null;})()}
         </>
-      ):sorted.map((m,idx)=>(
-        <div
-          key={m.id}
-          draggable={!sortBy}
-          onDragStart={e=>!sortBy&&onDragStart(e,idx)}
-          onDragOver={e=>!sortBy&&onDragOver(e,idx)}
-          onDrop={e=>!sortBy&&onDrop(e,idx)}
-          onDragEnd={onDragEnd}
-          style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
-        >
-          <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest}/>
-        </div>
-      ))}
+      ):sorted.length > 0 && (
+        // Virtuoso for sorted/filtered lists (no drag reorder); fall back to plain map only for manual-drag mode with small lists
+        sortBy || sorted.length > 30
+          ? <Virtuoso
+              useWindowScroll
+              data={sorted}
+              itemContent={(_idx, m) => (
+                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
+              )}
+            />
+          : sorted.map((m,idx)=>(
+              <div
+                key={m.id}
+                draggable
+                onDragStart={e=>onDragStart(e,idx)}
+                onDragOver={e=>onDragOver(e,idx)}
+                onDrop={e=>onDrop(e,idx)}
+                onDragEnd={onDragEnd}
+                style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
+              >
+                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
+              </div>
+            ))
+      )}
       {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
     </div>
   );

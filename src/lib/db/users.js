@@ -2,7 +2,7 @@ import { supabase } from '../supabase';
 
 export async function getMyCompany(companyId) {
   if (!companyId) return null;
-  const { data, error } = await supabase.from("companies").select("*").eq("id", companyId).single();
+  const { data, error } = await supabase.rpc("get_my_company", { p_company_id: companyId }).single();
   if (error) { console.error("[getMyCompany]", error); return null; }
   return data;
 }
@@ -25,9 +25,9 @@ export async function joinCompanyByCode(code) {
   return data;
 }
 
-export async function leaveCompany(companyId, userId) {
-  await supabase.from("company_members").delete().eq("company_id", companyId).eq("user_id", userId);
-  await supabase.from("profiles").update({ company_id: null }).eq("id", userId);
+export async function leaveCompany(companyId) {
+  const { error } = await supabase.rpc("rpc_leave_company", { p_company_id: companyId });
+  if (error) throw error;
 }
 
 export async function getCompanyMembers(companyId) {
@@ -50,7 +50,7 @@ export async function deleteCompany(companyId) {
 }
 
 export async function regenerateInviteCode(companyId) {
-  const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+  const code = crypto.randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase();
   const { data, error } = await supabase.from("companies").update({ invite_code: code }).eq("id", companyId).select().single();
   if (error) throw error;
   return data;

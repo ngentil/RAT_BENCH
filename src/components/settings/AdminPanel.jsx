@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { deleteUserPhotos } from '../../lib/storage';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } from '../../lib/styles';
 
-const TIER_COLOR = { free: MUT, enthusiast: '#e8670a', team: '#0a8fe8', business: '#e8c20a' };
-const ALL_TIERS  = ['free', 'enthusiast', 'team', 'business'];
-const ADMIN_TABS = ['Overview', 'Users', 'Grants', 'Flags', 'Announcements', 'Audit'];
+const TIER_COLOR  = { free: MUT, enthusiast: '#e8670a', business: '#e8c20a' };
+const ALL_TIERS   = ['free', 'enthusiast', 'business'];
+const ADMIN_TABS  = ['Overview', 'Users', 'Grants', 'Flags', 'Announcements', 'Audit'];
+const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
 const lbl  = { fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 };
 const card = { background: SURF, border: '1px solid ' + BRD, borderRadius: 2, padding: '12px 14px' };
@@ -24,8 +26,29 @@ function TierBadge({ tier }) {
 
 // ─── Overview ────────────────────────────────────────────────────────────────
 
+function Sparkline({ days }) {
+  if (!days?.length) return null;
+  const max = Math.max(...days.map(d => d.count), 1);
+  const W = 120, H = 28, pad = 2;
+  const pts = days.map((d, i) => {
+    const x = pad + (i / Math.max(days.length - 1, 1)) * (W - pad * 2);
+    const y = pad + (1 - d.count / max) * (H - pad * 2);
+    return `${x},${y}`;
+  }).join(' ');
+  return (
+    <svg width={W} height={H} style={{ display: 'block' }}>
+      <polyline points={pts} fill="none" stroke={GRN} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" opacity="0.8" />
+      {days.map((d, i) => {
+        const x = pad + (i / Math.max(days.length - 1, 1)) * (W - pad * 2);
+        const y = pad + (1 - d.count / max) * (H - pad * 2);
+        return <circle key={i} cx={x} cy={y} r="2" fill={GRN} opacity="0.9" />;
+      })}
+    </svg>
+  );
+}
+
 function OverviewTab() {
-  const [stats, setStats]   = useState(null);
+  const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,30 +58,88 @@ function OverviewTab() {
   if (loading) return <div style={{ fontSize: 10, color: MUT, padding: 32, textAlign: 'center' }}>Loading…</div>;
   if (!stats)  return null;
 
-  const byTier = stats.by_tier || {};
+  const byTier        = stats.by_tier         || {};
+  const byType        = stats.machines_by_type || {};
+  const signupsByDay  = stats.signups_by_day   || [];
+  const typeKeys      = Object.keys(byType).sort((a, b) => byType[b] - byType[a]);
 
   return (
     <div>
+      {/* ── Users ── */}
+      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Users</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
         {[
-          ['Total Users',     stats.total_users,     null,  TXT],
-          ['New This Week',   stats.new_this_week,   null,  GRN],
-          ['New This Month',  stats.new_this_month,  null,  TXT],
-          ['Total Machines',  stats.total_machines,  null,  ACC],
-          ['Grants Pending',  stats.grants_pending,  null,  '#e8870a'],
-          ['Grants Redeemed', stats.grants_redeemed, null,  GRN],
-        ].map(([label, value, sub, color]) => (
+          ['Total',          stats.total_users,    TXT],
+          ['New (7 days)',   stats.new_this_week,  GRN],
+          ['New (30 days)',  stats.new_this_month, TXT],
+          ['Active (7 days)',  stats.active_last_7d,  GRN],
+          ['Active (30 days)', stats.active_last_30d, TXT],
+        ].map(([label, value, color]) => (
           <div key={label} style={{ ...card, borderTop: '2px solid ' + color, boxShadow: '0 0 10px ' + color + '14' }}>
             <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: '-0.02em' }}>{value ?? '—'}</div>
-            {sub && <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>{sub}</div>}
+          </div>
+        ))}
+        {/* Signup trend sparkline */}
+        <div style={{ ...card, borderTop: '2px solid ' + GRN + '55', gridColumn: signupsByDay.length ? 'auto' : undefined }}>
+          <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Signups 14d</div>
+          <Sparkline days={signupsByDay} />
+        </div>
+      </div>
+
+      {/* ── Machines ── */}
+      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Machines</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
+        <div style={{ ...card, borderTop: '2px solid ' + ACC, boxShadow: '0 0 10px ' + ACC + '14' }}>
+          <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Total</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: ACC, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: '-0.02em' }}>{stats.total_machines ?? '—'}</div>
+        </div>
+        <div style={{ ...card, borderTop: '2px solid ' + MUT }}>
+          <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Avg / User</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: TXT, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: '-0.02em' }}>
+            {stats.total_users > 0 ? (stats.total_machines / stats.total_users).toFixed(1) : '—'}
+          </div>
+        </div>
+      </div>
+
+      {typeKeys.length > 0 && (
+        <>
+          <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>By Machine Type</div>
+          {typeKeys.map(t => {
+            const count = byType[t] || 0;
+            const pct   = stats.total_machines > 0 ? count / stats.total_machines : 0;
+            return (
+              <div key={t} style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ fontSize: 10, color: TXT, textTransform: 'capitalize' }}>{t}</span>
+                  <span style={{ fontSize: 10, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{count}</span>
+                </div>
+                <div style={{ height: 3, background: '#1a1a1a', borderRadius: 2 }}>
+                  <div style={{ height: '100%', background: ACC, borderRadius: 2, width: (pct * 100) + '%', transition: 'width 0.4s', opacity: 0.7 }} />
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ marginBottom: 20 }} />
+        </>
+      )}
+
+      {/* ── Grants ── */}
+      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Grants</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
+        {[
+          ['Pending',   stats.grants_pending,  '#e8870a'],
+          ['Redeemed',  stats.grants_redeemed, GRN],
+        ].map(([label, value, color]) => (
+          <div key={label} style={{ ...card, borderTop: '2px solid ' + color, boxShadow: '0 0 10px ' + color + '14' }}>
+            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: '-0.02em' }}>{value ?? '—'}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>
-        Users by Tier
-      </div>
+      {/* ── Users by Tier ── */}
+      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>Users by Tier</div>
       {ALL_TIERS.map(t => {
         const count = byTier[t] || 0;
         const pct   = stats.total_users > 0 ? count / stats.total_users : 0;
@@ -74,6 +155,7 @@ function OverviewTab() {
           </div>
         );
       })}
+
     </div>
   );
 }
@@ -115,6 +197,30 @@ function UsersTab() {
     load(search);
   };
 
+  const deleteWiki = async (u) => {
+    const label = u.email || u.username || u.id;
+    if (!confirm(`Delete all wiki entries by ${label}?\n\nThis permanently removes all wiki content they authored.\n\nThis CANNOT be undone.`)) return;
+    setBusy(u.id + '_wiki'); setMsg(null);
+    const { data, error } = await supabase.rpc('admin_delete_user_wiki', { p_user_id: u.id });
+    setBusy(null);
+    if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
+    setMsg({ ok: true, text: `${data.deleted} wiki ${data.deleted === 1 ? 'entry' : 'entries'} deleted for ${label}` });
+  };
+
+  const deleteUser = async (u) => {
+    const label = u.email || u.username || u.id;
+    if (ADMIN_EMAILS.includes(u.email)) { setMsg({ ok: false, text: 'Cannot delete the admin account.' }); return; }
+    if (!confirm(`PERMANENTLY DELETE ${label}?\n\nThis deletes their Supabase account and ALL their workshop data — machines, clients, parts, vehicles, tools, everything.\n\nThis CANNOT be undone.`)) return;
+    if (!confirm(`Second confirmation: delete ${label} forever?`)) return;
+    setBusy(u.id); setMsg(null);
+    const { data, error } = await supabase.rpc('admin_delete_user', { p_user_id: u.id });
+    setBusy(null);
+    if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
+    await deleteUserPhotos(u.id);
+    setMsg({ ok: true, text: `${label} permanently deleted` });
+    load(search);
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
@@ -149,9 +255,17 @@ function UsersTab() {
               >
                 {ALL_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <button onClick={() => deactivate(u.email)} disabled={busy === u.email}
-                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy === u.email ? 0.5 : 1 }}>
+              <button onClick={() => deactivate(u.email)} disabled={!!busy}
+                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1 }}>
                 Deactivate
+              </button>
+              <button onClick={() => deleteWiki(u)} disabled={!!busy}
+                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1, color: '#e8870a', borderColor: '#e8870a55' }}>
+                Del Wiki
+              </button>
+              <button onClick={() => deleteUser(u)} disabled={!!busy}
+                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1, background: '#2a0a0a', borderColor: RED, color: RED }}>
+                Delete
               </button>
             </div>
           </div>

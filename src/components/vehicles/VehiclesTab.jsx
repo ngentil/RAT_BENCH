@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import UpgradeBanner from '../ui/UpgradeBanner';
 import { SL, FL, Empty } from '../ui/shared';
+import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
+import { deletePhoto } from '../../lib/storage';
 import { getAssignedTo, assignAsset, unassignAsset } from '../../lib/db/assetAssignments';
 import { getCompanyMembers } from '../../lib/db/users';
 import LoadoutSection from '../ui/LoadoutSection';
 import ServiceModal from '../ui/ServiceModal';
-import { fmtDT } from '../../lib/helpers';
+import { fmtDT, fmtDate } from '../../lib/helpers';
 import AssetTile from '../ui/AssetTile';
 
 const VEHICLE_TYPES = ["Car","Truck","Van","SUV","Ute","Motorcycle","Scooter","Trailer","Boat","Other"];
@@ -30,10 +33,6 @@ const VEHICLE_SORT_OPTS = [
   { k: 'odo_lo',  l: 'Odometer (Lowest)' },
 ];
 
-function fmtDate(s) {
-  if (!s) return null;
-  return new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 function fmtOdo(n, units) {
   if (n == null) return null;
   return Number(n).toLocaleString() + (units === 'imperial' ? ' mi' : ' km');
@@ -246,7 +245,7 @@ function VehicleMemberSection({ vehicle, company, isShared }) {
   );
 }
 
-function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, company }) {
+function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, company, isFree }) {
   const [open, setOpen] = useState(false);
   const [showSvc, setShowSvc] = useState(false);
   const [editSvc, setEditSvc] = useState(null);
@@ -266,6 +265,9 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
 
   const removeSvcEntry = async (id) => {
     if (!confirm('Remove this entry?')) return;
+    const entry = (vehicle.serviceLog || []).find(e => e.id === id);
+    if (entry?.plugPhoto) deletePhoto(entry.plugPhoto);
+    (entry?.jobPhotos || []).forEach(url => deletePhoto(url));
     await onUpdate({ ...vehicle, serviceLog: (vehicle.serviceLog || []).filter(e => e.id !== id) });
   };
 
@@ -314,7 +316,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
       </div>
 
       {open && (
-        <div style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
+        <div className="card-expand" style={{ padding: '0 12px 12px', borderTop: '1px solid #1a1a1a' }}>
           {vehicle.photos?.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 10 }}>
               {vehicle.photos.map((p, i) => (
@@ -392,14 +394,14 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
             ))}
           </div>
 
-          <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} />
+          <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} maxItems={isFree ? 5 : Infinity} />
           <VehicleMemberSection vehicle={vehicle} company={company} isShared={isShared} />
 
 
           {!isShared && (
-            <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-              <button onClick={onEdit} style={{ ...btnG, ...sm }}>Edit</button>
-              <button onClick={onDelete} style={{ ...btnD, ...sm }}>Delete</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 12 }}>
+              <button onClick={onEdit}   style={{...btnA,width:"100%",padding:"9px 14px"}}>Edit Vehicle</button>
+              <button onClick={onDelete} style={{...btnA,width:"100%",padding:"9px 14px",background:RED}}>Delete</button>
             </div>
           )}
         </div>
@@ -431,20 +433,20 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   const [search, setSearch]     = useState('');
   const [typeFilter, setTypeFilter] = useState(null);
   const [showSort, setShowSort] = useState(false);
-  const [sortBy, setSortBy] = useState(() => localStorage.getItem('vehiclesSort') || null);
-  const [view, setView] = useState(() => localStorage.getItem('vehiclesView') || 'list');
-  const [cols, setCols] = useState(() => parseInt(localStorage.getItem('vehiclesCols') || '2'));
+  const [sortBy, setSortBy] = useState(() => getPref(profile, 'vehiclesSort', null));
+  const [view, setView] = useState(() => getPref(profile, 'vehiclesView', 'list'));
+  const [cols, setCols] = useState(() => getPref(profile, 'vehiclesCols', 2));
   const [tileOpen, setTileOpen] = useState(null);
   const userId = session?.user?.id;
   const units  = profile?.units || 'metric';
 
-  const setViewP = v => { setView(v); localStorage.setItem('vehiclesView', v); };
-  const setSortByP = v => { setSortBy(v); v ? localStorage.setItem('vehiclesSort', v) : localStorage.removeItem('vehiclesSort'); };
-  const setColsP = c => { setCols(c); localStorage.setItem('vehiclesCols', String(c)); setViewP('grid'); };
+  const setViewP = v => { setView(v); savePref(profile?.id, 'vehiclesView', v); };
+  const setSortByP = v => { setSortBy(v); savePref(profile?.id, 'vehiclesSort', v ?? null); };
+  const setColsP = c => { setCols(c); savePref(profile?.id, 'vehiclesCols', c); setViewP('grid'); };
 
   const isFree  = effectiveTier(profile, company) === 'free';
-  const limit   = assetLimit('vehicle', profile, company);
-  const atLimit = atAssetLimit('vehicle', vehicles?.length ?? 0, profile, company);
+  const limit   = assetLimit('vehicles', profile, company);
+  const atLimit = atAssetLimit('vehicles', vehicles?.length ?? 0, profile, company);
 
   useEffect(() => {
     setLoading(true);
@@ -508,42 +510,34 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
 
   const remove = async (id) => {
     if (!confirm('Delete this vehicle?')) return;
+    const v = vehicles.find(x => x.id === id);
+    (v?.photos || []).forEach(url => deletePhoto(url));
     await deleteVehicle(id);
     setVehicles(prev => prev.filter(v => v.id !== id));
   };
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      {isFree && (
-        <div style={{ background: '#0a1a0a', border: '1px solid #1a3a1a', borderRadius: 2, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, color: '#4ade80', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 3 }}>Free Plan</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>
-              {limit} vehicle limit · upgrade for unlimited vehicles, equipment tracking &amp; more.
-            </div>
-          </div>
-          {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm, whiteSpace: 'nowrap' }}>Upgrade →</button>}
-        </div>
-      )}
+      {atLimit && <UpgradeBanner text={`You're at the ${limit}-vehicle limit on the free plan.`} onUpgrade={onGoToBilling} />}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <SL t="Vehicles" />
-          <span style={{ fontSize: 8, color: MUT, letterSpacing: '0.06em' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🚗 Vehicles</div>
+          <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {(vehicles || []).length} vehicle{(vehicles || []).length !== 1 ? 's' : ''}
-          </span>
-          {isFree && <span style={{ fontSize: 8, color: atLimit ? RED : MUT, letterSpacing: '0.06em' }}>{(vehicles || []).length}/{limit}</span>}
+            {isFree && <span style={{ marginLeft: 8, color: atLimit ? RED : MUT }}>· {(vehicles || []).length}/{limit} (free limit)</span>}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button style={{ background: 'none', border: '1px solid #2a2a2a', borderRadius: 2, color: sortBy ? ACC : MUT, cursor: 'pointer', fontSize: 11, padding: '4px 6px' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
-          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36 }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
+          <button style={{ ...btnG, color: sortBy ? ACC : MUT, alignSelf: 'stretch' }} onClick={() => setShowSort(true)} title="Sort">⚙️</button>
+          <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36, alignSelf: 'stretch' }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
           <button
             onClick={() => setFormVehicle({})}
             disabled={atLimit}
-            style={{ ...btnA, ...sm, opacity: atLimit ? 0.4 : 1 }}
+            style={{ ...btnA, opacity: atLimit ? 0.4 : 1, minHeight: 44, display: 'flex', alignItems: 'center' }}
             title={atLimit ? `Upgrade to add more than ${limit} vehicles` : undefined}
           >
-            + Add Vehicle
+            + Add
           </button>
         </div>
       </div>
@@ -602,6 +596,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
                     isShared={v.userId !== userId}
                     units={units}
                     company={company}
+                    isFree={isFree}
                     onEdit={() => { setFormVehicle(v); setTileOpen(null); }}
                     onDelete={() => { remove(v.id); setTileOpen(null); }}
                     onUpdate={update}
@@ -620,6 +615,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
             isShared={v.userId !== userId}
             units={units}
             company={company}
+            isFree={isFree}
             onEdit={() => setFormVehicle(v)}
             onDelete={() => remove(v.id)}
             onUpdate={update}
