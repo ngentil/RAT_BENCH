@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'rea
 import PhotoViewer from '../ui/PhotoViewer';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
-import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, inp, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
+import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, inp, btnA, btnG, btnD, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, DEFAULT_EXPAND, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
 import { mIcon, fmtDT, getMachineServiceStatus, getStorageStatus } from '../../lib/helpers';
@@ -36,6 +36,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const [bookSaving,setBookSaving]=useState(false);
   const [copied,setCopied]=useState(false);
   const [bookErr,setBookErr]=useState("");
+  const [confirmDelete,setConfirmDelete]=useState(false);
   const m=machine;
   // Notify parent when card opens so the above-card guide arrow can hide
   useEffect(()=>{if(open&&showGuide)onCardOpened?.();},[open]);
@@ -223,6 +224,40 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   return (
     <div style={{background:SURF,border:"1px solid "+(timerRunning?GRN+"55":BRD),borderRadius:3,marginBottom:8,overflow:"hidden",boxShadow:timerRunning?"0 0 8px "+GRN+"22":undefined}}>
       {fullImg&&<PhotoViewer src={fullImg} onClose={()=>setFullImg(null)} />}
+      {confirmDelete&&(
+        <div style={ovly} onClick={()=>setConfirmDelete(false)}>
+          <div style={mdl} onClick={ev=>ev.stopPropagation()}>
+            <div style={mdlH}>
+              <span style={{fontWeight:700,fontSize:13,color:TXT}}>Delete machine?</span>
+              <button onClick={()=>setConfirmDelete(false)} style={{background:"none",border:"none",color:MUT,fontSize:16,cursor:"pointer",padding:"0 4px",lineHeight:1}}>✕</button>
+            </div>
+            <div style={mdlB}>
+              <p style={{margin:"0 0 10px",fontSize:12,color:TXT}}><strong style={{color:RED}}>{m.name}</strong> and all associated data will be <strong>permanently deleted</strong>. This cannot be undone.</p>
+              <p style={{margin:"0 0 6px",fontSize:11,color:MUT,fontWeight:600,letterSpacing:"0.04em"}}>WHAT WILL BE LOST</p>
+              <ul style={{margin:"0 0 12px",paddingLeft:18,fontSize:11,color:TXT,lineHeight:"1.8"}}>
+                <li>Service &amp; maintenance history</li>
+                <li>Time logs and labour records</li>
+                <li>Photos and attachments</li>
+                <li>Storage bookings</li>
+                <li>Client links</li>
+                <li>Parts and stock records</li>
+              </ul>
+              <div style={{background:"#1a1a1a",border:"1px solid "+BRD,borderRadius:3,padding:"8px 10px",fontSize:11,color:MUT,marginBottom:timerRunning?10:0}}>
+                📖 Wiki entries submitted from this machine will <strong style={{color:TXT}}>persist</strong> and remain publicly accessible.
+              </div>
+              {timerRunning&&(
+                <div style={{background:"#1a1500",border:"1px solid "+GRN,borderRadius:3,padding:"8px 10px",fontSize:11,color:GRN,marginTop:10}}>
+                  ⚠️ This machine has a running timer. Deleting will lose all unfinished time.
+                </div>
+              )}
+            </div>
+            <div style={{...mdlF,gap:8}}>
+              <button style={{...btnG,flex:1}} onClick={()=>setConfirmDelete(false)}>Cancel</button>
+              <button style={{...btnA,flex:1,background:RED,borderColor:RED,color:"#fff",fontWeight:700}} onClick={()=>{setConfirmDelete(false);onDelete(m);}}>Delete Forever</button>
+            </div>
+          </div>
+        </div>
+      )}
       {showEdit&&<MachineForm existing={m} onSave={u=>{onUpdate(u);setShowEdit(false);}} onClose={()=>setShowEdit(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/>}
       {showWiki&&<WikiTrackerModal machine={m} profile={profile} onClose={()=>setShowWiki(false)}/>}
       {showConfig&&<TileConfig machine={m} onSave={u=>{onUpdate(u);setShowConfig(false);}} onClose={()=>setShowConfig(false)} />
@@ -505,7 +540,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
-            <button style={{..._jDel,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
+            <button style={{..._jDel,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();setConfirmDelete(true);}}>Delete</button>
           </div>
           {showGuide&&(
             <div style={{padding:"0 14px 14px",textAlign:"right"}}>
