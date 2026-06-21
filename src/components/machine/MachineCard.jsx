@@ -505,7 +505,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
-            <button style={_jDel} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
+            <button style={{..._jDel,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
           </div>
           {showGuide&&(
             <div style={{padding:"0 14px 14px",textAlign:"right"}}>
