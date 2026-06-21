@@ -11,7 +11,7 @@ REVOKE SELECT ON companies FROM authenticated;
 GRANT SELECT (
   id, name, trading_name, abn, phone, email, website, address, city, state,
   postcode, country, industry, logo, hourly_rate, tax_rate, tax_label,
-  invite_code, tier, created_at, updated_at
+  invite_code, tier, created_at
 ) ON companies TO authenticated;
 
 -- Full-row access via SECURITY DEFINER — returns own company only
