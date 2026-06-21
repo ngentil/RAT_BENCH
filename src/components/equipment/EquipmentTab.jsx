@@ -332,8 +332,10 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
   };
 
   const update = async (item) => {
-    const saved = await upsertEquipment(item);
-    setEquipment(prev => prev.map(e => e.id === saved.id ? saved : e));
+    try {
+      const saved = await upsertEquipment(item);
+      setEquipment(prev => prev.map(e => e.id === saved.id ? saved : e));
+    } catch (e) { console.error("update equipment:", e); }
   };
 
   const remove = async (id) => {

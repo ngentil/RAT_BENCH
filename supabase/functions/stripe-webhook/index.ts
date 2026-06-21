@@ -22,7 +22,7 @@ serve(async (req) => {
     event = await stripe.webhooks.constructEventAsync(body, sig!, Deno.env.get("STRIPE_WEBHOOK_SECRET")!);
   } catch (err) {
     console.error("Signature error:", err.message);
-    return new Response(`Webhook error: ${err.message}`, { status: 400 });
+    return new Response("Webhook signature verification failed.", { status: 400 });
   }
 
   const obj = event.data.object as any;
