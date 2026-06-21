@@ -261,9 +261,11 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
     const updated = log.find(e => e.id === entry.id)
       ? log.map(e => e.id === entry.id ? entry : e)
       : [entry, ...log];
-    await onUpdate({ ...vehicle, serviceLog: updated });
-    setShowSvc(false);
-    setEditSvc(null);
+    try {
+      await onUpdate({ ...vehicle, serviceLog: updated });
+      setShowSvc(false);
+      setEditSvc(null);
+    } catch { alert("Save failed — check your connection."); }
   };
 
   const removeSvcEntry = async (id) => {
@@ -512,6 +514,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
       setVehicles(prev => prev.map(v => v.id === saved.id ? saved : v));
     } catch (e) {
       console.error('Vehicle update failed:', e);
+      throw e;
     }
   };
 
