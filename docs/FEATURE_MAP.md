@@ -273,7 +273,7 @@ Stripe
 | asset_permissions table + RLS | ✅ | auth.users, company_members — run supabase/provisioned_update_checks.sql to enforce CHECK constraint on asset_type (valid: vehicle/equipment/tool/consumable/part); provisioned UPDATE policies on all asset tables now have WITH CHECK to prevent ownership theft | Business |
 | **vehicles** table + RLS | ✅ | asset_permissions | Free |
 | Vehicles tab: CRUD + service log + photos | ✅ | vehicles table | Free (1 limit) |
-| Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab — saving guard prevents duplicate entries on double-click; plug photo replace uploads new first then deletes old (safe on network failure) | Free |
+| Vehicle service log: full ServiceModal (types, datetime, plug photo, job photos, edit) | ✅ | ServiceModal, VehiclesTab — saving guard prevents duplicate entries on double-click; plug photo replace uploads new first then deletes old (safe on network failure); saveSvcEntry wrapped in try/catch — alerts on failure and keeps modal open; update() rethrows so callers detect DB failures | Free |
 | Sort modal + list/grid view toggle (Vehicles) | ✅ | VehiclesTab, AssetTile | Free |
 | **equipment** table + RLS | ✅ | asset_permissions | Free |
 | Equipment tab: CRUD + service log + photos | ✅ | equipment table | Free (5 limit) |
