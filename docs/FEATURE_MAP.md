@@ -88,7 +88,7 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | machines table (200+ columns, RLS) | ✅ | profiles, companies | Free |
-| Create / edit / delete machine | ✅ | machines table, transforms.js | Free |
+| Create / edit / delete machine | ✅ | machines table, transforms.js — delete shows in-app confirmation modal listing all data lost (service history, time logs, photos, storage bookings, client links, parts records), notes wiki entries persist, warns if timer running; "Delete Forever" required to proceed | Free |
 | First-run arrow guide (3-step tutorial: arrow → + Add · arrow → first card · in-card button key) | ✅ | Tracker.jsx GuideStep1/GuideStep2 + MachineCard showGuide prop — curved hand-drawn orange SVG arrows with pulsing glow; step 3 annotates each button (Edit Machine, PDF, Share, Layout, + LOG) inside the expanded card; dismissed state stored in profiles.preferences | Free |
 | First-run tab guides (all tabs) | ✅ | TabGuide.jsx shared component — two variants: "add" (right-aligned, arrow up-right toward + Add button) and "info" (centered, arrow down toward content); dismissed state stored per-key in profiles.preferences (rat_tut_jobs · rat_tut_search · rat_tut_revenue · rat_tut_clients etc.); same orange glow SVG arrow style as Tracker guide | Free |
 | Job card first-use inline guide | ✅ | JobBoard.jsx JobCard — green tip block shown on first expand (profiles.preferences.rat_tut_job_card); explains Notes / Timer / Parts / Status buttons; "got it" dismiss | Free |
