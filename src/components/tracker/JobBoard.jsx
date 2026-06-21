@@ -7,7 +7,7 @@ import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
 import { getNextInvoiceNumber } from '../../lib/db/invoices';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
-import { SL, Empty, SkullRating, Divider } from '../ui/shared';
+import { SL, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
 import StatusBadge from '../ui/StatusBadge';
 import { effectiveTier } from '../../lib/gates';
@@ -416,6 +416,7 @@ function PartsSection({ machine, onUpdate, userId }) {
   const [inv, setInv]             = useState([]);
   const [cons, setCons]           = useState([]);
   const [search, setSearch]       = useState("");
+  const [saving, setSaving]       = useState(false);
 
   useEffect(() => { getInventory(userId).then(setInv); }, [userId]);
   useEffect(() => { getConsumables().then(setCons); }, []);
@@ -447,7 +448,7 @@ function PartsSection({ machine, onUpdate, userId }) {
   );
 
   const useFromInventory = async () => {
-    if (!selected) return;
+    if (!selected || saving) return;
     const useQty = Math.max(1, parseInt(qty) || 1);
     const entry = {
       id: crypto.randomUUID(),
@@ -461,27 +462,45 @@ function PartsSection({ machine, onUpdate, userId }) {
       sellPrice: parseFloat(selected.sellPrice) || 0,
       usedAt: new Date().toISOString(),
     };
+    const original = machine;
     const updated = { ...machine, parts: [...parts, entry] };
+    setSaving(true);
     onUpdate(updated);
-    await upsertMachine(updated);
-    if (pickerSource === "part") {
-      setInv(await adjustStock(userId, selected.id, -useQty));
-    } else {
-      const updatedItem = await adjustConsumableQty(selected.id, -useQty);
-      setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+    try {
+      await upsertMachine(updated);
+      if (pickerSource === "part") {
+        setInv(await adjustStock(userId, selected.id, -useQty));
+      } else {
+        const updatedItem = await adjustConsumableQty(selected.id, -useQty);
+        setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+      }
+      setMode(null); setSelected(null); setQty("1"); setSearch("");
+    } catch (e) {
+      console.error("useFromInventory:", e);
+      onUpdate(original);
+    } finally {
+      setSaving(false);
     }
-    setMode(null); setSelected(null); setQty("1"); setSearch("");
   };
 
   const addStandalone = async () => {
-    if (!saForm.name.trim()) return;
+    if (!saForm.name.trim() || saving) return;
     const entry = { ...saForm, id: crypto.randomUUID(), qty: parseInt(saForm.qty)||1, buyPrice: parseFloat(saForm.buyPrice)||0, sellPrice: parseFloat(saForm.sellPrice)||0, usedAt: new Date().toISOString() };
     if (saMatchedInvId) { entry.inventoryId = saMatchedInvId; entry.sourceType = "part"; }
+    const original = machine;
     const updated = { ...machine, parts: [...parts, entry] };
+    setSaving(true);
     onUpdate(updated);
-    await upsertMachine(updated);
-    if (saMatchedInvId) setInv(await adjustStock(userId, saMatchedInvId, -(parseInt(saForm.qty)||1)));
-    setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" }); setSaSuggestions([]); setSaMatchedInvId(null);
+    try {
+      await upsertMachine(updated);
+      if (saMatchedInvId) setInv(await adjustStock(userId, saMatchedInvId, -(parseInt(saForm.qty)||1)));
+      setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" }); setSaSuggestions([]); setSaMatchedInvId(null);
+    } catch (e) {
+      console.error("addStandalone:", e);
+      onUpdate(original);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onSaNameChange = (val) => {
@@ -501,15 +520,21 @@ function PartsSection({ machine, onUpdate, userId }) {
   const remove = async (idx) => {
     if (!confirm("Remove this part usage? Stock will be returned if it came from inventory.")) return;
     const p = parts[idx];
+    const original = machine;
     const updated = { ...machine, parts: parts.filter((_,i) => i !== idx) };
     onUpdate(updated);
-    await upsertMachine(updated);
-    const sourceType = p.sourceType || (p.inventoryId ? "part" : null);
-    if (sourceType === "consumable" && p.consumableId) {
-      const updatedItem = await adjustConsumableQty(p.consumableId, Number(p.qty) || 1);
-      setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
-    } else if (p.inventoryId) {
-      setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+    try {
+      await upsertMachine(updated);
+      const sourceType = p.sourceType || (p.inventoryId ? "part" : null);
+      if (sourceType === "consumable" && p.consumableId) {
+        const updatedItem = await adjustConsumableQty(p.consumableId, Number(p.qty) || 1);
+        setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+      } else if (p.inventoryId) {
+        setInv(await adjustStock(userId, p.inventoryId, Number(p.qty) || 1));
+      }
+    } catch (e) {
+      console.error("remove part:", e);
+      onUpdate(original);
     }
   };
 
@@ -668,7 +693,7 @@ function PartsSection({ machine, onUpdate, userId }) {
 }
 
 function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
-  const t = machine.jobTimer || { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" };
+  const t = machine.jobTimers?.[0] || { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" };
 
   const getElapsed = () => {
     if (t.status === "running" && t.startedAt) {
@@ -706,9 +731,15 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   }, [t.status, t.startedAt, t.elapsed, t.duration]);
 
   const save = async (updates) => {
-    const updated = { ...machine, jobTimer: { ...t, ...updates } };
+    const original = machine;
+    const updated = { ...machine, jobTimers: [{ ...t, ...updates }] };
     onUpdate(updated);
-    await upsertMachine(updated);
+    try {
+      await upsertMachine(updated);
+    } catch (e) {
+      console.error("timer save:", e);
+      onUpdate(original);
+    }
   };
 
   const handleStart = async () => {
@@ -763,7 +794,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
       ...machine,
       status: "Complete",
       timeLog: [...(machine.timeLog || []), newEntry],
-      jobTimer: { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" },
+      jobTimers: [],
     };
     onUpdate(updated);
     await upsertMachine(updated);
@@ -781,7 +812,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
     const updated = {
       ...machine,
       timeLog: [...(machine.timeLog || []), newEntry],
-      jobTimer: { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" },
+      jobTimers: [],
     };
     onUpdate(updated);
     await upsertMachine(updated);
@@ -965,7 +996,7 @@ const STATUS_COLOR = {
   "Complete": MUT,
 };
 
-function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
+function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
   const [open, setOpen] = useState(false);
   const [jobGuide, setJobGuide] = useState(() => !getPref(profile, "rat_tut_job_card", false));
   const dismissJobGuide = () => { setJobGuide(false); savePref(profile?.id, "rat_tut_job_card", true); };
@@ -974,7 +1005,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
   const partsCount  = (m.parts||[]).length;
   const due         = m.dueDate ? new Date(m.dueDate) : null;
   const isOverdue   = due && due < new Date();
-  const isRunning   = m.jobTimer?.status === "running";
+  const isRunning   = m.jobTimers?.[0]?.status === "running";
   const hourlyRate  = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
   const partsTotal  = (m.parts||[]).reduce((s,p) => s + (parseFloat(p.sellPrice)||0)*(Number(p.qty)||1), 0);
   const labourTotal = hourlyRate ? (totalSecs / 3600) * hourlyRate : null;
@@ -1032,7 +1063,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, company, sess
           )}
           <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; onUpdate(u); await upsertMachine(u); }} />
           {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
-          {!timerLocked && <TimeLogSection machine={m} company={company} clients={[]} userId={session?.user?.id} onUpdate={onUpdate} />}
+          {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={onUpdate} />}
           {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
           {timerLocked && <UpgradeBanner text="Timer & parts log unlocks on Enthusiast." onUpgrade={onGoToBilling} marginBottom={0} />}
           {grandTotal > 0 && (
@@ -1103,7 +1134,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
   const rate         = company?.hourly_rate || 0;
   const labourRevAll = totalHrsAll * rate;
-  const runningTimer = machines.find(m => m.jobTimer?.status === "running");
+  const runningTimer = machines.find(m => m.jobTimers?.[0]?.status === "running");
 
   return (
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
@@ -1174,7 +1205,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
             const locked = isFree && freeIdx > 0;
             return (
               <JobCard key={m.id} m={m} status={status} timerLocked={locked} partsLocked={locked}
-                clientMap={clientMap} company={company} session={session} profile={profile}
+                clientMap={clientMap} clients={clients} company={company} session={session} profile={profile}
                 onUpdate={updateM} onUpdateStatus={updateStatus} onUpdateRage={updateRage}
                 onGoToBilling={onGoToBilling} />
             );
