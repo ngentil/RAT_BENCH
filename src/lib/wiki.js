@@ -191,6 +191,30 @@ export async function getWikiRevisions(entryId) {
   return data || [];
 }
 
+// Look up a wiki entry by exact make+model (case-insensitive).
+// Returns the best-matched non-sample entry, or the user's own sample entry,
+// with currentRevision attached. Returns null if nothing found.
+export async function lookupWikiEntry(make, model, userId) {
+  if (!make || !model) return null;
+  let q = supabase.from("wiki_entries")
+    .select("*")
+    .ilike("make", make)
+    .ilike("model", model)
+    .not("current_rev_id", "is", null);
+  if (userId && /^[0-9a-f-]{36}$/.test(userId)) {
+    q = q.or(`is_sample.eq.false,and(is_sample.eq.true,sample_owner_id.eq.${userId})`);
+  } else {
+    q = q.eq("is_sample", false);
+  }
+  const { data } = await q.order("view_count", { ascending: false }).limit(1);
+  const entry = data?.[0];
+  if (!entry) return null;
+  const { data: rev } = await supabase.from("wiki_revisions")
+    .select("*").eq("id", entry.current_rev_id).single();
+  entry.currentRevision = rev || null;
+  return entry;
+}
+
 export async function searchWiki(query, userId) {
   let q = supabase.from("wiki_entries")
     .select("id,slug,make,model,type,view_count,is_sample")
