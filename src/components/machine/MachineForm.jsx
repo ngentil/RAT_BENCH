@@ -582,6 +582,11 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     fill(sd.injectorFlow,setInjectorFlow,injectorFlow);
     fill(sd.fuelRailPressure,setFuelRailPressure,fuelRailPressure);
     fill(sd.fuelPumpPressure,setFuelPumpPressure,fuelPumpPressure);
+    // Carb brand / model (stored as cBrand/cModel in form and sample data)
+    fill(sd.cBrand,setCBrand,cBrand);
+    fill(sd.cModel,setCModel,cModel);
+    fill(sd.cType,setCType,cType);
+    fill(sd.carbCount,setCarbCount,carbCount);
     // Cooling
     fill(sd.coolingType,setCoolingType,coolingType);
     fill(sd.coolantType,setCoolantType,coolantType);
@@ -646,12 +651,12 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     fill(sd.forkTravel,setForkTravel,forkTravel);
     fill(sd.rearShockType,setRearShockType,rearShockType);
     fill(sd.rearTravel,setRearTravel,rearTravel);
-    // Brakes
-    fill(sd.frontBrake,setFrontBrake,frontBrake);
-    fill(sd.rearBrake,setRearBrake,rearBrake);
-    // Tyres
-    fill(sd.tyreFront,setTyreFront,tyreFront);
-    fill(sd.tyreRear,setTyreRear,tyreRear);
+    // Brakes — sample entries use frontBrakeType/rearBrakeType, user entries use frontBrake/rearBrake
+    fill(sd.frontBrake||sd.frontBrakeType,setFrontBrake,frontBrake);
+    fill(sd.rearBrake||sd.rearBrakeType,setRearBrake,rearBrake);
+    // Tyres — sample entries use tyreSizeFront/tyreSizeRear, user entries use tyreFront/tyreRear
+    fill(sd.tyreFront||sd.tyreSizeFront,setTyreFront,tyreFront);
+    fill(sd.tyreRear||sd.tyreSizeRear,setTyreRear,tyreRear);
     fill(sd.rimFront,setRimFront,rimFront);
     fill(sd.rimRear,setRimRear,rimRear);
     // Blade / deck
@@ -701,11 +706,12 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     fill(sd.oilChangeInterval,setOilChangeInterval,oilChangeInterval);
     fill(sd.filterInterval,setFilterInterval,filterInterval);
     fill(sd.majorServiceInterval,setMajorServiceInterval,majorServiceInterval);
-    // Dimensions — wiki may store as weightKg (seeded) or dryWeight (user-submitted)
+    // Dimensions — wiki may use weightKg/lengthMm/widthMm/heightMm (samples/seeds)
+    // or dryWeight/overallLength/overallWidth/overallHeight (user-submitted entries)
     fill(sd.dryWeight||sd.weightKg,setDryWeight,dryWeight);
-    fill(sd.overallLength,setOverallLength,overallLength);
-    fill(sd.overallWidth,setOverallWidth,overallWidth);
-    fill(sd.overallHeight,setOverallHeight,overallHeight);
+    fill(sd.overallLength||sd.lengthMm,setOverallLength,overallLength);
+    fill(sd.overallWidth||sd.widthMm,setOverallWidth,overallWidth);
+    fill(sd.overallHeight||sd.heightMm,setOverallHeight,overallHeight);
     fill(sd.wheelbase,setWheelbase,wheelbase);
     // Notes
     fill(sd.notes,setNotes,notes);
@@ -717,7 +723,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     if(sd.eValveFace||sd.eValveStem||sd.eValveLift) setSecEngExhaustValve(true);
     if(sd.plugType||sd.plugGap||sd.coilType||sd.primaryOhms||sd.secondaryOhms) setSecIgnition(true);
     if(sd.starterType||sd.ropeDiameter) setSecStarter(true);
-    if(sd.fuelSystem||sd.mixRatio||sd.fuelTankCapacity||sd.tbDiameter||sd.ecuModel||sd.injectorCount) setSecCarb(true);
+    if(sd.fuelSystem||sd.mixRatio||sd.fuelTankCapacity||sd.tbDiameter||sd.ecuModel||sd.injectorCount||sd.cBrand||sd.cModel) setSecCarb(true);
     if(sd.coolingType||sd.coolantType||sd.coolantCapacity||sd.thermostatTemp) setSecCooling(true);
     if(sd.turboFitted||sd.turboType||sd.turboBrand||sd.turboBoost) setSecTurbo(true);
     if(sd.boreDiameter||sd.crankStroke||sd.crankPinDiameter||sd.mainJournalDiameter||sd.crankEndFloat||sd.crankSealLeft) setSecCrank(true);
@@ -726,13 +732,13 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     if(sd.cylMaxWear||sd.cylTaperLimit||sd.honingAngle||sd.nikasil) setSecCylinder(true);
     if(sd.engineOilGrade||sd.engineOilCapacity||sd.engineOilBrand||sd.brakeFluidType||sd.diffOilType||sd.hydraulicFluidType) setSecFluids(true);
     if(sd.oilChangeInterval||sd.filterInterval||sd.majorServiceInterval) setSecServiceIntervals(true);
-    if(sd.dryWeight||sd.weightKg||sd.overallLength||sd.overallWidth||sd.overallHeight||sd.wheelbase) setSecDimensions(true);
+    if(sd.dryWeight||sd.weightKg||sd.overallLength||sd.overallWidth||sd.overallHeight||sd.wheelbase||sd.lengthMm||sd.widthMm||sd.heightMm) setSecDimensions(true);
     if(sd.ptoDiameter||sd.shaftType||sd.threadDir||sd.threadSize) setSecPto(true);
     if(sd.driveType||sd.transType||sd.clutchType||sd.gearCount||sd.chainPitch) setSecDrive(true);
     if(sd.inputShaftDiameter||sd.outputShaftDiameter) setSecGearboxShafts(true);
     if(sd.forkType||sd.forkDiameter||sd.forkTravel||sd.rearShockType||sd.rearTravel) setSecSuspension(true);
-    if(sd.frontBrake||sd.rearBrake) setSecBrakes(true);
-    if(sd.tyreFront||sd.tyreRear||sd.rimFront||sd.rimRear) setSecTyres(true);
+    if(sd.frontBrake||sd.rearBrake||sd.frontBrakeType||sd.rearBrakeType) setSecBrakes(true);
+    if(sd.tyreFront||sd.tyreRear||sd.tyreSizeFront||sd.tyreSizeRear||sd.rimFront||sd.rimRear) setSecTyres(true);
     if(sd.deckSize||sd.bladeLength||sd.bladeType||sd.bladeCount) setSecBlade(true);
     if(sd.barLength||sd.barGauge||sd.chainPitchCS||sd.chainDriveLinks||sd.sprocketStyle) setSecChainsaw(true);
     if(sd.obShaftLength||sd.obGearRatio||sd.obPropPitch||sd.obLowerUnitOilType) setSecOutboard(true);
