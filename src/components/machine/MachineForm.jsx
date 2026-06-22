@@ -572,8 +572,9 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     // Starter
     fill(sd.starterType,setStarterType,starterType);
     fill(sd.ropeDiameter,setRopeDiameter,ropeDiameter);
-    // Fuel
-    fill(sd.fuelSystem,setFuelSystem,fuelSystem);
+    // Fuel — normalize fuelSystem to match the form's toggle options
+    const _fuelSys=!sd.fuelSystem?null:/carbu?ret/i.test(sd.fuelSystem)?'Carburetted':/inject|efi|\bfi\b/i.test(sd.fuelSystem)?'Fuel Injected':sd.fuelSystem;
+    fill(_fuelSys,setFuelSystem,fuelSystem);
     fill(sd.mixRatio,setMixRatio,mixRatio);
     fill(sd.fuelTankCapacity,setFuelTankCapacity,fuelTankCapacity);
     fill(sd.tbDiameter,setTbDiameter,tbDiameter);
@@ -582,13 +583,16 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     fill(sd.injectorFlow,setInjectorFlow,injectorFlow);
     fill(sd.fuelRailPressure,setFuelRailPressure,fuelRailPressure);
     fill(sd.fuelPumpPressure,setFuelPumpPressure,fuelPumpPressure);
-    // Carb brand / model (stored as cBrand/cModel in form and sample data)
+    // Carb brand / model — fill both cBrand (saved to machine record) and carbBrandSpec
+    // (the CarbSpec section select, which renders for 2-stroke and 4-stroke carburetted)
     fill(sd.cBrand,setCBrand,cBrand);
+    fill(sd.cBrand,setCarbBrandSpec,carbBrandSpec);
     fill(sd.cModel,setCModel,cModel);
     fill(sd.cType,setCType,cType);
     fill(sd.carbCount,setCarbCount,carbCount);
-    // Cooling
-    fill(sd.coolingType,setCoolingType,coolingType);
+    // Cooling — normalize to match COOLING_TYPES select options ("Air cooled", "Liquid cooled", etc.)
+    const _cooling=!sd.coolingType?null:/liquid/i.test(sd.coolingType)?'Liquid cooled':/air.*oil|oil.*air/i.test(sd.coolingType)?'Air + Oil cooled':/oil/i.test(sd.coolingType)?'Oil cooled':/air/i.test(sd.coolingType)?'Air cooled':sd.coolingType;
+    fill(_cooling,setCoolingType,coolingType);
     fill(sd.coolantType,setCoolantType,coolantType);
     fill(sd.coolantCapacity,setCoolantCapacity,coolantCapacity);
     fill(sd.thermostatTemp,setThermostatTemp,thermostatTemp);
@@ -722,15 +726,18 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     if(sd.iValveFace||sd.iValveStem||sd.iValveLift) setSecEngIntakeValve(true);
     if(sd.eValveFace||sd.eValveStem||sd.eValveLift) setSecEngExhaustValve(true);
     if(sd.plugType||sd.plugGap||sd.coilType||sd.primaryOhms||sd.secondaryOhms) setSecIgnition(true);
-    if(sd.starterType||sd.ropeDiameter) setSecStarter(true);
-    if(sd.fuelSystem||sd.mixRatio||sd.fuelTankCapacity||sd.tbDiameter||sd.ecuModel||sd.injectorCount||sd.cBrand||sd.cModel) setSecCarb(true);
-    if(sd.coolingType||sd.coolantType||sd.coolantCapacity||sd.thermostatTemp) setSecCooling(true);
+    if(sd.starterType||sd.ropeDiameter) setSecIgnition(true); // starter renders inside secIgnition
+    // secCarb = Fuel System section (non-2-stroke only); fuelTankCapacity/mixRatio are in secFluids
+    if(sd.fuelSystem||sd.tbDiameter||sd.ecuModel||sd.injectorCount||sd.cBrand||sd.cModel) setSecCarb(true);
+    // secCarbSpec = Carburettor Spec section (2-stroke or carburetted 4-stroke)
+    if(sd.cBrand||sd.cModel||sd.cType) setSecCarbSpec(true);
+    // secFluids contains cooling fields, fuel tank, mix ratio, and oil/fluid specs
+    if(sd.coolingType||sd.coolantType||sd.coolantCapacity||sd.thermostatTemp||sd.fuelTankCapacity||sd.mixRatio||sd.engineOilGrade||sd.engineOilCapacity||sd.engineOilBrand||sd.brakeFluidType||sd.diffOilType||sd.hydraulicFluidType) setSecFluids(true);
     if(sd.turboFitted||sd.turboType||sd.turboBrand||sd.turboBoost) setSecTurbo(true);
     if(sd.boreDiameter||sd.crankStroke||sd.crankPinDiameter||sd.mainJournalDiameter||sd.crankEndFloat||sd.crankSealLeft) setSecCrank(true);
     if(sd.conrodLength||sd.conrodSmallEnd||sd.conrodBigEnd) setSecConrod(true);
     if(sd.pistonDiameter||sd.pistonClearance||sd.ringCount||sd.ringGapTop||sd.gudgeonDiameter) setSecPiston(true);
     if(sd.cylMaxWear||sd.cylTaperLimit||sd.honingAngle||sd.nikasil) setSecCylinder(true);
-    if(sd.engineOilGrade||sd.engineOilCapacity||sd.engineOilBrand||sd.brakeFluidType||sd.diffOilType||sd.hydraulicFluidType) setSecFluids(true);
     if(sd.oilChangeInterval||sd.filterInterval||sd.majorServiceInterval) setSecServiceIntervals(true);
     if(sd.dryWeight||sd.weightKg||sd.overallLength||sd.overallWidth||sd.overallHeight||sd.wheelbase||sd.lengthMm||sd.widthMm||sd.heightMm) setSecDimensions(true);
     if(sd.ptoDiameter||sd.shaftType||sd.threadDir||sd.threadSize) setSecPto(true);
