@@ -709,6 +709,36 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     fill(sd.wheelbase,setWheelbase,wheelbase);
     // Notes
     fill(sd.notes,setNotes,notes);
+    // Auto-expand sections that received data so the user can see the pre-filled values
+    if(sd.strokeType||sd.ccSize||sd.compression||sd.compressionRatio||sd.idleRpm||sd.wotRpm||sd.cylCount||sd.firingOrder) setSecEngine(true);
+    if(sd.valveTrain||sd.camType||sd.intakeValveN||sd.exhaustValveN||sd.locknutSize) setSecEngValveTrain(true);
+    if(sd.intakeValveClear||sd.exhaustValveClear) setSecEngValveClear(true);
+    if(sd.iValveFace||sd.iValveStem||sd.iValveLift) setSecEngIntakeValve(true);
+    if(sd.eValveFace||sd.eValveStem||sd.eValveLift) setSecEngExhaustValve(true);
+    if(sd.plugType||sd.plugGap||sd.coilType||sd.primaryOhms||sd.secondaryOhms) setSecIgnition(true);
+    if(sd.starterType||sd.ropeDiameter) setSecStarter(true);
+    if(sd.fuelSystem||sd.mixRatio||sd.fuelTankCapacity||sd.tbDiameter||sd.ecuModel||sd.injectorCount) setSecCarb(true);
+    if(sd.coolingType||sd.coolantType||sd.coolantCapacity||sd.thermostatTemp) setSecCooling(true);
+    if(sd.turboFitted||sd.turboType||sd.turboBrand||sd.turboBoost) setSecTurbo(true);
+    if(sd.boreDiameter||sd.crankStroke||sd.crankPinDiameter||sd.mainJournalDiameter||sd.crankEndFloat||sd.crankSealLeft) setSecCrank(true);
+    if(sd.conrodLength||sd.conrodSmallEnd||sd.conrodBigEnd) setSecConrod(true);
+    if(sd.pistonDiameter||sd.pistonClearance||sd.ringCount||sd.ringGapTop||sd.gudgeonDiameter) setSecPiston(true);
+    if(sd.cylMaxWear||sd.cylTaperLimit||sd.honingAngle||sd.nikasil) setSecCylinder(true);
+    if(sd.engineOilGrade||sd.engineOilCapacity||sd.engineOilBrand||sd.brakeFluidType||sd.diffOilType||sd.hydraulicFluidType) setSecFluids(true);
+    if(sd.oilChangeInterval||sd.filterInterval||sd.majorServiceInterval) setSecServiceIntervals(true);
+    if(sd.dryWeight||sd.weightKg||sd.overallLength||sd.overallWidth||sd.overallHeight||sd.wheelbase) setSecDimensions(true);
+    if(sd.ptoDiameter||sd.shaftType||sd.threadDir||sd.threadSize) setSecPto(true);
+    if(sd.driveType||sd.transType||sd.clutchType||sd.gearCount||sd.chainPitch) setSecDrive(true);
+    if(sd.inputShaftDiameter||sd.outputShaftDiameter) setSecGearboxShafts(true);
+    if(sd.forkType||sd.forkDiameter||sd.forkTravel||sd.rearShockType||sd.rearTravel) setSecSuspension(true);
+    if(sd.frontBrake||sd.rearBrake) setSecBrakes(true);
+    if(sd.tyreFront||sd.tyreRear||sd.rimFront||sd.rimRear) setSecTyres(true);
+    if(sd.deckSize||sd.bladeLength||sd.bladeType||sd.bladeCount) setSecBlade(true);
+    if(sd.barLength||sd.barGauge||sd.chainPitchCS||sd.chainDriveLinks||sd.sprocketStyle) setSecChainsaw(true);
+    if(sd.obShaftLength||sd.obGearRatio||sd.obPropPitch||sd.obLowerUnitOilType) setSecOutboard(true);
+    if(sd.pumpPsi||sd.pumpFlow||sd.pumpType||sd.pumpBrand) setSecPump(true);
+    if(sd.genWatts||sd.genVoltage||sd.genFreq) setSecGenOutput(true);
+    if(sd.notes) setSecNotes(true);
     setWikiSuggestion(null);
   }
 
