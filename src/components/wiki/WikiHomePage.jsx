@@ -4,6 +4,17 @@ import { searchWiki, seedSampleWikiEntries } from '../../lib/wiki';
 import { getPref, savePref } from '../../lib/db/preferences';
 import { WikiHeader } from './WikiEntryPage';
 
+function hl(text, tokens) {
+  if (!tokens.length || !text) return text;
+  const escaped = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const parts = String(text).split(new RegExp(`(${escaped.join('|')})`, 'gi'));
+  return parts.map((p, i) =>
+    i % 2 === 1
+      ? <mark key={i} style={{ background: '#1e3a1e', color: '#7fc97f', padding: '0 1px', borderRadius: 2 }}>{p}</mark>
+      : p
+  );
+}
+
 function WikiHomePage({ onSelect, embedded = false, profile }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -41,18 +52,24 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
 
   const list = query.trim() ? results : recent;
 
+  const tokens = query.trim().split(/\s+/).map(t => t.replace(/[^a-zA-Z0-9\-]/g, '')).filter(Boolean);
+
   const EntryRow = ({ e }) => {
+    const slugMatchOnly = tokens.length > 0
+      && !tokens.some(t => [(e.make||''), (e.model||''), (e.type||'')].some(f => f.toLowerCase().includes(t.toLowerCase())))
+      && tokens.some(t => (e.slug||'').toLowerCase().includes(t.toLowerCase()));
     const inner = (
       <div style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + (e.is_sample ? "#555" : ACC), padding: "12px 16px", borderRadius: 2, cursor: "pointer" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{e.make} <span style={{ color: e.is_sample ? "#888" : ACC }}>{e.model}</span></div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{hl(e.make, tokens)} <span style={{ color: e.is_sample ? "#888" : ACC }}>{hl(e.model, tokens)}</span></div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {e.is_sample && <span style={{ fontSize: 7, color: "#666", border: "1px solid #333", padding: "1px 5px", borderRadius: 2, letterSpacing: "0.1em", textTransform: "uppercase" }}>sample</span>}
             {e.year && <span style={{ fontSize: 9, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{e.year}</span>}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-          {e.type && <span style={{ fontSize: 8, color: e.is_sample ? "#666" : ACC, background: (e.is_sample ? "#333" : ACC) + "12", border: "1px solid " + (e.is_sample ? "#333" : ACC) + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{e.type}</span>}
+          {e.type && <span style={{ fontSize: 8, color: e.is_sample ? "#666" : ACC, background: (e.is_sample ? "#333" : ACC) + "12", border: "1px solid " + (e.is_sample ? "#333" : ACC) + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{hl(e.type, tokens)}</span>}
+          {slugMatchOnly && <span style={{ fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{hl(e.slug, tokens)}</span>}
           <span style={{ fontSize: 8, color: MUT, marginLeft: "auto" }}>👁 {e.view_count || 0}</span>
         </div>
       </div>
