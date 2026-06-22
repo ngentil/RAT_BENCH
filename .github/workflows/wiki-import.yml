@@ -17,6 +17,7 @@ on:
           - training-data-6-sport
           - training-data-7-commercial
           - training-data-8-arborist
+          - training-data-9-clones
           - nhtsa-motorcycle
           - nhtsa-all
           - kaggle-motos
@@ -81,6 +82,9 @@ jobs:
               ;;
             training-data-8-arborist)
               node scripts/wiki-import/training-data-seed-8.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-9-clones)
+              node scripts/wiki-import/training-data-seed-9.mjs $DRY $LIMIT_ARG
               ;;
             nhtsa-motorcycle)
               node scripts/wiki-import/nhtsa.mjs --type=motorcycle $DRY $LIMIT_ARG
