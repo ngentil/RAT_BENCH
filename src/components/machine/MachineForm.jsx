@@ -7,7 +7,7 @@ import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
 import { WikiTrackerModal } from '../wiki/WikiModals';
-import { getWikiEntryBySlug, makeSlug } from '../../lib/wiki';
+import { lookupWikiEntry } from '../../lib/wiki';
 import { effectiveTier } from '../../lib/gates';
 import { getPref, savePref } from '../../lib/db/preferences';
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
@@ -527,7 +527,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     if(existing||!make||!model){setWikiSuggestion(null);return;}
     clearTimeout(wikiTimerRef.current);
     wikiTimerRef.current=setTimeout(async()=>{
-      const entry=await getWikiEntryBySlug(makeSlug(make,model));
+      const entry=await lookupWikiEntry(make,model,profile?.id);
       if(entry?.currentRevision?.data) setWikiSuggestion({entry,specData:entry.currentRevision.data});
       else setWikiSuggestion(null);
     },800);
