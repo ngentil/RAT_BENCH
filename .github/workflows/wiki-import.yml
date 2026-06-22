@@ -10,6 +10,9 @@ on:
         type: choice
         options:
           - training-data
+          - training-data-2-marine
+          - training-data-3-dirtbikes
+          - training-data-4-everything
           - nhtsa-motorcycle
           - nhtsa-all
           - kaggle-motos
@@ -53,6 +56,15 @@ jobs:
           case "${{ inputs.source }}" in
             training-data)
               node scripts/wiki-import/training-data-seed.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-2-marine)
+              node scripts/wiki-import/training-data-seed-2.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-3-dirtbikes)
+              node scripts/wiki-import/training-data-seed-3.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-4-everything)
+              node scripts/wiki-import/training-data-seed-4.mjs $DRY $LIMIT_ARG
               ;;
             nhtsa-motorcycle)
               node scripts/wiki-import/nhtsa.mjs --type=motorcycle $DRY $LIMIT_ARG
