@@ -536,33 +536,179 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
 
   function applyWikiSuggestion(sd){
     const fill=(val,setter,cur)=>{if(val&&!cur)setter(val);};
+    // Identity
+    fill(sd.year,setYear,year);
+    fill(sd.colour,setColour,colour);
+    fill(sd.bodyType,setBodyType,bodyType);
+    fill(sd.driveConfig,setDriveConfig,driveConfig);
+    // Engine
     fill(sd.strokeType,setStrokeType,strokeType);
     fill(sd.ccSize,setCcSize,ccSize);
-    fill(sd.boreDiameter,setBoreDiameter,boreDiameter);
-    fill(sd.crankStroke,setCrankStroke,crankStroke);
-    fill(sd.cylCount,setCylCount,cylCount);
-    fill(sd.firingOrder,setFiringOrder,firingOrder);
-    fill(sd.coolingType,setCoolingType,coolingType);
-    fill(sd.fuelSystem,setFuelSystem,fuelSystem);
+    fill(sd.compression,setCompression,compression);
     fill(sd.compressionRatio,setCompressionRatio,compressionRatio);
     fill(sd.idleRpm,setIdleRpm,idleRpm);
     fill(sd.wotRpm,setWotRpm,wotRpm);
+    fill(sd.cylCount,setCylCount,cylCount);
+    fill(sd.firingOrder,setFiringOrder,firingOrder);
     fill(sd.valveTrain,setValveTrain,valveTrain);
     fill(sd.camType,setCamType,camType);
+    fill(sd.locknutSize,setLocknutSize,locknutSize);
     fill(sd.intakeValveClear,setIntakeValveClear,intakeValveClear);
     fill(sd.exhaustValveClear,setExhaustValveClear,exhaustValveClear);
     fill(sd.intakeValveN,setIntakeValveN,intakeValveN);
     fill(sd.exhaustValveN,setExhaustValveN,exhaustValveN);
+    fill(sd.iValveFace,setIValveFace,iValveFace);
+    fill(sd.iValveStem,setIValveStem,iValveStem);
+    fill(sd.iValveLift,setIValveLift,iValveLift);
+    fill(sd.eValveFace,setEValveFace,eValveFace);
+    fill(sd.eValveStem,setEValveStem,eValveStem);
+    fill(sd.eValveLift,setEValveLift,eValveLift);
+    // Ignition
     fill(sd.plugType,setPlugType,plugType);
     fill(sd.plugGap,setPlugGap,plugGap);
     fill(sd.coilType,setCoilType,coilType);
+    fill(sd.primaryOhms,setPrimaryOhms,primaryOhms);
+    fill(sd.secondaryOhms,setSecondaryOhms,secondaryOhms);
+    // Starter
     fill(sd.starterType,setStarterType,starterType);
+    fill(sd.ropeDiameter,setRopeDiameter,ropeDiameter);
+    // Fuel
+    fill(sd.fuelSystem,setFuelSystem,fuelSystem);
     fill(sd.mixRatio,setMixRatio,mixRatio);
     fill(sd.fuelTankCapacity,setFuelTankCapacity,fuelTankCapacity);
-    fill(sd.notes,setNotes,notes);
+    fill(sd.tbDiameter,setTbDiameter,tbDiameter);
+    fill(sd.ecuModel,setEcuModel,ecuModel);
+    fill(sd.injectorCount,setInjectorCount,injectorCount);
+    fill(sd.injectorFlow,setInjectorFlow,injectorFlow);
+    fill(sd.fuelRailPressure,setFuelRailPressure,fuelRailPressure);
+    fill(sd.fuelPumpPressure,setFuelPumpPressure,fuelPumpPressure);
+    // Cooling
+    fill(sd.coolingType,setCoolingType,coolingType);
+    fill(sd.coolantType,setCoolantType,coolantType);
+    fill(sd.coolantCapacity,setCoolantCapacity,coolantCapacity);
+    fill(sd.thermostatTemp,setThermostatTemp,thermostatTemp);
+    // Turbo / forced induction
+    fill(sd.turboFitted,setTurboFitted,turboFitted);
+    fill(sd.turboType,setTurboType,turboType);
+    fill(sd.turboBrand,setTurboBrand,turboBrand);
+    fill(sd.turboBoost,setTurboBoost,turboBoost);
+    // Engine internals — bore / stroke / piston
+    fill(sd.boreDiameter,setBoreDiameter,boreDiameter);
+    fill(sd.crankStroke,setCrankStroke,crankStroke);
     fill(sd.pistonDiameter,setPistonDiameter,pistonDiameter);
+    fill(sd.pistonClearance,setPistonClearance,pistonClearance);
+    fill(sd.ringCount,setRingCount,ringCount);
+    fill(sd.ringGapTop,setRingGapTop,ringGapTop);
+    fill(sd.ringGapSecond,setRingGapSecond,ringGapSecond);
+    fill(sd.ringGapOil,setRingGapOil,ringGapOil);
+    fill(sd.ringWidth,setRingWidth,ringWidth);
+    fill(sd.ringThickness,setRingThickness,ringThickness);
+    fill(sd.gudgeonDiameter,setGudgeonDiameter,gudgeonDiameter);
+    fill(sd.gudgeonLength,setGudgeonLength,gudgeonLength);
+    fill(sd.gudgeonFit,setGudgeonFit,gudgeonFit);
+    fill(sd.gudgeonCirclip,setGudgeonCirclip,gudgeonCirclip);
+    // Crank / con-rod
     fill(sd.conrodLength,setConrodLength,conrodLength);
-    fill(sd.dryWeight,setDryWeight,dryWeight);
+    fill(sd.conrodSmallEnd,setConrodSmallEnd,conrodSmallEnd);
+    fill(sd.conrodBigEnd,setConrodBigEnd,conrodBigEnd);
+    fill(sd.crankPinDiameter,setCrankPinDiameter,crankPinDiameter);
+    fill(sd.mainJournalDiameter,setMainJournalDiameter,mainJournalDiameter);
+    fill(sd.crankEndFloat,setCrankEndFloat,crankEndFloat);
+    fill(sd.crankSealLeft,setCrankSealLeft,crankSealLeft);
+    fill(sd.crankSealRight,setCrankSealRight,crankSealRight);
+    // Cylinder
+    fill(sd.cylMaxWear,setCylMaxWear,cylMaxWear);
+    fill(sd.cylTaperLimit,setCylTaperLimit,cylTaperLimit);
+    fill(sd.honingAngle,setHoningAngle,honingAngle);
+    fill(sd.nikasil,setNikasil,nikasil);
+    // PTO / output shaft
+    fill(sd.ptoDiameter,setPtoDiameter,ptoDiameter);
+    fill(sd.shaftType,setShaftType,shaftType);
+    fill(sd.threadDir,setThreadDir,threadDir);
+    fill(sd.threadSize,setThreadSize,threadSize);
+    fill(sd.sprocketType,setSprocketType,sprocketType);
+    // Drivetrain
+    fill(sd.driveType,setDriveType,driveType);
+    fill(sd.transType,setTransType,transType);
+    fill(sd.clutchType,setClutchType,clutchType);
+    fill(sd.gearCount,setGearCount,gearCount);
+    fill(sd.gearboxBrand,setGearboxBrand,gearboxBrand);
+    fill(sd.gearboxOilType,setGearboxOilType,gearboxOilType);
+    fill(sd.chainPitch,setChainPitch,chainPitch);
+    fill(sd.frontSprocket,setFrontSprocket,frontSprocket);
+    fill(sd.rearSprocket,setRearSprocket,rearSprocket);
+    // Gearbox shafts
+    fill(sd.inputShaftDiameter,setInputShaftDiameter,inputShaftDiameter);
+    fill(sd.outputShaftDiameter,setOutputShaftDiameter,outputShaftDiameter);
+    // Suspension
+    fill(sd.forkType,setForkType,forkType);
+    fill(sd.forkDiameter,setForkDiameter,forkDiameter);
+    fill(sd.forkTravel,setForkTravel,forkTravel);
+    fill(sd.rearShockType,setRearShockType,rearShockType);
+    fill(sd.rearTravel,setRearTravel,rearTravel);
+    // Brakes
+    fill(sd.frontBrake,setFrontBrake,frontBrake);
+    fill(sd.rearBrake,setRearBrake,rearBrake);
+    // Tyres
+    fill(sd.tyreFront,setTyreFront,tyreFront);
+    fill(sd.tyreRear,setTyreRear,tyreRear);
+    fill(sd.rimFront,setRimFront,rimFront);
+    fill(sd.rimRear,setRimRear,rimRear);
+    // Blade / deck
+    fill(sd.deckSize,setDeckSize,deckSize);
+    fill(sd.bladeLength,setBladeLength,bladeLength);
+    fill(sd.bladeType,setBladeType,bladeType);
+    fill(sd.bladeCount,setBladeCount,bladeCount);
+    // Chainsaw bar & chain
+    fill(sd.barLength,setBarLength,barLength);
+    fill(sd.barGauge,setBarGauge,barGauge);
+    fill(sd.barMount,setBarMount,barMount);
+    fill(sd.chainPitchCS,setChainPitchCS,chainPitchCS);
+    fill(sd.chainGauge,setChainGauge,chainGauge);
+    fill(sd.chainDriveLinks,setChainDriveLinks,chainDriveLinks);
+    fill(sd.chainPartNo,setChainPartNo,chainPartNo);
+    fill(sd.sprocketStyle,setSprocketStyle,sprocketStyle);
+    fill(sd.sprocketTeethCS,setSprocketTeethCS,sprocketTeethCS);
+    // Outboard
+    fill(sd.obShaftLength,setObShaftLength,obShaftLength);
+    fill(sd.obGearRatio,setObGearRatio,obGearRatio);
+    fill(sd.obPropPitch,setObPropPitch,obPropPitch);
+    fill(sd.obPropDiameter,setObPropDiameter,obPropDiameter);
+    fill(sd.obPropMaterial,setObPropMaterial,obPropMaterial);
+    fill(sd.obTiltTrim,setObTiltTrim,obTiltTrim);
+    fill(sd.obSteering,setObSteering,obSteering);
+    fill(sd.obAnodeMaterial,setObAnodeMaterial,obAnodeMaterial);
+    fill(sd.obLowerUnitOilType,setObLowerUnitOilType,obLowerUnitOilType);
+    fill(sd.obLowerUnitOilCapacity,setObLowerUnitOilCapacity,obLowerUnitOilCapacity);
+    // Pump
+    fill(sd.pumpPsi,setPumpPsi,pumpPsi);
+    fill(sd.pumpFlow,setPumpFlow,pumpFlow);
+    fill(sd.pumpType,setPumpType,pumpType);
+    fill(sd.pumpBrand,setPumpBrand,pumpBrand);
+    fill(sd.pumpModel,setPumpModel,pumpModel);
+    // Generator
+    fill(sd.genWatts,setGenWatts,genWatts);
+    fill(sd.genPeakWatts,setGenPeakWatts,genPeakWatts);
+    fill(sd.genVoltage,setGenVoltage,genVoltage);
+    fill(sd.genFreq,setGenFreq,genFreq);
+    // Fluids & service
+    fill(sd.engineOilGrade,setEngineOilGrade,engineOilGrade);
+    fill(sd.engineOilCapacity,setEngineOilCapacity,engineOilCapacity);
+    fill(sd.engineOilBrand,setEngineOilBrand,engineOilBrand);
+    fill(sd.brakeFluidType,setBrakeFluidType,brakeFluidType);
+    fill(sd.diffOilType,setDiffOilType,diffOilType);
+    fill(sd.hydraulicFluidType,setHydraulicFluidType,hydraulicFluidType);
+    fill(sd.oilChangeInterval,setOilChangeInterval,oilChangeInterval);
+    fill(sd.filterInterval,setFilterInterval,filterInterval);
+    fill(sd.majorServiceInterval,setMajorServiceInterval,majorServiceInterval);
+    // Dimensions — wiki may store as weightKg (seeded) or dryWeight (user-submitted)
+    fill(sd.dryWeight||sd.weightKg,setDryWeight,dryWeight);
+    fill(sd.overallLength,setOverallLength,overallLength);
+    fill(sd.overallWidth,setOverallWidth,overallWidth);
+    fill(sd.overallHeight,setOverallHeight,overallHeight);
+    fill(sd.wheelbase,setWheelbase,wheelbase);
+    // Notes
+    fill(sd.notes,setNotes,notes);
     setWikiSuggestion(null);
   }
 
