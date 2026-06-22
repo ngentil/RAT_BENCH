@@ -554,7 +554,8 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     fill(num(sd.wotRpm),setWotRpm,wotRpm);
     fill(sd.cylCount,setCylCount,cylCount);
     fill(sd.firingOrder,setFiringOrder,firingOrder);
-    fill(sd.valveTrain,setValveTrain,valveTrain);
+    const _valveTrain=!sd.valveTrain?null:/dohc/i.test(sd.valveTrain)?'DOHC':/ohv|pushrod/i.test(sd.valveTrain)?'Pushrod (OHV)':/ohc/i.test(sd.valveTrain)?'OHC':sd.valveTrain;
+    fill(_valveTrain,setValveTrain,valveTrain);
     fill(sd.camType,setCamType,camType);
     fill(sd.locknutSize,setLocknutSize,locknutSize);
     fill(num(sd.intakeValveClear),setIntakeValveClear,intakeValveClear);
@@ -573,8 +574,14 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     fill(sd.coilType,setCoilType,coilType);
     fill(sd.primaryOhms,setPrimaryOhms,primaryOhms);
     fill(sd.secondaryOhms,setSecondaryOhms,secondaryOhms);
-    // Starter
-    fill(sd.starterType,setStarterType,starterType);
+    // Starter — normalize to match STARTER_TYPES select options
+    const _starter=!sd.starterType?null
+      :/recoil.*elec|elec.*recoil|elec.*kick|kick.*elec|recoil.*(or|and|\+).*elec/i.test(sd.starterType)?'Recoil + electric'
+      :/\brecoil\b/i.test(sd.starterType)?'Recoil only'
+      :/\belectric\b|\bkey[\s-]?start/i.test(sd.starterType)?'Electric / key start only'
+      :/manual.*crank|hand.*crank/i.test(sd.starterType)?'Manual crank'
+      :null;
+    fill(_starter,setStarterType,starterType);
     fill(num(sd.ropeDiameter),setRopeDiameter,ropeDiameter);
     // Fuel — normalize fuelSystem to match the form's toggle options
     const _fuelSys=!sd.fuelSystem?null:/carbu?ret/i.test(sd.fuelSystem)?'Carburetted':/inject|efi|\bfi\b/i.test(sd.fuelSystem)?'Fuel Injected':sd.fuelSystem;
@@ -640,10 +647,24 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     fill(sd.threadDir,setThreadDir,threadDir);
     fill(sd.threadSize,setThreadSize,threadSize);
     fill(sd.sprocketType,setSprocketType,sprocketType);
-    // Drivetrain
+    // Drivetrain — normalize select fields to match form option strings
+    const _trans=!sd.transType?null
+      :/semi[-\s]?auto|paddle/i.test(sd.transType)?'Semi-auto / Paddle shift'
+      :/\bcvt\b/i.test(sd.transType)?'CVT'
+      :/\bdct\b/i.test(sd.transType)?'DCT'
+      :/\bauto/i.test(sd.transType)?'Automatic'
+      :/manual|\d[-\s]?speed/i.test(sd.transType)?'Manual'
+      :/\bnone\b/i.test(sd.transType)?'None'
+      :sd.transType;
+    const _clutch=!sd.clutchType?null
+      :/multi.?plate.*wet|wet.*multi/i.test(sd.clutchType)?'Multi-plate wet'
+      :/twin.?plate/i.test(sd.clutchType)?'Twin plate dry'
+      :/single.?plate/i.test(sd.clutchType)?'Single plate dry'
+      :/centrifugal/i.test(sd.clutchType)?'Centrifugal'
+      :sd.clutchType;
     fill(sd.driveType,setDriveType,driveType);
-    fill(sd.transType,setTransType,transType);
-    fill(sd.clutchType,setClutchType,clutchType);
+    fill(_trans,setTransType,transType);
+    fill(_clutch,setClutchType,clutchType);
     fill(sd.gearCount,setGearCount,gearCount);
     fill(sd.gearboxBrand,setGearboxBrand,gearboxBrand);
     fill(sd.gearboxOilType,setGearboxOilType,gearboxOilType);
@@ -653,15 +674,27 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     // Gearbox shafts
     fill(num(sd.inputShaftDiameter),setInputShaftDiameter,inputShaftDiameter);
     fill(num(sd.outputShaftDiameter),setOutputShaftDiameter,outputShaftDiameter);
-    // Suspension
-    fill(sd.forkType,setForkType,forkType);
+    // Suspension — normalize to match FORK_TYPES / SHOCK_TYPES select options
+    const _fork=!sd.forkType?null
+      :/\busd\b|upside.?down|inverted/i.test(sd.forkType)?'USD'
+      :/telesc/i.test(sd.forkType)?'Telescopic fork'
+      :/leading.?link/i.test(sd.forkType)?'Leading link'
+      :/\bnone\b/i.test(sd.forkType)?'None'
+      :sd.forkType;
+    const _shock=!sd.rearShockType?null
+      :/twin|dual/i.test(sd.rearShockType)?'Twin shock'
+      :/mono|single/i.test(sd.rearShockType)?'Monoshock'
+      :/\bnone\b/i.test(sd.rearShockType)?'None'
+      :sd.rearShockType;
+    fill(_fork,setForkType,forkType);
     fill(num(sd.forkDiameter),setForkDiameter,forkDiameter);
     fill(num(sd.forkTravel),setForkTravel,forkTravel);
-    fill(sd.rearShockType,setRearShockType,rearShockType);
+    fill(_shock,setRearShockType,rearShockType);
     fill(num(sd.rearTravel),setRearTravel,rearTravel);
-    // Brakes — sample entries use frontBrakeType/rearBrakeType, user entries use frontBrake/rearBrake
-    fill(sd.frontBrake||sd.frontBrakeType,setFrontBrake,frontBrake);
-    fill(sd.rearBrake||sd.rearBrakeType,setRearBrake,rearBrake);
+    // Brakes — normalize to Disc/Drum/None; sample entries use frontBrakeType/rearBrakeType
+    const _normBrake=(v)=>!v?null:/disc|disk/i.test(v)?'Disc':/\bdrum\b/i.test(v)?'Drum':/\bnone\b/i.test(v)?'None':v;
+    fill(_normBrake(sd.frontBrake||sd.frontBrakeType),setFrontBrake,frontBrake);
+    fill(_normBrake(sd.rearBrake||sd.rearBrakeType),setRearBrake,rearBrake);
     // Tyres — sample entries use tyreSizeFront/tyreSizeRear, user entries use tyreFront/tyreRear
     fill(sd.tyreFront||sd.tyreSizeFront,setTyreFront,tyreFront);
     fill(sd.tyreRear||sd.tyreSizeRear,setTyreRear,tyreRear);
