@@ -1,0 +1,67 @@
+name: Wiki Bulk Import
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Which source to import"
+        required: true
+        default: "nhtsa-motorcycle"
+        type: choice
+        options:
+          - nhtsa-motorcycle
+          - nhtsa-all
+          - kaggle-motos
+          - epa-engines
+      dry_run:
+        description: "Dry run (no DB writes)"
+        required: false
+        default: false
+        type: boolean
+      limit:
+        description: "Row limit (blank = no limit)"
+        required: false
+        default: ""
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run import
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          DRY=""
+          LIMIT_ARG=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          if [ -n "${{ inputs.limit }}" ]; then LIMIT_ARG="--limit=${{ inputs.limit }}"; fi
+
+          case "${{ inputs.source }}" in
+            nhtsa-motorcycle)
+              node scripts/wiki-import/nhtsa.mjs --type=motorcycle $DRY $LIMIT_ARG
+              ;;
+            nhtsa-all)
+              node scripts/wiki-import/nhtsa.mjs $DRY $LIMIT_ARG
+              ;;
+            kaggle-motos)
+              echo "❌ Kaggle CSV must be committed to scripts/wiki-import/kaggle-motos.csv first."
+              exit 1
+              ;;
+            epa-engines)
+              echo "❌ EPA CSV must be committed to scripts/wiki-import/epa-engines.csv first."
+              exit 1
+              ;;
+          esac
