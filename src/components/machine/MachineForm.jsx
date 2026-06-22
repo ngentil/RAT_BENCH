@@ -7,6 +7,7 @@ import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
 import { WikiTrackerModal } from '../wiki/WikiModals';
+import { getWikiEntryBySlug, makeSlug } from '../../lib/wiki';
 import { effectiveTier } from '../../lib/gates';
 import { getPref, savePref } from '../../lib/db/preferences';
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
@@ -422,6 +423,8 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     });
   };
   const [showWikiModal,setShowWikiModal]=useState(false);
+  const [wikiSuggestion,setWikiSuggestion]=useState(null);
+  const wikiTimerRef=useRef(null);
   // outboard-specific
   const [obShaftLength,setObShaftLength]=useState(e.obShaftLength||"");
   const [obTransomHeight,setObTransomHeight]=useState(e.obTransomHeight||"");
@@ -519,6 +522,49 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   const [studAdding,setStudAdding]=useState(false);
   const [fastEditIdx,setFastEditIdx]=useState(null);
   const [fastAdding,setFastAdding]=useState(false);
+
+  useEffect(()=>{
+    if(existing||!make||!model){setWikiSuggestion(null);return;}
+    clearTimeout(wikiTimerRef.current);
+    wikiTimerRef.current=setTimeout(async()=>{
+      const entry=await getWikiEntryBySlug(makeSlug(make,model));
+      if(entry?.currentRevision?.data) setWikiSuggestion({entry,specData:entry.currentRevision.data});
+      else setWikiSuggestion(null);
+    },800);
+    return()=>clearTimeout(wikiTimerRef.current);
+  },[make,model]);
+
+  function applyWikiSuggestion(sd){
+    const fill=(val,setter,cur)=>{if(val&&!cur)setter(val);};
+    fill(sd.strokeType,setStrokeType,strokeType);
+    fill(sd.ccSize,setCcSize,ccSize);
+    fill(sd.boreDiameter,setBoreDiameter,boreDiameter);
+    fill(sd.crankStroke,setCrankStroke,crankStroke);
+    fill(sd.cylCount,setCylCount,cylCount);
+    fill(sd.firingOrder,setFiringOrder,firingOrder);
+    fill(sd.coolingType,setCoolingType,coolingType);
+    fill(sd.fuelSystem,setFuelSystem,fuelSystem);
+    fill(sd.compressionRatio,setCompressionRatio,compressionRatio);
+    fill(sd.idleRpm,setIdleRpm,idleRpm);
+    fill(sd.wotRpm,setWotRpm,wotRpm);
+    fill(sd.valveTrain,setValveTrain,valveTrain);
+    fill(sd.camType,setCamType,camType);
+    fill(sd.intakeValveClear,setIntakeValveClear,intakeValveClear);
+    fill(sd.exhaustValveClear,setExhaustValveClear,exhaustValveClear);
+    fill(sd.intakeValveN,setIntakeValveN,intakeValveN);
+    fill(sd.exhaustValveN,setExhaustValveN,exhaustValveN);
+    fill(sd.plugType,setPlugType,plugType);
+    fill(sd.plugGap,setPlugGap,plugGap);
+    fill(sd.coilType,setCoilType,coilType);
+    fill(sd.starterType,setStarterType,starterType);
+    fill(sd.mixRatio,setMixRatio,mixRatio);
+    fill(sd.fuelTankCapacity,setFuelTankCapacity,fuelTankCapacity);
+    fill(sd.notes,setNotes,notes);
+    fill(sd.pistonDiameter,setPistonDiameter,pistonDiameter);
+    fill(sd.conrodLength,setConrodLength,conrodLength);
+    fill(sd.dryWeight,setDryWeight,dryWeight);
+    setWikiSuggestion(null);
+  }
 
   const save=()=>{
     let finalName=name.trim();
@@ -670,6 +716,17 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     }
                   </div>
                   <div style={{...col,flex:1}}><FL t="Model" /><input style={inp} placeholder={getPH(type,"model")} value={model} onChange={ev=>setModel(ev.target.value)} /></div>
+                </div>}
+                {wikiSuggestion&&!isTracked(type)&&<div style={{background:"#0e1a0e",border:"1px solid #2a4a2a",borderRadius:4,padding:"10px 12px",marginTop:4}}>
+                  <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:4}}>
+                    <div style={{fontSize:11,color:TXT}}><span style={{color:"#7fc97f",fontWeight:700}}>Wiki match — </span>{wikiSuggestion.entry.make} {wikiSuggestion.entry.model} · pre-fill known specs?</div>
+                    <button type="button" onClick={()=>setWikiSuggestion(null)} style={{background:"none",border:"none",color:MUT,cursor:"pointer",fontSize:14,lineHeight:1,padding:0,flexShrink:0}}>✕</button>
+                  </div>
+                  <div style={{fontSize:9,color:MUT,marginBottom:8}}>Community data · always verify before use · the more specs users contribute, the more accurate future pre-fills become</div>
+                  <div style={{display:"flex",gap:6}}>
+                    <button type="button" onClick={()=>applyWikiSuggestion(wikiSuggestion.specData)} style={{...btnA,...sm}}>Pre-fill</button>
+                    <button type="button" onClick={()=>setWikiSuggestion(null)} style={{...btnG,...sm}}>Skip</button>
+                  </div>
                 </div>}
                 {isTracked(type)&&<div style={{...col,flex:1}}><FL t="Model" /><input style={inp} placeholder="e.g. PC130, 308, JD-50G" value={model} onChange={ev=>setModel(ev.target.value)} /></div>}
                 <div style={{...col,maxWidth:140}}><FL t="Year" /><input style={inp} type="number" placeholder="e.g. 2018" min="1900" max="2099" step="1" value={year} onChange={ev=>setYear(ev.target.value)} /></div>
