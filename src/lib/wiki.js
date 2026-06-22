@@ -216,24 +216,47 @@ export async function lookupWikiEntry(make, model, userId) {
 }
 
 export async function searchWiki(query, userId) {
-  let q = supabase.from("wiki_entries")
+  const tokens = query.trim()
+    .split(/\s+/)
+    .map(t => t.replace(/[^a-zA-Z0-9\-]/g, ''))
+    .filter(Boolean);
+
+  const addVisibility = (q) => {
+    if (userId && /^[0-9a-f-]{36}$/.test(userId)) {
+      return q.or(`is_sample.eq.false,and(is_sample.eq.true,sample_owner_id.eq.${userId})`);
+    }
+    return q.eq("is_sample", false);
+  };
+
+  const base = () => supabase.from("wiki_entries")
     .select("id,slug,make,model,type,view_count,is_sample")
     .order("view_count", { ascending: false })
-    .limit(30);
+    .limit(50);
 
-  if (query.trim()) {
-    const safe = query.replace(/[^a-zA-Z0-9 _\-]/g, '');
-    if (safe) q = q.or(`make.ilike.%${safe}%,model.ilike.%${safe}%`);
+  if (!tokens.length) {
+    const { data } = await addVisibility(base());
+    return data || [];
   }
 
-  if (userId && /^[0-9a-f-]{36}$/.test(userId)) {
-    q = q.or(`is_sample.eq.false,and(is_sample.eq.true,sample_owner_id.eq.${userId})`);
-  } else {
-    q = q.eq("is_sample", false);
+  // AND pass: every token must appear in at least one of make/model/type/slug
+  let q = base();
+  for (const t of tokens) {
+    q = q.or(`make.ilike.%${t}%,model.ilike.%${t}%,type.ilike.%${t}%,slug.ilike.%${t}%`);
   }
+  const { data: exact } = await addVisibility(q);
+  if (exact && exact.length > 0) return exact;
 
-  const { data } = await q;
-  return data || [];
+  // OR fallback: any token matches any field — return ranked by match count
+  const fallbackConds = tokens.flatMap(t => [
+    `make.ilike.%${t}%`, `model.ilike.%${t}%`, `type.ilike.%${t}%`, `slug.ilike.%${t}%`,
+  ]);
+  const { data: broad } = await addVisibility(base().or(fallbackConds.join(',')));
+  if (!broad) return [];
+  const score = (e) => tokens.reduce((s, t) => {
+    const tl = t.toLowerCase();
+    return s + ([e.make, e.model, e.type, e.slug].some(f => (f || '').toLowerCase().includes(tl)) ? 1 : 0);
+  }, 0);
+  return [...broad].sort((a, b) => score(b) - score(a) || b.view_count - a.view_count);
 }
 
 const _viewedThisSession = new Set();
