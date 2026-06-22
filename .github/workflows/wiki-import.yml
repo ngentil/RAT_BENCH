@@ -13,6 +13,10 @@ on:
           - training-data-2-marine
           - training-data-3-dirtbikes
           - training-data-4-everything
+          - training-data-5-cruisers
+          - training-data-6-sport
+          - training-data-7-commercial
+          - training-data-8-arborist
           - nhtsa-motorcycle
           - nhtsa-all
           - kaggle-motos
@@ -65,6 +69,18 @@ jobs:
               ;;
             training-data-4-everything)
               node scripts/wiki-import/training-data-seed-4.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-5-cruisers)
+              node scripts/wiki-import/training-data-seed-5.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-6-sport)
+              node scripts/wiki-import/training-data-seed-6.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-7-commercial)
+              node scripts/wiki-import/training-data-seed-7.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-8-arborist)
+              node scripts/wiki-import/training-data-seed-8.mjs $DRY $LIMIT_ARG
               ;;
             nhtsa-motorcycle)
               node scripts/wiki-import/nhtsa.mjs --type=motorcycle $DRY $LIMIT_ARG
