@@ -18,7 +18,9 @@ function loadEnv() {
 }
 loadEnv();
 
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
+const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '')
+  .replace(/\/rest\/v1\/?.*$/, '')  // strip /rest/v1/ and anything after
+  .replace(/\/+$/, '');             // strip trailing slashes
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
