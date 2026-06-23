@@ -1,10 +1,18 @@
-name: Wiki Cleanup — Remove Thin Entries
+name: Wiki Cleanup
 
 on:
   workflow_dispatch:
     inputs:
+      task:
+        description: "Which cleanup to run"
+        required: true
+        default: "thin-entries"
+        type: choice
+        options:
+          - thin-entries
+          - remove-samples
       min_fields:
-        description: "Minimum non-empty fields required to keep an entry (default: 10)"
+        description: "thin-entries only: minimum non-empty fields to keep (default: 10)"
         required: false
         default: "10"
       dry_run:
@@ -29,12 +37,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Remove thin wiki entries
+      - name: Run cleanup
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           DRY=""
-          MIN_ARG="--min=${{ inputs.min_fields || '10' }}"
           if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
-          node scripts/wiki-import/cleanup-thin-entries.mjs $MIN_ARG $DRY
+
+          case "${{ inputs.task }}" in
+            thin-entries)
+              node scripts/wiki-import/cleanup-thin-entries.mjs --min=${{ inputs.min_fields || '10' }} $DRY
+              ;;
+            remove-samples)
+              node scripts/wiki-import/remove-sample-entries.mjs $DRY
+              ;;
+          esac
