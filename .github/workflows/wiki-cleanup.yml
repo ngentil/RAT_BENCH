@@ -1,0 +1,40 @@
+name: Wiki Cleanup — Remove Thin Entries
+
+on:
+  workflow_dispatch:
+    inputs:
+      min_fields:
+        description: "Minimum non-empty fields required to keep an entry (default: 10)"
+        required: false
+        default: "10"
+      dry_run:
+        description: "Dry run (list what would be deleted, no DB writes)"
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Remove thin wiki entries
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          DRY=""
+          MIN_ARG="--min=${{ inputs.min_fields || '10' }}"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          node scripts/wiki-import/cleanup-thin-entries.mjs $MIN_ARG $DRY
