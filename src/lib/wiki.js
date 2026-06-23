@@ -213,18 +213,19 @@ export async function lookupWikiEntry(make, model) {
 
 export async function getWikiMakes(query) {
   if (!query?.trim()) return [];
-  const { data } = await supabase
-    .from('wiki_entries')
-    .select('make')
-    .ilike('make', `%${query}%`)
-    .eq('is_sample', false)
-    .limit(50);
+  // Split at letter/digit boundaries so "gx200" matches "GX 200", etc.
+  const parts = query.match(/[a-zA-Z]+|\d+/g) || [query.trim()];
+  let q = supabase.from('wiki_entries').select('make').eq('is_sample', false).limit(50);
+  for (const p of parts) q = q.ilike('make', `%${p}%`);
+  const { data } = await q;
   if (!data) return [];
   const unique = [...new Set(data.map(e => e.make).filter(Boolean))];
-  const q = query.toLowerCase();
+  const qn = query.toLowerCase().replace(/\s+/g, '');
   return unique
     .sort((a, b) => {
-      const aP = a.toLowerCase().startsWith(q), bP = b.toLowerCase().startsWith(q);
+      const an = a.toLowerCase().replace(/\s+/g, '');
+      const bn = b.toLowerCase().replace(/\s+/g, '');
+      const aP = an.startsWith(qn), bP = bn.startsWith(qn);
       if (aP && !bP) return -1;
       if (!aP && bP) return 1;
       return a.localeCompare(b);
@@ -234,20 +235,20 @@ export async function getWikiMakes(query) {
 
 export async function getWikiModels(make, query) {
   if (!query?.trim()) return [];
-  let q = supabase
-    .from('wiki_entries')
-    .select('model')
-    .ilike('model', `%${query}%`)
-    .eq('is_sample', false)
-    .limit(50);
+  // Split at letter/digit boundaries so "ms461" matches "MS 461", etc.
+  const parts = query.match(/[a-zA-Z]+|\d+/g) || [query.trim()];
+  let q = supabase.from('wiki_entries').select('model').eq('is_sample', false).limit(50);
   if (make?.trim()) q = q.ilike('make', make);
+  for (const p of parts) q = q.ilike('model', `%${p}%`);
   const { data } = await q;
   if (!data) return [];
   const unique = [...new Set(data.map(e => e.model).filter(Boolean))];
-  const ql = query.toLowerCase();
+  const qn = query.toLowerCase().replace(/\s+/g, '');
   return unique
     .sort((a, b) => {
-      const aP = a.toLowerCase().startsWith(ql), bP = b.toLowerCase().startsWith(ql);
+      const an = a.toLowerCase().replace(/\s+/g, '');
+      const bn = b.toLowerCase().replace(/\s+/g, '');
+      const aP = an.startsWith(qn), bP = bn.startsWith(qn);
       if (aP && !bP) return -1;
       if (!aP && bP) return 1;
       return a.localeCompare(b);
