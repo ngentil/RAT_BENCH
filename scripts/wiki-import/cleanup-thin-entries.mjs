@@ -3,113 +3,109 @@
 // Usage: node scripts/wiki-import/cleanup-thin-entries.mjs [--dry-run] [--min=N]
 // Default: --min=10
 
-import { createClient } from '@supabase/supabase-js';
-
 const MIN_FIELDS = (() => {
   const arg = process.argv.find(a => a.startsWith('--min='));
   return arg ? parseInt(arg.split('=')[1], 10) : 10;
 })();
 const DRY_RUN = process.argv.includes('--dry-run');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
-);
+const BASE = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const KEY  = process.env.SUPABASE_SERVICE_KEY || '';
+
+if (!BASE || !KEY) {
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  process.exit(1);
+}
+
+const HEADERS = {
+  'apikey': KEY,
+  'Authorization': `Bearer ${KEY}`,
+  'Content-Type': 'application/json',
+};
+
+async function get(path) {
+  const url = `${BASE}/rest/v1/${path}`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`GET ${path} → ${res.status}: ${body}`);
+  }
+  return res.json();
+}
+
+async function del(path) {
+  const url = `${BASE}/rest/v1/${path}`;
+  const res = await fetch(url, { method: 'DELETE', headers: HEADERS });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`DELETE ${path} → ${res.status}: ${body}`);
+  }
+}
+
+async function fetchAll(table, columns) {
+  const PAGE = 1000;
+  const all = [];
+  let from = 0;
+  while (true) {
+    const data = await get(`${table}?select=${columns}&order=id&limit=${PAGE}&offset=${from}`);
+    all.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
 
 function countFields(data) {
   if (!data || typeof data !== 'object') return 0;
   return Object.values(data).filter(v => v !== null && v !== undefined && v !== '').length;
 }
 
-async function fetchAll(table, select) {
-  const PAGE = 1000;
-  const all = [];
-  let lastId = null;
-  while (true) {
-    let q = supabase.from(table).select(select).order('id').limit(PAGE);
-    if (lastId) q = q.gt('id', lastId);
-    const { data, error } = await q;
-    if (error) throw error;
-    if (!data || !data.length) break;
-    all.push(...data);
-    if (data.length < PAGE) break;
-    lastId = data[data.length - 1].id;
-  }
-  return all;
-}
-
 async function run() {
   console.log(`Min fields: ${MIN_FIELDS}  Dry run: ${DRY_RUN}`);
 
-  // Fetch all entries, then filter out those with no current revision in JS
   console.log('Fetching wiki entries...');
-  let entries;
-  try {
-    entries = await fetchAll('wiki_entries', 'id,slug,make,model,current_rev_id');
-  } catch (err) {
-    console.error('Failed to fetch entries:', err);
-    process.exit(1);
-  }
-  entries = entries.filter(e => e.current_rev_id);
+  const entries = (await fetchAll('wiki_entries', 'id,slug,make,model,current_rev_id'))
+    .filter(e => e.current_rev_id);
   console.log(`Total entries with a revision: ${entries.length}`);
 
-  // Fetch all current revisions in batches of 100 IDs
-  const revIds = entries.map(e => e.current_rev_id);
+  // Fetch revision data in batches using PostgREST in() filter
   const revMap = {};
   const ID_BATCH = 100;
+  const revIds = entries.map(e => e.current_rev_id);
   for (let i = 0; i < revIds.length; i += ID_BATCH) {
     const batch = revIds.slice(i, i + ID_BATCH);
-    const { data: revs, error } = await supabase
-      .from('wiki_revisions')
-      .select('id,data')
-      .in('id', batch);
-    if (error) { console.error('Rev fetch error:', error); process.exit(1); }
-    for (const r of revs || []) revMap[r.id] = r.data;
+    const data = await get(`wiki_revisions?select=id,data&id=in.(${batch.join(',')})`);
+    for (const r of data) revMap[r.id] = r.data;
   }
 
-  // Identify thin entries
-  const toDelete = [];
-  for (const entry of entries) {
-    const data = revMap[entry.current_rev_id];
-    const n = countFields(data);
-    if (n < MIN_FIELDS) {
-      toDelete.push({ id: entry.id, slug: entry.slug, make: entry.make, model: entry.model, fields: n });
-    }
-  }
+  // Find thin entries
+  const toDelete = entries.filter(e => {
+    const n = countFields(revMap[e.current_rev_id]);
+    return n < MIN_FIELDS;
+  }).map(e => ({
+    ...e,
+    fields: countFields(revMap[e.current_rev_id]),
+  }));
 
   console.log(`\nEntries with < ${MIN_FIELDS} fields: ${toDelete.length}`);
-
-  if (!toDelete.length) {
-    console.log('Nothing to delete.');
-    return;
-  }
+  if (!toDelete.length) { console.log('Nothing to delete.'); return; }
 
   for (const e of toDelete) {
     console.log(`  [${e.fields} fields] ${e.make} ${e.model} — ${e.slug}`);
   }
 
-  if (DRY_RUN) {
-    console.log('\nDry run — no deletions made.');
-    return;
-  }
+  if (DRY_RUN) { console.log('\nDry run — no deletions made.'); return; }
 
-  // Delete in batches — contributions and revisions first (FK constraints)
   const ids = toDelete.map(e => e.id);
   const DEL_BATCH = 100;
   let deleted = 0;
 
   for (let i = 0; i < ids.length; i += DEL_BATCH) {
     const batch = ids.slice(i, i + DEL_BATCH);
-
-    const { error: e1 } = await supabase.from('wiki_contributions').delete().in('entry_id', batch);
-    if (e1) console.warn('contributions delete warn:', e1.message);
-
-    const { error: e2 } = await supabase.from('wiki_revisions').delete().in('entry_id', batch);
-    if (e2) console.warn('revisions delete warn:', e2.message);
-
-    const { error: e3 } = await supabase.from('wiki_entries').delete().in('id', batch);
-    if (e3) { console.error('entries delete error:', e3); process.exit(1); }
-
+    const idList = batch.join(',');
+    await del(`wiki_contributions?entry_id=in.(${idList})`);
+    await del(`wiki_revisions?entry_id=in.(${idList})`);
+    await del(`wiki_entries?id=in.(${idList})`);
     deleted += batch.length;
     console.log(`Deleted ${deleted}/${ids.length}...`);
   }
@@ -117,4 +113,4 @@ async function run() {
   console.log(`\nDone. Removed ${ids.length} thin wiki entries.`);
 }
 
-run().catch(e => { console.error(e); process.exit(1); });
+run().catch(e => { console.error(e.message || e); process.exit(1); });
