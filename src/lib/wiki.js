@@ -215,6 +215,50 @@ export async function lookupWikiEntry(make, model, userId) {
   return entry;
 }
 
+export async function getWikiMakes(query) {
+  if (!query?.trim()) return [];
+  const { data } = await supabase
+    .from('wiki_entries')
+    .select('make')
+    .ilike('make', `%${query}%`)
+    .eq('is_sample', false)
+    .limit(50);
+  if (!data) return [];
+  const unique = [...new Set(data.map(e => e.make).filter(Boolean))];
+  const q = query.toLowerCase();
+  return unique
+    .sort((a, b) => {
+      const aP = a.toLowerCase().startsWith(q), bP = b.toLowerCase().startsWith(q);
+      if (aP && !bP) return -1;
+      if (!aP && bP) return 1;
+      return a.localeCompare(b);
+    })
+    .slice(0, 12);
+}
+
+export async function getWikiModels(make, query) {
+  if (!query?.trim()) return [];
+  let q = supabase
+    .from('wiki_entries')
+    .select('model')
+    .ilike('model', `%${query}%`)
+    .eq('is_sample', false)
+    .limit(50);
+  if (make?.trim()) q = q.ilike('make', make);
+  const { data } = await q;
+  if (!data) return [];
+  const unique = [...new Set(data.map(e => e.model).filter(Boolean))];
+  const ql = query.toLowerCase();
+  return unique
+    .sort((a, b) => {
+      const aP = a.toLowerCase().startsWith(ql), bP = b.toLowerCase().startsWith(ql);
+      if (aP && !bP) return -1;
+      if (!aP && bP) return 1;
+      return a.localeCompare(b);
+    })
+    .slice(0, 15);
+}
+
 export async function searchWiki(query, userId) {
   const tokens = query.trim()
     .split(/\s+/)

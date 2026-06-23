@@ -7,9 +7,70 @@ import { uid, resizeImg, toB64 } from '../../lib/helpers';
 import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring, fmtForce } from '../../lib/units';
 import PhotoAdder from '../ui/PhotoAdder';
 import { WikiTrackerModal } from '../wiki/WikiModals';
-import { lookupWikiEntry } from '../../lib/wiki';
+import { lookupWikiEntry, getWikiMakes, getWikiModels } from '../../lib/wiki';
 import { effectiveTier } from '../../lib/gates';
 import { getPref, savePref } from '../../lib/db/preferences';
+
+function WikiAutocomplete({ value, onChange, fetchSuggestions, placeholder, style }) {
+  const [suggestions, setSuggestions] = React.useState([]);
+  const [open, setOpen] = React.useState(false);
+  const [active, setActive] = React.useState(-1);
+  const containerRef = React.useRef();
+
+  React.useEffect(() => {
+    if (!value?.trim()) { setSuggestions([]); setOpen(false); return; }
+    const t = setTimeout(async () => {
+      const results = await fetchSuggestions(value);
+      setSuggestions(results);
+      setOpen(results.length > 0);
+      setActive(-1);
+    }, 200);
+    return () => clearTimeout(t);
+  }, [value]);
+
+  React.useEffect(() => {
+    const h = (e) => { if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const pick = (s) => { onChange(s); setOpen(false); setSuggestions([]); };
+
+  const onKey = (e) => {
+    if (!open || !suggestions.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(a + 1, suggestions.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(a => Math.max(a - 1, -1)); }
+    else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); pick(suggestions[active]); }
+    else if (e.key === 'Escape') setOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative' }}>
+      <input
+        style={style}
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={onKey}
+        autoComplete="off"
+      />
+      {open && suggestions.length > 0 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 300, background: '#111', border: '1px solid ' + BRD, borderRadius: 2, maxHeight: 200, overflowY: 'auto', marginTop: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+          {suggestions.map((s, i) => (
+            <div
+              key={i}
+              onMouseDown={(e) => { e.preventDefault(); pick(s); }}
+              style={{ padding: '7px 10px', cursor: 'pointer', fontSize: 11, color: i === active ? ACC : TXT, background: i === active ? '#1e1e1e' : 'transparent', fontFamily: "'IBM Plex Mono',monospace", borderBottom: i < suggestions.length - 1 ? '1px solid #1a1a1a' : 'none' }}
+            >
+              {s}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
   const e=existing||{};
   const isNew=true;
@@ -938,10 +999,13 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <FL t="Make" />
                     {isVehicle(type)
                       ? <select style={sel} value={make} onChange={ev=>setMake(ev.target.value)}><option value="">— not set —</option>{VEHICLE_MAKES.map(m=><option key={m}>{m}</option>)}</select>
-                      : <input style={inp} placeholder={getPH(type,"make")} value={make} onChange={ev=>setMake(ev.target.value)} />
+                      : <WikiAutocomplete value={make} onChange={setMake} placeholder={getPH(type,"make")} style={inp} fetchSuggestions={getWikiMakes} />
                     }
                   </div>
-                  <div style={{...col,flex:1}}><FL t="Model" /><input style={inp} placeholder={getPH(type,"model")} value={model} onChange={ev=>setModel(ev.target.value)} /></div>
+                  <div style={{...col,flex:1}}>
+                    <FL t="Model" />
+                    <WikiAutocomplete value={model} onChange={setModel} placeholder={getPH(type,"model")} style={inp} fetchSuggestions={(q) => getWikiModels(make, q)} />
+                  </div>
                 </div>}
                 {wikiSuggestion&&!isTracked(type)&&<div style={{background:"#0e1a0e",border:"1px solid #2a4a2a",borderRadius:4,padding:"10px 12px",marginTop:4}}>
                   <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:4}}>
