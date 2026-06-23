@@ -588,7 +588,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
     if(existing||!make||!model){setWikiSuggestion(null);return;}
     clearTimeout(wikiTimerRef.current);
     wikiTimerRef.current=setTimeout(async()=>{
-      const entry=await lookupWikiEntry(make,model,profile?.id);
+      const entry=await lookupWikiEntry(make,model);
       if(entry?.currentRevision?.data) setWikiSuggestion({entry,specData:entry.currentRevision.data});
       else setWikiSuggestion(null);
     },800);

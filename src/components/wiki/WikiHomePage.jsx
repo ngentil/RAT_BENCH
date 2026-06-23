@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
-import { searchWiki, seedSampleWikiEntries } from '../../lib/wiki';
-import { getPref, savePref } from '../../lib/db/preferences';
+import { searchWiki } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 
 function hl(text, tokens) {
@@ -23,20 +22,7 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
 
   useEffect(() => {
     if (!profile?.id) return;
-    const dbSeeded = getPref(profile, "rat_wiki_seeded", false);
-    const lsSeeded = localStorage.getItem('rat_wiki_seeded') === '1';
-    if (lsSeeded && !dbSeeded) {
-      savePref(profile.id, "rat_wiki_seeded", true);
-      localStorage.removeItem('rat_wiki_seeded');
-      searchWiki("", profile.id).then(r => setRecent(r || []));
-    } else if (!dbSeeded && !lsSeeded) {
-      seedSampleWikiEntries(profile).then(() => {
-        savePref(profile.id, "rat_wiki_seeded", true);
-        searchWiki("", profile.id).then(r => setRecent(r || []));
-      });
-    } else {
-      searchWiki("", profile.id).then(r => setRecent(r || []));
-    }
+    searchWiki("", profile.id).then(r => setRecent(r || []));
   }, [profile?.id]);
 
   useEffect(() => {
@@ -59,16 +45,13 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
       && !tokens.some(t => [(e.make||''), (e.model||''), (e.type||'')].some(f => f.toLowerCase().includes(t.toLowerCase())))
       && tokens.some(t => (e.slug||'').toLowerCase().includes(t.toLowerCase()));
     const inner = (
-      <div style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + (e.is_sample ? "#555" : ACC), padding: "12px 16px", borderRadius: 2, cursor: "pointer" }}>
+      <div style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + ACC, padding: "12px 16px", borderRadius: 2, cursor: "pointer" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{hl(e.make, tokens)} <span style={{ color: e.is_sample ? "#888" : ACC }}>{hl(e.model, tokens)}</span></div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {e.is_sample && <span style={{ fontSize: 7, color: "#666", border: "1px solid #333", padding: "1px 5px", borderRadius: 2, letterSpacing: "0.1em", textTransform: "uppercase" }}>sample</span>}
-            {e.year && <span style={{ fontSize: 9, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{e.year}</span>}
-          </div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: TXT }}>{hl(e.make, tokens)} <span style={{ color: ACC }}>{hl(e.model, tokens)}</span></div>
+          {e.year && <span style={{ fontSize: 9, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{e.year}</span>}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-          {e.type && <span style={{ fontSize: 8, color: e.is_sample ? "#666" : ACC, background: (e.is_sample ? "#333" : ACC) + "12", border: "1px solid " + (e.is_sample ? "#333" : ACC) + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{hl(e.type, tokens)}</span>}
+          {e.type && <span style={{ fontSize: 8, color: ACC, background: ACC + "12", border: "1px solid " + ACC + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{hl(e.type, tokens)}</span>}
           {slugMatchOnly && <span style={{ fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{hl(e.slug, tokens)}</span>}
           <span style={{ fontSize: 8, color: MUT, marginLeft: "auto" }}>👁 {e.view_count || 0}</span>
         </div>
