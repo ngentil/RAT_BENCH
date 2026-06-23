@@ -23,14 +23,17 @@ function countFields(data) {
 
 async function fetchAll(table, select) {
   const PAGE = 1000;
-  let offset = 0;
   const all = [];
+  let lastId = null;
   while (true) {
-    const { data, error } = await supabase.from(table).select(select).range(offset, offset + PAGE - 1);
+    let q = supabase.from(table).select(select).order('id').limit(PAGE);
+    if (lastId) q = q.gt('id', lastId);
+    const { data, error } = await q;
     if (error) throw error;
-    if (data) all.push(...data);
-    if (!data || data.length < PAGE) break;
-    offset += PAGE;
+    if (!data || !data.length) break;
+    all.push(...data);
+    if (data.length < PAGE) break;
+    lastId = data[data.length - 1].id;
   }
   return all;
 }
