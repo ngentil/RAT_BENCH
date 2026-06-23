@@ -21,45 +21,57 @@ function countFields(data) {
   return Object.values(data).filter(v => v !== null && v !== undefined && v !== '').length;
 }
 
+async function fetchAll(table, select) {
+  const PAGE = 1000;
+  let offset = 0;
+  const all = [];
+  while (true) {
+    const { data, error } = await supabase.from(table).select(select).range(offset, offset + PAGE - 1);
+    if (error) throw error;
+    if (data) all.push(...data);
+    if (!data || data.length < PAGE) break;
+    offset += PAGE;
+  }
+  return all;
+}
+
 async function run() {
   console.log(`Min fields: ${MIN_FIELDS}  Dry run: ${DRY_RUN}`);
 
-  // Fetch all entries that have a current revision
-  let offset = 0;
-  const PAGE = 500;
-  const toDelete = [];
+  // Fetch all entries, then filter out those with no current revision in JS
+  console.log('Fetching wiki entries...');
+  let entries;
+  try {
+    entries = await fetchAll('wiki_entries', 'id,slug,make,model,current_rev_id');
+  } catch (err) {
+    console.error('Failed to fetch entries:', err);
+    process.exit(1);
+  }
+  entries = entries.filter(e => e.current_rev_id);
+  console.log(`Total entries with a revision: ${entries.length}`);
 
-  while (true) {
-    const { data: entries, error } = await supabase
-      .from('wiki_entries')
-      .select('id,slug,make,model,current_rev_id')
-      .not('current_rev_id', 'is', null)
-      .range(offset, offset + PAGE - 1);
-
-    if (error) { console.error('Fetch error:', error); process.exit(1); }
-    if (!entries?.length) break;
-
-    // Fetch revision data for this page in one query
-    const revIds = entries.map(e => e.current_rev_id);
-    const { data: revs, error: revErr } = await supabase
+  // Fetch all current revisions in batches of 100 IDs
+  const revIds = entries.map(e => e.current_rev_id);
+  const revMap = {};
+  const ID_BATCH = 100;
+  for (let i = 0; i < revIds.length; i += ID_BATCH) {
+    const batch = revIds.slice(i, i + ID_BATCH);
+    const { data: revs, error } = await supabase
       .from('wiki_revisions')
       .select('id,data')
-      .in('id', revIds);
+      .in('id', batch);
+    if (error) { console.error('Rev fetch error:', error); process.exit(1); }
+    for (const r of revs || []) revMap[r.id] = r.data;
+  }
 
-    if (revErr) { console.error('Rev fetch error:', revErr); process.exit(1); }
-
-    const revMap = Object.fromEntries((revs || []).map(r => [r.id, r.data]));
-
-    for (const entry of entries) {
-      const data = revMap[entry.current_rev_id];
-      const n = countFields(data);
-      if (n < MIN_FIELDS) {
-        toDelete.push({ id: entry.id, slug: entry.slug, make: entry.make, model: entry.model, fields: n });
-      }
+  // Identify thin entries
+  const toDelete = [];
+  for (const entry of entries) {
+    const data = revMap[entry.current_rev_id];
+    const n = countFields(data);
+    if (n < MIN_FIELDS) {
+      toDelete.push({ id: entry.id, slug: entry.slug, make: entry.make, model: entry.model, fields: n });
     }
-
-    if (entries.length < PAGE) break;
-    offset += PAGE;
   }
 
   console.log(`\nEntries with < ${MIN_FIELDS} fields: ${toDelete.length}`);
@@ -69,7 +81,6 @@ async function run() {
     return;
   }
 
-  // Print what will be deleted
   for (const e of toDelete) {
     console.log(`  [${e.fields} fields] ${e.make} ${e.model} — ${e.slug}`);
   }
@@ -79,13 +90,13 @@ async function run() {
     return;
   }
 
-  // Delete in batches — must delete revisions and contributions before entries (FK)
+  // Delete in batches — contributions and revisions first (FK constraints)
   const ids = toDelete.map(e => e.id);
-  const BATCH = 100;
+  const DEL_BATCH = 100;
   let deleted = 0;
 
-  for (let i = 0; i < ids.length; i += BATCH) {
-    const batch = ids.slice(i, i + BATCH);
+  for (let i = 0; i < ids.length; i += DEL_BATCH) {
+    const batch = ids.slice(i, i + DEL_BATCH);
 
     const { error: e1 } = await supabase.from('wiki_contributions').delete().in('entry_id', batch);
     if (e1) console.warn('contributions delete warn:', e1.message);
@@ -93,7 +104,7 @@ async function run() {
     const { error: e2 } = await supabase.from('wiki_revisions').delete().in('entry_id', batch);
     if (e2) console.warn('revisions delete warn:', e2.message);
 
-    const { error: e3, count } = await supabase.from('wiki_entries').delete().in('id', batch);
+    const { error: e3 } = await supabase.from('wiki_entries').delete().in('id', batch);
     if (e3) { console.error('entries delete error:', e3); process.exit(1); }
 
     deleted += batch.length;
