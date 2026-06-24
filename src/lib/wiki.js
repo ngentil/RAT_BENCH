@@ -158,6 +158,15 @@ export const WIKI_FIELD_LABELS = {
   widthMm:            "Width (mm)",
   heightMm:           "Height (mm)",
 
+  // Motorcycle / ATV / Powersports
+  wotPower:           "Max Power",
+  torqueNm:           "Max Torque (N·m)",
+  topSpeed:           "Top Speed",
+  frameType:          "Frame Type",
+  wheelbaseMm:        "Wheelbase (mm)",
+  seatHeightMm:       "Seat Height (mm)",
+  groundClearanceMm:  "Ground Clearance (mm)",
+
   // Notes
   notes:              "Notes",
 };
