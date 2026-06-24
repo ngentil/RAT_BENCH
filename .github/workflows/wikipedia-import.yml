@@ -1,0 +1,40 @@
+name: Wikipedia Import
+
+on:
+  workflow_dispatch:
+    inputs:
+      make:
+        description: "Brand to import (leave blank for all brands)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry run (preview only, no DB writes)"
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Wikipedia import
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          if [ -n "${{ inputs.make }}" ]; then ARGS="$ARGS --make=${{ inputs.make }}"; fi
+          node scripts/wiki-import/wikipedia-import.mjs $ARGS
