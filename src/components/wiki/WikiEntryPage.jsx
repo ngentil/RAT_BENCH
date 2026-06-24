@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
 import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry } from '../../lib/wiki';
+import { upsertMachine } from '../../lib/db/machines';
 
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
@@ -23,10 +24,16 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
   const [revData, setRevData] = useState({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Admin field editing
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveErr, setSaveErr] = useState("");
+
+  // Import to garage
+  const [importing, setImporting] = useState(false);
+  const [importDone, setImportDone] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -41,14 +48,13 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
     })();
   }, [slug]);
 
+  // ── Admin editing ──────────────────────────────────────────────────────────
   const startEdit = (key) => {
     setEditingField(key);
     setEditValue(String(revData[key] ?? entry?.[key] ?? ""));
     setSaveErr("");
   };
-
   const cancelEdit = () => { setEditingField(null); setEditValue(""); setSaveErr(""); };
-
   const doSave = async () => {
     if (!profile || !editingField) return;
     setSaving(true); setSaveErr("");
@@ -59,6 +65,24 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
       setEditingField(null);
     } catch (e) { setSaveErr(e.message); }
     setSaving(false);
+  };
+
+  // ── Import to garage ───────────────────────────────────────────────────────
+  const doImport = async () => {
+    setImporting(true);
+    try {
+      const { make, model, type, ...specOnly } = revData;
+      await upsertMachine({
+        make: entry.make,
+        model: entry.model,
+        type: entry.type,
+        ...specOnly,
+      });
+      setImportDone(true);
+    } catch (e) {
+      alert('Import failed: ' + e.message);
+    }
+    setImporting(false);
   };
 
   const fieldInp = { ...inp, width: "100%", boxSizing: "border-box" };
@@ -82,8 +106,14 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
     const v = revData[k] ?? entry?.[k];
     return v != null && v !== "" && v !== false;
   });
-
   const allFields = Object.entries(WIKI_FIELD_LABELS);
+
+  // Last revision metadata
+  const rev = entry.currentRevision;
+  const lastEditor = rev?.username;
+  const lastEditDate = rev?.created_at
+    ? new Date(rev.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    : null;
 
   return (
     <div style={embedded ? {} : { minHeight: "100vh", background: BG, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>
@@ -99,41 +129,67 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
         {embedded && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{entry.make} <span style={{ color: entry.is_sample ? "#888" : ACC }}>{entry.model}</span></div>
-              {entry.is_sample && <span style={{ fontSize: 7, color: "#666", border: "1px solid #333", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.12em", textTransform: "uppercase", flexShrink: 0 }}>sample</span>}
+              <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{entry.make} <span style={{ color: ACC }}>{entry.model}</span></div>
             </div>
-            {entry.type && <div style={{ display: "inline-block", fontSize: 8, color: entry.is_sample ? "#666" : ACC, background: (entry.is_sample ? "#333" : ACC) + "12", border: "1px solid " + (entry.is_sample ? "#333" : ACC) + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{entry.type}</div>}
+            {entry.type && <div style={{ display: "inline-block", fontSize: 8, color: ACC, background: ACC + "12", border: "1px solid " + ACC + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{entry.type}</div>}
           </div>
         )}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+
+        {/* Top bar: views, attribution, actions */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {embedded && <button onClick={onBack} style={{ ...btnG, ...sm, fontSize: 9 }}>← Wiki</button>}
             <span style={{ fontSize: 9, color: MUT }}>{entry.view_count || 0} views</span>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {embedded
               ? <a href={`https://wiki.ratbench.net/${slug}/history`} target="_blank" rel="noreferrer" style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History ↗</a>
               : <a href={"/" + slug + "/history"} style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History</a>
             }
-            {!profile && <span style={{ fontSize: 9, color: MUT }}>Log in to edit</span>}
-            {(isAdmin || (entry.is_sample && entry.sample_owner_id === profile?.id)) && (
+            {/* Import to garage */}
+            {profile && !importDone && (
+              <button
+                onClick={doImport}
+                disabled={importing}
+                style={{ ...btnA, ...sm, fontSize: 9, opacity: importing ? 0.6 : 1 }}
+              >
+                {importing ? "Adding…" : "＋ Add to Garage"}
+              </button>
+            )}
+            {importDone && (
+              <span style={{ fontSize: 9, color: ACC, border: "1px solid " + ACC + "44", padding: "4px 8px" }}>✓ Added to garage</span>
+            )}
+            {/* Admin delete */}
+            {isAdmin && (
               <button
                 onClick={async () => {
                   if (!confirm(`Delete wiki entry "${entry.make} ${entry.model}"? This cannot be undone.`)) return;
                   await deleteWikiEntry(entry.id);
-                  onBack();
+                  onBack ? onBack() : (window.location.href = '/');
                 }}
                 style={{ fontSize: 9, color: RED, border: '1px solid ' + RED + '55', background: RED + '11', padding: '4px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}
-              >🗑 {entry.is_sample ? "Remove Sample" : "Delete Entry"}</button>
+              >🗑 Delete</button>
             )}
           </div>
         </div>
 
-        {fields.length === 0
-          ? <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>No spec data yet.{profile ? " Click any field below to add it." : " Log in to contribute."}</div>
-          : null
-        }
+        {/* Last updated attribution */}
+        {lastEditor && lastEditDate && (
+          <div style={{ fontSize: 8, color: MUT, marginBottom: 14, letterSpacing: "0.06em" }}>
+            Last updated by <span style={{ color: TXT }}>{lastEditor}</span> · {lastEditDate}
+            {rev?.edit_summary && rev.edit_summary !== 'Updated specs' && (
+              <span style={{ opacity: 0.7 }}> · {rev.edit_summary}</span>
+            )}
+          </div>
+        )}
 
+        {fields.length === 0 && (
+          <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>
+            No spec data yet.{isAdmin ? " Click any field below to add it." : ""}
+          </div>
+        )}
+
+        {/* Spec fields grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {(fields.length > 0 ? fields : allFields).map(([k, label]) => {
             const value = revData[k] ?? entry?.[k];
@@ -144,7 +200,8 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
               <div key={k} style={{ background: SURF, border: "1px solid " + (isEditing ? ACC : BRD), borderRadius: 2, padding: "8px 12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: isEditing ? 6 : 2 }}>
                   <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase" }}>{label}</div>
-                  {profile && !isEditing && (
+                  {/* Only admins see the inline edit button */}
+                  {isAdmin && !isEditing && (
                     <button
                       onClick={() => startEdit(k)}
                       style={{ background: "none", border: "none", color: MUT, cursor: "pointer", fontSize: 10, padding: 0, lineHeight: 1, opacity: 0.5 }}
@@ -181,6 +238,16 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
               </div>
             );
           })}
+        </div>
+
+        {/* Contribution disclaimer */}
+        <div style={{ marginTop: 20, padding: "12px 14px", border: "1px solid " + BRD, borderLeft: "3px solid " + MUT, borderRadius: 2, background: SURF }}>
+          <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Is this information correct?</div>
+          <div style={{ fontSize: 9, color: MUT, lineHeight: 1.6 }}>
+            To contribute a correction or additional specs, add this machine to your garage using{" "}
+            <strong style={{ color: TXT }}>+ Add to Garage</strong>, fill in any missing details, then tap{" "}
+            <strong style={{ color: TXT }}>Push to Wiki</strong> on your machine. Your update will appear here with your name attached.
+          </div>
         </div>
       </div>
     </div>
