@@ -6,9 +6,11 @@ on:
       task:
         description: "Which cleanup to run"
         required: true
-        default: "thin-entries"
+        default: "full-cleanup"
         type: choice
         options:
+          - full-cleanup
+          - deduplicate
           - thin-entries
           - remove-samples
       min_fields:
@@ -46,6 +48,13 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
 
           case "${{ inputs.task }}" in
+            full-cleanup)
+              node scripts/wiki-import/cleanup-duplicates.mjs $DRY
+              node scripts/wiki-import/cleanup-thin-entries.mjs --min=${{ inputs.min_fields || '10' }} $DRY
+              ;;
+            deduplicate)
+              node scripts/wiki-import/cleanup-duplicates.mjs $DRY
+              ;;
             thin-entries)
               node scripts/wiki-import/cleanup-thin-entries.mjs --min=${{ inputs.min_fields || '10' }} $DRY
               ;;
