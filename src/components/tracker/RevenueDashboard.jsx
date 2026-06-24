@@ -12,9 +12,12 @@ const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 function fmtHrs(secs) {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
   if (h > 0 && m > 0) return h + "h " + m + "m";
   if (h > 0) return h + "h";
+  if (m > 0 && s > 0) return m + "m " + s + "s";
   if (m > 0) return m + "m";
+  if (s > 0) return s + "s";
   return "<1m";
 }
 
