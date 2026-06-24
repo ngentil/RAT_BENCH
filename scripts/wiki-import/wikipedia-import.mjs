@@ -306,20 +306,20 @@ function detectType(templateName, data, defaultType) {
   if (/lawn.?mow|riding.?mow|mower/i.test(t))        return 'Lawnmower';
   if (/generator/i.test(t))                           return 'Generator';
   if (/pressure|washer/i.test(t))                     return 'Pressure Washer';
-  if (/tiller|cultivat/i.test(t))                     return 'Tiller';
-  if (/snowmobile|snowmach/i.test(t))                 return 'Snowmobile';
-  if (/personal.?water|watercraft|\bpwc\b/i.test(t)) return 'Jet Ski';
-  if (/\batv\b|quad.?bike|utv|side.by.side/i.test(t)) return 'ATV';
-  if (/motorcycle|motorbike/i.test(t))                return 'Motorcycle';
-  if (/engine/i.test(t))                              return defaultType || 'Engine';
+  if (/tiller|cultivat/i.test(t))                      return 'Tiller / Cultivator';
+  if (/snowmobile|snowmach/i.test(t))                  return 'Snowmobile';
+  if (/personal.?water|watercraft|\bpwc\b/i.test(t))  return 'Jet Ski / PWC';
+  if (/\batv\b|quad.?bike|utv|side.by.side/i.test(t)) return 'Quad Bike';
+  if (/motorcycle|motorbike/i.test(t))                 return 'Motorcycle';
+  if (/engine/i.test(t))                               return defaultType || 'Standalone Engine';
   // Infer from populated spec fields
   if (data.barLength || data.chainPitchCS)                       return 'Chainsaw';
   if (data.deckSize)                                             return 'Lawnmower';
   if (data.genVoltage || data.genHz || data.genWatts)            return 'Generator';
-  if (data.obGearRatio || data.obShaftLength)                    return 'Outboard';
+  if (data.obGearRatio || data.obShaftLength)                    return 'Outboard Motor';
   if (data.pumpPsi)                                              return 'Pressure Washer';
   if (data.forkType || data.rearShockType || data.tyreSizeFront) return defaultType || 'Motorcycle';
-  return defaultType || 'Engine';
+  return defaultType || 'Standalone Engine';
 }
 
 // ── mapPage ───────────────────────────────────────────────────────────────────
@@ -633,7 +633,7 @@ const BRANDS = [
 
   // ━━ ENGINES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  { make: 'Honda', category: 'engine', defaultType: 'Engine',
+  { make: 'Honda', category: 'engine', defaultType: 'Standalone Engine',
     categories: ['Honda engines'],
     searches: [
       'Honda GX35 engine', 'Honda GX50 engine', 'Honda GX100 engine',
@@ -649,7 +649,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Kawasaki', category: 'engine', defaultType: 'Engine',
+  { make: 'Kawasaki', category: 'engine', defaultType: 'Standalone Engine',
     categories: [],
     searches: [
       'Kawasaki FJ180V engine', 'Kawasaki FJ400D engine',
@@ -663,7 +663,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Briggs & Stratton', category: 'engine', defaultType: 'Engine',
+  { make: 'Briggs & Stratton', category: 'engine', defaultType: 'Standalone Engine',
     categories: ['Briggs & Stratton engines'],
     searches: [
       'Briggs Stratton 550E Series engine', 'Briggs Stratton 550EX engine',
@@ -678,7 +678,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Kohler', category: 'engine', defaultType: 'Engine',
+  { make: 'Kohler', category: 'engine', defaultType: 'Standalone Engine',
     categories: [],
     searches: [
       'Kohler CH395 engine', 'Kohler CH440 engine', 'Kohler SH265 engine',
@@ -690,7 +690,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Robin', category: 'engine', defaultType: 'Engine',
+  { make: 'Robin', category: 'engine', defaultType: 'Standalone Engine',
     categories: [],
     searches: [
       'Robin Subaru EX13 engine', 'Robin Subaru EX17 engine', 'Robin Subaru EX21 engine',
@@ -700,7 +700,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Tecumseh', category: 'engine', defaultType: 'Engine',
+  { make: 'Tecumseh', category: 'engine', defaultType: 'Standalone Engine',
     categories: [],
     searches: [
       'Tecumseh H35 engine', 'Tecumseh H50 engine', 'Tecumseh H60 engine',
@@ -711,7 +711,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Lombardini', category: 'engine', defaultType: 'Engine',
+  { make: 'Lombardini', category: 'engine', defaultType: 'Standalone Engine',
     categories: [],
     searches: [
       'Lombardini LDW 702 diesel engine', 'Lombardini LDW 1003 diesel engine',
@@ -722,7 +722,7 @@ const BRANDS = [
 
   // ━━ MARINE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  { make: 'Yamaha', category: 'marine', defaultType: 'Outboard',
+  { make: 'Yamaha', category: 'marine', defaultType: 'Outboard Motor',
     categories: ['Yamaha outboard motors'],
     searches: [
       'Yamaha F2.5 outboard', 'Yamaha F4 outboard', 'Yamaha F6 outboard',
@@ -737,7 +737,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Mercury Marine', category: 'marine', defaultType: 'Outboard',
+  { make: 'Mercury Marine', category: 'marine', defaultType: 'Outboard Motor',
     categories: [],
     searches: [
       'Mercury 2.5 HP outboard', 'Mercury 4 HP outboard', 'Mercury 5 HP outboard',
@@ -752,7 +752,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Evinrude', category: 'marine', defaultType: 'Outboard',
+  { make: 'Evinrude', category: 'marine', defaultType: 'Outboard Motor',
     categories: ['Evinrude outboard motors'],
     searches: [
       'Evinrude E-TEC 25 outboard', 'Evinrude E-TEC 40 outboard',
@@ -764,7 +764,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Johnson', category: 'marine', defaultType: 'Outboard',
+  { make: 'Johnson', category: 'marine', defaultType: 'Outboard Motor',
     categories: [],
     searches: [
       'Johnson 9.9 HP outboard', 'Johnson 25 HP outboard', 'Johnson 40 HP outboard',
@@ -774,7 +774,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Tohatsu', category: 'marine', defaultType: 'Outboard',
+  { make: 'Tohatsu', category: 'marine', defaultType: 'Outboard Motor',
     categories: [],
     searches: [
       'Tohatsu MFS2.5 outboard', 'Tohatsu MFS5 outboard', 'Tohatsu MFS9.8 outboard',
@@ -784,7 +784,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Suzuki', category: 'marine', defaultType: 'Outboard',
+  { make: 'Suzuki', category: 'marine', defaultType: 'Outboard Motor',
     categories: [],
     searches: [
       'Suzuki DF2.5 outboard', 'Suzuki DF6 outboard', 'Suzuki DF9.9 outboard',
@@ -1041,7 +1041,7 @@ const BRANDS = [
 
   // ━━ ATV / POWERSPORTS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  { make: 'Polaris', category: 'atv', defaultType: 'ATV',
+  { make: 'Polaris', category: 'atv', defaultType: 'Quad Bike',
     categories: ['Polaris Inc. vehicles', 'Polaris snowmobiles'],
     searches: [
       'Polaris Sportsman 850 ATV', 'Polaris Sportsman 570 ATV',
@@ -1055,7 +1055,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Can-Am', category: 'atv', defaultType: 'ATV',
+  { make: 'Can-Am', category: 'atv', defaultType: 'Quad Bike',
     categories: ['Can-Am off-road vehicles'],
     searches: [
       'Can-Am Outlander 1000R ATV', 'Can-Am Outlander 850 ATV',
@@ -1068,7 +1068,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Arctic Cat', category: 'atv', defaultType: 'ATV',
+  { make: 'Arctic Cat', category: 'atv', defaultType: 'Quad Bike',
     categories: ['Arctic Cat snowmobiles'],
     searches: [
       'Arctic Cat Wildcat XX UTV', 'Arctic Cat Alterra 700 ATV',
@@ -1089,7 +1089,7 @@ const BRANDS = [
     ],
   },
 
-  { make: 'Sea-Doo', category: 'atv', defaultType: 'Jet Ski',
+  { make: 'Sea-Doo', category: 'atv', defaultType: 'Jet Ski / PWC',
     categories: [],
     searches: [
       'Sea-Doo RXP-X 300 personal watercraft', 'Sea-Doo RXT-X 300',

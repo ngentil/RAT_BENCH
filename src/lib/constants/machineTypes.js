@@ -5,9 +5,9 @@ export const MACHINE_TYPES = [
   {icon:"⚡",label:"Generator"},{icon:"🏍️",label:"Motorcycle"},{icon:"🛵",label:"Scooter"},
   {icon:"🛵",label:"Moped"},{icon:"🏍️",label:"Quad Bike"},{icon:"🏎️",label:"Go-kart"},
   {icon:"🚗",label:"Vehicle"},{icon:"🚧",label:"Tracked Machine"},
-  {icon:"⛵",label:"Outboard Motor"},
+  {icon:"⛵",label:"Outboard Motor"},{icon:"❄️",label:"Snowmobile"},
   {icon:"🌲",label:"Chipper"},{icon:"🌳",label:"Stump Grinder"},
-  {icon:"🏁",label:"RC / Hobby Engine"},
+  {icon:"🏁",label:"RC / Hobby Engine"},{icon:"🔩",label:"Standalone Engine"},
   {icon:"⚙️",label:"Custom"},
 ];
 
@@ -32,6 +32,7 @@ export const TYPE_PH = {
   "Tiller / Cultivator": {name:"e.g. Honda FG110",        make:"e.g. Honda",      model:"e.g. FG110",       desc:"e.g. Condition on arrival, tine issue"},
   "Water Pump":          {name:"e.g. Davey 3HP",          make:"e.g. Davey",      model:"e.g. 3HP",         desc:"e.g. Condition on arrival, priming issue"},
   "Outboard Motor":      {name:"e.g. Tohatsu 6HP",        make:"e.g. Tohatsu",    model:"e.g. 6HP",         desc:"e.g. Condition on arrival, water pump issue"},
+  "Snowmobile":          {name:"e.g. Ski-Doo MXZ 850",   make:"e.g. Ski-Doo",    model:"e.g. MXZ 850",     desc:"e.g. Condition on arrival, track/suspension fault"},
   "Snowblower":          {name:"e.g. Ariens Classic 24",  make:"e.g. Ariens",     model:"e.g. Classic 24",  desc:"e.g. Condition on arrival, auger fault"},
   "Log Splitter":        {name:"e.g. Boss 7T",            make:"e.g. Boss",       model:"e.g. 7T",          desc:"e.g. Condition on arrival, hydraulic issue"},
   "Vehicle":             {name:"e.g. Toyota Hilux SR5",   make:"e.g. Toyota",     model:"e.g. Hilux SR5",   desc:"e.g. Condition on arrival, fault description"},
@@ -39,13 +40,14 @@ export const TYPE_PH = {
   "Chipper":             {name:"e.g. Bandit 12XP",        make:"e.g. Bandit",     model:"e.g. 12XP",        desc:"e.g. Condition on arrival, drum fault"},
   "Stump Grinder":       {name:"e.g. Carlton SP7015",     make:"e.g. Carlton",    model:"e.g. SP7015",      desc:"e.g. Condition on arrival, wheel damage"},
   "RC / Hobby Engine":   {name:"e.g. OS .46 AX II",       make:"e.g. OS Engines", model:"e.g. .46 AX II",   desc:"e.g. 2-stroke .46, glow plug fouling, needle valve adjustment needed"},
+  "Standalone Engine":   {name:"e.g. Honda GX390",        make:"e.g. Honda",      model:"e.g. GX390",       desc:"e.g. Condition on arrival, fault description"},
   "Custom":              {name:"e.g. Machine name",       make:"e.g. Brand",      model:"e.g. Model",       desc:"e.g. Condition on arrival, fault description"},
 };
 export const getPH = (t,f) => (TYPE_PH[t]||TYPE_PH["Custom"])[f];
 
 export const HANDHELD    = ["Chainsaw","Trimmer","Blower","Hedge Trimmer","Multi-Tool"];
 export const WHEELED     = ["Lawnmower","Ride-on Mower"];
-export const MOTO        = ["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC"];
+export const MOTO        = ["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC","Snowmobile"];
 export const RC_HOBBY    = ["RC / Hobby Engine"];
 export const VEHICLE     = ["Vehicle"];
 export const TRACKED     = ["Tracked Machine"];
@@ -58,7 +60,7 @@ export const isStumpGrinder  = t => t==="Stump Grinder";
 export const isRCHobby       = t => t==="RC / Hobby Engine";
 export const showForCustom = (sec, cs) => cs===null||cs===undefined||cs.includes(sec);
 export const ALL_SECTIONS  = ["Engine","Ignition System","Starter System","Port Dimensions","Output Shaft / PTO","Fuel System","Fastener Specs","Pump","Generator Output","Drivetrain","Suspension","Brakes","Tyres","Electrics","Blade / Deck","Notes"];
-export const ALL_TYPES   = [...HANDHELD,...WHEELED,"Pressure Washer","Generator",...MOTO,...RC_HOBBY,"Vehicle","Tracked Machine","Outboard Motor","Custom"];
+export const ALL_TYPES   = [...HANDHELD,...WHEELED,"Pressure Washer","Generator",...MOTO,...RC_HOBBY,"Standalone Engine","Vehicle","Tracked Machine","Outboard Motor","Custom"];
 
 // RC / Hobby Engine: shows Engine, Ignition, Starter, Port Dims, PTO (prop shaft), Fuel, Fasteners
 // + Drivetrain/Suspension/Brakes/Tyres for nitro cars & buggies — NOT Electrics (combustion focus)
@@ -68,6 +70,6 @@ export const showGenOutput  = (t,cs) => isCustom(t) ? showForCustom("Generator O
 export const showDrivetrain = (t,cs) => isCustom(t) ? showForCustom("Drivetrain",cs) : [...MOTO,...RC_HOBBY,"Ride-on Mower","Vehicle"].includes(t);
 export const showSuspension = (t,cs) => isCustom(t) ? showForCustom("Suspension",cs) : [...MOTO,...RC_HOBBY,"Vehicle"].includes(t);
 export const showBrakes     = (t,cs) => isCustom(t) ? showForCustom("Brakes",cs) : [...MOTO,...RC_HOBBY,"Ride-on Mower","Vehicle"].includes(t);
-export const showTyres      = (t,cs) => isCustom(t) ? showForCustom("Tyres",cs) : [...MOTO,...RC_HOBBY,"Ride-on Mower","Lawnmower","Vehicle"].includes(t);
+export const showTyres      = (t,cs) => isCustom(t) ? showForCustom("Tyres",cs) : t!=="Snowmobile"&&[...MOTO,...RC_HOBBY,"Ride-on Mower","Lawnmower","Vehicle"].includes(t);
 export const showElectrics  = (t,cs) => isCustom(t) ? showForCustom("Electrics",cs) : [...MOTO,"Generator","Vehicle","Tracked Machine","Outboard Motor"].includes(t);
 export const showBlade      = (t,cs) => isCustom(t) ? showForCustom("Blade / Deck",cs) : ["Lawnmower","Ride-on Mower"].includes(t);
