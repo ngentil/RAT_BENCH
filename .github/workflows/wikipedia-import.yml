@@ -3,8 +3,20 @@ name: Wikipedia Import
 on:
   workflow_dispatch:
     inputs:
+      category:
+        description: "Product category to import"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - motorcycle
+          - ope
+          - marine
+          - atv
+          - engine
       make:
-        description: "Brand to import (leave blank for all brands)"
+        description: "Single brand to import (leave blank for all brands in category)"
         required: false
         default: ""
       dry_run:
@@ -16,7 +28,7 @@ on:
 jobs:
   import:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
 
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +46,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          ARGS=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          ARGS="--category=${{ inputs.category }}"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ -n "${{ inputs.make }}" ]; then ARGS="$ARGS --make=${{ inputs.make }}"; fi
           node scripts/wiki-import/wikipedia-import.mjs $ARGS
