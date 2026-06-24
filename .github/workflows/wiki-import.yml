@@ -19,6 +19,7 @@ on:
           - training-data-8-arborist
           - training-data-9-clones
           - training-data-10-rc2stroke
+          - training-data-holzfforma
           - nhtsa-motorcycle
           - nhtsa-all
           - kaggle-motos
@@ -89,6 +90,9 @@ jobs:
               ;;
             training-data-10-rc2stroke)
               node scripts/wiki-import/training-data-seed-10.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-holzfforma)
+              node scripts/wiki-import/training-data-seed-holzfforma.mjs $DRY $LIMIT_ARG
               ;;
             nhtsa-motorcycle)
               node scripts/wiki-import/nhtsa.mjs --type=motorcycle $DRY $LIMIT_ARG
