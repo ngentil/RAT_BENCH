@@ -197,6 +197,7 @@ Stripe
 |---------|--------|-----------|------|
 | Jobs tab: shows first 3 machines only on free tier (FREE_LIMIT=3) | ✅ | JobBoard.jsx FREE_LIMIT | Free (limit) |
 | Job timer (start / stop / pause) | ✅ | machines.job_timer (jsonb) — saving state disables Pause/Resume/Reset/Finish buttons during async save to prevent double-fire | Free |
+| Duration display shows seconds | ✅ | fmtDuration / fmtHrs in JobBoard, CustomersTab, RevenueDashboard — "27s" under 1 min, "2m 30s" for mixed, "3m" when exact | Free |
 | Multiple timers per machine | ✅ | machines.job_timer array | Free |
 | Timer sync: lock when another member running | ✅ | job_timer.startedBy, Realtime | Business |
 | Time log (save sessions with label + notes) | ✅ | machines.time_log (jsonb) | Free |
