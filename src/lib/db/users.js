@@ -14,7 +14,7 @@ export async function createCompany(ownerId, fields) {
 }
 
 export async function updateCompany(companyId, fields) {
-  const { data, error } = await supabase.from("companies").update(fields).eq("id", companyId).select().single();
+  const { data, error } = await supabase.rpc("rpc_update_company", { p_company_id: companyId, payload: fields });
   if (error) throw error;
   return data;
 }
@@ -51,7 +51,7 @@ export async function deleteCompany(companyId) {
 
 export async function regenerateInviteCode(companyId) {
   const code = crypto.randomUUID().replace(/-/g, '').substring(0, 8).toUpperCase();
-  const { data, error } = await supabase.from("companies").update({ invite_code: code }).eq("id", companyId).select().single();
+  const { data, error } = await supabase.rpc("rpc_update_company", { p_company_id: companyId, payload: { invite_code: code } });
   if (error) throw error;
   return data;
 }
