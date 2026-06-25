@@ -188,6 +188,8 @@ GRANT UPDATE (
 ) ON companies TO authenticated;
 
 -- Enforce valid role values at the DB level (belt-and-suspenders with the RLS WITH CHECK above)
+-- Also drop the original Supabase-generated constraint name in case it exists
 ALTER TABLE company_members
+  DROP CONSTRAINT IF EXISTS company_members_role_check,
   DROP CONSTRAINT IF EXISTS chk_company_members_role,
   ADD CONSTRAINT chk_company_members_role CHECK (role IN ('owner', 'admin', 'technician', 'viewer'));
