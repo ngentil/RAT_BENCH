@@ -67,6 +67,51 @@ $$;
 GRANT EXECUTE ON FUNCTION rpc_create_company(jsonb) TO authenticated;
 
 
+-- ── rpc_update_company ───────────────────────────────────────────────────────
+-- Updates allowed company fields. Only owner/admin can call this.
+-- Uses SECURITY DEFINER to bypass RLS table-level permission issues.
+
+CREATE OR REPLACE FUNCTION rpc_update_company(p_company_id uuid, payload jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM company_members
+    WHERE company_id = p_company_id AND user_id = v_uid AND role IN ('owner', 'admin')
+  ) THEN
+    RAISE EXCEPTION 'Only an owner or admin can update company details';
+  END IF;
+
+  UPDATE companies SET
+    name         = COALESCE(payload->>'name',         name),
+    trading_name = COALESCE(payload->>'trading_name', trading_name),
+    abn          = COALESCE(payload->>'abn',          abn),
+    phone        = COALESCE(payload->>'phone',        phone),
+    email        = COALESCE(payload->>'email',        email),
+    website      = COALESCE(payload->>'website',      website),
+    address      = COALESCE(payload->>'address',      address),
+    city         = COALESCE(payload->>'city',         city),
+    state        = COALESCE(payload->>'state',        state),
+    postcode     = COALESCE(payload->>'postcode',     postcode),
+    country      = COALESCE(payload->>'country',      country),
+    industry     = COALESCE(payload->>'industry',     industry),
+    logo         = COALESCE(payload->>'logo',         logo),
+    hourly_rate  = CASE WHEN payload ? 'hourly_rate' THEN (payload->>'hourly_rate')::numeric ELSE hourly_rate END,
+    tax_rate     = CASE WHEN payload ? 'tax_rate'    THEN (payload->>'tax_rate')::numeric    ELSE tax_rate    END,
+    tax_label    = COALESCE(payload->>'tax_label',    tax_label),
+    invite_code  = COALESCE(payload->>'invite_code',  invite_code)
+  WHERE id = p_company_id;
+
+  RETURN (SELECT to_jsonb(c) FROM companies c WHERE c.id = p_company_id);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION rpc_update_company(uuid, jsonb) TO authenticated;
+
+
 -- ── rpc_delete_company ───────────────────────────────────────────────────────
 -- Deletes a company and cleans up memberships + asset_permissions.
 -- Only the company owner can call this.
