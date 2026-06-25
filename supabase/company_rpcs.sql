@@ -8,6 +8,9 @@
 -- Creates a company, seeds the caller as owner, links their profile.
 -- payload: jsonb with company fields (name, trading_name, abn, …)
 
+-- Drop any legacy `json` overload to avoid "could not choose candidate" error
+DROP FUNCTION IF EXISTS public.rpc_create_company(payload json);
+
 CREATE OR REPLACE FUNCTION rpc_create_company(payload jsonb)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER
