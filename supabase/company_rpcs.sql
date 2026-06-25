@@ -31,7 +31,7 @@ BEGIN
     name, trading_name, abn, phone, email, website,
     address, city, state, postcode, country,
     industry, logo, hourly_rate, tax_rate, tax_label,
-    invite_code, created_at, updated_at
+    invite_code, created_at
   )
   VALUES (
     payload->>'name',
@@ -51,7 +51,7 @@ BEGIN
     NULLIF((payload->>'tax_rate'), '')::numeric,
     NULLIF(payload->>'tax_label', ''),
     v_code,
-    now(), now()
+    now()
   )
   RETURNING id INTO v_id;
 
