@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { escapeLike } from './helpers';
 
 // ── Slug ──────────────────────────────────────────────────────────────────────
 export function makeSlug(make, model) {
@@ -171,7 +172,10 @@ export const WIKI_FIELD_LABELS = {
   notes:              "Notes",
 };
 
-// Fields stripped before storing to wiki — owner-contextual, not spec data
+// Fields stripped before storing to wiki — owner-contextual, not spec data.
+// Anything private MUST be listed here: photo URLs, job/billing data, service
+// history, and personal scheduling all leak into publicly readable revisions
+// if omitted.
 const STRIP_FIELDS = new Set([
   "id","userId","companyId","clientId","createdAt","updatedAt",
   "status","source","rage","photos","jobPhotos",
@@ -179,7 +183,28 @@ const STRIP_FIELDS = new Set([
   "wireGauge","wireLength","wireAmps","totalLoadWatts",
   "riderWeight","springRate","groundContactLength",
   "primaryRatio","topGearRatio",
+  // Private photo URLs (owner's storage folder)
+  "iPPhotos","ePPhotos",
+  // Job / billing / scheduling data
+  "parts","timeLog","jobTimers","dueDate",
+  // Service history
+  "lastServiceDate","lastServiceOdo","lastServiceNotes",
+  // UI prefs / internal linkage
+  "tileFields","tileColors","expandFields","submittedToWiki","wikiMachineId",
 ]);
+
+// Deep-clean nested spec objects: carbSpec embeds private gasket photo URLs
+// and the owner's purchase links.
+function sanitizeSpecData(machine) {
+  const specData = Object.fromEntries(
+    Object.entries(machine).filter(([k]) => !STRIP_FIELDS.has(k))
+  );
+  if (specData.carbSpec && typeof specData.carbSpec === "object") {
+    const { gasketPhotos, purchaseLinks, ...carbRest } = specData.carbSpec;
+    specData.carbSpec = carbRest;
+  }
+  return specData;
+}
 
 // ── API ───────────────────────────────────────────────────────────────────────
 export async function getWikiEntryBySlug(slug) {
@@ -206,8 +231,8 @@ export async function lookupWikiEntry(make, model) {
   if (!make || !model) return null;
   const { data } = await supabase.from("wiki_entries")
     .select("*")
-    .ilike("make", make)
-    .ilike("model", model)
+    .ilike("make", escapeLike(make))
+    .ilike("model", escapeLike(model))
     .not("current_rev_id", "is", null)
     .eq("is_sample", false)
     .order("view_count", { ascending: false })
@@ -225,7 +250,7 @@ export async function getWikiMakes(query) {
   // Split at letter/digit boundaries so "gx200" matches "GX 200", etc.
   const parts = query.match(/[a-zA-Z]+|\d+/g) || [query.trim()];
   let q = supabase.from('wiki_entries').select('make').eq('is_sample', false).limit(50);
-  for (const p of parts) q = q.ilike('make', `%${p}%`);
+  for (const p of parts) q = q.ilike('make', `%${escapeLike(p)}%`);
   const { data } = await q;
   if (!data) return [];
   const unique = [...new Set(data.map(e => e.make).filter(Boolean))];
@@ -247,8 +272,8 @@ export async function getWikiModels(make, query) {
   // Split at letter/digit boundaries so "ms461" matches "MS 461", etc.
   const parts = query.match(/[a-zA-Z]+|\d+/g) || [query.trim()];
   let q = supabase.from('wiki_entries').select('model').eq('is_sample', false).limit(50);
-  if (make?.trim()) q = q.ilike('make', make);
-  for (const p of parts) q = q.ilike('model', `%${p}%`);
+  if (make?.trim()) q = q.ilike('make', escapeLike(make));
+  for (const p of parts) q = q.ilike('model', `%${escapeLike(p)}%`);
   const { data } = await q;
   if (!data) return [];
   const unique = [...new Set(data.map(e => e.model).filter(Boolean))];
@@ -266,10 +291,12 @@ export async function getWikiModels(make, query) {
 }
 
 export async function searchWiki(query) {
+  // Sanitize at the sink: tokens are interpolated into a PostgREST .or()
+  // filter below, where commas/parens/wildcards change filter semantics.
   const tokens = query.trim()
     .split(/\s+/)
     .map(t => t.replace(/[^a-zA-Z0-9\-]/g, ''))
-    .filter(Boolean);
+    .filter(t => /^[a-zA-Z0-9-]+$/.test(t));
 
   const base = () => supabase.from("wiki_entries")
     .select("id,slug,make,model,type,view_count")
@@ -363,9 +390,7 @@ export async function prepareWikiPublish(machine, profile) {
   const slug = makeSlug(machine.make || "", machine.model || "");
   if (!slug || slug === "-")
     throw new Error("Machine must have a make and model to publish.");
-  const specData = Object.fromEntries(
-    Object.entries(machine).filter(([k]) => !STRIP_FIELDS.has(k))
-  );
+  const specData = sanitizeSpecData(machine);
   const { data: existing } = await supabase.from("wiki_entries")
     .select("*").eq("slug", slug).single();
   if (existing) {
@@ -391,10 +416,8 @@ export async function publishToWiki(machine, profile) {
   if (!slug || slug === "-")
     throw new Error("Machine must have a make and model to publish.");
 
-  // Strip owner-contextual fields
-  const specData = Object.fromEntries(
-    Object.entries(machine).filter(([k]) => !STRIP_FIELDS.has(k))
-  );
+  // Strip owner-contextual fields (photos, jobs, service history, carb links)
+  const specData = sanitizeSpecData(machine);
 
   const { data: existing } = await supabase.from("wiki_entries")
     .select("*").eq("slug", slug).single();
