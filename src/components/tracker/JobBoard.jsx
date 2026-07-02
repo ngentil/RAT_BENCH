@@ -9,6 +9,8 @@ import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../l
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
 import { SL, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
+import { parseLocalDate, isOverdueLocal } from '../../lib/dates';
+import { toastError } from '../../lib/toast';
 import StatusBadge from '../ui/StatusBadge';
 import { effectiveTier } from '../../lib/gates';
 import UpgradeBanner from '../ui/UpgradeBanner';
@@ -75,6 +77,7 @@ function fmt(secs) {
 }
 
 function fmtDuration(secs) {
+  secs = Math.max(0, Math.floor(Number(secs) || 0));
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
@@ -93,10 +96,20 @@ function safeImgSrc(url) {
   return (s.startsWith('data:image/') || /^https?:\/\//.test(s)) ? escHtml(s) : '';
 }
 
-async function exportInvoice(machine, company, clients, userId, docType = 'invoice') {
-  const log   = machine.timeLog || [];
+const round2 = n => Math.round(n * 100) / 100;
+// Explicit qty 0 means 0 (returned/credited item) — only missing qty defaults to 1
+const qtyOf = p => (p.qty == null || p.qty === '') ? 1 : (Number(p.qty) || 0);
+
+async function exportInvoice(machine, company, clients, userId, docType = 'invoice', onUpdate) {
+  const allLog = machine.timeLog || [];
+  // Sessions already invoiced must not be billed again. (Cycle a session's
+  // status chip back to "Logged" to deliberately re-invoice it.)
+  const log   = allLog.filter(e => (e.billStatus || 'logged') !== 'invoiced');
   const parts = machine.parts   || [];
-  if (!log.length && !parts.length) return;
+  if (!log.length && !parts.length) {
+    if (allLog.length) alert('All sessions are already invoiced. Tap a session\'s status chip to set it back to Logged if you need to re-issue.');
+    return;
+  }
 
   // Open window synchronously during user interaction to avoid popup blocker
   const win = window.open('', '_blank');
@@ -104,18 +117,24 @@ async function exportInvoice(machine, company, clients, userId, docType = 'invoi
 
   const client = machine.clientId ? (clients||[]).find(c => c.id === machine.clientId) : null;
 
-  const rate     = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
-  const taxRate  = company?.tax_rate    ? parseFloat(company.tax_rate)    : null;
+  // parseFloat + isFinite so a configured rate of 0 is honoured (not "unset")
+  const rateRaw  = parseFloat(company?.hourly_rate);
+  const rate     = Number.isFinite(rateRaw) ? rateRaw : null;
+  const taxRaw   = parseFloat(company?.tax_rate);
+  const taxRate  = Number.isFinite(taxRaw) ? taxRaw : null;
   const taxLabel = company?.tax_label   || 'Tax';
   const co       = company || {};
 
   const totalSecs      = log.reduce((s, e) => s + (e.seconds || 0), 0);
-  const totalHrs       = totalSecs / 3600;
-  const labourSubtotal = rate !== null ? totalHrs * rate : null;
-  const partsSubtotal  = parts.reduce((s, p) => s + (parseFloat(p.sellPrice) || 0) * (Number(p.qty) || 1), 0);
-  const subtotal       = labourSubtotal !== null ? labourSubtotal + partsSubtotal : (partsSubtotal > 0 ? partsSubtotal : null);
-  const tax            = subtotal !== null && taxRate ? subtotal * taxRate / 100 : null;
-  const total          = subtotal !== null ? subtotal + (tax || 0) : null;
+  // Round each line to cents and sum the rounded lines — printed rows must
+  // add up to the printed subtotals/total exactly.
+  const labourAmounts  = log.map(e => rate !== null ? round2(((e.seconds || 0) / 3600) * rate) : null);
+  const labourSubtotal = rate !== null ? round2(labourAmounts.reduce((s, a) => s + a, 0)) : null;
+  const partAmounts    = parts.map(p => round2((parseFloat(p.sellPrice) || 0) * qtyOf(p)));
+  const partsSubtotal  = round2(partAmounts.reduce((s, a) => s + a, 0));
+  const subtotal       = labourSubtotal !== null ? round2(labourSubtotal + partsSubtotal) : (partsSubtotal > 0 ? partsSubtotal : null);
+  const tax            = subtotal !== null && taxRate ? round2(subtotal * taxRate / 100) : null;
+  const total          = subtotal !== null ? round2(subtotal + (tax || 0)) : null;
   const fmt$           = n => `$${(n || 0).toFixed(2)}`;
 
   const isQuote  = docType === 'quote';
@@ -138,9 +157,9 @@ async function exportInvoice(machine, company, clients, userId, docType = 'invoi
       ${client.address  ? `<div class="bill-to-line">${escHtml(client.address)}</div>` : ''}
     </div>` : '';
 
-  const labourRows = log.map(e => {
+  const labourRows = log.map((e, i) => {
     const hrs    = (e.seconds || 0) / 3600;
-    const amount = rate !== null ? hrs * rate : null;
+    const amount = labourAmounts[i];
     const label  = e.jobLabel && e.jobLabel !== 'Job' ? e.jobLabel.slice(0, 80) : 'General work';
     const notes  = e.sessionNotes ? `<div style="font-size:11px;color:#777;margin-top:2px">${escHtml(e.sessionNotes)}</div>` : '';
     return `<tr>
@@ -151,15 +170,15 @@ async function exportInvoice(machine, company, clients, userId, docType = 'invoi
     </tr>`;
   }).join('');
 
-  const partsRows = parts.map(p => {
+  const partsRows = parts.map((p, i) => {
     const sell = parseFloat(p.sellPrice) || 0;
-    const qty  = Number(p.qty) || 1;
+    const qty  = qtyOf(p);
     return `<tr>
       <td>${escHtml(p.name)}${p.brand      ? ` <span class="dim">${escHtml(p.brand)}</span>`      : ''}
           ${p.partNumber ? ` <span class="dim">${escHtml(p.partNumber)}</span>` : ''}</td>
       <td class="num">${qty}</td>
       <td class="num">${sell > 0 ? fmt$(sell) : '—'}</td>
-      <td class="num">${sell > 0 ? fmt$(sell * qty) : '—'}</td>
+      <td class="num">${sell > 0 ? fmt$(partAmounts[i]) : '—'}</td>
     </tr>`;
   }).join('');
 
@@ -272,6 +291,18 @@ ${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to
 
   win.document.write(html);
   win.document.close();
+
+  // Mark the billed sessions so the next invoice doesn't re-charge them.
+  if (!isQuote && onUpdate) {
+    const billed = new Set(log.map(e => e.id));
+    const updated = { ...machine, timeLog: allLog.map(e => billed.has(e.id) ? { ...e, billStatus: 'invoiced' } : e) };
+    onUpdate(updated);
+    try { await upsertMachine(updated); }
+    catch (err) {
+      console.error('mark invoiced:', err);
+      toastError("Invoice created, but couldn't mark sessions as invoiced — check connection");
+    }
+  }
 }
 
 const timerSel = {
@@ -295,16 +326,30 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
 
   const totalSecs = log.reduce((s, e) => s + (e.seconds || 0), 0);
 
+  // Optimistic update with rollback — a failed save must not leave the UI
+  // claiming a change that never reached the DB.
+  const applyUpdate = async (updated, failMsg) => {
+    onUpdate(updated);
+    try { await upsertMachine(updated); return true; }
+    catch (err) {
+      console.error(failMsg, err);
+      onUpdate(machine);
+      toastError(failMsg);
+      return false;
+    }
+  };
+
   const removeEntry = async (entryId) => {
     if (!confirm("Remove this time entry?")) return;
-    const updated = { ...machine, timeLog: machine.timeLog.filter(e => e.id !== entryId) };
-    onUpdate(updated);
-    await upsertMachine(updated);
+    await applyUpdate(
+      { ...machine, timeLog: machine.timeLog.filter(e => e.id !== entryId) },
+      "Couldn't remove entry — check connection",
+    );
   };
 
   const cycleBillStatus = async (entryId) => {
     const order = ["logged", "quoted", "invoiced"];
-    const updated = {
+    await applyUpdate({
       ...machine,
       timeLog: (machine.timeLog || []).map(e => {
         if (e.id !== entryId) return e;
@@ -312,19 +357,15 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
         const next = order[(order.indexOf(cur) + 1) % order.length];
         return { ...e, billStatus: next };
       }),
-    };
-    onUpdate(updated);
-    await upsertMachine(updated);
+    }, "Couldn't update status — check connection");
   };
 
   const saveNotes = async (entryId, notes) => {
-    const updated = {
+    const ok = await applyUpdate({
       ...machine,
       timeLog: (machine.timeLog || []).map(e => e.id === entryId ? { ...e, sessionNotes: notes.trim() } : e),
-    };
-    onUpdate(updated);
-    await upsertMachine(updated);
-    setEditingNotes(null);
+    }, "Couldn't save notes — check connection");
+    if (ok) setEditingNotes(null);
   };
 
   return (
@@ -342,8 +383,8 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
         >
           {log.length} session{log.length !== 1 ? "s" : ""} · {fmtDuration(totalSecs)} total
         </span>
-        <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote')} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Quote</button>
-        <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice')} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Invoice</button>
+        <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote', onUpdate)} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Quote</button>
+        <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice', onUpdate)} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Invoice</button>
       </div>
       {expanded && (
         <div style={{ marginTop: 8 }}>
@@ -435,8 +476,8 @@ function PartsSection({ machine, onUpdate, userId }) {
   const [saMatchedInvId, setSaMatchedInvId] = useState(null);
   const parts = machine.parts || [];
 
-  const totalRevenue = parts.reduce((s,p)=>(s+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1)),0);
-  const totalCost    = parts.reduce((s,p)=>(s+(parseFloat(p.buyPrice)||0)*(Number(p.qty)||1)),0);
+  const totalRevenue = parts.reduce((s,p)=>(s+(parseFloat(p.sellPrice)||0)*qtyOf(p)),0);
+  const totalCost    = parts.reduce((s,p)=>(s+(parseFloat(p.buyPrice)||0)*qtyOf(p)),0);
 
   const inpS = { background:"#0a0a0a", border:"1px solid #252525", color:TXT, fontFamily:"'IBM Plex Mono',monospace", fontSize:11, padding:"6px 8px", borderRadius:2, outline:"none", boxSizing:"border-box", width:"100%" };
   const L = ({ t }) => <div style={{ fontSize:10, color:MUT, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:3 }}>{t}</div>;
@@ -488,6 +529,7 @@ function PartsSection({ machine, onUpdate, userId }) {
       console.error("useFromInventory:", e);
       if (machineSaved) await upsertMachine(original).catch(() => {});
       onUpdate(original);
+      toastError("Couldn't add part — check connection");
     } finally {
       setSaving(false);
     }
@@ -501,13 +543,22 @@ function PartsSection({ machine, onUpdate, userId }) {
     const updated = { ...machine, parts: [...parts, entry] };
     setSaving(true);
     onUpdate(updated);
+    let machineSaved = false;
     try {
       await upsertMachine(updated);
+      machineSaved = true;
       if (saMatchedInvId) setInv(await adjustStock(userId, saMatchedInvId, -(parseInt(saForm.qty)||1)));
       setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" }); setSaSuggestions([]); setSaMatchedInvId(null);
     } catch (e) {
       console.error("addStandalone:", e);
-      onUpdate(original);
+      if (machineSaved) {
+        // Part saved to the job; only the stock deduction failed.
+        toastError("Part added, but stock wasn't deducted — adjust stock manually");
+        setMode(null); setSaForm({ name:"", partNumber:"", brand:"", qty:"1", buyPrice:"", sellPrice:"", notes:"" }); setSaSuggestions([]); setSaMatchedInvId(null);
+      } else {
+        onUpdate(original);
+        toastError("Couldn't add part — check connection");
+      }
     } finally {
       setSaving(false);
     }
@@ -533,8 +584,10 @@ function PartsSection({ machine, onUpdate, userId }) {
     const original = machine;
     const updated = { ...machine, parts: parts.filter((_,i) => i !== idx) };
     onUpdate(updated);
+    let machineSaved = false;
     try {
       await upsertMachine(updated);
+      machineSaved = true;
       const sourceType = p.sourceType || (p.inventoryId ? "part" : null);
       if (sourceType === "consumable" && p.consumableId) {
         const updatedItem = await adjustConsumableQty(p.consumableId, Number(p.qty) || 1);
@@ -544,7 +597,14 @@ function PartsSection({ machine, onUpdate, userId }) {
       }
     } catch (e) {
       console.error("remove part:", e);
-      onUpdate(original);
+      if (machineSaved) {
+        // The part is gone from the job (DB saved) — only the stock return
+        // failed. Reverting the UI here would show a part the DB no longer has.
+        toastError("Part removed, but stock wasn't returned — adjust stock manually");
+      } else {
+        onUpdate(original);
+        toastError("Couldn't remove part — check connection");
+      }
     }
   };
 
@@ -706,10 +766,15 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const t = machine.jobTimers?.[0] || { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" };
 
   const getElapsed = () => {
+    // Number() guards legacy rows where elapsed is missing/non-numeric;
+    // Math.max guards a startedAt in the future (clock skew across devices).
+    const base = Number(t.elapsed) || 0;
     if (t.status === "running" && t.startedAt) {
-      return t.elapsed + Math.floor((Date.now() - new Date(t.startedAt).getTime()) / 1000);
+      const started = new Date(t.startedAt).getTime();
+      if (!Number.isFinite(started)) return base;
+      return base + Math.max(0, Math.floor((Date.now() - started) / 1000));
     }
-    return t.elapsed || 0;
+    return base;
   };
 
   const [display, setDisplay] = useState(getElapsed);
@@ -751,12 +816,14 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
     } catch (e) {
       console.error("timer save:", e);
       onUpdate(original);
+      toastError("Timer update didn't save — check connection");
     } finally {
       setSaving(false);
     }
   };
 
   const handleStart = async () => {
+    if (saving) return;
     if (t.status === "idle" && !t.duration) {
       if (mode === "countup") {
         await save({ duration: 0, elapsed: 0, startedAt: new Date().toISOString(), status: "running", jobLabel: effectiveLabel });
@@ -779,7 +846,22 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
     setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
   };
 
+  // Shared persist-with-rollback for log mutations
+  const persistLog = async (updated, failMsg) => {
+    const original = machine;
+    setSaving(true);
+    onUpdate(updated);
+    try { await upsertMachine(updated); return true; }
+    catch (e) {
+      console.error(failMsg, e);
+      onUpdate(original);
+      toastError(failMsg);
+      return false;
+    } finally { setSaving(false); }
+  };
+
   const handleManualLog = async () => {
+    if (saving) return;
     const secs = parseDuration(hours, mins);
     if (!secs) return;
     const newEntry = {
@@ -789,47 +871,52 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
       completedAt: manualDate ? new Date(manualDate + "T12:00:00").toISOString() : new Date().toISOString(),
       manual: true,
     };
-    const updated = { ...machine, timeLog: [...(machine.timeLog || []), newEntry] };
-    onUpdate(updated);
-    await upsertMachine(updated);
-    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
-    setManualDate(new Date().toISOString().slice(0, 10));
+    const ok = await persistLog(
+      { ...machine, timeLog: [...(machine.timeLog || []), newEntry] },
+      "Couldn't log time — check connection",
+    );
+    if (ok) {
+      setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+      setManualDate(new Date().toISOString().slice(0, 10));
+    }
   };
 
   const handleFinish = async () => {
-    const elapsed = getElapsed();
-    const newEntry = {
+    if (saving) return;
+    // Clamp countdown timers to their duration — the display stops at 0
+    // remaining, so a forgotten overnight timer must not bill wall-clock time.
+    const raw = getElapsed();
+    const elapsed = t.duration > 0 ? Math.min(raw, t.duration) : raw;
+    const newEntries = elapsed > 0 ? [{
       id: crypto.randomUUID(),
       jobLabel: t.jobLabel || "",
       seconds: elapsed,
       completedAt: new Date().toISOString(),
-    };
-    const updated = {
+    }] : [];
+    const ok = await persistLog({
       ...machine,
       status: "Complete",
-      timeLog: [...(machine.timeLog || []), newEntry],
+      timeLog: [...(machine.timeLog || []), ...newEntries],
       jobTimers: [],
-    };
-    onUpdate(updated);
-    await upsertMachine(updated);
-    setHours(""); setMins(""); setJobLabel(""); setCustomLabel("");
+    }, "Couldn't finish job — check connection");
+    if (ok) { setHours(""); setMins(""); setJobLabel(""); setCustomLabel(""); }
   };
 
   // Migrate legacy "done" state: allow logging the saved elapsed time
   const handleLogAndReset = async () => {
-    const newEntry = {
+    if (saving) return;
+    const secs = Number(t.elapsed) || 0;
+    const newEntries = secs > 0 ? [{
       id: crypto.randomUUID(),
       jobLabel: t.jobLabel || "",
-      seconds: t.elapsed || 0,
+      seconds: secs,
       completedAt: new Date().toISOString(),
-    };
-    const updated = {
+    }] : [];
+    await persistLog({
       ...machine,
-      timeLog: [...(machine.timeLog || []), newEntry],
+      timeLog: [...(machine.timeLog || []), ...newEntries],
       jobTimers: [],
-    };
-    onUpdate(updated);
-    await upsertMachine(updated);
+    }, "Couldn't log time — check connection");
   };
 
   const remaining = t.duration > 0 ? Math.max(0, t.duration - display) : 0;
@@ -1017,12 +1104,14 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
 
   const totalSecs   = (m.timeLog||[]).reduce((s, e) => s + (e.seconds||0), 0);
   const partsCount  = (m.parts||[]).length;
-  const due         = m.dueDate ? new Date(m.dueDate) : null;
-  const isOverdue   = due && due < new Date();
+  const due         = m.dueDate ? parseLocalDate(m.dueDate) : null;
+  // Overdue only once the due DAY has passed (local) — not mid-morning on the due date
+  const isOverdue   = due && isOverdueLocal(m.dueDate);
   const isRunning   = m.jobTimers?.[0]?.status === "running";
-  const hourlyRate  = company?.hourly_rate ? parseFloat(company.hourly_rate) : null;
-  const partsTotal  = (m.parts||[]).reduce((s,p) => s + (parseFloat(p.sellPrice)||0)*(Number(p.qty)||1), 0);
-  const labourTotal = hourlyRate ? (totalSecs / 3600) * hourlyRate : null;
+  const rateRaw     = parseFloat(company?.hourly_rate);
+  const hourlyRate  = Number.isFinite(rateRaw) ? rateRaw : null;
+  const partsTotal  = (m.parts||[]).reduce((s,p) => s + (parseFloat(p.sellPrice)||0)*qtyOf(p), 0);
+  const labourTotal = hourlyRate !== null ? (totalSecs / 3600) * hourlyRate : null;
   const grandTotal  = partsTotal + (labourTotal || 0);
 
   return (
@@ -1100,7 +1189,12 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
               <button onClick={dismissJobGuide} style={{ marginTop: 8, background: "none", border: "none", color: "#444", fontSize: 8, cursor: "pointer", padding: 0, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "0.05em" }}>got it</button>
             </div>
           )}
-          <MachineNotes machine={m} onSave={async notes => { const u = { ...m, notes }; onUpdate(u); await upsertMachine(u); }} />
+          <MachineNotes machine={m} onSave={async notes => {
+            const u = { ...m, notes };
+            onUpdate(u);
+            try { await upsertMachine(u); }
+            catch (e) { console.error("notes save:", e); onUpdate(m); toastError("Notes didn't save — check connection"); }
+          }} />
           {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
           {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={onUpdate} />}
           {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
@@ -1157,8 +1251,16 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   }, [machines, jobSearch, statusFilter, clientMap]);
 
   const updateM = (updated) => setMachines(prev => prev.map(x => x.id === updated.id ? updated : x));
-  const updateStatus = async (m, status) => { const u = { ...m, status }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
-  const updateRage = async (m, rage) => { const u = { ...m, rage }; await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); };
+  const updateStatus = async (m, status) => {
+    const u = { ...m, status };
+    try { await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); }
+    catch (e) { console.error("updateStatus:", e); toastError("Status didn't save — check connection"); }
+  };
+  const updateRage = async (m, rage) => {
+    const u = { ...m, rage };
+    try { await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); }
+    catch (e) { console.error("updateRage:", e); toastError("Rating didn't save — check connection"); }
+  };
   const groups = STATUSES.map(s => ({ status: s, items: visibleMachines.filter(m => (m.status || "Active") === s) }));
 
   const orderedAll = groups.flatMap(g => g.items);
