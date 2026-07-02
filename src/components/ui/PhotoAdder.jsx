@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ACC, MUT, BRD, RED, btnG, col } from '../../lib/styles';
 import { FL } from './shared';
-import { uploadPhoto, deletePhoto } from '../../lib/storage';
+import { uploadPhoto } from '../../lib/storage';
 
 function PhotoAdder({ photos, setPhotos, label = "Photos" }) {
   const [busy, setBusy]   = useState(false);
@@ -18,17 +18,22 @@ function PhotoAdder({ photos, setPhotos, label = "Photos" }) {
       e.target.value = ''; return;
     }
     setBusy(true); setErr(null);
-    try {
-      const urls = await Promise.all(files.map(f => uploadPhoto(f)));
-      setPhotos(prev => [...prev, ...urls]);
-    } catch (ex) {
-      setErr('Upload failed — check connection');
+    // allSettled: one failed upload must not throw away the ones that succeeded
+    const results = await Promise.allSettled(files.map(f => uploadPhoto(f)));
+    const urls   = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+    const failed = results.filter(r => r.status === 'rejected');
+    if (urls.length) setPhotos(prev => [...prev, ...urls]);
+    if (failed.length) {
+      const msg = failed[0].reason?.message;
+      setErr(`${failed.length} of ${files.length} failed — ${msg && msg !== 'canvas toBlob failed' ? msg : 'check connection'}`);
     }
     setBusy(false); e.target.value = '';
   };
 
+  // Only remove from form state — the storage file is cleaned up when the
+  // record itself is deleted. Deleting here would break the saved record if
+  // the user cancels the form.
   const remove = (url, idx) => {
-    deletePhoto(url);
     setPhotos(ps => ps.filter((_, j) => j !== idx));
   };
 
@@ -38,7 +43,7 @@ function PhotoAdder({ photos, setPhotos, label = "Photos" }) {
       {photos.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginBottom: 6 }}>
           {photos.map((p, i) => (
-            <div key={i} style={{ position: 'relative' }}>
+            <div key={p} style={{ position: 'relative' }}>
               <img src={p} alt="" style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 2, border: '1px solid ' + BRD, display: 'block' }} />
               <button onClick={() => remove(p, i)}
                 style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.8)', border: 'none', color: '#ccc', width: 16, height: 16, borderRadius: '50%', cursor: 'pointer', fontSize: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>

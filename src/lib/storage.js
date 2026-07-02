@@ -25,6 +25,9 @@ export const uploadPhoto = async (file) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
   const blob = await resizeToBlob(file);
+  // Server bucket limit is 10MB — fail with a clear message instead of a
+  // generic storage error after the round trip.
+  if (blob.size > 10 * 1024 * 1024) throw new Error('Image too large — try a smaller photo');
   const path = `${user.id}/${crypto.randomUUID()}.jpg`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
     contentType: 'image/jpeg',

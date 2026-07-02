@@ -3,6 +3,8 @@ import { upsertService } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, GRN, TXT, inp, sel, txa, btnA, btnG, col, sm } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
 import { mIcon, nowL, uid } from '../../lib/helpers';
+import { localInputToISO } from '../../lib/dates';
+import { toastError } from '../../lib/toast';
 import { uploadPhoto, deletePhoto } from '../../lib/storage';
 
 function PlugLog({machines}){
@@ -14,12 +16,34 @@ function PlugLog({machines}){
   const [saved,setSaved]=useState(false);
   const machine=machines.find(m=>m.id===selId)||null;
 
-  const handlePhoto=async e=>{const f=e.target.files[0];if(!f)return;setBusy(true);if(photo)deletePhoto(photo);try{setPhoto(await uploadPhoto(f));}catch{setPhoto(null);}setBusy(false);setSaved(false);};
+  // Upload the new photo FIRST — only discard the old one once the replacement
+  // actually exists, so a failed retake on flaky signal doesn't destroy both.
+  const handlePhoto=async e=>{
+    const f=e.target.files[0];if(!f)return;setBusy(true);
+    try{
+      const url=await uploadPhoto(f);
+      if(photo)deletePhoto(photo);
+      setPhoto(url);
+    }catch(err){
+      console.error("plug photo upload:",err);
+      toastError("Photo upload failed — try again");
+    }
+    setBusy(false);setSaved(false);
+  };
   const doSave=async()=>{
-    if(!machine||!photo)return;
-    const entry={id:uid(),completedAt:ca,types:["Spark Plug"],notes:notes.trim(),plugPhoto:photo,jobPhotos:[],createdAt:new Date().toISOString()};
-    await upsertService(machine.id,entry);
-    setSaved(true);setPhoto(null);setNotes("");setCa(nowL());
+    if(!machine||!photo||busy)return;
+    const iso=localInputToISO(ca);
+    if(!iso){toastError("Enter a completed date/time");return;}
+    setBusy(true);
+    try{
+      const entry={id:uid(),completedAt:iso,types:["Spark Plug"],notes:notes.trim(),plugPhoto:photo,jobPhotos:[],createdAt:new Date().toISOString()};
+      await upsertService(machine.id,entry);
+      setSaved(true);setPhoto(null);setNotes("");setCa(nowL());
+    }catch(err){
+      console.error("plug log save:",err);
+      toastError(err?.message||"Save failed — check connection and try again");
+    }
+    setBusy(false);
   };
 
   return (
@@ -58,7 +82,7 @@ function PlugLog({machines}){
               <span>✓</span> Logged to <strong>{machine.name}</strong>
             </div>
           )}
-          <button style={{...btnA,width:'100%',opacity:!photo?0.4:1}} onClick={doSave} disabled={!photo}>
+          <button style={{...btnA,width:'100%',opacity:!photo||busy?0.4:1}} onClick={doSave} disabled={!photo||busy}>
             Save to {machine.name}
           </button>
         </div>
