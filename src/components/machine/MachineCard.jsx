@@ -11,6 +11,7 @@ import { canUse, effectiveTier } from '../../lib/gates';
 import { getTiers, TIER_NAMES } from '../../lib/storageTiers';
 import { getActiveBooking, createBooking, collectMachine, updateBooking } from '../../lib/db/bookings';
 import { deletePhoto } from '../../lib/storage';
+import { toastError } from '../../lib/toast';
 const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
@@ -39,7 +40,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const [confirmDelete,setConfirmDelete]=useState(false);
   const m=machine;
   // Notify parent when card opens so the above-card guide arrow can hide
-  useEffect(()=>{if(open&&showGuide)onCardOpened?.();},[open]);
+  useEffect(()=>{if(open&&showGuide)onCardOpened?.();},[open,showGuide]);
   const withGuide=(desc,el)=>showGuide?(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
       {el}
@@ -58,15 +59,22 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
     return clients.find(c => c.id === m.clientId)?.name || null;
   }, [m.clientId, clients]);
 
+  // Refetch on every open (and machine change) — a cached-once list goes
+  // stale when entries are added elsewhere (PlugLog, another device).
   useEffect(()=>{
-    if(open&&!loaded) getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);});
-  },[open]);
+    if(!open) return;
+    let alive=true;
+    getServices(m.id).then(s=>{if(alive){setSvcs(s||[]);setLoaded(true);}});
+    return ()=>{alive=false;};
+  },[open,m.id]);
 
   const storagePolicyEnabled = canUse('storage_policy',profile,company) && !!(profile?.storage_policy_enabled);
 
   useEffect(()=>{
-    if(!storagePolicyEnabled||bookingLoaded) return;
-    getActiveBooking(m.id).then(b=>{setBooking(b);setBookingLoaded(true);});
+    if(!storagePolicyEnabled) return;
+    let alive=true;
+    getActiveBooking(m.id).then(b=>{if(alive){setBooking(b);setBookingLoaded(true);}});
+    return ()=>{alive=false;};
   },[storagePolicyEnabled,m.id]);
 
   // Android back button collapses this card when it's open.
@@ -106,29 +114,50 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
 
   const doCollect = async () => {
     if(!booking) return;
-    const b = await collectMachine(booking.id);
-    setBooking(null); setBookingLoaded(false);
+    try {
+      await collectMachine(booking.id);
+      setBooking(null); setBookingLoaded(false);
+    } catch(e){
+      console.error("collectMachine:",e);
+      toastError("Couldn't mark as collected — check connection");
+    }
   };
 
   const toggleStorageOnBooking = async () => {
     if(!booking) return;
-    const b = await updateBooking(booking.id, { storage_enabled: !booking.storage_enabled });
-    setBooking(b);
+    try {
+      const b = await updateBooking(booking.id, { storage_enabled: !booking.storage_enabled });
+      setBooking(b);
+    } catch(e){
+      console.error("updateBooking:",e);
+      toastError("Couldn't update storage — check connection");
+    }
   };
 
   const saveSvc=async entry=>{
     setSaving(true);
-    await upsertService(m.id,entry);
-    const updated=svcs.find(s=>s.id===entry.id)?svcs.map(s=>s.id===entry.id?entry:s):[entry,...svcs];
-    setSvcs(updated);setSaving(false);setShowSvc(false);setEditSvc(null);
+    try{
+      await upsertService(m.id,entry);
+      setSvcs(prev=>prev.find(s=>s.id===entry.id)?prev.map(s=>s.id===entry.id?entry:s):[entry,...prev]);
+      setShowSvc(false);setEditSvc(null);
+    }finally{
+      setSaving(false);
+    }
   };
   const delSvc=async id=>{
     if(!confirm("Delete this entry?"))return;
     const svc=svcs.find(s=>s.id===id);
+    // DB delete first — destroying photos before a failed delete leaves the
+    // surviving record pointing at 404s.
+    try{
+      await deleteServiceApi(id);
+    }catch(e){
+      toastError("Delete failed — check connection");
+      return;
+    }
     if(svc?.plugPhoto) deletePhoto(svc.plugPhoto);
     (svc?.jobPhotos||[]).forEach(url=>deletePhoto(url));
-    await deleteServiceApi(id);
-    setSvcs(svcs.filter(s=>s.id!==id));
+    setSvcs(prev=>prev.filter(s=>s.id!==id));
   };
 
   const specs=[
@@ -266,7 +295,12 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
       {(showSvc||editSvc)&&<ServiceModal machine={m} existing={editSvc} onSave={saveSvc} onClose={()=>{setShowSvc(false);setEditSvc(null);}} />}
 
       {/* ── Collapsed card — poster style ── */}
-      <div onClick={()=>setOpen(o=>!o)} style={{cursor:"pointer",userSelect:"none"}}>
+      <div onClick={()=>{
+        // Closing via tap must pop the {cardOpen} history entry we pushed on
+        // open (mirrors PhotoViewer) or stale entries pile up on the stack.
+        if(open&&history.state?.cardOpen===m.id){setOpen(false);history.back();}
+        else setOpen(o=>!o);
+      }} style={{cursor:"pointer",userSelect:"none"}}>
 
         {/* Hero photo / icon placeholder */}
         {m.photos?.[0]
