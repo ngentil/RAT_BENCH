@@ -21,6 +21,11 @@ function corsHeaders(req: Request) {
 const VALID_PRICE_IDS = new Set(
   [Deno.env.get("PRICE_ENTHUSIAST"), Deno.env.get("PRICE_PRO")].filter(Boolean)
 );
+// Fail closed: with no allowlist configured, arbitrary caller-supplied price
+// ids would reach Stripe unchecked.
+if (VALID_PRICE_IDS.size === 0) {
+  console.error("create-checkout: PRICE_ENTHUSIAST / PRICE_PRO env vars not set — all requests will be rejected");
+}
 
 function isSafeUrl(url: string | undefined): boolean {
   if (!url) return true;
@@ -42,7 +47,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing price_id or user_id" }), { status: 400, headers: CORS });
     }
 
-    if (VALID_PRICE_IDS.size > 0 && !VALID_PRICE_IDS.has(price_id)) {
+    if (!VALID_PRICE_IDS.has(price_id)) {
       return new Response(JSON.stringify({ error: "Invalid price_id" }), { status: 400, headers: CORS });
     }
 
@@ -95,6 +100,19 @@ serve(async (req) => {
         const customer = await stripe.customers.create({ name: profile?.display_name || profile?.username, metadata: { user_id } });
         customerId = customer.id;
         await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user_id);
+      }
+    }
+
+    // Guard against double-charging: reject if this customer already has an
+    // active or trialing subscription — manage/upgrade goes through the portal.
+    if (customerId) {
+      const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 10 });
+      const live = subs.data.some(s => ["active", "trialing", "past_due"].includes(s.status));
+      if (live) {
+        return new Response(
+          JSON.stringify({ error: "You already have an active subscription. Use Manage Billing to change your plan." }),
+          { status: 409, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
       }
     }
 
