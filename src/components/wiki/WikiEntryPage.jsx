@@ -36,8 +36,11 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
   const [importDone, setImportDone] = useState(false);
 
   useEffect(() => {
+    let alive = true;
+    setLoading(true); setNotFound(false);
     (async () => {
       const e = await getWikiEntryBySlug(slug);
+      if (!alive) return; // stale response — user already navigated to another slug
       if (!e) { setNotFound(true); }
       else {
         setEntry(e);
@@ -46,6 +49,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
       }
       setLoading(false);
     })();
+    return () => { alive = false; };
   }, [slug]);
 
   // ── Admin editing ──────────────────────────────────────────────────────────
@@ -56,7 +60,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
   };
   const cancelEdit = () => { setEditingField(null); setEditValue(""); setSaveErr(""); };
   const doSave = async () => {
-    if (!profile || !editingField) return;
+    if (!isAdmin || !profile || !editingField) return;
     setSaving(true); setSaveErr("");
     try {
       const oldValue = revData[editingField] ?? entry?.[editingField] ?? "";
@@ -68,14 +72,30 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
   };
 
   // ── Import to garage ───────────────────────────────────────────────────────
+  // Old revisions (published before the strip-list was tightened) can still
+  // contain the publisher's private photo URLs and job data — never copy those
+  // into the importer's machine.
+  const IMPORT_STRIP = [
+    "id","userId","companyId","clientId","createdAt","updatedAt",
+    "photos","iPPhotos","ePPhotos","jobPhotos",
+    "parts","timeLog","jobTimers","dueDate",
+    "lastServiceDate","lastServiceOdo","lastServiceNotes",
+    "status","source","rage","notes",
+    "submittedToWiki","wikiMachineId","tileFields","tileColors","expandFields",
+  ];
   const doImport = async () => {
     setImporting(true);
     try {
       const { make, model, type, ...specOnly } = revData;
+      IMPORT_STRIP.forEach(k => { delete specOnly[k]; });
+      if (specOnly.carbSpec && typeof specOnly.carbSpec === "object") {
+        const { gasketPhotos, purchaseLinks, ...carbRest } = specOnly.carbSpec;
+        specOnly.carbSpec = carbRest;
+      }
       await upsertMachine({
         make: entry.make,
         model: entry.model,
-        type: entry.type,
+        type: typeof entry.type === "string" ? entry.type : "",
         ...specOnly,
       });
       setImportDone(true);

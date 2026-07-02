@@ -20,21 +20,25 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
   const [recent, setRecent] = useState([]);
   const [searching, setSearching] = useState(false);
 
+  const reqSeq = React.useRef(0);
+
   useEffect(() => {
     if (!profile?.id) return;
-    searchWiki("", profile.id).then(r => setRecent(r || []));
+    searchWiki("").then(r => setRecent(r || []));
   }, [profile?.id]);
 
   useEffect(() => {
     if (!query.trim()) { setResults([]); return; }
     const t = setTimeout(async () => {
+      const seq = ++reqSeq.current;
       setSearching(true);
-      const r = await searchWiki(query, profile?.id);
+      const r = await searchWiki(query);
+      if (seq !== reqSeq.current) return; // stale response for an older query
       setResults(r || []);
       setSearching(false);
     }, 300);
-    return () => clearTimeout(t);
-  }, [query, profile?.id]);
+    return () => { clearTimeout(t); reqSeq.current++; };
+  }, [query]);
 
   const list = query.trim() ? results : recent;
 
