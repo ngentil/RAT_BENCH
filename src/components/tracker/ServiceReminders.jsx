@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL } from '../ui/shared';
 import { mIcon, getStorageStatus } from '../../lib/helpers';
+import { daysSinceLocal } from '../../lib/dates';
+import { toastError } from '../../lib/toast';
 import UpgradeBanner from '../ui/UpgradeBanner';
 import { upsertMachine } from '../../lib/db';
 import { canUse, effectiveTier } from '../../lib/gates';
@@ -40,7 +42,7 @@ function getMachineReminders(machine) {
         items.push({ label, current: "no service date set", due: "every " + n + "mo", pct: 0, overdue: false, dueSoon: false, noDate: true });
         return;
       }
-      const daysSince = Math.floor((Date.now() - new Date(lastDate)) / 86400000);
+      const daysSince = daysSinceLocal(lastDate) ?? 0;
       const dueDays   = n * 30;
       const pct       = Math.min(daysSince / dueDays, 1.2);
       const overdue   = daysSince >= dueDays;
@@ -66,9 +68,14 @@ function ServiceModal({ machine, onSave, onClose }) {
 
   const save = async () => {
     setSaving(true);
-    await onSave({ lastServiceDate: date, lastServiceOdo: parseFloat(odo) || 0, lastServiceNotes: notes });
+    try {
+      await onSave({ lastServiceDate: date, lastServiceOdo: parseFloat(odo) || 0, lastServiceNotes: notes });
+      onClose();
+    } catch (e) {
+      console.error("mark serviced:", e);
+      toastError("Didn't save — check connection and try again");
+    }
     setSaving(false);
-    onClose();
   };
 
   return (

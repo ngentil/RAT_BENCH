@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import QRCode from 'qrcode';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { FL, Empty } from '../ui/shared';
+import { parseNum } from '../../lib/helpers';
 import { getPref, savePref } from '../../lib/db/preferences';
 import { effectiveTier } from '../../lib/gates';
 import UpgradeBanner from '../ui/UpgradeBanner';
@@ -176,8 +177,10 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
     setF(p => ({ ...p, category: cat, unit: ud, spec: {} }));
   };
 
-  const margin = f.buyPrice && f.sellPrice
-    ? (((parseFloat(f.sellPrice) - parseFloat(f.buyPrice)) / parseFloat(f.sellPrice)) * 100).toFixed(0)
+  const _buy  = parseNum(f.buyPrice);
+  const _sell = parseNum(f.sellPrice);
+  const margin = _buy != null && _sell != null && _sell > 0
+    ? (((_sell - _buy) / _sell) * 100).toFixed(0)
     : null;
 
   const specFields  = tc.specs[f.category]  || [];
@@ -193,11 +196,12 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
         ...item,
         ...f,
         name:        f.name.trim(),
-        quantity:    parseFloat(f.quantity) || 0,
-        buyPrice:    f.buyPrice    !== '' ? parseFloat(f.buyPrice)    : null,
-        sellPrice:   f.sellPrice   !== '' ? parseFloat(f.sellPrice)   : null,
-        minQuantity: f.minQuantity !== '' ? parseFloat(f.minQuantity) : null,
-        maxQuantity: f.maxQuantity !== '' ? parseFloat(f.maxQuantity) : null,
+        // parseNum rejects Infinity/negatives and handles "$1,500" style input
+        quantity:    parseNum(f.quantity,    { min: 0 }) ?? 0,
+        buyPrice:    parseNum(f.buyPrice,    { min: 0 }),
+        sellPrice:   parseNum(f.sellPrice,   { min: 0 }),
+        minQuantity: parseNum(f.minQuantity, { min: 0 }),
+        maxQuantity: parseNum(f.maxQuantity, { min: 0 }),
         photos,
       });
       setSaving(false);
@@ -334,22 +338,31 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
   const catIcon  = tc2.icon[item.category]  || (tableType === 'part' ? '🔩' : '📦');
   const qColor   = qtyColor(item.quantity, item.minQuantity, item.maxQuantity);
   const badge    = qtyLabel(item.quantity, item.minQuantity, item.maxQuantity);
-  const margin   = item.buyPrice != null && item.sellPrice != null
+  const margin   = item.buyPrice != null && item.sellPrice != null && item.sellPrice > 0
     ? (((item.sellPrice - item.buyPrice) / item.sellPrice) * 100).toFixed(0) : null;
 
   const doAdjust = async sign => {
-    const d = parseFloat(delta);
-    if (!d || d <= 0) { setAdjErr('Enter a positive amount'); return; }
+    const d = parseNum(delta, { min: 0 });
+    if (d == null || d <= 0) { setAdjErr('Enter a positive amount'); return; }
+    if (sign < 0 && d > (Number(item.quantity) || 0)) { setAdjErr(`Only ${item.quantity || 0} in stock`); return; }
     setAdjErr('');
-    await onQtyChange(item.id, sign * d);
-    setDelta(''); setAdj(false);
+    try {
+      await onQtyChange(item.id, sign * d);
+      setDelta(''); setAdj(false);
+    } catch (e) {
+      setAdjErr(e?.message || 'Adjustment failed — check connection');
+    }
   };
 
   const doSet = async () => {
-    const nq = parseFloat(setVal);
-    if (isNaN(nq) || nq < 0) return;
-    await onQtyChange(item.id, nq - item.quantity);
-    setSetVal(''); setSetMode(false);
+    const nq = parseNum(setVal, { min: 0 });
+    if (nq == null) return;
+    try {
+      await onQtyChange(item.id, nq - item.quantity);
+      setSetVal(''); setSetMode(false);
+    } catch (e) {
+      setAdjErr(e?.message || 'Adjustment failed — check connection');
+    }
   };
 
   return (

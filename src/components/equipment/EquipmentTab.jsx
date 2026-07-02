@@ -57,7 +57,12 @@ function EquipmentForm({ item, onSave, onCancel }) {
   const save = async () => {
     if (!f.name.trim()) return;
     setSaving(true);
-    await onSave({ ...item, ...f, name: f.name.trim(), year: f.year ? parseInt(f.year) : null, hours: f.hours !== '' ? parseFloat(f.hours) : null });
+    try {
+      await onSave({ ...item, ...f, name: f.name.trim(), year: f.year ? parseInt(f.year) : null, hours: f.hours !== '' ? parseFloat(f.hours) : null });
+    } catch (e) {
+      console.error("equipment save:", e);
+      alert("Save failed — check connection and try again");
+    }
     setSaving(false);
   };
 
