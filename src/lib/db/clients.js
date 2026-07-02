@@ -52,12 +52,15 @@ export async function upsertClient(client) {
 }
 
 export async function deleteClientApi(id) {
+  let photos = [];
   try {
     const { data } = await supabase.from('clients').select('photos').eq('id', id).single();
-    (data?.photos || []).forEach(url => deletePhoto(url));
+    photos = data?.photos || [];
   } catch {}
+  // Row first — a failed delete must not leave the surviving client with 404 photos
   const { error } = await supabase.from("clients").delete().eq("id", id);
-  if (error) console.error("deleteClient:", error);
+  if (error) { console.error("deleteClient:", error); throw error; }
+  photos.forEach(url => deletePhoto(url));
 }
 
 // One-time migration: pushes any clients stored in localStorage up to Supabase.
