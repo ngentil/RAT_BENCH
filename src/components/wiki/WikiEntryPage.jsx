@@ -46,6 +46,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
         setEntry(e);
         setRevData(e.currentRevision?.data || {});
         incrementViewCount(e.id);
+        if (!embedded) document.title = `${e.make} ${e.model} — Rat Bench Wiki`;
       }
       setLoading(false);
     })();

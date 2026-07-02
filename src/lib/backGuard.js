@@ -53,10 +53,14 @@ export function installBackGuard() {
     if (isKnown(e.state)) return;
 
     if (warned) {
-      // Second back press within 2 s — let the browser navigate away / close app.
+      // Second back press within 2 s — actually leave. The pop that fired this
+      // handler only consumed our re-pushed sentinel (a same-document entry),
+      // so returning here would strand the user on the base entry and demand a
+      // third press. Go back once more to exit for real.
       warned = false;
       clearTimeout(timer);
       hideToast();
+      history.back();
       return;
     }
 

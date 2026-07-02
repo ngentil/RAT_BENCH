@@ -83,6 +83,8 @@ function App(){
     if(!session){
       setSession(null);setProfile(null);setMachines([]);setCompany(null);setClients([]);
       setVehicles([]);setEquipment([]);setTools([]);
+      // Reset preference sync so the next sign-in restores that user's prefs
+      setPrefsSynced(false);prefsSyncStartedRef.current=false;
       setAuthChecked(true);setProfileChecked(true);setInitializing(false);
       initializedRef.current=true;
       return;
@@ -195,9 +197,14 @@ function App(){
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'tab',tab); },[tab,prefsSynced,profile?.id]);
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'workshopTab',workshopTab); },[workshopTab,prefsSynced,profile?.id]);
 
+  // Ref guard: setPrefsSynced(true) lands asynchronously, so a profile refresh
+  // (e.g. the billing poll) mid-migration must not start a second migration or
+  // yank the user back to their saved tab.
+  const prefsSyncStartedRef=useRef(false);
   useEffect(()=>{
     if(!profile) return;
-    if(!prefsSynced){
+    if(!prefsSynced&&!prefsSyncStartedRef.current){
+      prefsSyncStartedRef.current=true;
       const prefs=profile.preferences||{};
       const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue"]);
       if(prefs.tab&&prefs.tab!=="users"){
@@ -215,7 +222,7 @@ function App(){
     const wsDef=WORKSHOP_TABS.find(t=>t.id===workshopTab);
     if(wsDef?.enthusiastOnly&&tier==="free") setWorkshopTab("parts");
     const wsVis=profile?.tab_order?.workshop_visible;
-    if(wsVis&&!wsVis.includes(workshopTab)){
+    if(Array.isArray(wsVis)&&!wsVis.includes(workshopTab)){
       const first=wsVis.find(id=>WORKSHOP_TABS.some(t=>t.id===id&&!(t.enthusiastOnly&&tier==="free")));
       if(first) setWorkshopTab(first);
     }
@@ -279,9 +286,20 @@ function App(){
     if(!company?.id) return;
     const channel=supabase
       .channel("machines-sync")
-      .on("postgres_changes",{event:"UPDATE",schema:"public",table:"machines",filter:`company_id=eq.${company.id}`},(payload)=>{
-        if(payload.new.company_id!==company.id) return;
-        setMachines(prev=>prev.map(m=>m.id===payload.new.id?fromDb(payload.new):m));
+      .on("postgres_changes",{event:"*",schema:"public",table:"machines",filter:`company_id=eq.${company.id}`},(payload)=>{
+        if(payload.eventType==="DELETE"){
+          const gone=payload.old?.id;
+          if(gone) setMachines(prev=>prev.filter(m=>m.id!==gone));
+          return;
+        }
+        const row=payload.new;
+        if(!row||row.company_id!==company.id) return;
+        const mapped=fromDb(row);
+        // UPDATE for a known row replaces it; INSERT (or update for an unseen
+        // row) prepends so teammates' new machines appear without a reload
+        setMachines(prev=>prev.some(m=>m.id===row.id)
+          ?prev.map(m=>m.id===row.id?mapped:m)
+          :[mapped,...prev]);
       })
       .subscribe();
     return ()=>supabase.removeChannel(channel);
@@ -372,7 +390,7 @@ function App(){
         </div>
       ))}
       <div style={{background:SURF,borderBottom:`3px solid ${tierGlow?.color||ACC}`,boxShadow:tierGlow?`0 2px 8px ${tierGlow.color}99, 0 4px 24px ${tierGlow.color}55`:"none",padding:"12px 18px",display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:10}}>
-        <a href="https://ratbench.net" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
+        <a href="/" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
           {company?.logo
             ? <img src={company.logo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD}}/>
             : <span style={{fontSize:20}}>🐀</span>}
@@ -433,10 +451,12 @@ function App(){
   );
 }
 function AppRouter() {
-  const path = window.location.pathname;
-  if (path === '/terms')          return <TermsPage />;
-  if (path === '/privacy')        return <PrivacyPage />;
-  if (path === '/data-retention') return <DataRetentionPage />;
+  // Normalize trailing slashes and case so /terms/ and /Terms still match.
+  const path = window.location.pathname.replace(/\/+$/, '').toLowerCase() || '/';
+  const backToApp = () => { window.location.href = '/'; };
+  if (path === '/terms')          return <TermsPage onClose={backToApp} />;
+  if (path === '/privacy')        return <PrivacyPage onClose={backToApp} />;
+  if (path === '/data-retention') return <DataRetentionPage onClose={backToApp} />;
   return <App />;
 }
 export default AppRouter;

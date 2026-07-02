@@ -76,7 +76,9 @@ function WikiAutocomplete({ value, onChange, fetchSuggestions, placeholder, styl
 
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
   const e=existing||{};
-  const isNew=!existing;
+  // "New" includes template prefills (no id yet) — only true edits of a saved
+  // machine start with spec sections collapsed.
+  const isNew=!e.id;
   const [showFormGuide,setShowFormGuide]=useState(()=>!getPref(profile,'rat_form_tut',false));
   const dismissFormGuide=()=>{setShowFormGuide(false);savePref(profile?.id,'rat_form_tut',true);};
   const firstAdd=showFormGuide&&!existing;

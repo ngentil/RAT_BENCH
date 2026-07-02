@@ -221,8 +221,10 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
     }catch(e){alert("Save failed: "+e.message);}
   };
   const deleteM=async m=>{
-    await deleteMachineApi(m.id);
-    setMachines(prev=>prev.filter(x=>x.id!==m.id));
+    try{
+      await deleteMachineApi(m.id);
+      setMachines(prev=>prev.filter(x=>x.id!==m.id));
+    }catch(e){alert("Delete failed: "+e.message);}
   };
 
   const onDragStart=(e,idx)=>{setDragIdx(idx);e.dataTransfer.effectAllowed="move";};
@@ -245,6 +247,9 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         setPrefill({name:data.name,type:data.type||"",make:data.make||"",model:data.model||"",year:data.year||"",desc:data.notes||""});
         setShowAdd(true);
       }
+      onTemplateClear?.();
+    }).catch(e=>{
+      console.error("template fetch:",e);
       onTemplateClear?.();
     });
   },[templateMachineId]);
