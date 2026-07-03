@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 import { updateProfile } from '../../lib/db';
+import { getMyContributionStats } from '../../lib/wiki';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
 import { Tooltip } from '../ui/shared';
 const TIER_LABEL = { enthusiast:"Enthusiast", team:"Team", business:"Business" };
@@ -27,6 +28,14 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
   const [pwErr,setPwErr]=useState(""),   [pwSaved,setPwSaved]=useState(false),   [pwBusy,setPwBusy]=useState(false);
   const [applyBusy,setApplyBusy]=useState(false);
   const [applyMsg,setApplyMsg]=useState(null);
+  const [contrib,setContrib]=useState(null);
+
+  useEffect(()=>{
+    if(isGuest||!session?.user?.id) return;
+    let alive=true;
+    getMyContributionStats(session.user.id).then(s=>{ if(alive) setContrib(s); });
+    return ()=>{alive=false;};
+  },[isGuest,session?.user?.id]);
 
   const pendingValid = profile?.pending_code && profile?.pending_code_expires_at
     && new Date(profile.pending_code_expires_at) > new Date();
@@ -115,6 +124,22 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
         {err&&<div style={{fontSize:10,color:RED,marginBottom:10}}>{err}</div>}
         {saved&&<div style={{fontSize:10,color:GRN,marginBottom:10}}>✓ Saved</div>}
         <button onClick={saveProfile} disabled={saving} style={{...btnA,...sm,opacity:saving?0.6:1}}>{saving?"Saving…":"Save Profile"}</button>
+        {contrib&&(contrib.entries>0||contrib.edits>0)&&(
+          <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid "+BRD}}>
+            <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Wiki Contributions</div>
+            <div style={{display:"flex",gap:10}}>
+              <div style={{flex:1,background:ACC+"0d",border:"1px solid "+ACC+"33",borderRadius:2,padding:"10px 12px"}}>
+                <div style={{fontSize:18,fontWeight:700,color:ACC}}>{contrib.entries}</div>
+                <div style={{fontSize:8,color:MUT,textTransform:"uppercase",letterSpacing:"0.08em"}}>machine{contrib.entries!==1?"s":""} enriched</div>
+              </div>
+              <div style={{flex:1,background:ACC+"0d",border:"1px solid "+ACC+"33",borderRadius:2,padding:"10px 12px"}}>
+                <div style={{fontSize:18,fontWeight:700,color:ACC}}>{contrib.edits}</div>
+                <div style={{fontSize:8,color:MUT,textTransform:"uppercase",letterSpacing:"0.08em"}}>spec edit{contrib.edits!==1?"s":""}</div>
+              </div>
+            </div>
+            <div style={{fontSize:8,color:MUT,marginTop:8,lineHeight:1.6}}>Thanks for helping build the community reference. 🔧</div>
+          </div>
+        )}
       </div>
 
       {!isGuest&&<div style={{...sec,...secSep}}>
