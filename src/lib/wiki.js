@@ -290,13 +290,22 @@ export async function getWikiModels(make, query) {
     .slice(0, 15);
 }
 
-export async function searchWiki(query) {
-  // Sanitize at the sink: tokens are interpolated into a PostgREST .or()
-  // filter below, where commas/parens/wildcards change filter semantics.
-  const tokens = query.trim()
+// Tokenize a search query for fuzzy matching.
+// Splits on whitespace AND at letter↔digit boundaries so "ms441", "ms 441",
+// and "MS441" all yield ["ms","441"] and match a stored "MS 441" (or "MS441",
+// or slug "…-ms-441"). Also sanitizes each token — they're interpolated into a
+// PostgREST .or() filter where commas/parens/wildcards change filter semantics.
+export function tokenizeSearch(query) {
+  return String(query || "").trim()
     .split(/\s+/)
-    .map(t => t.replace(/[^a-zA-Z0-9\-]/g, ''))
-    .filter(t => /^[a-zA-Z0-9-]+$/.test(t));
+    .map(t => t.replace(/[^a-zA-Z0-9\-]/g, ""))
+    // "gx200" → ["gx","200"]; a run with no letter/digit (e.g. "-") drops out
+    .flatMap(t => t.match(/[a-zA-Z]+|\d+/g) || [])
+    .filter(t => /^[a-zA-Z0-9]+$/.test(t));
+}
+
+export async function searchWiki(query) {
+  const tokens = tokenizeSearch(query);
 
   const base = () => supabase.from("wiki_entries")
     .select("id,slug,make,model,type,view_count")
