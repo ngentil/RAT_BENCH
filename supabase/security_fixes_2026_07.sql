@@ -28,6 +28,17 @@ CREATE POLICY cm_manage_update ON company_members
 -- rpc_leave_company so ghost permissions and stale profile.company_id
 -- can't be left behind.
 
+-- Drift cleanup (found in prod, never in the repo): legacy permissive policies
+-- that OR-override the hardening above. members_insert let any authenticated
+-- user insert themselves into ANY company as ANY role (incl. owner);
+-- members_delete let a member DELETE their own row directly, bypassing
+-- rpc_leave_company's cleanup — the exact hole cm_leave was removed to close.
+-- All membership writes go through SECURITY DEFINER RPCs, so none of these are
+-- needed.
+DROP POLICY IF EXISTS members_insert ON company_members;
+DROP POLICY IF EXISTS members_delete ON company_members;
+DROP POLICY IF EXISTS members_select ON company_members;
+
 -- ── 2. Provisioned-machine helpers: scope company grants to live membership ──
 -- Permissions granted through a company stop applying the moment the user
 -- leaves (or is removed from) that company, even if the permission row was
