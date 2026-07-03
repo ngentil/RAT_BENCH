@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
-import { searchWiki } from '../../lib/wiki';
+import { searchWiki, getWikiStats, getRecentWikiEntries } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 
 function hl(text, tokens) {
@@ -17,15 +17,20 @@ function hl(text, tokens) {
 function WikiHomePage({ onSelect, embedded = false, profile }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
-  const [recent, setRecent] = useState([]);
+  const [recent, setRecent] = useState([]);        // most-viewed default list
+  const [recentlyAdded, setRecentlyAdded] = useState([]);
+  const [stats, setStats] = useState(null);
   const [searching, setSearching] = useState(false);
 
   const reqSeq = React.useRef(0);
 
+  // Load the default discovery view for EVERYONE (incl. logged-out visitors on
+  // the wiki subdomain) — no profile gate.
   useEffect(() => {
-    if (!profile?.id) return;
     searchWiki("").then(r => setRecent(r || []));
-  }, [profile?.id]);
+    getRecentWikiEntries(6).then(r => setRecentlyAdded(r || []));
+    getWikiStats().then(setStats);
+  }, []);
 
   useEffect(() => {
     if (!query.trim()) { setResults([]); return; }
@@ -40,7 +45,10 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
     return () => { clearTimeout(t); reqSeq.current++; };
   }, [query]);
 
-  const list = query.trim() ? results : recent;
+  // On the default view, drop entries already shown in the "Recently added"
+  // strip so the "Most viewed" list below it doesn't repeat them.
+  const recentIds = new Set(recentlyAdded.map(e => e.id));
+  const list = query.trim() ? results : recent.filter(e => !recentIds.has(e.id));
 
   const tokens = query.trim().split(/\s+/).map(t => t.replace(/[^a-zA-Z0-9\-]/g, '')).filter(Boolean);
 
@@ -77,10 +85,30 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
     />
   );
 
+  const isDefault = !query.trim();
+  const secLabel = t => (
+    <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, margin: "4px 0 10px" }}>{t}</div>
+  );
+  // Headline social proof — how much community knowledge lives here.
+  const statsLine = stats && stats.entries > 0 && (
+    <div style={{ fontSize: 10, color: MUT, marginBottom: 14, letterSpacing: "0.04em" }}>
+      <span style={{ color: ACC, fontWeight: 700 }}>{stats.entries.toLocaleString()}</span> machine{stats.entries !== 1 ? "s" : ""} documented
+      {stats.contributions > 0 && <> · <span style={{ color: ACC, fontWeight: 700 }}>{stats.contributions.toLocaleString()}</span> contribution{stats.contributions !== 1 ? "s" : ""}</>}
+    </div>
+  );
+  // "Recently added" strip, shown only on the default (no-query) view.
+  const recentStrip = isDefault && recentlyAdded.length > 0 && (
+    <div style={{ marginBottom: 18 }}>
+      {secLabel("Recently added")}
+      {recentlyAdded.map(e => <EntryRow key={e.id} e={e} />)}
+    </div>
+  );
+
   if (embedded) {
     return (
       <div style={{ padding: "4px 0" }}>
         {searchBox}
+        {statsLine}
         {searching && <div style={{ fontSize: 9, color: MUT, marginBottom: 10, letterSpacing: "0.06em" }}>Searching…</div>}
         {list.length === 0 && !searching && (
           <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "32px 0" }}>
@@ -88,6 +116,8 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
             {query.trim() ? "No results for that query." : "No wiki entries yet."}
           </div>
         )}
+        {recentStrip}
+        {list.length > 0 && isDefault && secLabel("Most viewed")}
         {list.map(e => <EntryRow key={e.id} e={e} />)}
       </div>
     );
@@ -103,12 +133,15 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
       />
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px" }}>
         {searchBox}
+        {statsLine}
         {searching && <div style={{ fontSize: 10, color: MUT, marginBottom: 12 }}>Searching…</div>}
         {list.length === 0 && !searching && (
           <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>
             {query.trim() ? "No results." : "No wiki entries yet."}
           </div>
         )}
+        {recentStrip}
+        {list.length > 0 && isDefault && secLabel("Most viewed")}
         {list.map(e => <EntryRow key={e.id} e={e} />)}
       </div>
     </div>

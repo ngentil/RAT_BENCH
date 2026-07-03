@@ -330,6 +330,46 @@ export async function searchWiki(query) {
   return [...broad].sort((a, b) => score(b) - score(a) || b.view_count - a.view_count);
 }
 
+// ── Community stats ───────────────────────────────────────────────────────────
+
+// Wiki-wide headline numbers for the discovery home.
+export async function getWikiStats() {
+  const [{ count: entries }, { count: contributors }] = await Promise.all([
+    supabase.from("wiki_entries").select("id", { count: "exact", head: true }).eq("is_sample", false),
+    supabase.from("wiki_contributions").select("user_id", { count: "exact", head: true }),
+  ]);
+  return { entries: entries || 0, contributions: contributors || 0 };
+}
+
+// Newest entries first — for a "recently added" strip.
+export async function getRecentWikiEntries(limit = 8) {
+  const { data } = await supabase.from("wiki_entries")
+    .select("id,slug,make,model,type,view_count,created_at")
+    .eq("is_sample", false)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return data || [];
+}
+
+// How many distinct mechanics have contributed to an entry (social proof).
+export async function getEntryContributorCount(entryId) {
+  const { data } = await supabase.from("wiki_contributions")
+    .select("user_id").eq("entry_id", entryId);
+  if (!data) return 0;
+  return new Set(data.map(r => r.user_id).filter(Boolean)).size;
+}
+
+// A user's own contribution tally — surfaced on their profile.
+export async function getMyContributionStats(userId) {
+  if (!userId) return { entries: 0, edits: 0 };
+  const [{ data: contribs }, { count: edits }] = await Promise.all([
+    supabase.from("wiki_contributions").select("entry_id").eq("user_id", userId),
+    supabase.from("wiki_revisions").select("id", { count: "exact", head: true }).eq("edited_by", userId),
+  ]);
+  const entries = new Set((contribs || []).map(r => r.entry_id).filter(Boolean)).size;
+  return { entries, edits: edits || 0 };
+}
+
 const _viewedThisSession = new Set();
 
 export async function incrementViewCount(entryId) {

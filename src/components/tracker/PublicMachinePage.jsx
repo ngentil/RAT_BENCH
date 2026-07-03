@@ -27,7 +27,10 @@ export default function PublicMachinePage({ machineId }) {
 
   useEffect(() => {
     if (!machine) return;
-    QRCode.toDataURL('https://ratbench.net', {
+    // Encode THIS machine's public page so a scanned QR shares the machine,
+    // not the generic homepage.
+    const shareUrl = `${window.location.origin}/m/${machine.id}`;
+    QRCode.toDataURL(shareUrl, {
       width: 120,
       margin: 1,
       color: { dark: '#00ff88', light: '#111111' },
@@ -111,7 +114,7 @@ export default function PublicMachinePage({ machineId }) {
                 {qrDataUrl && (
                   <div style={{ flexShrink: 0, textAlign: "center" }}>
                     <img src={qrDataUrl} alt="QR code" style={{ width: 80, height: 80, display: "block", border: "1px solid " + BRD, borderRadius: 2 }} />
-                    <div style={{ fontSize: 7, color: MUT, marginTop: 4, letterSpacing: "0.08em" }}>ratbench.net</div>
+                    <div style={{ fontSize: 7, color: MUT, marginTop: 4, letterSpacing: "0.08em" }}>scan to view</div>
                   </div>
                 )}
                 <div style={{ flex: 1 }}>

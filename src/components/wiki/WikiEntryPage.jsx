@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
-import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry } from '../../lib/wiki';
+import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
 
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
@@ -24,6 +24,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
   const [revData, setRevData] = useState({});
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [contributors, setContributors] = useState(0);
 
   // Admin field editing
   const [editingField, setEditingField] = useState(null);
@@ -46,6 +47,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
         setEntry(e);
         setRevData(e.currentRevision?.data || {});
         incrementViewCount(e.id);
+        getEntryContributorCount(e.id).then(n => { if (alive) setContributors(n); });
         if (!embedded) document.title = `${e.make} ${e.model} — Rat Bench Wiki`;
       }
       setLoading(false);
@@ -201,6 +203,13 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
             {rev?.edit_summary && rev.edit_summary !== 'Updated specs' && (
               <span style={{ opacity: 0.7 }}> · {rev.edit_summary}</span>
             )}
+          </div>
+        )}
+
+        {/* Social proof — distinct mechanics who've contributed */}
+        {contributors > 0 && (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 8, color: ACC, background: ACC + "11", border: "1px solid " + ACC + "33", borderRadius: 2, padding: "3px 8px", marginBottom: 14, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>
+            ✓ Specs confirmed by {contributors} mechanic{contributors !== 1 ? "s" : ""}
           </div>
         )}
 
