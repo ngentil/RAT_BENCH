@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
-import { searchWiki, getWikiStats, getRecentWikiEntries } from '../../lib/wiki';
+import { searchWiki, getWikiStats, getRecentWikiEntries, tokenizeSearch } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 
 function hl(text, tokens) {
@@ -50,7 +50,9 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
   const recentIds = new Set(recentlyAdded.map(e => e.id));
   const list = query.trim() ? results : recent.filter(e => !recentIds.has(e.id));
 
-  const tokens = query.trim().split(/\s+/).map(t => t.replace(/[^a-zA-Z0-9\-]/g, '')).filter(Boolean);
+  // Same boundary-splitting tokenizer as the search itself, so "ms441"
+  // highlights "ms" and "441" inside "MS 441".
+  const tokens = tokenizeSearch(query);
 
   const EntryRow = ({ e }) => {
     const slugMatchOnly = tokens.length > 0
