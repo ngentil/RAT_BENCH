@@ -16,16 +16,19 @@ function WikiAutocomplete({ value, onChange, fetchSuggestions, placeholder, styl
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState(-1);
   const containerRef = React.useRef();
+  const reqSeq = React.useRef(0);
 
   React.useEffect(() => {
     if (!value?.trim()) { setSuggestions([]); setOpen(false); return; }
     const t = setTimeout(async () => {
+      const seq = ++reqSeq.current;
       const results = await fetchSuggestions(value);
+      if (seq !== reqSeq.current) return; // stale response — a newer request superseded it
       setSuggestions(results);
       setOpen(results.length > 0);
       setActive(-1);
     }, 200);
-    return () => clearTimeout(t);
+    return () => { clearTimeout(t); reqSeq.current++; };
   }, [value]);
 
   React.useEffect(() => {
@@ -73,7 +76,9 @@ function WikiAutocomplete({ value, onChange, fetchSuggestions, placeholder, styl
 
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
   const e=existing||{};
-  const isNew=true;
+  // "New" includes template prefills (no id yet) — only true edits of a saved
+  // machine start with spec sections collapsed.
+  const isNew=!e.id;
   const [showFormGuide,setShowFormGuide]=useState(()=>!getPref(profile,'rat_form_tut',false));
   const dismissFormGuide=()=>{setShowFormGuide(false);savePref(profile?.id,'rat_form_tut',true);};
   const firstAdd=showFormGuide&&!existing;
@@ -903,7 +908,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
   };
 
   return (
-    <div style={ovly} onClick={onClose}>
+    <div style={ovly} onClick={()=>{if(window.confirm("Close without saving? Any changes will be lost."))onClose();}}>
       <div style={mdl} onClick={ev=>ev.stopPropagation()}>
         <div style={mdlH}>
           <b style={{fontSize:14,textTransform:"uppercase"}}>{existing?"Edit Machine":"Add Machine"}</b>

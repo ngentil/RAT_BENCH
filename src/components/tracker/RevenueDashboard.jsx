@@ -5,9 +5,32 @@ import TabGuide from '../ui/TabGuide';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { getPref } from '../../lib/db/preferences';
 import { mIcon, getClosedBookingFee } from '../../lib/helpers';
+import { parseLocalDate, endOfLocalDay } from '../../lib/dates';
+import { getTiers } from '../../lib/storageTiers';
 import { getClosedBookings } from '../../lib/db/bookings';
 
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+// Shared period filter. "week" = calendar week from Monday 00:00 local;
+// custom bounds parse as LOCAL days (date-only strings parse as UTC natively,
+// which excluded same-day entries for anyone east of UTC).
+function inPeriod(dateStr, period, customFrom, customTo, now) {
+  if (period === "all") return true;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return false;
+  if (period === "week") {
+    const dow = (now.getDay() + 6) % 7; // Monday = 0
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
+    return d >= start && d <= now;
+  }
+  if (period === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  if (period === "custom") {
+    if (customFrom) { const f = parseLocalDate(customFrom); if (f && d < f) return false; }
+    if (customTo)   { const t = endOfLocalDay(customTo);    if (t && d > t) return false; }
+    return true;
+  }
+  return true;
+}
 
 function fmtHrs(secs) {
   const h = Math.floor(secs / 3600);
@@ -50,24 +73,22 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
      .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt)),
   [machines]);
 
-  const now = new Date();
+  // Re-evaluate period windows every minute so a dashboard left open doesn't
+  // show stale week/month boundaries.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const iv = setInterval(() => setNowTick(Date.now()), 60000);
+    return () => clearInterval(iv);
+  }, []);
+  const now = new Date(nowTick);
+
   const filtered = useMemo(() => {
     if (isFree) return [];
-    return allEntries.filter(e => {
-      const d = new Date(e.completedAt);
-      if (period === "week")  return (now - d) <= 7 * 86400000;
-      if (period === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      if (period === "custom") {
-        if (customFrom && d < new Date(customFrom)) return false;
-        if (customTo   && d > new Date(customTo + "T23:59:59")) return false;
-        return true;
-      }
-      return true;
-    });
-  }, [allEntries, period, customFrom, customTo, isFree]);
+    return allEntries.filter(e => inPeriod(e.completedAt, period, customFrom, customTo, now));
+  }, [allEntries, period, customFrom, customTo, isFree, nowTick]);
 
-  const rate       = company?.hourly_rate || 0;
-  const taxRate    = company?.tax_rate || 0;
+  const rate       = parseFloat(company?.hourly_rate) || 0;
+  const taxRate    = parseFloat(company?.tax_rate) || 0;
   const taxLabel   = company?.tax_label || "Tax";
   const totalSecs  = filtered.reduce((s, e) => s + (e.seconds || 0), 0);
   const totalHrs   = totalSecs / 3600;
@@ -79,48 +100,35 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
     machines.forEach(m => {
       (m.parts || []).forEach(p => {
         const usedAt = p.usedAt || p.addedAt;
-        if (!usedAt) return;
-        const d = new Date(usedAt);
-        const now = new Date();
-        if (period === "week"  && (now - d) > 7 * 86400000) return;
-        if (period === "month" && (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear())) return;
-        if (period === "custom") {
-          if (customFrom && d < new Date(customFrom)) return;
-          if (customTo   && d > new Date(customTo + "T23:59:59")) return;
-        }
-        rev  += (parseFloat(p.sellPrice) || 0) * (Number(p.qty) || 1);
-        cost += (parseFloat(p.buyPrice)  || 0) * (Number(p.qty) || 1);
+        // Undated legacy parts can't be placed in a window, but they belong in All Time
+        if (usedAt) { if (!inPeriod(usedAt, period, customFrom, customTo, now)) return; }
+        else if (period !== "all") return;
+        const qty = (p.qty == null || p.qty === '') ? 1 : (Number(p.qty) || 0);
+        rev  += (parseFloat(p.sellPrice) || 0) * qty;
+        cost += (parseFloat(p.buyPrice)  || 0) * qty;
       });
     });
     return { partsRev: rev, partsCost: cost };
-  }, [machines, period, customFrom, customTo, isFree]);
+  }, [machines, period, customFrom, customTo, isFree, nowTick]);
 
   const filteredBookings = useMemo(() => {
     if (isFree || !storagePolicyEnabled) return [];
-    const n = new Date();
-    return closedBookings.filter(b => {
-      const d = new Date(b.collected_at);
-      if (period === "week")   return (n - d) <= 7 * 86400000;
-      if (period === "month")  return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
-      if (period === "custom") {
-        if (customFrom && d < new Date(customFrom)) return false;
-        if (customTo   && d > new Date(customTo + "T23:59:59")) return false;
-        return true;
-      }
-      return true;
-    });
-  }, [closedBookings, period, customFrom, customTo, isFree, storagePolicyEnabled]);
+    return closedBookings.filter(b => inPeriod(b.collected_at, period, customFrom, customTo, now));
+  }, [closedBookings, period, customFrom, customTo, isFree, storagePolicyEnabled, nowTick]);
+
+  // Same tiers the customer was actually charged with — not the defaults
+  const activeTiers = useMemo(() => getTiers(profile?.storage_tiers), [profile?.storage_tiers]);
 
   const { storageRev, storageByMachineId } = useMemo(() => {
     let rev = 0;
     const byMid = {};
     for (const b of filteredBookings) {
-      const fee = getClosedBookingFee(b);
+      const fee = getClosedBookingFee(b, activeTiers);
       rev += fee;
       if (fee > 0) byMid[b.machine_id] = (byMid[b.machine_id] || 0) + fee;
     }
     return { storageRev: rev, storageByMachineId: byMid };
-  }, [filteredBookings]);
+  }, [filteredBookings, activeTiers]);
 
   const totalRevenue = labourRev + partsRev + storageRev;
   const tax          = totalRevenue * (taxRate / 100);

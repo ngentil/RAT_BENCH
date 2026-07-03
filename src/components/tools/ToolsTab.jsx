@@ -378,7 +378,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
     return () => { alive = false; };
   }, [userId]);
 
-  const totalValue  = useMemo(() => tools.reduce((s, t) => s + (t.purchasePrice || 0), 0), [tools]);
+  const totalValue  = useMemo(() => tools.reduce((s, t) => s + (parseFloat(t.purchasePrice) || 0), 0), [tools]);
   const loanedCount = useMemo(() => tools.filter(t => t.loanedTo).length, [tools]);
 
   const activeCats = useMemo(() => {

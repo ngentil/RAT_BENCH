@@ -10,17 +10,25 @@ function WikiHistoryPage({ slug, profile }) {
   const [reverting, setReverting] = useState(null); // rev id being reverted
   const [revertErr, setRevertErr] = useState("");
   const [revertOk, setRevertOk] = useState("");
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    let alive = true;
+    setLoading(true); setNotFound(false);
     (async () => {
       const e = await getWikiEntryBySlug(slug);
+      if (!alive) return;
       if (e) {
         setEntry(e);
         const r = await getWikiRevisions(e.id);
+        if (!alive) return;
         setRevs(r);
+      } else {
+        setNotFound(true);
       }
       setLoading(false);
     })();
+    return () => { alive = false; };
   }, [slug]);
 
   const doRevert = async (rev) => {
@@ -44,6 +52,13 @@ function WikiHistoryPage({ slug, profile }) {
   if (loading) return (
     <div style={{ minHeight: "100vh", background: BG, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ fontSize: 10, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Loading…</div>
+    </div>
+  );
+
+  if (notFound) return (
+    <div style={{ minHeight: "100vh", background: BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
+      <div style={{ fontSize: 11, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Entry not found.</div>
+      <a href="/" style={{ fontSize: 10, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>← Back to wiki</a>
     </div>
   );
 

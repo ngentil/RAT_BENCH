@@ -302,7 +302,7 @@ function normalizeSpeed(v) {
 function detectType(templateName, data, defaultType) {
   const t = templateName.toLowerCase();
   if (/chainsaw/i.test(t))                            return 'Chainsaw';
-  if (/outboard/i.test(t))                            return 'Outboard';
+  if (/outboard/i.test(t))                            return 'Outboard Motor';
   if (/lawn.?mow|riding.?mow|mower/i.test(t))        return 'Lawnmower';
   if (/generator/i.test(t))                           return 'Generator';
   if (/pressure|washer/i.test(t))                     return 'Pressure Washer';

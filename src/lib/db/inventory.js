@@ -109,12 +109,11 @@ export async function deleteInventoryItem(userId, itemId) {
 }
 
 // delta: negative to deduct (use), positive to restock
+// Throws on failure — callers roll back their optimistic updates.
 export async function adjustStock(userId, itemId, delta) {
-  try {
-    const { data, error } = await supabase.rpc('adjust_inventory_stock', { p_item_id: itemId, p_delta: delta });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-  } catch (e) { console.warn('adjustStock Supabase failed:', e); }
+  const { data, error } = await supabase.rpc('adjust_inventory_stock', { p_item_id: itemId, p_delta: delta });
+  if (error) { console.error('adjustStock:', error); throw error; }
+  if (data?.error) throw new Error(data.error);
   return getInventory(userId);
 }
 
@@ -152,7 +151,7 @@ export async function revokeInventoryPermission(itemId, userId) {
 
 export async function migrateLocalInventory(userId) {
   if (!userId) return;
-  const key = lsKey(userId);
+  const key = `rat_inventory_${userId}`;
   let local = [];
   try { local = JSON.parse(localStorage.getItem(key) || '[]'); } catch { return; }
   if (!local.length) return;

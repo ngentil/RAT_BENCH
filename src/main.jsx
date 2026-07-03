@@ -16,12 +16,15 @@ Sentry.init({
   integrations: [Sentry.browserTracingIntegration()],
 });
 
-const pathParts = window.location.pathname.split('/');
+const pathParts = window.location.pathname.split('/').map(p => { try { return decodeURIComponent(p); } catch { return p; } });
 const publicMachineId = pathParts[1] === 'm' && pathParts[2] ? pathParts[2] : null;
 const isWiki = window.location.hostname === "wiki.ratbench.net";
+// Legal pages are plain documents — hijacking Back with the exit toast there
+// traps users who arrived from the auth screen.
+const isLegalPage = ['/terms', '/privacy', '/data-retention'].includes(window.location.pathname.replace(/\/+$/, ''));
 
 // Install before React renders so the sentinel is at the bottom of the history stack.
-if (!isWiki && !publicMachineId) installBackGuard();
+if (!isWiki && !publicMachineId && !isLegalPage) installBackGuard();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

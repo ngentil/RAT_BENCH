@@ -3,6 +3,8 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col
 import { SL, FL, Empty } from '../ui/shared';
 import TabGuide from '../ui/TabGuide';
 import { mIcon, getStorageStatus, fmtMoney } from '../../lib/helpers';
+import { getTiers } from '../../lib/storageTiers';
+import { toastError } from '../../lib/toast';
 import { getPref } from '../../lib/db/preferences';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
 import { deletePhoto } from '../../lib/storage';
@@ -28,9 +30,9 @@ function escHtml(s) {
 }
 
 
-async function exportClientInvoice(client, linked, company, storagePolicyEnabled) {
-  const rate = company?.hourly_rate || 0;
-  const taxRate = company?.tax_rate || 0;
+async function exportClientInvoice(client, linked, company, storagePolicyEnabled, storageTiers) {
+  const rate = parseFloat(company?.hourly_rate) || 0;
+  const taxRate = parseFloat(company?.tax_rate) || 0;
   const taxLabel = company?.tax_label || "Tax";
   const currencySymbol = company?.currency || "$";
   const companyName = company?.name || "Repair Shop";
@@ -55,7 +57,7 @@ async function exportClientInvoice(client, linked, company, storagePolicyEnabled
     });
 
     (m.parts || []).forEach(p => {
-      const qty = Number(p.qty) || 1;
+      const qty = (p.qty == null || p.qty === '') ? 1 : (Number(p.qty) || 0);
       const sell = (parseFloat(p.sellPrice) || 0) * qty;
       const buy = (parseFloat(p.buyPrice) || 0) * qty;
       partsTotal += sell;
@@ -69,7 +71,8 @@ async function exportClientInvoice(client, linked, company, storagePolicyEnabled
   if (storagePolicyEnabled) {
     for (const m of linked) {
       const bk = await getActiveBooking(m.id);
-      const st = getStorageStatus(bk);
+      // Bill with the shop's configured tiers, not the defaults
+      const st = getStorageStatus(bk, storageTiers);
       if (st.active && st.accrued > 0) storageTotal += st.accrued;
     }
   }
@@ -107,6 +110,7 @@ async function exportClientInvoice(client, linked, company, storagePolicyEnabled
   </body></html>`;
 
   const w = window.open("", "_blank");
+  if (!w) { alert("Please allow popups to export."); return; }
   w.document.write(html);
   w.document.close();
 }
@@ -128,7 +132,10 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
     try {
       await upsertClient(c);
       setClients(prev => prev.map(x => x.id === c.id ? c : x));
-    } catch (e) { console.error("updateClient:", e); }
+    } catch (e) {
+      console.error("updateClient:", e);
+      toastError("Change didn't save — check connection");
+    }
   };
   const closeModal = () => { setEditing(null); setErr(""); setSaving(false); };
 
@@ -152,9 +159,9 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   const deleteClient = async (id) => {
     if (!confirm("Delete this client? Machines linked to them will be unlinked.")) return;
     const client = clients.find(c => c.id === id);
-    (client?.photos || []).forEach(url => deletePhoto(url));
     try {
-      await deleteClientApi(id);
+      // DB delete first — if it fails the client keeps their photos
+      await deleteClientApi(id); // handles its own photo cleanup after the row delete
       setClients(prev => prev.filter(c => c.id !== id));
       const toUnlink = machines.filter(m => m.clientId === id);
       for (const m of toUnlink) {
@@ -281,7 +288,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
                 )}
               </div>
               <div style={{ display: "flex", gap: 6, flexShrink: 0, marginLeft: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                {linked.length > 0 && <button onClick={() => exportClientInvoice(client, linked, company, storagePolicyEnabled)} style={{ ...btnG, ...sm }}>Invoice</button>}
+                {linked.length > 0 && <button onClick={() => exportClientInvoice(client, linked, company, storagePolicyEnabled, getTiers(profile?.storage_tiers))} style={{ ...btnG, ...sm }}>Invoice</button>}
                 <button onClick={() => openEdit(client)} style={{ ...btnG, ...sm }}>Edit</button>
                 <button onClick={() => deleteClient(client.id)} style={{ ...btnD }}>Del</button>
               </div>

@@ -44,7 +44,7 @@ async function run() {
   // Group by normalised make+model key
   const groups = {};
   for (const e of entries) {
-    const key = `${e.make.trim().toLowerCase()}|||${e.model.trim().toLowerCase()}`;
+    const key = `${(e.make || '').trim().toLowerCase()}|||${(e.model || '').trim().toLowerCase()}`;
     (groups[key] ??= []).push(e);
   }
 

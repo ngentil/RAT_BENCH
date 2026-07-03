@@ -1,3 +1,28 @@
+// The 13 outboard motor form fields, persisted together in the outboard_spec
+// jsonb column (mirrors the chipper_spec / stump_grinder_spec pattern).
+const OB_FIELDS = [
+  "obShaftLength", "obTransomHeight", "obTiltTrim", "obSteering",
+  "obPropPitch", "obPropDiameter", "obPropMaterial", "obGearRatio",
+  "obLowerUnitOilType", "obLowerUnitOilCapacity", "obAnodeMaterial",
+  "obBreakInHours", "obImpellerLastChanged",
+];
+
+function obSpecToDb(m) {
+  const spec = {};
+  let any = false;
+  for (const k of OB_FIELDS) {
+    if (m[k] != null && m[k] !== "") { spec[k] = m[k]; any = true; }
+  }
+  return any ? spec : null;
+}
+
+function obSpecFromDb(r) {
+  const spec = r.outboard_spec || {};
+  const out = {};
+  for (const k of OB_FIELDS) out[k] = spec[k] ?? "";
+  return out;
+}
+
 export function toDb(m) {
   return {
     id:                   m.id,
@@ -308,6 +333,12 @@ export function toDb(m) {
     carb_spec:            m.carbSpec || null,
     chipper_spec:         m.chipperSpec || null,
     stump_grinder_spec:   m.stumpGrinderSpec || null,
+    outboard_spec:        obSpecToDb(m),
+    due_date:             m.dueDate || null,
+    compression_ratio:    m.compressionRatio,
+    total_load_watts:     m.totalLoadWatts,
+    ground_contact_length:m.groundContactLength,
+    last_service_notes:   m.lastServiceNotes || null,
     job_timer:            m.jobTimers || [],
     time_log:             m.timeLog || [],
   };
@@ -624,13 +655,21 @@ export function fromDb(r) {
     carbSpec:          r.carb_spec || null,
     chipperSpec:       r.chipper_spec || null,
     stumpGrinderSpec:  r.stump_grinder_spec || null,
+    ...obSpecFromDb(r),
+    dueDate:           r.due_date || "",
+    compressionRatio:  r.compression_ratio,
+    totalLoadWatts:    r.total_load_watts,
+    groundContactLength: r.ground_contact_length,
+    lastServiceNotes:  r.last_service_notes || "",
     jobTimers:         (() => {
       const jt = r.job_timer;
       if (!jt) return [];
       if (Array.isArray(jt)) return jt;
-      // Legacy single-object format — migrate if non-idle
+      // Legacy single-object format — migrate if non-idle.
+      // Id must be stable across reads or repeated load-save cycles rewrite
+      // the timer's identity, so derive it from the machine id.
       if (jt.status && jt.status !== "idle") {
-        return [{ ...jt, id: jt.id || crypto.randomUUID(), startedBy: jt.startedBy || null }];
+        return [{ ...jt, id: jt.id || `legacy-${r.id}`, startedBy: jt.startedBy || null }];
       }
       return [];
     })(),

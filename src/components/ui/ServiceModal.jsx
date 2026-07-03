@@ -4,18 +4,24 @@ import { ACC, MUT, BRD, SURF, TXT, inp, sel, txa, btnA, btnG, col, dvdr, sm, ovl
 import { SVC_CATEGORIES } from '../../lib/constants';
 import { FL } from './shared';
 import { mIcon, nowL, uid } from '../../lib/helpers';
+import { toLocalInputValue, localInputToISO } from '../../lib/dates';
+import { toastError } from '../../lib/toast';
 import { uploadPhoto, deletePhoto } from '../../lib/storage';
 import PhotoAdder from './PhotoAdder';
 // ── Service Modal ─────────────────────────────────────────────────────────────
 function ServiceModal({machine,existing,onSave,onClose}){
   const e=existing||{};
-  const [ca,setCa]=useState(e.completedAt||nowL());
+  // DB values are full ISO+offset strings — convert to local datetime-local format
+  const [ca,setCa]=useState(toLocalInputValue(e.completedAt)||nowL());
   const [types,setTy]=useState(e.types||[]);
   const [notes,setNo]=useState(e.notes||"");
   const [pp,setPp]=useState(e.plugPhoto||null);
   const [jp,setJp]=useState(e.jobPhotos||[]);
   const [pb,setPb]=useState(false);
   const [saving,setSaving]=useState(false);
+  // Photos replaced/removed during this edit — only deleted from storage after
+  // a successful save, so Cancel never breaks an already-persisted record.
+  const removedPhotos=React.useRef([]);
   const [openCats,setOpenCats]=useState({general:true});
   const tog=t=>setTy(prev=>prev.includes(t)?prev.filter(x=>x!==t):[...prev,t]);
   const togCat=id=>setOpenCats(prev=>({...prev,[id]:!prev[id]}));
@@ -23,17 +29,29 @@ function ServiceModal({machine,existing,onSave,onClose}){
     const f=ev.target.files[0];if(!f)return;setPb(true);
     try{
       const newUrl=await uploadPhoto(f);
-      if(pp)deletePhoto(pp);
+      if(pp)removedPhotos.current.push(pp);
       setPp(newUrl);
-    }catch{}
+    }catch(err){
+      console.error("plug photo upload:",err);
+      toastError("Photo upload failed — try again");
+    }
     setPb(false);
   };
-  const save=()=>{
+  const save=async()=>{
     if(saving)return;
+    const iso=localInputToISO(ca);
+    if(!iso){toastError("Enter a completed date/time");return;}
     setSaving(true);
-    onSave({id:e.id||uid(),completedAt:ca,types:types.length?types:["General Service"],
-      notes:notes.trim(),plugPhoto:pp,jobPhotos:jp,
-      createdAt:e.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+    try{
+      await onSave({id:e.id||uid(),completedAt:iso,types:types.length?types:["General Service"],
+        notes:notes.trim(),plugPhoto:pp,jobPhotos:jp,
+        createdAt:e.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+      removedPhotos.current.forEach(url=>deletePhoto(url));
+    }catch(err){
+      console.error("service save:",err);
+      toastError(err?.message||"Save failed — check connection and try again");
+      setSaving(false);
+    }
   };
 
   const mType = machine.type||"";
@@ -95,7 +113,7 @@ function ServiceModal({machine,existing,onSave,onClose}){
               <button onClick={()=>document.getElementById("plugCam").click()} style={{...btnG,flex:1,fontSize:9,padding:"8px 0"}}>📷 Camera</button>
               <button onClick={()=>document.getElementById("plugGal").click()} style={{...btnG,flex:1,fontSize:9,padding:"8px 0"}}>🖼 Gallery</button>
             </div>}
-            {pp&&<button style={{...btnG,...sm,marginTop:5}} onClick={()=>{deletePhoto(pp);setPp(null);}}>Remove</button>}
+            {pp&&<button style={{...btnG,...sm,marginTop:5}} onClick={()=>{removedPhotos.current.push(pp);setPp(null);}}>Remove</button>}
           </div>}
           <PhotoAdder photos={jp} setPhotos={setJp} label="Job Photos" />
         </div>

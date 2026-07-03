@@ -85,24 +85,26 @@ BEGIN
     RAISE EXCEPTION 'Only an owner or admin can update company details';
   END IF;
 
+  -- Present-key semantics: a key present in the payload replaces the column
+  -- ('' clears optional fields to NULL); an absent key leaves it alone.
   UPDATE companies SET
-    name         = COALESCE(payload->>'name',         name),
-    trading_name = COALESCE(payload->>'trading_name', trading_name),
-    abn          = COALESCE(payload->>'abn',          abn),
-    phone        = COALESCE(payload->>'phone',        phone),
-    email        = COALESCE(payload->>'email',        email),
-    website      = COALESCE(payload->>'website',      website),
-    address      = COALESCE(payload->>'address',      address),
-    city         = COALESCE(payload->>'city',         city),
-    state        = COALESCE(payload->>'state',        state),
-    postcode     = COALESCE(payload->>'postcode',     postcode),
-    country      = COALESCE(payload->>'country',      country),
-    industry     = COALESCE(payload->>'industry',     industry),
-    logo         = COALESCE(payload->>'logo',         logo),
-    hourly_rate  = CASE WHEN payload ? 'hourly_rate' THEN (payload->>'hourly_rate')::numeric ELSE hourly_rate END,
-    tax_rate     = CASE WHEN payload ? 'tax_rate'    THEN (payload->>'tax_rate')::numeric    ELSE tax_rate    END,
-    tax_label    = COALESCE(payload->>'tax_label',    tax_label),
-    invite_code  = COALESCE(payload->>'invite_code',  invite_code)
+    name         = CASE WHEN payload ? 'name' THEN COALESCE(NULLIF(payload->>'name', ''), name) ELSE name END,
+    trading_name = CASE WHEN payload ? 'trading_name' THEN NULLIF(payload->>'trading_name', '') ELSE trading_name END,
+    abn          = CASE WHEN payload ? 'abn'          THEN NULLIF(payload->>'abn', '')          ELSE abn          END,
+    phone        = CASE WHEN payload ? 'phone'        THEN NULLIF(payload->>'phone', '')        ELSE phone        END,
+    email        = CASE WHEN payload ? 'email'        THEN NULLIF(payload->>'email', '')        ELSE email        END,
+    website      = CASE WHEN payload ? 'website'      THEN NULLIF(payload->>'website', '')      ELSE website      END,
+    address      = CASE WHEN payload ? 'address'      THEN NULLIF(payload->>'address', '')      ELSE address      END,
+    city         = CASE WHEN payload ? 'city'         THEN NULLIF(payload->>'city', '')         ELSE city         END,
+    state        = CASE WHEN payload ? 'state'        THEN NULLIF(payload->>'state', '')        ELSE state        END,
+    postcode     = CASE WHEN payload ? 'postcode'     THEN NULLIF(payload->>'postcode', '')     ELSE postcode     END,
+    country      = CASE WHEN payload ? 'country'      THEN NULLIF(payload->>'country', '')      ELSE country      END,
+    industry     = CASE WHEN payload ? 'industry'     THEN NULLIF(payload->>'industry', '')     ELSE industry     END,
+    logo         = CASE WHEN payload ? 'logo'         THEN NULLIF(payload->>'logo', '')         ELSE logo         END,
+    hourly_rate  = CASE WHEN payload ? 'hourly_rate'  THEN NULLIF(payload->>'hourly_rate', '')::numeric ELSE hourly_rate END,
+    tax_rate     = CASE WHEN payload ? 'tax_rate'     THEN NULLIF(payload->>'tax_rate', '')::numeric    ELSE tax_rate    END,
+    tax_label    = CASE WHEN payload ? 'tax_label'    THEN NULLIF(payload->>'tax_label', '')    ELSE tax_label    END,
+    invite_code  = CASE WHEN payload ? 'invite_code'  THEN COALESCE(NULLIF(payload->>'invite_code', ''), invite_code) ELSE invite_code END
   WHERE id = p_company_id;
 
   RETURN (SELECT to_jsonb(c) FROM companies c WHERE c.id = p_company_id);
@@ -134,8 +136,10 @@ BEGIN
   -- Clear profiles that point to this company
   UPDATE profiles SET company_id = NULL WHERE company_id = p_company_id;
 
-  -- Remove company-level asset_permissions
-  DELETE FROM asset_permissions WHERE company_id = p_company_id;
+  -- Remove company-level permissions (asset AND machine — leaving machine
+  -- permissions behind kept ghost access alive after company deletion)
+  DELETE FROM asset_permissions   WHERE company_id = p_company_id;
+  DELETE FROM machine_permissions WHERE company_id = p_company_id;
 
   -- Remove all members (including owner)
   DELETE FROM company_members WHERE company_id = p_company_id;

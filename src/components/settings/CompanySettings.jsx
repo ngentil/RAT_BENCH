@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
-import { updateCompany, createCompany, joinCompanyByCode, leaveCompany, deleteCompany, getCompanyMembers, getMachinePermissions, upsertMachinePermission, revokeMachinePermission } from '../../lib/db';
+import { updateCompany, createCompany, joinCompanyByCode, leaveCompany, deleteCompany, getCompanyMembers, getMyCompany, getMachinePermissions, upsertMachinePermission, revokeMachinePermission } from '../../lib/db';
 import { getVehiclePermissions, upsertVehiclePermission, revokeVehiclePermission } from '../../lib/db/vehicles';
 import { getEquipmentPermissions, upsertEquipmentPermission, revokeEquipmentPermission } from '../../lib/db/equipment';
 import { getToolPermissions, upsertToolPermission, revokeToolPermission } from '../../lib/db/tools';

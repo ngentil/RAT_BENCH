@@ -6,6 +6,7 @@ export const MACHINE_TYPES = [
   {icon:"🛵",label:"Moped"},{icon:"🏍️",label:"Quad Bike"},{icon:"🏎️",label:"Go-kart"},
   {icon:"🚗",label:"Vehicle"},{icon:"🚧",label:"Tracked Machine"},
   {icon:"⛵",label:"Outboard Motor"},{icon:"❄️",label:"Snowmobile"},
+  {icon:"🌊",label:"Jet Ski / PWC"},
   {icon:"🌲",label:"Chipper"},{icon:"🌳",label:"Stump Grinder"},
   {icon:"🏁",label:"RC / Hobby Engine"},{icon:"🔩",label:"Standalone Engine"},
   {icon:"⚙️",label:"Custom"},
@@ -60,7 +61,7 @@ export const isStumpGrinder  = t => t==="Stump Grinder";
 export const isRCHobby       = t => t==="RC / Hobby Engine";
 export const showForCustom = (sec, cs) => cs===null||cs===undefined||cs.includes(sec);
 export const ALL_SECTIONS  = ["Engine","Ignition System","Starter System","Port Dimensions","Output Shaft / PTO","Fuel System","Fastener Specs","Pump","Generator Output","Drivetrain","Suspension","Brakes","Tyres","Electrics","Blade / Deck","Notes"];
-export const ALL_TYPES   = [...HANDHELD,...WHEELED,"Pressure Washer","Generator",...MOTO,...RC_HOBBY,"Standalone Engine","Vehicle","Tracked Machine","Outboard Motor","Custom"];
+export const ALL_TYPES   = [...HANDHELD,...WHEELED,"Pressure Washer","Generator",...MOTO,...RC_HOBBY,"Standalone Engine","Vehicle","Tracked Machine","Outboard Motor","Chipper","Stump Grinder","Custom"];
 
 // RC / Hobby Engine: shows Engine, Ignition, Starter, Port Dims, PTO (prop shaft), Fuel, Fasteners
 // + Drivetrain/Suspension/Brakes/Tyres for nitro cars & buggies — NOT Electrics (combustion focus)
@@ -68,8 +69,9 @@ export const showPTO        = (t,cs) => isCustom(t) ? showForCustom("Output Shaf
 export const showPump       = (t,cs) => isCustom(t) ? showForCustom("Pump",cs) : t==="Pressure Washer";
 export const showGenOutput  = (t,cs) => isCustom(t) ? showForCustom("Generator Output",cs) : t==="Generator";
 export const showDrivetrain = (t,cs) => isCustom(t) ? showForCustom("Drivetrain",cs) : [...MOTO,...RC_HOBBY,"Ride-on Mower","Vehicle"].includes(t);
-export const showSuspension = (t,cs) => isCustom(t) ? showForCustom("Suspension",cs) : [...MOTO,...RC_HOBBY,"Vehicle"].includes(t);
-export const showBrakes     = (t,cs) => isCustom(t) ? showForCustom("Brakes",cs) : [...MOTO,...RC_HOBBY,"Ride-on Mower","Vehicle"].includes(t);
-export const showTyres      = (t,cs) => isCustom(t) ? showForCustom("Tyres",cs) : t!=="Snowmobile"&&[...MOTO,...RC_HOBBY,"Ride-on Mower","Lawnmower","Vehicle"].includes(t);
+// Jet skis have no forks, brakes, or tyres — exclude them like snowmobiles
+export const showSuspension = (t,cs) => isCustom(t) ? showForCustom("Suspension",cs) : t!=="Jet Ski / PWC"&&[...MOTO,...RC_HOBBY,"Vehicle"].includes(t);
+export const showBrakes     = (t,cs) => isCustom(t) ? showForCustom("Brakes",cs) : t!=="Jet Ski / PWC"&&[...MOTO,...RC_HOBBY,"Ride-on Mower","Vehicle"].includes(t);
+export const showTyres      = (t,cs) => isCustom(t) ? showForCustom("Tyres",cs) : t!=="Snowmobile"&&t!=="Jet Ski / PWC"&&[...MOTO,...RC_HOBBY,"Ride-on Mower","Lawnmower","Vehicle"].includes(t);
 export const showElectrics  = (t,cs) => isCustom(t) ? showForCustom("Electrics",cs) : [...MOTO,"Generator","Vehicle","Tracked Machine","Outboard Motor"].includes(t);
 export const showBlade      = (t,cs) => isCustom(t) ? showForCustom("Blade / Deck",cs) : ["Lawnmower","Ride-on Mower"].includes(t);

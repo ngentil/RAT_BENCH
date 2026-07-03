@@ -1,5 +1,6 @@
 import { MACHINE_TYPES } from './constants';
 import { DEFAULT_STORAGE_TIERS } from './storageTiers';
+import { parseLocalDate } from './dates';
 // ── helpers ───────────────────────────────────────────────────────────────────
 export const uid  = () => crypto.randomUUID();
 export const nowL = () => { const n = new Date(); return new Date(n - n.getTimezoneOffset()*60000).toISOString().slice(0,16); };
@@ -12,10 +13,30 @@ export const fmtDT = iso => {
 // Date only (no time) — shared across asset tabs
 export const fmtDate = s => {
   if (!s) return null;
-  return new Date(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  const d = parseLocalDate(s);
+  if (!d) return null;
+  return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 // Currency — shared across asset and customer tabs
-export const fmtMoney = n => "$" + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+export const fmtMoney = n => {
+  const v = Number(n);
+  if (!isFinite(v)) return "$0.00";
+  const sign = v < 0 ? "-" : "";
+  return sign + "$" + Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+// Escape LIKE/ILIKE wildcards in user input before .ilike()/.like() queries.
+export const escapeLike = s => String(s ?? "").replace(/[\\%_]/g, m => "\\" + m);
+// Robust numeric input parser for price/qty/spec fields.
+// Handles "$120", "1,500", rejects Infinity/NaN/scientific junk.
+// Returns null when the input isn't a usable number (caller decides fallback).
+export const parseNum = (v, { min = -Infinity, max = Infinity } = {}) => {
+  if (v == null || v === "") return null;
+  const cleaned = String(v).replace(/[$,\s]/g, "");
+  if (!/^-?\d*\.?\d+(e-?\d+)?$/i.test(cleaned)) return null;
+  const n = Number(cleaned);
+  if (!isFinite(n) || n < min || n > max) return null;
+  return n;
+};
 export const mIcon = t => MACHINE_TYPES.find(m => m.label === t)?.icon || "⚙️";
 
 export const resizeImg = (b64, maxW=1800) => new Promise(res => {
@@ -55,7 +76,9 @@ export function getMachineServiceStatus(machine) {
       else if (pct >= 0.8) dueSoon = true;
     } else {
       if (!lastDate) return;
-      const daysSince = Math.floor((Date.now() - new Date(lastDate)) / 86400000);
+      const d = parseLocalDate(lastDate);
+      if (!d) return;
+      const daysSince = Math.floor((Date.now() - d) / 86400000);
       const dueDays = n * 30;
       const pct = daysSince / dueDays;
       if (daysSince >= dueDays) overdue = true;
@@ -80,7 +103,8 @@ export function getStorageStatus(booking, tiers) {
   const daysIn = Math.floor((Date.now() - new Date(booking.received_at)) / 86400000);
   const freeDaysLeft = Math.max(0, (tier.freeDays ?? 0) - daysIn);
   const billableDays = Math.max(0, daysIn - (tier.freeDays ?? 0));
-  const accrued = Math.max(tier.minFee ?? 0, billableDays * (dailyRate ?? 0));
+  // minFee only applies once the free period is exhausted — 0 billable days = $0.
+  const accrued = billableDays > 0 ? Math.max(tier.minFee ?? 0, billableDays * (dailyRate ?? 0)) : 0;
   const escalated = tier.escalateDays != null && daysIn >= tier.escalateDays;
   return { active: true, daysIn, freeDaysLeft, billableDays, accrued, escalated, dailyRate, tier };
 }
@@ -92,5 +116,5 @@ export function getClosedBookingFee(booking, tiers) {
   const dailyRate = booking.storage_fee_override ?? tier.dailyRate;
   const daysIn = Math.floor((new Date(booking.collected_at) - new Date(booking.received_at)) / 86400000);
   const billableDays = Math.max(0, daysIn - (tier.freeDays ?? 0));
-  return Math.max(tier.minFee ?? 0, billableDays * (dailyRate ?? 0));
+  return billableDays > 0 ? Math.max(tier.minFee ?? 0, billableDays * (dailyRate ?? 0)) : 0;
 }

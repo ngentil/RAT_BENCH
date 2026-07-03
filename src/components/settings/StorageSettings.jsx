@@ -4,6 +4,7 @@ import { ACC, MUT, BRD, SURF, TXT, GRN, RED, inp, btnA, btnG, sm } from '../../l
 import { canUse } from '../../lib/gates';
 import { DEFAULT_STORAGE_TIERS, TIER_NAMES } from '../../lib/storageTiers';
 import { updateCompany } from '../../lib/db';
+import { parseNum } from '../../lib/helpers';
 
 const secHd = { borderLeft: "2px solid " + ACC, paddingLeft: 8, fontSize: 10, color: TXT, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 };
 
@@ -82,10 +83,16 @@ function StorageSettings({ profile, setProfile, company, setCompany }) {
   const saveBillingRates = async () => {
     if (!company?.id) return;
     setBillingSaving(true); setBillingErr(""); setBillingSaved(false);
+    // parseNum handles "$120" / "1,500" and rejects garbage instead of
+    // silently wiping the saved rate with NaN→null
+    const rate = hourlyRate !== "" ? parseNum(hourlyRate, { min: 0 }) : null;
+    const tax  = taxRate    !== "" ? parseNum(taxRate,    { min: 0, max: 100 }) : null;
+    if (hourlyRate !== "" && rate == null) { setBillingErr("Enter a valid hourly rate (numbers only)."); setBillingSaving(false); return; }
+    if (taxRate !== "" && tax == null)     { setBillingErr("Enter a valid tax rate between 0 and 100."); setBillingSaving(false); return; }
     try {
       const updated = await updateCompany(company.id, {
-        hourly_rate: hourlyRate !== "" ? parseFloat(hourlyRate) : null,
-        tax_rate:    taxRate    !== "" ? parseFloat(taxRate)    : null,
+        hourly_rate: rate,
+        tax_rate:    tax,
         tax_label:   taxLabel.trim()   || null,
       });
       setCompany(updated);
