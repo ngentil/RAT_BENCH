@@ -1,0 +1,34 @@
+name: Nightly Wiki Rebuild
+
+# Keeps the statically-prerendered wiki pages (scripts/prerender-wiki.mjs) fresh.
+# The prerender is a build-time snapshot, so new/edited wiki entries only appear
+# after a deploy. This fires a Netlify build hook once a night to rebuild.
+#
+# SETUP (one-time):
+#   1. Netlify → Site settings → Build & deploy → Build hooks → "Add build hook"
+#      (name it e.g. "nightly-wiki-rebuild", branch = your deploy branch).
+#   2. Copy the hook URL.
+#   3. GitHub → repo Settings → Secrets and variables → Actions → New secret
+#      named NETLIFY_BUILD_HOOK, value = that URL.
+# Until the secret is set, this job no-ops cleanly (it won't fail).
+
+on:
+  schedule:
+    - cron: "30 16 * * *"   # 02:30 AEST (16:30 UTC) — low-traffic, off the :00 mark
+  workflow_dispatch:          # allow manual "rebuild now"
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger Netlify build
+        env:
+          HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "NETLIFY_BUILD_HOOK secret not set — nothing to trigger. See this workflow's SETUP comment."
+            exit 0
+          fi
+          curl -fsS -X POST -d '{}' "$HOOK"
+          echo "Netlify rebuild triggered — prerender will regenerate wiki pages + sitemap."
