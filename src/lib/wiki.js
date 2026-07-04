@@ -290,53 +290,25 @@ export async function getWikiModels(make, query) {
     .slice(0, 15);
 }
 
-// Tokenize a search query for fuzzy matching.
-// Splits on whitespace AND at letter↔digit boundaries so "ms441", "ms 441",
-// and "MS441" all yield ["ms","441"] and match a stored "MS 441" (or "MS441",
-// or slug "…-ms-441"). Also sanitizes each token — they're interpolated into a
-// PostgREST .or() filter where commas/parens/wildcards change filter semantics.
+// Tokenize a search query — used for result HIGHLIGHTING (the actual matching
+// happens server-side in the search_wiki RPC). Splits on whitespace AND at
+// letter↔digit boundaries so "ms441" highlights "ms" and "441" inside "MS 441".
 export function tokenizeSearch(query) {
   return String(query || "").trim()
     .split(/\s+/)
     .map(t => t.replace(/[^a-zA-Z0-9\-]/g, ""))
-    // "gx200" → ["gx","200"]; a run with no letter/digit (e.g. "-") drops out
     .flatMap(t => t.match(/[a-zA-Z]+|\d+/g) || [])
     .filter(t => /^[a-zA-Z0-9]+$/.test(t));
 }
 
+// Server-side fuzzy search via the search_wiki RPC (supabase/wiki_fuzzy_search_rpc.sql).
+// Stage 1 matches on despaced normalized text so spacing/hyphenation is
+// irrelevant in both directions ("ms441"↔"MS 441", "seadoo"↔"Sea-Doo"); stage 2
+// falls back to pg_trgm similarity so brand typos ("honfa"→Honda) still resolve.
 export async function searchWiki(query) {
-  const tokens = tokenizeSearch(query);
-
-  const base = () => supabase.from("wiki_entries")
-    .select("id,slug,make,model,type,view_count")
-    .eq("is_sample", false)
-    .order("view_count", { ascending: false })
-    .limit(50);
-
-  if (!tokens.length) {
-    const { data } = await base();
-    return data || [];
-  }
-
-  // AND pass: every token must appear in at least one of make/model/type/slug
-  let q = base();
-  for (const t of tokens) {
-    q = q.or(`make.ilike.%${t}%,model.ilike.%${t}%,type.ilike.%${t}%,slug.ilike.%${t}%`);
-  }
-  const { data: exact } = await q;
-  if (exact && exact.length > 0) return exact;
-
-  // OR fallback: any token matches any field — return ranked by match count
-  const fallbackConds = tokens.flatMap(t => [
-    `make.ilike.%${t}%`, `model.ilike.%${t}%`, `type.ilike.%${t}%`, `slug.ilike.%${t}%`,
-  ]);
-  const { data: broad } = await base().or(fallbackConds.join(','));
-  if (!broad) return [];
-  const score = (e) => tokens.reduce((s, t) => {
-    const tl = t.toLowerCase();
-    return s + ([e.make, e.model, e.type, e.slug].some(f => (f || '').toLowerCase().includes(tl)) ? 1 : 0);
-  }, 0);
-  return [...broad].sort((a, b) => score(b) - score(a) || b.view_count - a.view_count);
+  const { data, error } = await supabase.rpc("search_wiki", { q: query || "", lim: 50 });
+  if (error) { console.error("searchWiki:", error); return []; }
+  return data || [];
 }
 
 // ── Community stats ───────────────────────────────────────────────────────────
