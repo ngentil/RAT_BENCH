@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prerender": "node scripts/prerender-wiki.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.55.0",
