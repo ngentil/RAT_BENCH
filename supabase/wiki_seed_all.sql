@@ -1464,9 +1464,141 @@ BEGIN
   RAISE NOTICE 'Handheld 2-stroke batch imported (15 units).';
 END $$;
 
+-- ═══ Lawn & commercial V-twins (Kawasaki FR/FX, Kohler, B&S Vanguard/Intek) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Kawasaki FR691V
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-fr691v';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-fr691v','Kawasaki','FR691V','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fr691$
+  { "year":"Residential V-twin","strokeType":"4-Stroke","ccSize":"726","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"OHV (pushrod)",
+    "camType":"OHV — 4 valves","coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric","plugType":"NGK BPR4ES","plugGap":"0.75",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"23 hp @ 3,600 rpm","shaftType":"Vertical (mower)","weightKg":"35",
+    "notes":"Kawasaki FR691V — 726 cc air-cooled OHV V-twin, a very common residential zero-turn engine. Plug NGK BPR4ES. Oil ~1.8 L with filter. Verify valve lash (some models hydraulic) against the Kawasaki manual." }
+  $fr691$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki FR730V
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-fr730v';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-fr730v','Kawasaki','FR730V','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fr730$
+  { "year":"Residential V-twin","strokeType":"4-Stroke","ccSize":"726","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"OHV (pushrod)",
+    "camType":"OHV — 4 valves","coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric","plugType":"NGK BPR4ES","plugGap":"0.75",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"24 hp @ 3,600 rpm","shaftType":"Vertical (mower)","weightKg":"36",
+    "notes":"Kawasaki FR730V — 726 cc air-cooled OHV V-twin, top of the residential FR series. Plug NGK BPR4ES. Oil ~1.8 L with filter. Verify lash against the Kawasaki manual." }
+  $fr730$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki FX730V
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-fx730v';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-fx730v','Kawasaki','FX730V','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fx730$
+  { "year":"Commercial V-twin","strokeType":"4-Stroke","ccSize":"726","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"OHV (pushrod)",
+    "camType":"OHV — 4 valves","coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric","plugType":"NGK BPR4ES","plugGap":"0.75",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"23.5 hp @ 3,600 rpm","shaftType":"Vertical (mower)","weightKg":"39",
+    "notes":"Kawasaki FX730V — 726 cc air-cooled OHV V-twin, the commercial-duty FX (heavier build, cast-iron liners, canister filter). Common on commercial ZTRs. Plug NGK BPR4ES. Verify lash against the Kawasaki manual." }
+  $fx730$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki FX850V
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-fx850v';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-fx850v','Kawasaki','FX850V','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fx850$
+  { "year":"Commercial V-twin","strokeType":"4-Stroke","ccSize":"852","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"OHV (pushrod)",
+    "camType":"OHV — 4 valves","coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric","plugType":"NGK BPR4ES","plugGap":"0.75",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"27 hp @ 3,600 rpm","shaftType":"Vertical (mower)","weightKg":"40",
+    "notes":"Kawasaki FX850V — 852 cc air-cooled OHV commercial V-twin. Common on larger commercial ZTRs. Plug NGK BPR4ES. Verify lash against the Kawasaki manual." }
+  $fx850$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki FX1000V
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-fx1000v';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-fx1000v','Kawasaki','FX1000V','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fx1000$
+  { "year":"Commercial V-twin","strokeType":"4-Stroke","ccSize":"999","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"OHV (pushrod)",
+    "camType":"OHV — 4 valves","coolingType":"Air cooled","fuelSystem":"Carburetted / EFI","starterType":"Electric","plugType":"NGK BPR4ES","plugGap":"0.75",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"35 hp @ 3,600 rpm","shaftType":"Vertical (mower)","weightKg":"45",
+    "notes":"Kawasaki FX1000V — 999 cc air-cooled OHV commercial V-twin, the big-bore FX (carb and EFI versions). Large commercial ZTRs and outfront mowers. Plug NGK BPR4ES. Verify lash against the Kawasaki manual." }
+  $fx1000$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler CH270 (single)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-ch270';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-ch270','Kohler','CH270','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ch270$
+  { "year":"Command Pro single","strokeType":"4-Stroke","ccSize":"208","cylCount":"1","valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves",
+    "coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Recoil (electric optional)","plugType":"Champion RC12YC","plugGap":"0.76",
+    "coilType":"Transistor magneto","idleRpm":"1400","wotRpm":"3600 (governed)","wotPower":"7 hp @ 3,600 rpm","shaftType":"Horizontal (various PTO)","weightKg":"22",
+    "notes":"Kohler Command Pro CH270 — 208 cc OHV single, GX200-class general-purpose engine. Plug Champion RC12YC. Verify lash/oil against the Kohler manual." }
+  $ch270$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler CH440 (single)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-ch440';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-ch440','Kohler','CH440','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ch440$
+  { "year":"Command Pro single","strokeType":"4-Stroke","ccSize":"429","cylCount":"1","valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves",
+    "coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Recoil (electric optional)","plugType":"Champion RC12YC","plugGap":"0.76",
+    "coilType":"Transistor magneto","idleRpm":"1400","wotRpm":"3600 (governed)","wotPower":"14 hp @ 3,600 rpm","shaftType":"Horizontal (various PTO)","weightKg":"35",
+    "notes":"Kohler Command Pro CH440 — 429 cc OHV single, GX390-class big single for splitters, karts and gensets. Plug Champion RC12YC. Verify lash/oil against the Kohler manual." }
+  $ch440$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler CH740 (V-twin)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-ch740';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-ch740','Kohler','CH740','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ch740$
+  { "year":"Command Pro V-twin","strokeType":"4-Stroke","ccSize":"725","cylCount":"2","firingOrder":"V-twin","valveTrain":"OHV (pushrod)","camType":"OHV — 4 valves",
+    "coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric","plugType":"Champion RC12YC","plugGap":"0.76",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"25 hp @ 3,600 rpm","shaftType":"Horizontal / vertical","weightKg":"42",
+    "notes":"Kohler Command Pro CH740 — 725 cc air-cooled OHV V-twin, a commercial-grade twin for mowers and machinery. Plug Champion RC12YC. Verify lash/oil against the Kohler manual." }
+  $ch740$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler KT745 (7000 series V-twin)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-kt745';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-kt745','Kohler','KT745','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $kt745$
+  { "year":"7000 Series residential V-twin","strokeType":"4-Stroke","ccSize":"747","cylCount":"2","firingOrder":"V-twin","valveTrain":"OHV (pushrod, hydraulic lifters)","camType":"OHV — 4 valves",
+    "coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric","plugType":"Champion RC12YC","plugGap":"0.76",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"26 hp @ 3,600 rpm","shaftType":"Vertical (mower)","weightKg":"37",
+    "notes":"Kohler KT745 (7000 Series) — 747 cc residential OHV V-twin with hydraulic valve lifters (no lash adjustment). Common on garden tractors and residential ZTRs. Plug Champion RC12YC. Verify oil/service against the Kohler manual." }
+  $kt745$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Briggs Vanguard 810 V-twin
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='briggs-vanguard-810';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('briggs-vanguard-810','Briggs & Stratton','Vanguard 810','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $vg810$
+  { "year":"Commercial V-twin (Big Block)","strokeType":"4-Stroke","ccSize":"810","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"OHV (pushrod)","camType":"OHV — 4 valves",
+    "coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric","plugType":"Champion RC12YC","plugGap":"0.76",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"28 hp @ 3,600 rpm","shaftType":"Vertical / horizontal","weightKg":"42",
+    "notes":"Briggs & Stratton Vanguard 810 — 810 cc air-cooled OHV commercial V-twin (Daihatsu-designed 'Big Block'), full-pressure lubrication with spin-on filter. Common on commercial ZTRs and machinery. Plug Champion RC12YC. Verify lash/oil against the Briggs manual." }
+  $vg810$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Briggs Intek V-Twin
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='briggs-intek-v-twin';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('briggs-intek-v-twin','Briggs & Stratton','Intek V-Twin','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $intek$
+  { "year":"Residential V-twin","strokeType":"4-Stroke","ccSize":"724","cylCount":"2","firingOrder":"V-twin","valveTrain":"OHV (pushrod)","camType":"OHV — 4 valves",
+    "coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric","plugType":"Champion RC12YC","plugGap":"0.76",
+    "coilType":"Transistor magneto","wotRpm":"3600 (governed)","wotPower":"~23 hp @ 3,600 rpm","shaftType":"Vertical (mower)","weightKg":"38",
+    "notes":"Briggs & Stratton Intek V-Twin — ~724 cc air-cooled OHV residential V-twin, extremely common on lawn/garden tractors. (Displacement varies a little by series.) Plug Champion RC12YC. Verify exact displacement/lash for your model against the Briggs manual." }
+  $intek$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Lawn/commercial V-twin batch imported (11 engines).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin')
 ORDER BY e.type, e.make, e.model;
