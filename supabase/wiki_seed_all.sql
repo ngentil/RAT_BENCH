@@ -780,16 +780,188 @@ BEGIN
   RAISE NOTICE 'Stihl chainsaw batch imported (14 saws).';
 END $$;
 
+-- ═══ Outboards (4-stroke) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Yamaha F9.9
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-f9-9';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-f9-9','Yamaha','F9.9','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $yf99$
+  { "year":"Portable 4-stroke","strokeType":"4-Stroke","ccSize":"212","cylCount":"2","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Carburetted","starterType":"Recoil / electric","wotRpm":"5000–6000","wotPower":"9.9 hp @ 5,500 rpm",
+    "obShaftLength":"15\" / 20\" (S/L)","obTiltTrim":"Manual tilt","obSteering":"Tiller (remote optional)",
+    "obLowerUnitOilType":"SAE 90 hypoid gear oil","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"39",
+    "notes":"Yamaha F9.9 — 212 cc 2-cyl water-cooled portable 4-stroke; a popular kicker/tender motor. Carbureted. Plug/valve-clearance specs vary by year — see the Yamaha service manual." }
+  $yf99$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha F15
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-f15';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-f15','Yamaha','F15','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $yf15$
+  { "year":"Portable 4-stroke (F15C)","strokeType":"4-Stroke","ccSize":"362","cylCount":"2","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Carburetted","starterType":"Recoil / electric","wotRpm":"5000–6000","wotPower":"15 hp @ 5,500 rpm",
+    "obShaftLength":"15\" / 20\" (S/L)","obTiltTrim":"Manual tilt","obSteering":"Tiller (remote optional)",
+    "obLowerUnitOilType":"SAE 90 hypoid gear oil","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"51",
+    "notes":"Yamaha F15C — 362 cc 2-cyl water-cooled portable 4-stroke (shares its powerhead with the F20). Carbureted. See the Yamaha manual for plug/lash by year." }
+  $yf15$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha F25
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-f25';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-f25','Yamaha','F25','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $yf25$
+  { "year":"Portable 4-stroke (F25G)","strokeType":"4-Stroke","ccSize":"432","cylCount":"2","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (EFI)","starterType":"Recoil / electric","wotRpm":"5000–6000","wotPower":"25 hp @ 5,500 rpm",
+    "obShaftLength":"15\" / 20\" (S/L)","obTiltTrim":"Manual / power tilt","obSteering":"Tiller (remote optional)",
+    "obLowerUnitOilType":"SAE 90 hypoid gear oil","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"57",
+    "notes":"Yamaha F25G — 432 cc 2-cyl water-cooled portable 4-stroke, EFI, the lightest 25 in its class. (Older F25 was a 498 cc 3-cyl.) See the Yamaha manual for plug/lash." }
+  $yf25$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha F60
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-f60';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-f60','Yamaha','F60','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $yf60$
+  { "year":"Mid-range 4-stroke","strokeType":"4-Stroke","ccSize":"996","cylCount":"4","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (EFI)","starterType":"Electric","wotRpm":"5000–6000","wotPower":"60 hp @ 5,500 rpm",
+    "obShaftLength":"20\" / 25\" (L/X)","obTiltTrim":"Power trim & tilt","obSteering":"Remote",
+    "obLowerUnitOilType":"SAE 90 hypoid gear oil","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"104",
+    "notes":"Yamaha F60 — 996 cc inline-4 water-cooled 4-stroke, EFI (shares its block with the F70). Extremely popular pontoon/tender mid-range. See the Yamaha manual for plug/lash." }
+  $yf60$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha F115
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-f115';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-f115','Yamaha','F115','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $yf115$
+  { "year":"Mid-range 4-stroke","strokeType":"4-Stroke","ccSize":"1832","cylCount":"4","valveTrain":"DOHC 16v","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (EFI)","starterType":"Electric","wotRpm":"5000–6000","wotPower":"115 hp @ 5,500 rpm",
+    "obShaftLength":"20\" / 25\" (L/X)","obTiltTrim":"Power trim & tilt","obSteering":"Remote (mechanical / DBW)",
+    "obLowerUnitOilType":"SAE 90 hypoid gear oil","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"166",
+    "notes":"Yamaha F115 — 1.8 L DOHC inline-4 water-cooled 4-stroke, EFI. A staple mid-size outboard. See the Yamaha manual for plug/lash." }
+  $yf115$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha F150
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-f150';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-f150','Yamaha','F150','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $yf150$
+  { "year":"4-stroke","strokeType":"4-Stroke","ccSize":"2670","cylCount":"4","valveTrain":"DOHC 16v","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (EFI)","starterType":"Electric","wotRpm":"5000–6000","wotPower":"150 hp @ 5,500 rpm",
+    "obShaftLength":"20\" / 25\" (L/X)","obTiltTrim":"Power trim & tilt","obSteering":"Remote (mechanical / DBW)",
+    "obLowerUnitOilType":"SAE 90 hypoid gear oil","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"208",
+    "notes":"Yamaha F150 — 2.7 L DOHC inline-4 water-cooled 4-stroke, EFI; the biggest naturally-aspirated Yamaha four-cylinder. Hugely popular on centre-consoles. See the Yamaha manual for plug/lash." }
+  $yf150$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Mercury 9.9 FourStroke
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mercury-9-9-fourstroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mercury-9-9-fourstroke','Mercury','9.9 FourStroke','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $m99$
+  { "year":"Portable 4-stroke","strokeType":"4-Stroke","ccSize":"209","cylCount":"2","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Carburetted","starterType":"Recoil / electric","wotRpm":"5000–6000","wotPower":"9.9 hp @ 5,500 rpm",
+    "obShaftLength":"15\" / 20\" / 25\"","obTiltTrim":"Manual tilt","obSteering":"Tiller (remote optional)",
+    "obLowerUnitOilType":"SAE 90 gear lube","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"38",
+    "notes":"Mercury 9.9 FourStroke — 209 cc 2-cyl water-cooled portable (built by Tohatsu; shares the Tohatsu MFS9.9 powerhead). Carbureted kicker favourite. See the Mercury manual for plug/lash." }
+  $m99$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Mercury 25 FourStroke
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mercury-25-fourstroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mercury-25-fourstroke','Mercury','25 FourStroke','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $m25$
+  { "year":"Portable 4-stroke","strokeType":"4-Stroke","ccSize":"526","cylCount":"3","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (EFI)","starterType":"Recoil / electric","wotRpm":"5000–6000","wotPower":"25 hp @ 5,500 rpm",
+    "obShaftLength":"15\" / 20\"","obTiltTrim":"Manual / power tilt","obSteering":"Tiller (remote optional)",
+    "obLowerUnitOilType":"SAE 90 gear lube","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"71",
+    "notes":"Mercury 25 FourStroke — 526 cc 3-cyl water-cooled EFI (shares the 25/30 powerhead). See the Mercury manual for plug/lash." }
+  $m25$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Mercury 60 FourStroke
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mercury-60-fourstroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mercury-60-fourstroke','Mercury','60 FourStroke','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $m60$
+  { "year":"Mid-range 4-stroke","strokeType":"4-Stroke","ccSize":"995","cylCount":"4","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (EFI)","starterType":"Electric","wotRpm":"5500–6000","wotPower":"60 hp @ 5,750 rpm",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Tiller / remote",
+    "obLowerUnitOilType":"SAE 90 gear lube","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"112",
+    "notes":"Mercury 60 FourStroke — 995 cc inline-4 water-cooled EFI (BigFoot / Command Thrust variants for pontoons). See the Mercury manual for plug/lash." }
+  $m60$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Mercury 115 FourStroke
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mercury-115-fourstroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mercury-115-fourstroke','Mercury','115 FourStroke','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $m115$
+  { "year":"Mid-range 4-stroke","strokeType":"4-Stroke","ccSize":"2064","cylCount":"4","valveTrain":"DOHC 16v","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (EFI)","starterType":"Electric","wotRpm":"5000–6000","wotPower":"115 hp @ 5,500 rpm",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Remote",
+    "obLowerUnitOilType":"SAE 90 gear lube","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"163",
+    "notes":"Mercury 115 FourStroke — 2.1 L DOHC inline-4 water-cooled EFI (Pro XS variant is tuned harder). A best-seller in its class. See the Mercury manual for plug/lash." }
+  $m115$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda BF50
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-bf50';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-bf50','Honda','BF50','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $bf50$
+  { "year":"Mid-range 4-stroke","strokeType":"4-Stroke","ccSize":"808","cylCount":"3","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Carburetted","starterType":"Electric","wotRpm":"5000–6000","wotPower":"50 hp @ 5,500 rpm",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Tiller / remote",
+    "obLowerUnitOilType":"Hypoid gear oil SAE 90","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"98",
+    "notes":"Honda BF50 — 808 cc 3-cyl water-cooled 4-stroke (shares the BF40 block). Honda's engines are famously long-lived. See the Honda marine manual for plug/lash." }
+  $bf50$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda BF90
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-bf90';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-bf90','Honda','BF90','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $bf90$
+  { "year":"Mid-range 4-stroke","strokeType":"4-Stroke","ccSize":"1496","cylCount":"4","valveTrain":"SOHC 16v","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (PGM-FI)","starterType":"Electric","wotRpm":"5000–6000","wotPower":"90 hp @ 5,500 rpm",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Remote",
+    "obLowerUnitOilType":"Hypoid gear oil SAE 90","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"166",
+    "notes":"Honda BF90 — 1496 cc SOHC inline-4 water-cooled 4-stroke, PGM-FI (shares the BF75 block; BF115/135 share the larger 2.4 L). See the Honda marine manual for plug/lash." }
+  $bf90$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Suzuki DF60
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='suzuki-df60';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('suzuki-df60','Suzuki','DF60','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $df60$
+  { "year":"Mid-range 4-stroke (DF60A)","strokeType":"4-Stroke","ccSize":"941","cylCount":"3","valveTrain":"DOHC 12v","coolingType":"Liquid cooled",
+    "fuelSystem":"Fuel injection (EFI)","starterType":"Electric","wotRpm":"5000–6000","wotPower":"60 hp @ 5,500 rpm",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Remote",
+    "obLowerUnitOilType":"Hypoid gear oil SAE 90","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"102",
+    "notes":"Suzuki DF60A — 941 cc DOHC 3-cyl water-cooled EFI (shares the DF70A block); lean-burn control. See the Suzuki manual for plug/lash." }
+  $df60$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tohatsu MFS9.9
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tohatsu-mfs9-9';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tohatsu-mfs9-9','Tohatsu','MFS9.9','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $mfs99$
+  { "year":"Portable 4-stroke","strokeType":"4-Stroke","ccSize":"209","cylCount":"2","valveTrain":"SOHC","coolingType":"Liquid cooled",
+    "fuelSystem":"Carburetted","starterType":"Recoil / electric","wotRpm":"5000–6000","wotPower":"9.9 hp @ 5,500 rpm",
+    "obShaftLength":"15\" / 20\" / 25\"","obTiltTrim":"Manual tilt","obSteering":"Tiller (remote optional)",
+    "obLowerUnitOilType":"SAE 90 gear lube","obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"38",
+    "notes":"Tohatsu MFS9.9 — 209 cc 2-cyl water-cooled portable 4-stroke; the powerhead behind the Mercury 9.9 FourStroke too. Reliable kicker/tender. See the Tohatsu manual for plug/lash." }
+  $mfs99$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Outboard 4-stroke batch imported (14 motors).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
-SELECT e.make, e.model, e.type,
+SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN (
-  'kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f',
-  'bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt',
-  'honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240',
-  'honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190',
-  'stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271',
-  'stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i',
-  'stihl-ms-661','stihl-ms-880'
-) ORDER BY e.type, e.make, e.model;
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9')
+ORDER BY e.type, e.make, e.model;
