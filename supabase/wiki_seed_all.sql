@@ -2099,9 +2099,120 @@ BEGIN
   RAISE NOTICE 'Dirt/dual-sport/ADV bike batch 2 imported (15 bikes).';
 END $$;
 
+-- ═══ Generators, pressure washers & pumps ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Honda EU2200i
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-eu2200i';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-eu2200i','Honda','EU2200i','Generator',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $eu2200$
+  { "year":"Inverter generator","strokeType":"4-Stroke","ccSize":"121","cylCount":"1","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Recoil only","plugType":"NGK CR5HSB","genWatts":"1800 running / 2200 peak","genVoltage":"120 V","genHz":"60 Hz","fuelTankCapacity":"3.6","weightKg":"21",
+    "notes":"Honda EU2200i — inverter generator on the Honda GXR120 (121 cc) engine; 2200 W peak / 1800 W running, 120 V pure sine, parallel-capable, Eco-Throttle. The benchmark portable inverter. Verify against the Honda manual." }
+  $eu2200$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda EU3000is
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-eu3000is';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-eu3000is','Honda','EU3000is','Generator',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $eu3000$
+  { "year":"Inverter generator","strokeType":"4-Stroke","ccSize":"196","cylCount":"1","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Electric + recoil","plugType":"NGK BPR6ES","genWatts":"2800 running / 3000 peak","genVoltage":"120 V","genHz":"60 Hz","fuelTankCapacity":"12.5","weightKg":"59",
+    "notes":"Honda EU3000is — inverter generator on a GX200-class (196 cc) engine; 3000 W peak / 2800 W running, electric start, very quiet. A popular RV/home-backup unit. Verify against the Honda manual." }
+  $eu3000$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha EF2000iS
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-ef2000is';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-ef2000is','Yamaha','EF2000iS','Generator',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ef2000$
+  { "year":"Inverter generator","strokeType":"4-Stroke","ccSize":"79","cylCount":"1","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Recoil only","plugType":"NGK CR7HSA","genWatts":"1600 running / 2000 peak","genVoltage":"120 V","genHz":"60 Hz","fuelTankCapacity":"4.2","weightKg":"20",
+    "notes":"Yamaha EF2000iS — 79 cc inverter generator; 2000 W peak / 1600 W running, pure sine, parallel-capable. A quiet, reliable portable. Verify against the Yamaha manual." }
+  $ef2000$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Predator 3500 (inverter)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-3500-inverter';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-3500-inverter','Predator','3500 Inverter','Generator',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $pred3500$
+  { "year":"Inverter generator","strokeType":"4-Stroke","ccSize":"212","cylCount":"1","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Electric + recoil","plugType":"NGK BPR6ES","genWatts":"3000 running / 3500 peak","genVoltage":"120 V","genHz":"60 Hz","fuelTankCapacity":"9.5","weightKg":"45",
+    "notes":"Predator 3500 Inverter — 212 cc (GX200-clone) inverter generator; 3500 W peak / 3000 W running, electric start, remote. A budget-favourite RV/tailgate unit. Verify against the Predator manual." }
+  $pred3500$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Westinghouse iGen4500
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='westinghouse-igen4500';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('westinghouse-igen4500','Westinghouse','iGen4500','Generator',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $igen$
+  { "year":"Inverter generator","strokeType":"4-Stroke","ccSize":"224","cylCount":"1","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Electric / remote","genWatts":"3700 running / 4500 peak","genVoltage":"120 V","genHz":"60 Hz","fuelTankCapacity":"14.4","weightKg":"44",
+    "notes":"Westinghouse iGen4500 — 224 cc inverter generator; 4500 W peak / 3700 W running, electric + remote start, RV outlet. A popular large-inverter value pick. Verify plug against the Westinghouse manual." }
+  $igen$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- DuroMax XP13000EH
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='duromax-xp13000eh';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('duromax-xp13000eh','DuroMax','XP13000EH','Generator',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $duro13$
+  { "year":"Conventional dual-fuel generator","strokeType":"4-Stroke","ccSize":"500","cylCount":"2","firingOrder":"V-twin","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted (dual-fuel gas/LPG)",
+    "starterType":"Electric + recoil","plugType":"NGK BPR6ES","genWatts":"10500 running / 13000 peak","genVoltage":"120/240 V","genHz":"60 Hz","fuelTankCapacity":"32","weightKg":"106",
+    "notes":"DuroMax XP13000EH — 500 cc air-cooled V-twin dual-fuel (gasoline/propane) conventional generator; 13000 W peak / 10500 W running, 120/240 V, electric start. Home-backup workhorse. Verify against the DuroMax manual." }
+  $duro13$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Generac GP6500
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='generac-gp6500';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('generac-gp6500','Generac','GP6500','Generator',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $gp6500$
+  { "year":"Conventional portable generator","strokeType":"4-Stroke","ccSize":"389","cylCount":"1","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Recoil only","plugType":"Champion RC12YC","genWatts":"6500 running / 8125 peak","genVoltage":"120/240 V","genHz":"60 Hz","fuelTankCapacity":"25","weightKg":"77",
+    "notes":"Generac GP6500 — 389 cc OHV (Generac G-Force) conventional portable generator; 8125 W peak / 6500 W running, 120/240 V. A common jobsite/home-backup unit. Verify against the Generac manual." }
+  $gp6500$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Simpson MegaShot MSH3125
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='simpson-megashot-msh3125';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('simpson-megashot-msh3125','Simpson','MegaShot MSH3125','Pressure Washer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $msh$
+  { "year":"Residential pressure washer","strokeType":"4-Stroke","ccSize":"187","cylCount":"1","valveTrain":"OHC","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Recoil only","plugType":"NGK BPR6ES","pumpPsi":"3200","pumpFlow":"9.5 (2.5 GPM)","pumpType":"AAA axial cam (OEM)","fuelTankCapacity":"","weightKg":"29",
+    "notes":"Simpson MegaShot MSH3125 — residential pressure washer, Honda GC190 (187 cc) engine driving an AAA axial-cam pump; 3200 PSI @ 2.5 GPM. Common homeowner unit. Verify pump-oil/engine specs against the Simpson & Honda manuals." }
+  $msh$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Simpson PowerShot PS4240
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='simpson-powershot-ps4240';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('simpson-powershot-ps4240','Simpson','PowerShot PS4240','Pressure Washer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ps4240$
+  { "year":"Professional pressure washer","strokeType":"4-Stroke","ccSize":"389","cylCount":"1","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Recoil only","plugType":"NGK BPR6ES","pumpPsi":"4200","pumpFlow":"15 (4.0 GPM)","pumpType":"AAA industrial triplex","fuelTankCapacity":"6.1","weightKg":"29",
+    "notes":"Simpson PowerShot PS4240 — professional pressure washer, Honda GX390 (389 cc) engine driving an AAA industrial triplex plunger pump; 4200 PSI @ 4.0 GPM. Contractor-grade. Verify pump-oil/engine specs against the Simpson & Honda manuals." }
+  $ps4240$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda WB30 water pump
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-wb30';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-wb30','Honda','WB30','Water Pump',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $wb30$
+  { "year":"3-inch centrifugal water pump","strokeType":"4-Stroke","ccSize":"163","cylCount":"1","valveTrain":"OHV","coolingType":"Air cooled","fuelSystem":"Carburetted",
+    "starterType":"Recoil only","plugType":"NGK BPR6ES","pumpFlow":"1100 L/min","pumpType":"Centrifugal (self-priming)","pumpInlet":"3 in (76 mm)","pumpOutlet":"3 in (76 mm)","fuelTankCapacity":"3.1","weightKg":"26",
+    "notes":"Honda WB30 — 3-inch self-priming centrifugal water pump on the Honda GX160 (163 cc) engine; ~1100 L/min max flow. Common on farms/sites for clean-water transfer. Verify against the Honda manual." }
+  $wb30$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Generator/pressure-washer/pump batch imported (10 units).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30')
 ORDER BY e.type, e.make, e.model;
