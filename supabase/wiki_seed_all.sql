@@ -1142,9 +1142,155 @@ BEGIN
   RAISE NOTICE 'Husqvarna + Echo saw batch imported (14 saws).';
 END $$;
 
+-- ═══ Clone / import engines (Predator, Loncin, Lifan, Tillotson, DuroMax) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Predator 212 (Hemi)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-212-hemi';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-212-hemi','Predator','212 Hemi','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $p212h$
+  { "year":"GX200-clone (Hemi head)","strokeType":"4-Stroke","ccSize":"212","compressionRatio":"8.5:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","boreDiameter":"70.0","crankStroke":"55.0","pistonDiameter":"70.0",
+    "intakeValveClear":"0.10–0.15 mm (cold, verify)","exhaustValveClear":"0.10–0.15 mm (cold, verify)","plugType":"NGK BPR6ES","plugGap":"0.7",
+    "coilType":"Transistor magneto","starterType":"Recoil only","fuelSystem":"Carburetted","fuelTankCapacity":"3.6","coolingType":"Air cooled",
+    "idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"6.5 hp @ 3,600 rpm","torqueNm":"12.5","shaftType":"Horizontal 3/4\" keyed","weightKg":"16",
+    "notes":"Predator 212 cc (Hemi) — Harbor Freight GX200 clone (built by Loncin); the go-kart/minibike/racing hub. Hemi (angled-valve) head vs the earlier Non-Hemi. Massive aftermarket. Clone valve lash varies — verify against the Predator manual." }
+  $p212h$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Predator 212 (Non-Hemi)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-212-non-hemi';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-212-non-hemi','Predator','212 Non-Hemi','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $p212n$
+  { "year":"GX200-clone (flat/Non-Hemi head)","strokeType":"4-Stroke","ccSize":"212","compressionRatio":"8.5:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","boreDiameter":"70.0","crankStroke":"55.0","pistonDiameter":"70.0",
+    "intakeValveClear":"0.10–0.15 mm (cold, verify)","exhaustValveClear":"0.10–0.15 mm (cold, verify)","plugType":"NGK BPR6ES","plugGap":"0.7",
+    "coilType":"Transistor magneto","starterType":"Recoil only","fuelSystem":"Carburetted","fuelTankCapacity":"3.6","coolingType":"Air cooled",
+    "idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"6.5 hp @ 3,600 rpm","torqueNm":"12.5","shaftType":"Horizontal 3/4\" keyed","weightKg":"16",
+    "notes":"Predator 212 cc (Non-Hemi) — the earlier flat-chamber head; parts differ from the Hemi (rods, valves, head). Same 70×55 mm bottom end. Verify valve lash against the Predator manual." }
+  $p212n$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Predator 224
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-224';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-224','Predator','224','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $p224$
+  { "year":"212 successor","strokeType":"4-Stroke","ccSize":"224","compressionRatio":"8.5:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","plugType":"NGK BPR6ES","plugGap":"0.7",
+    "coilType":"Transistor magneto","starterType":"Recoil only","fuelSystem":"Carburetted","fuelTankCapacity":"3.6","coolingType":"Air cooled",
+    "idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"6.5 hp @ 3,600 rpm","shaftType":"Horizontal 3/4\" keyed","weightKg":"16",
+    "notes":"Predator 224 cc — the updated replacement for the 212 in many markets; similar footprint and mounting, mild displacement bump. Bore/stroke omitted pending confirmation. Verify against the Predator manual." }
+  $p224$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Predator 301
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-301';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-301','Predator','301','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $p301$
+  { "year":"GX270-class clone","strokeType":"4-Stroke","ccSize":"301","compressionRatio":"8.5:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","plugType":"NGK BPR6ES","plugGap":"0.7",
+    "coilType":"Transistor magneto","starterType":"Recoil (electric optional)","fuelSystem":"Carburetted","fuelTankCapacity":"6.0","coolingType":"Air cooled",
+    "idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"8.0 hp @ 3,600 rpm","shaftType":"Horizontal 1\" keyed","weightKg":"25",
+    "notes":"Predator 301 cc — GX270-class single-cylinder clone; common on karts, mini-bikes and gensets. Bore/stroke omitted pending confirmation. Verify against the Predator manual." }
+  $p301$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Predator 420
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-420';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-420','Predator','420','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $p420$
+  { "year":"GX390-class clone","strokeType":"4-Stroke","ccSize":"420","compressionRatio":"8.0:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","boreDiameter":"90.0","crankStroke":"66.0","pistonDiameter":"90.0",
+    "intakeValveClear":"0.10–0.15 mm (cold, verify)","exhaustValveClear":"0.10–0.15 mm (cold, verify)","plugType":"NGK BPR6ES","plugGap":"0.7",
+    "coilType":"Transistor magneto","starterType":"Recoil (electric optional)","fuelSystem":"Carburetted","fuelTankCapacity":"6.5","coolingType":"Air cooled",
+    "idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"13 hp @ 3,600 rpm","torqueNm":"26","shaftType":"Horizontal 1\" keyed","weightKg":"34",
+    "notes":"Predator 420 cc — GX390 clone (Loncin); the big-single workhorse for karts, log splitters, gensets, pressure washers. Big aftermarket. Verify valve lash against the Predator manual." }
+  $p420$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Predator 459
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-459';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-459','Predator','459','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $p459$
+  { "year":"Big single","strokeType":"4-Stroke","ccSize":"459","compressionRatio":"8.0:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","plugType":"NGK BPR6ES","plugGap":"0.7",
+    "coilType":"Transistor magneto","starterType":"Recoil (electric optional)","fuelSystem":"Carburetted","fuelTankCapacity":"6.5","coolingType":"Air cooled",
+    "idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"15 hp @ 3,600 rpm","shaftType":"Horizontal 1\" keyed","weightKg":"36",
+    "notes":"Predator 459 cc — larger single above the 420; common on bigger splitters and gensets. Bore/stroke omitted pending confirmation. Verify against the Predator manual." }
+  $p459$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Predator 670 V-twin
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-670';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-670','Predator','670','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $p670$
+  { "year":"GX620-class V-twin clone","strokeType":"4-Stroke","ccSize":"670","compressionRatio":"8.3:1","cylCount":"2",
+    "firingOrder":"90° V-twin","valveTrain":"OHV (pushrod)","camType":"OHV — 4 valves","plugType":"NGK BPR6ES","plugGap":"0.7",
+    "coilType":"Transistor magneto","starterType":"Electric + recoil","fuelSystem":"Carburetted","coolingType":"Air cooled",
+    "idleRpm":"1400","wotRpm":"3600 (governed)","wotPower":"22 hp @ 3,600 rpm","shaftType":"Horizontal 1\" keyed (V-twin)","weightKg":"38",
+    "notes":"Predator 670 cc — GX620/V-twin-class clone; popular for big karts, ZTR mower swaps and generators. Dual plugs NGK BPR6ES. Bore/stroke omitted pending confirmation. Verify against the Predator manual." }
+  $p670$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tillotson 212R
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tillotson-212r';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tillotson-212r','Tillotson','212R','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $t212$
+  { "year":"Racing GX200-clone","strokeType":"4-Stroke","ccSize":"212","compressionRatio":"9.0:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","boreDiameter":"70.0","crankStroke":"55.0","pistonDiameter":"70.0",
+    "plugType":"NGK BPR6ES","plugGap":"0.7","coilType":"Transistor magneto","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "coolingType":"Air cooled","idleRpm":"1750","wotRpm":"6000+","wotPower":"~15 hp (race-built)","shaftType":"Horizontal 3/4\" keyed","weightKg":"16",
+    "notes":"Tillotson 212R RS — factory race-prepped GX200-clone (billet rod, upgraded valve train, performance carb) aimed at kart racing classes. Runs well past the stock governed rpm. Verify build spec against Tillotson's documentation." }
+  $t212$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Lifan 168F-2
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='lifan-168f-2';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('lifan-168f-2','Lifan','168F-2','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $l168$
+  { "year":"GX160-clone (OEM)","strokeType":"4-Stroke","ccSize":"163","compressionRatio":"8.5:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","boreDiameter":"68.0","crankStroke":"45.0","pistonDiameter":"68.0",
+    "plugType":"NGK BPR6ES","plugGap":"0.7","coilType":"Transistor magneto","starterType":"Recoil (electric optional)","fuelSystem":"Carburetted",
+    "coolingType":"Air cooled","idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"5.5 hp @ 3,600 rpm","shaftType":"Horizontal 3/4\" keyed","weightKg":"15",
+    "notes":"Lifan 168F-2 — 163 cc GX160-clone (one of the common OEMs behind branded 6.5 hp engines). Interchangeable with GX160 in most fitments. Verify valve lash against the manufacturer's manual." }
+  $l168$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Loncin G200F
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='loncin-g200f';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('loncin-g200f','Loncin','G200F','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $lg200$
+  { "year":"GX200-clone (OEM)","strokeType":"4-Stroke","ccSize":"196","compressionRatio":"8.5:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","boreDiameter":"68.0","crankStroke":"54.0","pistonDiameter":"68.0",
+    "plugType":"NGK BPR6ES","plugGap":"0.7","coilType":"Transistor magneto","starterType":"Recoil (electric optional)","fuelSystem":"Carburetted",
+    "coolingType":"Air cooled","idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"6.5 hp @ 3,600 rpm","shaftType":"Horizontal 3/4\" keyed","weightKg":"16",
+    "notes":"Loncin G200F — 196 cc GX200-clone OEM behind many branded engines (Loncin also builds Predator and some BMW/motorcycle units). GX200-interchangeable. Verify valve lash against the manufacturer's manual." }
+  $lg200$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- DuroMax XP7HP
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='duromax-xp7hp';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('duromax-xp7hp','DuroMax','XP7HP','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $dm7$
+  { "year":"GX200-class clone","strokeType":"4-Stroke","ccSize":"208","compressionRatio":"8.5:1","cylCount":"1",
+    "valveTrain":"OHV (pushrod)","camType":"OHV — 2 valves","plugType":"NGK BPR6ES","plugGap":"0.7",
+    "coilType":"Transistor magneto","starterType":"Recoil (electric optional)","fuelSystem":"Carburetted","fuelTankCapacity":"3.6","coolingType":"Air cooled",
+    "idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"7 hp @ 3,600 rpm","shaftType":"Horizontal 3/4\" keyed","weightKg":"17",
+    "notes":"DuroMax XP7HP — 208 cc GX200-class clone; common on pumps, karts and gensets. Bore/stroke omitted pending confirmation. Verify against the DuroMax manual." }
+  $dm7$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Clone/import engine batch imported (11 engines).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp')
 ORDER BY e.type, e.make, e.model;
