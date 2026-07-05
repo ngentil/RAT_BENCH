@@ -959,9 +959,192 @@ BEGIN
   RAISE NOTICE 'Outboard 4-stroke batch imported (14 motors).';
 END $$;
 
+-- ═══ Husqvarna + Echo chainsaws ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Husqvarna 435
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-435';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-435','Husqvarna','435','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h435$
+  { "year":"Homeowner (X-Torq)","strokeType":"2-Stroke","ccSize":"40.9","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.5","coilType":"Electronic (capacitor discharge)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.37","idleRpm":"2900","wotRpm":"12000","wotPower":"1.6 kW (2.2 hp)",
+    "barLength":"13–18 in","barGauge":"0.050 in (1.3 mm)","chainPitchCS":".325\" / 3/8\"","sprocketStyle":"Spur","weightKg":"4.2",
+    "notes":"Husqvarna 435 — 40.9 cc X-Torq homeowner saw. 50:1 premix, plug NGK BPMR7A (HQT-1). Bore/stroke omitted pending confirmation. Verify against the Husqvarna manual." }
+  $h435$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 445
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-445';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-445','Husqvarna','445','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h445$
+  { "year":"Homeowner/farm (X-Torq)","strokeType":"2-Stroke","ccSize":"45.7","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.5","coilType":"Electronic (capacitor discharge)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.45","idleRpm":"2700","wotRpm":"12000","wotPower":"2.1 kW (2.8 hp)",
+    "barLength":"13–20 in","barGauge":"0.050 in (1.3 mm)","chainPitchCS":".325\"","sprocketStyle":"Spur","weightKg":"4.9",
+    "notes":"Husqvarna 445 — 45.7 cc X-Torq farm/homeowner saw. 50:1 premix, plug NGK BPMR7A. Verify against the Husqvarna manual." }
+  $h445$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 450
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-450';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-450','Husqvarna','450','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h450$
+  { "year":"Farm/all-round (X-Torq)","strokeType":"2-Stroke","ccSize":"50.2","cylCount":"1","coolingType":"Air cooled",
+    "boreDiameter":"44.0","crankStroke":"33.0","pistonDiameter":"44.0","plugType":"NGK BPMR7A","plugGap":"0.5",
+    "coilType":"Electronic (capacitor discharge)","starterType":"Recoil only","fuelSystem":"Carburetted","mixRatio":"50:1",
+    "fuelTankCapacity":"0.45","idleRpm":"2700","wotRpm":"12000","wotPower":"2.4 kW (3.2 hp)",
+    "barLength":"13–20 in","barGauge":"0.050 in (1.3 mm)","chainPitchCS":".325\"","sprocketStyle":"Spur","weightKg":"5.1",
+    "notes":"Husqvarna 450 — 50.2 cc X-Torq all-rounder, a very popular mid-size. 50:1 premix, plug NGK BPMR7A. Verify against the Husqvarna manual." }
+  $h450$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 455 Rancher
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-455-rancher';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-455-rancher','Husqvarna','455 Rancher','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h455$
+  { "year":"Farm/ranch (X-Torq)","strokeType":"2-Stroke","ccSize":"55.5","cylCount":"1","coolingType":"Air cooled",
+    "boreDiameter":"47.0","crankStroke":"32.0","pistonDiameter":"47.0","plugType":"NGK BPMR7A","plugGap":"0.5",
+    "coilType":"Electronic (capacitor discharge)","starterType":"Recoil only","fuelSystem":"Carburetted","mixRatio":"50:1",
+    "fuelTankCapacity":"0.65","idleRpm":"2700","wotRpm":"12000","wotPower":"2.6 kW (3.5 hp)",
+    "barLength":"13–20 in","barGauge":"0.058 in (1.5 mm)","chainPitchCS":".325\"","sprocketStyle":"Spur","weightKg":"5.9",
+    "notes":"Husqvarna 455 Rancher — 55.5 cc X-Torq, one of the best-selling farm/ranch saws ever. 50:1 premix, plug NGK BPMR7A. Verify against the Husqvarna manual." }
+  $h455$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 460 Rancher
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-460-rancher';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-460-rancher','Husqvarna','460 Rancher','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h460$
+  { "year":"Farm/ranch (X-Torq)","strokeType":"2-Stroke","ccSize":"60.3","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.5","coilType":"Electronic (capacitor discharge)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.68","idleRpm":"2700","wotRpm":"12000","wotPower":"2.7 kW (3.6 hp)",
+    "barLength":"13–24 in","barGauge":"0.058 in (1.5 mm)","chainPitchCS":".325\" / 3/8\"","sprocketStyle":"Spur","weightKg":"5.9",
+    "notes":"Husqvarna 460 Rancher — 60.3 cc X-Torq, the bigger Rancher for larger bars. 50:1 premix, plug NGK BPMR7A. Bore/stroke omitted pending confirmation. Verify against the Husqvarna manual." }
+  $h460$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 550 XP
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-550-xp';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-550-xp','Husqvarna','550 XP','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h550$
+  { "year":"Professional (Mark II, AutoTune)","strokeType":"2-Stroke","ccSize":"50.1","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.5","coilType":"Electronic (AutoTune)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.50","idleRpm":"2700","wotRpm":"14000","wotPower":"2.8 kW (3.75 hp)",
+    "barLength":"13–20 in","barGauge":"0.050 in (1.3 mm)","chainPitchCS":".325\"","sprocketStyle":"Rim","weightKg":"4.9",
+    "notes":"Husqvarna 550 XP Mark II — 50.1 cc professional saw with AutoTune (self-adjusting carb). 50:1 premix, plug NGK BPMR7A. Verify against the Husqvarna manual." }
+  $h550$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 562 XP
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-562-xp';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-562-xp','Husqvarna','562 XP','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h562$
+  { "year":"Professional (AutoTune)","strokeType":"2-Stroke","ccSize":"59.8","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.5","coilType":"Electronic (AutoTune)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.65","idleRpm":"2700","wotRpm":"14000","wotPower":"3.5 kW (4.7 hp)",
+    "barLength":"13–24 in","barGauge":"0.058 in (1.5 mm)","chainPitchCS":".325\" / 3/8\"","sprocketStyle":"Rim","weightKg":"6.1",
+    "notes":"Husqvarna 562 XP — 59.8 cc professional saw with AutoTune, a favourite 60 cc pro. 50:1 premix, plug NGK BPMR7A. Bore/stroke omitted pending confirmation. Verify against the Husqvarna manual." }
+  $h562$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 572 XP
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-572-xp';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-572-xp','Husqvarna','572 XP','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h572$
+  { "year":"Professional (AutoTune)","strokeType":"2-Stroke","ccSize":"70.6","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.5","coilType":"Electronic (AutoTune)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.72","idleRpm":"2700","wotRpm":"14000","wotPower":"4.3 kW (5.8 hp)",
+    "barLength":"15–28 in","barGauge":"0.058 in (1.5 mm)","chainPitchCS":".325\" / 3/8\"","sprocketStyle":"Rim","weightKg":"6.6",
+    "notes":"Husqvarna 572 XP — 70.6 cc professional saw with AutoTune, the modern successor to the 372XP. 50:1 premix, plug NGK BPMR7A. Verify against the Husqvarna manual." }
+  $h572$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 372 XP
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-372-xp';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-372-xp','Husqvarna','372 XP','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h372$
+  { "year":"Professional (classic)","strokeType":"2-Stroke","ccSize":"70.7","cylCount":"1","coolingType":"Air cooled",
+    "boreDiameter":"50.0","crankStroke":"36.0","pistonDiameter":"50.0","plugType":"NGK BPMR7A","plugGap":"0.5",
+    "coilType":"Electronic (capacitor discharge)","starterType":"Recoil only","fuelSystem":"Carburetted","mixRatio":"50:1",
+    "fuelTankCapacity":"0.77","idleRpm":"2700","wotRpm":"13000","wotPower":"3.9 kW (5.4 hp)",
+    "barLength":"15–28 in","barGauge":"0.058 in (1.5 mm)","chainPitchCS":".325\" / 3/8\"","sprocketStyle":"Rim","weightKg":"6.6",
+    "notes":"Husqvarna 372 XP — 70.7 cc, a legendary professional saw with a cult following. 50:1 premix, plug NGK BPMR7A. Verify against the Husqvarna manual." }
+  $h372$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 395 XP
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-395-xp';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-395-xp','Husqvarna','395 XP','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h395$
+  { "year":"Professional (big-bore)","strokeType":"2-Stroke","ccSize":"93.6","cylCount":"1","coolingType":"Air cooled",
+    "boreDiameter":"56.0","crankStroke":"38.0","pistonDiameter":"56.0","plugType":"NGK BPMR7A","plugGap":"0.5",
+    "coilType":"Electronic (capacitor discharge)","starterType":"Recoil only","fuelSystem":"Carburetted","mixRatio":"50:1",
+    "fuelTankCapacity":"0.95","idleRpm":"2500","wotRpm":"13000","wotPower":"4.9 kW (6.5 hp)",
+    "barLength":"20–36 in","barGauge":"0.063 in (1.6 mm)","chainPitchCS":"3/8\" / .404\"","sprocketStyle":"Rim","weightKg":"7.5",
+    "notes":"Husqvarna 395 XP — 93.6 cc big professional saw for felling and milling. 50:1 premix, plug NGK BPMR7A. Verify against the Husqvarna manual." }
+  $h395$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Echo CS-400
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='echo-cs-400';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('echo-cs-400','Echo','CS-400','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $e400$
+  { "year":"Homeowner","strokeType":"2-Stroke","ccSize":"40.2","cylCount":"1","coolingType":"Air cooled",
+    "boreDiameter":"40.0","crankStroke":"32.0","pistonDiameter":"40.0","coilType":"Electronic (capacitor discharge)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.39","idleRpm":"2800","wotRpm":"13000","wotPower":"1.6 kW (2.2 hp)",
+    "barLength":"16–18 in","barGauge":"0.050 in (1.3 mm)","chainPitchCS":"3/8\" / .325\"","sprocketStyle":"Spur","weightKg":"4.1",
+    "notes":"Echo CS-400 — 40.2 cc homeowner saw, well regarded for value. 50:1 premix. Spark plug/gap per the Echo manual (commonly NGK). Verify against the Echo manual." }
+  $e400$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Echo CS-490
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='echo-cs-490';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('echo-cs-490','Echo','CS-490','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $e490$
+  { "year":"Farm/ranch","strokeType":"2-Stroke","ccSize":"50.2","cylCount":"1","coolingType":"Air cooled",
+    "boreDiameter":"44.7","crankStroke":"32.0","pistonDiameter":"44.7","coilType":"Electronic (capacitor discharge)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.44","idleRpm":"2800","wotRpm":"13500","wotPower":"2.4 kW (3.2 hp)",
+    "barLength":"18–20 in","barGauge":"0.058 in (1.5 mm)","chainPitchCS":".325\"","sprocketStyle":"Spur","weightKg":"5.0",
+    "notes":"Echo CS-490 — 50.2 cc farm/ranch saw. 50:1 premix. Plug/gap per the Echo manual. Verify against the Echo manual." }
+  $e490$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Echo CS-590 Timber Wolf
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='echo-cs-590';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('echo-cs-590','Echo','CS-590','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $e590$
+  { "year":"Farm/ranch (Timber Wolf)","strokeType":"2-Stroke","ccSize":"59.8","cylCount":"1","coolingType":"Air cooled",
+    "coilType":"Electronic (capacitor discharge)","starterType":"Recoil only","fuelSystem":"Carburetted","mixRatio":"50:1",
+    "fuelTankCapacity":"0.55","idleRpm":"2800","wotRpm":"13500","wotPower":"2.9 kW (3.9 hp)",
+    "barLength":"18–27 in","barGauge":"0.058 in (1.5 mm)","chainPitchCS":".325\" / 3/8\"","sprocketStyle":"Spur","weightKg":"6.0",
+    "notes":"Echo CS-590 Timber Wolf — 59.8 cc value farm/ranch saw with a big following. 50:1 premix. Bore/stroke and plug per the Echo manual. Verify against the Echo manual." }
+  $e590$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Echo CS-800P
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='echo-cs-800p';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('echo-cs-800p','Echo','CS-800P','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $e800$
+  { "year":"Professional (big-bore)","strokeType":"2-Stroke","ccSize":"80.7","cylCount":"1","coolingType":"Air cooled",
+    "boreDiameter":"52.0","crankStroke":"38.0","pistonDiameter":"52.0","coilType":"Electronic (capacitor discharge)","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.83","idleRpm":"2500","wotRpm":"13000","wotPower":"4.4 kW (5.9 hp)",
+    "barLength":"20–36 in","barGauge":"0.063 in (1.6 mm)","chainPitchCS":"3/8\" / .404\"","sprocketStyle":"Rim","weightKg":"8.0",
+    "notes":"Echo CS-800P — 80.7 cc big professional saw for felling/milling. 50:1 premix. Plug/gap per the Echo manual. Verify against the Echo manual." }
+  $e800$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Husqvarna + Echo saw batch imported (14 saws).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p')
 ORDER BY e.type, e.make, e.model;
