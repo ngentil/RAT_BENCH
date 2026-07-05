@@ -1288,9 +1288,185 @@ BEGIN
   RAISE NOTICE 'Clone/import engine batch imported (11 engines).';
 END $$;
 
+-- ═══ Handheld 2-stroke — trimmers & blowers ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Stihl FS 55
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-fs-55';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-fs-55','Stihl','FS 55','Trimmer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fs55$
+  { "year":"Homeowner trimmer","strokeType":"2-Stroke","ccSize":"27.2","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK CMR6H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"0.33","wotPower":"0.75 kW (1.0 hp)","weightKg":"5.0",
+    "notes":"Stihl FS 55 — 27.2 cc straight-shaft trimmer, a long-running homeowner staple. 50:1 premix, plug NGK CMR6H. Verify against the Stihl manual." }
+  $fs55$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Stihl FS 91 (4-MIX)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-fs-91';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-fs-91','Stihl','FS 91','Trimmer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fs91$
+  { "year":"Pro trimmer (4-MIX)","strokeType":"4-Stroke (4-MIX)","ccSize":"28.4","cylCount":"1","coolingType":"Air cooled",
+    "valveTrain":"OHV (4-MIX)","plugType":"NGK CMR6H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.34","wotPower":"0.87 kW (1.2 hp)","weightKg":"5.6",
+    "notes":"Stihl FS 91 — 28.4 cc 4-MIX pro-grade trimmer. 4-MIX is a valved 4-stroke that still runs on 50:1 premix (no separate oil) — check valve lash periodically. Plug NGK CMR6H. Verify against the Stihl manual." }
+  $fs91$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Stihl FS 131 (4-MIX)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-fs-131';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-fs-131','Stihl','FS 131','Trimmer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fs131$
+  { "year":"Pro trimmer/brushcutter (4-MIX)","strokeType":"4-Stroke (4-MIX)","ccSize":"36.3","cylCount":"1","coolingType":"Air cooled",
+    "valveTrain":"OHV (4-MIX)","plugType":"NGK CMR6H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"0.53","wotPower":"1.4 kW (1.9 hp)","weightKg":"5.8",
+    "notes":"Stihl FS 131 — 36.3 cc 4-MIX pro trimmer/brushcutter. 50:1 premix, periodic valve check (4-MIX). Plug NGK CMR6H. Verify against the Stihl manual." }
+  $fs131$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Stihl FS 250
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-fs-250';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-fs-250','Stihl','FS 250','Trimmer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $fs250$
+  { "year":"Pro brushcutter","strokeType":"2-Stroke","ccSize":"40.2","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"0.64","wotPower":"1.6 kW (2.2 hp)","weightKg":"6.5",
+    "notes":"Stihl FS 250 — 40.2 cc 2-stroke pro brushcutter, a torquey clearing-saw favourite. 50:1 premix, plug NGK BPMR7A. Verify against the Stihl manual." }
+  $fs250$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Stihl BG 86
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-bg-86';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-bg-86','Stihl','BG 86','Blower',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $bg86$
+  { "year":"Handheld blower","strokeType":"2-Stroke","ccSize":"27.2","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK CMR6H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"0.44","wotPower":"0.8 kW (1.1 hp)","weightKg":"4.4",
+    "notes":"Stihl BG 86 — 27.2 cc handheld blower, a landscaping workhorse (~750 m³/h air). 50:1 premix, plug NGK CMR6H. Verify against the Stihl manual." }
+  $bg86$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Stihl BR 600 (4-MIX)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-br-600';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-br-600','Stihl','BR 600','Blower',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $br600$
+  { "year":"Backpack blower (4-MIX)","strokeType":"4-Stroke (4-MIX)","ccSize":"64.8","cylCount":"1","coolingType":"Air cooled",
+    "valveTrain":"OHV (4-MIX)","plugType":"NGK CMR6H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"1.4","wotPower":"2.8 kW (3.8 hp)","weightKg":"9.8",
+    "notes":"Stihl BR 600 — 64.8 cc 4-MIX backpack blower, an industry benchmark for quiet, fuel-efficient power. 50:1 premix, periodic valve check (4-MIX). Plug NGK CMR6H. Verify against the Stihl manual." }
+  $br600$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Stihl BR 700
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-br-700';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-br-700','Stihl','BR 700','Blower',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $br700$
+  { "year":"Backpack blower (4-MIX)","strokeType":"4-Stroke (4-MIX)","ccSize":"64.8","cylCount":"1","coolingType":"Air cooled",
+    "valveTrain":"OHV (4-MIX)","plugType":"NGK CMR6H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only",
+    "fuelSystem":"Carburetted","mixRatio":"50:1","fuelTankCapacity":"1.4","wotPower":"2.8 kW (3.8 hp)","weightKg":"10.5",
+    "notes":"Stihl BR 700 — 64.8 cc 4-MIX backpack blower, the higher-output sibling of the BR 600 with improved air flow. 50:1 premix. Plug NGK CMR6H. Verify against the Stihl manual." }
+  $br700$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 128LD
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-128ld';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-128ld','Husqvarna','128LD','Trimmer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h128$
+  { "year":"Homeowner trimmer (detachable)","strokeType":"2-Stroke","ccSize":"28.0","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK CMR7H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"0.34","wotPower":"0.8 kW (1.1 hp)","weightKg":"5.0",
+    "notes":"Husqvarna 128LD — 28 cc detachable-shaft trimmer (accepts the Husqvarna attachment system). 50:1 premix, plug NGK CMR7H. Verify against the Husqvarna manual." }
+  $h128$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 525LS
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-525ls';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-525ls','Husqvarna','525LS','Trimmer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h525$
+  { "year":"Professional trimmer","strokeType":"2-Stroke","ccSize":"25.4","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK CMR7H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"0.51","wotPower":"1.0 kW (1.34 hp)","weightKg":"5.5",
+    "notes":"Husqvarna 525LS — 25.4 cc professional straight-shaft trimmer, light and high-revving for its class. 50:1 premix, plug NGK CMR7H. Verify against the Husqvarna manual." }
+  $h525$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 350BT
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-350bt';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-350bt','Husqvarna','350BT','Blower',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h350$
+  { "year":"Backpack blower","strokeType":"2-Stroke","ccSize":"50.2","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK CMR7H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"1.25","wotPower":"1.6 kW (2.1 hp)","weightKg":"10.2",
+    "notes":"Husqvarna 350BT — 50.2 cc X-Torq backpack blower, a popular mid-size commercial unit. 50:1 premix, plug NGK CMR7H. Verify against the Husqvarna manual." }
+  $h350$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 580BTS
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-580bts';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-580bts','Husqvarna','580BTS','Blower',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h580$
+  { "year":"Backpack blower (pro)","strokeType":"2-Stroke","ccSize":"75.6","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK CMR7H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"2.6","wotPower":"3.1 kW (4.2 hp)","weightKg":"11.8",
+    "notes":"Husqvarna 580BTS — 75.6 cc X-Torq professional backpack blower, one of the highest-output commercial blowers. 50:1 premix, plug NGK CMR7H. Verify against the Husqvarna manual." }
+  $h580$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Echo SRM-225
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='echo-srm-225';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('echo-srm-225','Echo','SRM-225','Trimmer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $srm225$
+  { "year":"Trimmer","strokeType":"2-Stroke","ccSize":"21.2","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK CMR6H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"0.44","wotPower":"0.67 kW (0.9 hp)","weightKg":"4.6",
+    "notes":"Echo SRM-225 — 21.2 cc straight-shaft trimmer, a light and reliable commercial-grade unit. 50:1 premix, plug commonly NGK CMR6H. Verify against the Echo manual." }
+  $srm225$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Echo SRM-2620
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='echo-srm-2620';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('echo-srm-2620','Echo','SRM-2620','Trimmer',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $srm2620$
+  { "year":"Professional trimmer","strokeType":"2-Stroke","ccSize":"25.4","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK CMR6H","plugGap":"0.5","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"0.67","wotPower":"0.9 kW (1.2 hp)","weightKg":"5.4",
+    "notes":"Echo SRM-2620 — 25.4 cc professional trimmer with a high-torque gearcase; a landscaper favourite. 50:1 premix. Verify plug/gap against the Echo manual." }
+  $srm2620$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Echo PB-580
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='echo-pb-580';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('echo-pb-580','Echo','PB-580','Blower',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $pb580$
+  { "year":"Backpack blower","strokeType":"2-Stroke","ccSize":"58.2","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.65","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"1.9","wotPower":"2.4 kW (3.2 hp)","weightKg":"10.9",
+    "notes":"Echo PB-580 — 58.2 cc backpack blower, a durable mid/large commercial unit. 50:1 premix. Verify plug/gap against the Echo manual." }
+  $pb580$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Echo PB-8010
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='echo-pb-8010';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('echo-pb-8010','Echo','PB-8010','Blower',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $pb8010$
+  { "year":"Backpack blower (flagship)","strokeType":"2-Stroke","ccSize":"79.9","cylCount":"1","coolingType":"Air cooled",
+    "plugType":"NGK BPMR7A","plugGap":"0.65","coilType":"Electronic","starterType":"Recoil only","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","fuelTankCapacity":"2.5","wotPower":"3.8 kW (5.2 hp)","weightKg":"11.9",
+    "notes":"Echo PB-8010 — 79.9 cc backpack blower, marketed as the world's most powerful (~1360 m³/h, ~211 mph). 50:1 premix. Verify plug/gap against the Echo manual." }
+  $pb8010$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Handheld 2-stroke batch imported (15 units).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010')
 ORDER BY e.type, e.make, e.model;
