@@ -1893,9 +1893,215 @@ BEGIN
   RAISE NOTICE 'ATV/UTV batch imported (13 machines).';
 END $$;
 
+-- ═══ Dirt / dual-sport / adventure motorcycles (batch 2) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Honda CRF300L
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-crf300l';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-crf300l','Honda','CRF300L','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $crf300l$
+  { "year":"2021–present (dual-sport)","strokeType":"4-Stroke","ccSize":"286","compressionRatio":"10.7:1","cylCount":"1","valveTrain":"DOHC","camType":"DOHC — 4 valves",
+    "boreDiameter":"76.0","crankStroke":"63.0","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (PGM-FI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","wotPower":"27 hp @ 8,500 rpm","torqueNm":"26",
+    "forkType":"USD","forkTravel":"260","rearShockType":"Pro-Link monoshock","rearTravel":"260","frontBrakeType":"256 mm disc","rearBrakeType":"220 mm disc",
+    "tyreSizeFront":"3.00-21","tyreSizeRear":"120/80-18","wheelbaseMm":"1455","seatHeightMm":"880","groundClearanceMm":"285","weightKg":"142 (wet)","fuelTankCapacity":"7.8",
+    "notes":"Honda CRF300L — 286 cc liquid-cooled DOHC single dual-sport (grew from the CRF250L). Light, reliable, hugely popular entry dual-sport. Verify plug/lash against the Honda manual." }
+  $crf300l$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda CRF450L
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-crf450l';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-crf450l','Honda','CRF450L','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $crf450l$
+  { "year":"Dual-sport","strokeType":"4-Stroke","ccSize":"449","compressionRatio":"12.0:1","cylCount":"1","valveTrain":"DOHC","camType":"DOHC — 4 valves (Ti)",
+    "boreDiameter":"96.0","crankStroke":"62.1","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (PGM-FI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet","wotPower":"~24 hp (emissions-detuned)","torqueNm":"32",
+    "forkType":"USD (Showa 49 mm)","forkTravel":"305","rearShockType":"Pro-Link monoshock","rearTravel":"312","frontBrakeType":"260 mm disc","rearBrakeType":"240 mm disc",
+    "tyreSizeFront":"80/100-21","tyreSizeRear":"120/80-18","wheelbaseMm":"1485","seatHeightMm":"940","groundClearanceMm":"315","weightKg":"131 (wet)","fuelTankCapacity":"7.6",
+    "notes":"Honda CRF450L — street-legal dual-sport built off the CRF450R; heavily detuned for emissions/reliability (many owners uncork it). Titanium valves. Verify plug/lash against the Honda manual." }
+  $crf450l$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda XR650L
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-xr650l';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-xr650l','Honda','XR650L','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $xr650l$
+  { "year":"1993–present (dual-sport)","strokeType":"4-Stroke","ccSize":"644","compressionRatio":"8.3:1","cylCount":"1","valveTrain":"SOHC (RFVC)","camType":"SOHC — 4 valves (radial)",
+    "boreDiameter":"100.0","crankStroke":"82.0","coolingType":"Air cooled","fuelSystem":"Carburetted","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"5-speed","clutchType":"Multi-plate wet","wotPower":"~40 hp","torqueNm":"48",
+    "forkType":"Telescopic (43 mm)","forkTravel":"290","rearShockType":"Pro-Link monoshock","rearTravel":"280","frontBrakeType":"256 mm disc","rearBrakeType":"220 mm disc",
+    "tyreSizeFront":"3.00-21","tyreSizeRear":"120/90-18","wheelbaseMm":"1455","seatHeightMm":"940","groundClearanceMm":"330","weightKg":"147 (dry)","fuelTankCapacity":"10.5",
+    "notes":"Honda XR650L — 644 cc air-cooled SOHC RFVC single dual-sport, essentially unchanged since 1993; bulletproof and hugely popular for overlanding. Keihin carb. Shares 100×82 mm bore/stroke with the DR650. Verify against the Honda manual." }
+  $xr650l$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda CRF450R
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-crf450r';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-crf450r','Honda','CRF450R','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $crf450r$
+  { "year":"Motocross","strokeType":"4-Stroke","ccSize":"449","compressionRatio":"13.5:1","cylCount":"1","valveTrain":"Unicam SOHC","camType":"Unicam — 4 valves (Ti)",
+    "boreDiameter":"96.0","crankStroke":"62.1","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (PGM-FI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"5-speed","clutchType":"Multi-plate wet","wotPower":"~55 hp","torqueNm":"~48",
+    "forkType":"USD (Showa 49 mm)","forkTravel":"305","rearShockType":"Pro-Link monoshock","rearTravel":"312","frontBrakeType":"260 mm disc","rearBrakeType":"240 mm disc",
+    "tyreSizeFront":"80/100-21","tyreSizeRear":"120/80-19","wheelbaseMm":"1482","seatHeightMm":"960","groundClearanceMm":"335","weightKg":"111 (wet)","fuelTankCapacity":"6.3",
+    "notes":"Honda CRF450R — 449 cc Unicam liquid-cooled MX bike; Honda's flagship 450 motocrosser. Electric start, titanium valves. Race service intervals. Verify against the Honda manual." }
+  $crf450r$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda Africa Twin CRF1100L
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-africa-twin-crf1100l';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-africa-twin-crf1100l','Honda','Africa Twin CRF1100L','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $at1100$
+  { "year":"2020–present (ADV)","strokeType":"4-Stroke","ccSize":"1084","compressionRatio":"10.1:1","cylCount":"2","firingOrder":"270° parallel twin","valveTrain":"Unicam SOHC","camType":"Unicam — 8 valves",
+    "coolingType":"Liquid cooled","fuelSystem":"Fuel injection (PGM-FI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed (opt. DCT)","clutchType":"Multi-plate wet (assist/slipper)","wotPower":"101 hp @ 7,500 rpm","torqueNm":"105",
+    "forkType":"USD (Showa 45 mm)","forkTravel":"230","rearShockType":"Pro-Link monoshock","rearTravel":"220","frontBrakeType":"Dual 310 mm disc","rearBrakeType":"256 mm disc",
+    "tyreSizeFront":"90/90-21","tyreSizeRear":"150/70-18","wheelbaseMm":"1575","seatHeightMm":"850","weightKg":"226 (wet)","fuelTankCapacity":"18.8",
+    "notes":"Honda Africa Twin CRF1100L — 1084 cc 270° parallel-twin adventure bike, available with Honda's DCT automatic. Genuine off-road-capable big ADV. Verify plug/lash against the Honda manual." }
+  $at1100$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha WR250R
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-wr250r';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-wr250r','Yamaha','WR250R','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $wr250r$
+  { "year":"Dual-sport","strokeType":"4-Stroke","ccSize":"250","compressionRatio":"11.8:1","cylCount":"1","valveTrain":"DOHC","camType":"DOHC — 4 valves (Ti)",
+    "boreDiameter":"77.0","crankStroke":"53.6","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet","wotPower":"~30 hp @ 10,000 rpm","torqueNm":"24",
+    "forkType":"USD (46 mm)","forkTravel":"270","rearShockType":"Monoshock","rearTravel":"270","frontBrakeType":"250 mm disc","rearBrakeType":"230 mm disc",
+    "tyreSizeFront":"80/100-21","tyreSizeRear":"120/80-18","wheelbaseMm":"1425","seatHeightMm":"930","groundClearanceMm":"300","weightKg":"134 (wet)","fuelTankCapacity":"7.6",
+    "notes":"Yamaha WR250R — 250 cc liquid-cooled DOHC titanium-valve dual-sport, a high-revving, high-quality (and long-discontinued, sought-after) machine. Verify plug/lash against the Yamaha manual." }
+  $wr250r$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha YZ250 (2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-yz250';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-yz250','Yamaha','YZ250','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $yz250$
+  { "year":"Motocross (2-stroke)","strokeType":"2-Stroke","ccSize":"249","compressionRatio":"8.9–10.6:1 (YPVS)","cylCount":"1","coolingType":"Liquid cooled",
+    "boreDiameter":"66.4","crankStroke":"72.0","fuelSystem":"Carburetted (Keihin PWK38)","mixRatio":"32:1","starterType":"Kick","plugType":"NGK BR9EG","plugGap":"0.6",
+    "driveType":"Chain","transType":"5-speed","clutchType":"Multi-plate wet","wotPower":"~48 hp","forkType":"USD (KYB 48 mm)","forkTravel":"300",
+    "rearShockType":"Monoshock (KYB)","rearTravel":"315","frontBrakeType":"270 mm disc","rearBrakeType":"245 mm disc",
+    "tyreSizeFront":"80/100-21","tyreSizeRear":"110/90-19","wheelbaseMm":"1481","seatHeightMm":"985","weightKg":"104 (wet)","fuelTankCapacity":"8.0",
+    "notes":"Yamaha YZ250 — 249 cc 2-stroke MX bike with the YPVS power valve; produced with minimal change for decades and beloved for its light, punchy character. 32:1 premix, kick start. Verify against the Yamaha manual." }
+  $yz250$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha Tenere 700
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-tenere-700';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-tenere-700','Yamaha','Tenere 700','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $t700$
+  { "year":"2019–present (ADV)","strokeType":"4-Stroke","ccSize":"689","compressionRatio":"11.5:1","cylCount":"2","firingOrder":"270° parallel twin (CP2)","valveTrain":"DOHC","camType":"DOHC — 8 valves",
+    "boreDiameter":"80.0","crankStroke":"68.6","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","wotPower":"72 hp @ 9,000 rpm","torqueNm":"68",
+    "forkType":"USD (43 mm)","forkTravel":"210","rearShockType":"Monoshock","rearTravel":"200","frontBrakeType":"Dual 282 mm disc","rearBrakeType":"245 mm disc",
+    "tyreSizeFront":"90/90-21","tyreSizeRear":"150/70-18","wheelbaseMm":"1595","seatHeightMm":"875","weightKg":"204 (wet)","fuelTankCapacity":"16",
+    "notes":"Yamaha Ténéré 700 — 689 cc CP2 270° parallel-twin (the MT-07 engine) middleweight adventure bike; minimal electronics, big off-road following. Verify plug/lash against the Yamaha manual." }
+  $t700$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki KLX300
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-klx300';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-klx300','Kawasaki','KLX300','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $klx300$
+  { "year":"2021–present (dual-sport)","strokeType":"4-Stroke","ccSize":"292","compressionRatio":"11.1:1","cylCount":"1","valveTrain":"DOHC","camType":"DOHC — 4 valves",
+    "boreDiameter":"78.0","crankStroke":"61.2","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet","wotPower":"~25 hp","torqueNm":"25",
+    "forkType":"USD (43 mm)","forkTravel":"250","rearShockType":"Uni-Trak monoshock","rearTravel":"265","frontBrakeType":"250 mm disc","rearBrakeType":"240 mm disc",
+    "tyreSizeFront":"3.00-21","tyreSizeRear":"120/80-18","wheelbaseMm":"1470","seatHeightMm":"890","groundClearanceMm":"285","weightKg":"139 (wet)","fuelTankCapacity":"7.7",
+    "notes":"Kawasaki KLX300 — 292 cc liquid-cooled DOHC single dual-sport (EFI since 2021), a comfortable trail/commute dual-sport. Verify plug/lash against the Kawasaki manual." }
+  $klx300$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Suzuki V-Strom 650
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='suzuki-v-strom-650';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('suzuki-v-strom-650','Suzuki','V-Strom 650','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $vstrom$
+  { "year":"2004–present (ADV-touring)","strokeType":"4-Stroke","ccSize":"645","compressionRatio":"11.2:1","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"DOHC","camType":"DOHC — 8 valves",
+    "boreDiameter":"81.0","crankStroke":"62.6","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet","wotPower":"70 hp @ 8,800 rpm","torqueNm":"62",
+    "forkType":"Telescopic (43 mm)","forkTravel":"150","rearShockType":"Monoshock (link)","rearTravel":"160","frontBrakeType":"Dual 310 mm disc","rearBrakeType":"260 mm disc",
+    "tyreSizeFront":"110/80-19","tyreSizeRear":"150/70-17","wheelbaseMm":"1560","seatHeightMm":"835","weightKg":"216 (wet)","fuelTankCapacity":"20",
+    "notes":"Suzuki V-Strom 650 — 645 cc 90° V-twin (SV650-derived) adventure-tourer; famously reliable and a value benchmark. More road than dirt. Verify plug/lash against the Suzuki manual." }
+  $vstrom$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- KTM 350 EXC-F
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='ktm-350-exc-f';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('ktm-350-exc-f','KTM','350 EXC-F','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ktm350$
+  { "year":"Enduro","strokeType":"4-Stroke","ccSize":"350","compressionRatio":"13.5:1","cylCount":"1","valveTrain":"DOHC","camType":"DOHC — 4 valves (Ti)",
+    "boreDiameter":"88.0","crankStroke":"57.5","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (DDS/hydraulic)","wotPower":"~46 hp","forkType":"USD (WP XPLOR 48 mm)","forkTravel":"300",
+    "rearShockType":"WP monoshock","rearTravel":"310","frontBrakeType":"260 mm disc","rearBrakeType":"220 mm disc",
+    "tyreSizeFront":"90/90-21","tyreSizeRear":"140/80-18","seatHeightMm":"960","weightKg":"104 (dry)","fuelTankCapacity":"8.5",
+    "notes":"KTM 350 EXC-F — 350 cc DOHC titanium-valve enduro; the 'best of both worlds' between a 250 and 450. Hydraulic clutch, WP suspension. Race service intervals. Verify against the KTM manual." }
+  $ktm350$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- KTM 500 EXC-F
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='ktm-500-exc-f';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('ktm-500-exc-f','KTM','500 EXC-F','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ktm500$
+  { "year":"Enduro (dual-sport in US)","strokeType":"4-Stroke","ccSize":"510","compressionRatio":"12.75:1","cylCount":"1","valveTrain":"SOHC","camType":"SOHC — 4 valves (Ti)",
+    "boreDiameter":"95.0","crankStroke":"72.0","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (DDS/hydraulic)","wotPower":"~55 hp","forkType":"USD (WP XPLOR 48 mm)","forkTravel":"300",
+    "rearShockType":"WP monoshock","rearTravel":"310","frontBrakeType":"260 mm disc","rearBrakeType":"220 mm disc",
+    "tyreSizeFront":"90/90-21","tyreSizeRear":"140/80-18","seatHeightMm":"960","weightKg":"111 (dry)","fuelTankCapacity":"8.5",
+    "notes":"KTM 500 EXC-F — 510 cc SOHC enduro (street-legal dual-sport in some markets), the biggest mainstream 4-stroke enduro; huge torque, light weight. Verify against the KTM manual." }
+  $ktm500$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- KTM 300 XC (2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='ktm-300-xc';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('ktm-300-xc','KTM','300 XC','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ktm300$
+  { "year":"Enduro (2-stroke)","strokeType":"2-Stroke","ccSize":"293","compressionRatio":"Variable (power valve)","cylCount":"1","coolingType":"Liquid cooled",
+    "boreDiameter":"72.0","crankStroke":"72.0","fuelSystem":"TPI / carburetted (by year)","mixRatio":"60:1 (TPI) / 40–50:1 (carb)","starterType":"Electric / kick","plugType":"NGK BR8EG","plugGap":"0.6",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (DDS/hydraulic)","wotPower":"~50 hp","forkType":"USD (WP 48 mm)","forkTravel":"300",
+    "rearShockType":"WP monoshock","rearTravel":"310","frontBrakeType":"260 mm disc","rearBrakeType":"220 mm disc",
+    "tyreSizeFront":"90/90-21","tyreSizeRear":"140/80-18","seatHeightMm":"960","weightKg":"103 (dry)","fuelTankCapacity":"9.0",
+    "notes":"KTM 300 XC — 293 cc 2-stroke enduro (fuel-injected TPI since 2018, carb before); the go-to big-bore two-stroke for hard enduro and woods. Verify oil ratio/plug against the KTM manual (TPI vs carb differ)." }
+  $ktm300$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Husqvarna 701 Enduro
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='husqvarna-701-enduro';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('husqvarna-701-enduro','Husqvarna','701 Enduro','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $h701$
+  { "year":"Big-single dual-sport","strokeType":"4-Stroke","ccSize":"692.7","compressionRatio":"12.8:1","cylCount":"1","valveTrain":"SOHC","camType":"SOHC — 4 valves",
+    "boreDiameter":"105.0","crankStroke":"80.0","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI, ride-by-wire)","starterType":"Electric / key start only",
+    "driveType":"Chain","transType":"6-speed","clutchType":"APTC slipper (hydraulic)","wotPower":"74 hp @ 8,000 rpm","torqueNm":"72",
+    "forkType":"USD (WP APEX 48 mm)","forkTravel":"250","rearShockType":"WP monoshock","rearTravel":"250","frontBrakeType":"300 mm disc","rearBrakeType":"240 mm disc",
+    "tyreSizeFront":"90/90-21","tyreSizeRear":"140/80-18","wheelbaseMm":"1502","seatHeightMm":"910","weightKg":"145 (dry)","fuelTankCapacity":"13",
+    "notes":"Husqvarna 701 Enduro — 692.7 cc LC4 single (shared with the KTM 690 Enduro R), the most powerful mass-production single; balancer shafts tame the vibes. Verify plug/lash against the Husqvarna/KTM manual." }
+  $h701$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- BMW R1250GS
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='bmw-r1250gs';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('bmw-r1250gs','BMW','R1250GS','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $r1250gs$
+  { "year":"2019–present (ADV flagship)","strokeType":"4-Stroke","ccSize":"1254","compressionRatio":"12.5:1","cylCount":"2","firingOrder":"Boxer twin","valveTrain":"DOHC (ShiftCam)","camType":"DOHC — 8 valves (variable)",
+    "boreDiameter":"102.5","crankStroke":"76.0","coolingType":"Liquid cooled (air/liquid)","fuelSystem":"Fuel injection (ride-by-wire)","starterType":"Electric / key start only",
+    "driveType":"Shaft","transType":"6-speed","clutchType":"Multi-plate wet (self-reinforcing)","wotPower":"136 hp @ 7,750 rpm","torqueNm":"143",
+    "forkType":"Telelever (37 mm)","forkTravel":"190","rearShockType":"Paralever monoshock (ESA)","rearTravel":"200","frontBrakeType":"Dual 305 mm disc","rearBrakeType":"276 mm disc",
+    "tyreSizeFront":"120/70-19","tyreSizeRear":"170/60-17","wheelbaseMm":"1525","seatHeightMm":"850","weightKg":"249 (wet)","fuelTankCapacity":"20",
+    "notes":"BMW R1250GS — 1254 cc boxer twin with ShiftCam variable valve timing; the best-selling big adventure bike, shaft final drive, Telelever front end. Verify plug/lash against the BMW manual." }
+  $r1250gs$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Dirt/dual-sport/ADV bike batch 2 imported (15 bikes).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs')
 ORDER BY e.type, e.make, e.model;
