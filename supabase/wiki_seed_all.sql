@@ -1739,9 +1739,163 @@ BEGIN
   RAISE NOTICE 'Classic 2-stroke outboard batch imported (11 motors).';
 END $$;
 
+-- ═══ ATV / UTV / side-by-side ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Honda TRX420 Rancher
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-trx420-rancher';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-trx420-rancher','Honda','TRX420 Rancher','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $trx420$
+  { "year":"Utility ATV","strokeType":"4-Stroke","ccSize":"420","cylCount":"1","valveTrain":"OHV","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft","transType":"Manual / DCT / auto (by trim)","wotPower":"~27 hp","tyreSizeFront":"24x8-12","tyreSizeRear":"24x10-11",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Sealed / drum","fuelTankCapacity":"14.7","weightKg":"250","groundClearanceMm":"185",
+    "notes":"Honda TRX420 Rancher — 420 cc liquid-cooled EFI single utility ATV, offered in manual, ESP, DCT and IRS trims. A best-selling farm/hunting quad. Verify plug/lash against the Honda manual." }
+  $trx420$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda TRX520 Foreman
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-trx520-foreman';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-trx520-foreman','Honda','TRX520 Foreman','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $trx520$
+  { "year":"Utility ATV","strokeType":"4-Stroke","ccSize":"518","cylCount":"1","valveTrain":"OHV","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft","transType":"Manual / DCT","wotPower":"~30 hp","tyreSizeFront":"24x8-12","tyreSizeRear":"24x10-11",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Sealed","fuelTankCapacity":"16.4","weightKg":"270","groundClearanceMm":"200",
+    "notes":"Honda TRX520 Foreman — 518 cc liquid-cooled EFI single utility ATV (manual or DCT), a heavy-duty workhorse. Verify plug/lash against the Honda manual." }
+  $trx520$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha Raptor 700
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-raptor-700';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-raptor-700','Yamaha','Raptor 700','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $raptor$
+  { "year":"Sport ATV","strokeType":"4-Stroke","ccSize":"686","cylCount":"1","valveTrain":"SOHC 4v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Chain","transType":"5-speed + reverse","clutchType":"Multi-plate wet","wotPower":"~45 hp","tyreSizeFront":"22x7-10","tyreSizeRear":"20x10-9",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Hydraulic disc","fuelTankCapacity":"10","weightKg":"192","seatHeightMm":"825",
+    "notes":"Yamaha Raptor 700 — 686 cc liquid-cooled SOHC single sport ATV, the benchmark big-bore sport quad. 5-speed with reverse, chain final drive. Verify plug/lash against the Yamaha manual." }
+  $raptor$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha Grizzly 700
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-grizzly-700';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-grizzly-700','Yamaha','Grizzly 700','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $grizzly$
+  { "year":"Utility ATV","strokeType":"4-Stroke","ccSize":"686","cylCount":"1","valveTrain":"SOHC 4v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft","transType":"CVT (Ultramatic)","wotPower":"~45 hp","tyreSizeFront":"25x8-12","tyreSizeRear":"25x10-12",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Sealed wet","fuelTankCapacity":"20","weightKg":"296","groundClearanceMm":"290",
+    "notes":"Yamaha Grizzly 700 — 686 cc liquid-cooled SOHC single utility ATV with the Ultramatic CVT (all-time engine braking) and shaft drive. A durable trail/work quad. Verify plug/lash against the Yamaha manual." }
+  $grizzly$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha YFZ450R
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-yfz450r';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-yfz450r','Yamaha','YFZ450R','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $yfz$
+  { "year":"Sport ATV (race)","strokeType":"4-Stroke","ccSize":"449","cylCount":"1","valveTrain":"DOHC 5v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Chain","transType":"5-speed","clutchType":"Multi-plate wet","wotPower":"~42 hp","tyreSizeFront":"21x7-10","tyreSizeRear":"20x10-9",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Hydraulic disc","fuelTankCapacity":"10","weightKg":"180",
+    "notes":"Yamaha YFZ450R — 449 cc liquid-cooled DOHC titanium-valve sport/race ATV, the class benchmark for MX and GNCC. Aluminium/steel hybrid frame, 5-speed. Verify plug/lash against the Yamaha manual." }
+  $yfz$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Polaris Sportsman 570
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='polaris-sportsman-570';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('polaris-sportsman-570','Polaris','Sportsman 570','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $sport570$
+  { "year":"Utility ATV","strokeType":"4-Stroke","ccSize":"567","cylCount":"1","valveTrain":"DOHC 4v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft (on-demand AWD)","transType":"CVT (PVT)","wotPower":"44 hp","tyreSizeFront":"25x8-12","tyreSizeRear":"25x10-12",
+    "frontBrakeType":"Hydraulic disc","rearBrakeType":"Hydraulic disc","fuelTankCapacity":"17","weightKg":"318","groundClearanceMm":"290",
+    "notes":"Polaris Sportsman 570 — 567 cc ProStar DOHC single utility ATV with on-demand AWD and CVT. One of the best-selling utility quads. Verify plug/lash against the Polaris manual." }
+  $sport570$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Can-Am Outlander 650
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='can-am-outlander-650';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('can-am-outlander-650','Can-Am','Outlander 650','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $out650$
+  { "year":"Utility ATV","strokeType":"4-Stroke","ccSize":"649","cylCount":"2","firingOrder":"V-twin","valveTrain":"SOHC 8v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft","transType":"CVT","wotPower":"62 hp","tyreSizeFront":"25x8-12","tyreSizeRear":"25x10-12",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Hydraulic disc","fuelTankCapacity":"20","weightKg":"327","groundClearanceMm":"280",
+    "notes":"Can-Am Outlander 650 — 649 cc Rotax V-twin utility ATV, class-leading power. CVT, shaft drive. Verify plug/lash against the Can-Am/Rotax manual." }
+  $out650$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Can-Am Outlander 1000
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='can-am-outlander-1000';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('can-am-outlander-1000','Can-Am','Outlander 1000','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $out1000$
+  { "year":"Utility ATV","strokeType":"4-Stroke","ccSize":"976","cylCount":"2","firingOrder":"V-twin","valveTrain":"SOHC 8v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft","transType":"CVT","wotPower":"91 hp","tyreSizeFront":"26x8-14","tyreSizeRear":"26x10-14",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Hydraulic disc","fuelTankCapacity":"20","weightKg":"365","groundClearanceMm":"305",
+    "notes":"Can-Am Outlander 1000 — 976 cc Rotax V-twin, the most powerful utility ATV class. CVT, shaft drive. Verify plug/lash against the Can-Am/Rotax manual." }
+  $out1000$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Suzuki KingQuad 750
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='suzuki-kingquad-750';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('suzuki-kingquad-750','Suzuki','KingQuad 750','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $kingquad$
+  { "year":"Utility ATV","strokeType":"4-Stroke","ccSize":"722","cylCount":"1","valveTrain":"SOHC 4v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft","transType":"CVT (QuadMatic)","wotPower":"~48 hp","tyreSizeFront":"25x8-12","tyreSizeRear":"25x10-12",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Sealed wet","fuelTankCapacity":"17.5","weightKg":"300","groundClearanceMm":"260",
+    "notes":"Suzuki KingQuad 750 AXi — 722 cc liquid-cooled SOHC single utility ATV, known for reliability. CVT, shaft drive. Verify plug/lash against the Suzuki manual." }
+  $kingquad$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki Brute Force 750
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-brute-force-750';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-brute-force-750','Kawasaki','Brute Force 750','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $brute$
+  { "year":"Utility ATV","strokeType":"4-Stroke","ccSize":"749","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"SOHC 8v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft","transType":"CVT","wotPower":"~55 hp","tyreSizeFront":"25x8-12","tyreSizeRear":"25x10-12",
+    "frontBrakeType":"Dual hydraulic disc","rearBrakeType":"Sealed wet","fuelTankCapacity":"19","weightKg":"329","groundClearanceMm":"265",
+    "notes":"Kawasaki Brute Force 750 — 749 cc V-twin utility ATV, a torquey all-rounder. CVT, shaft drive. Verify plug/lash against the Kawasaki manual." }
+  $brute$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Polaris RZR XP 1000
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='polaris-rzr-xp-1000';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('polaris-rzr-xp-1000','Polaris','RZR XP 1000','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $rzr$
+  { "year":"Sport side-by-side (UTV)","strokeType":"4-Stroke","ccSize":"999","cylCount":"2","firingOrder":"Parallel twin","valveTrain":"DOHC 8v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft (on-demand AWD)","transType":"CVT (PVT)","wotPower":"110 hp","tyreSizeFront":"29x9-14","tyreSizeRear":"29x11-14",
+    "frontBrakeType":"Hydraulic disc","rearBrakeType":"Hydraulic disc","fuelTankCapacity":"36","weightKg":"635","groundClearanceMm":"330",
+    "notes":"Polaris RZR XP 1000 — 999 cc ProStar twin sport side-by-side (UTV); a dominant recreation SxS. CVT, on-demand AWD, long-travel suspension. Verify plug/lash against the Polaris manual." }
+  $rzr$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Can-Am Maverick X3
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='can-am-maverick-x3';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('can-am-maverick-x3','Can-Am','Maverick X3','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $mav$
+  { "year":"Sport side-by-side (turbo)","strokeType":"4-Stroke","ccSize":"900","cylCount":"3","firingOrder":"Inline triple","valveTrain":"DOHC 12v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (turbo)",
+    "starterType":"Electric","driveType":"Shaft (selectable)","transType":"CVT (QRS-X)","turboFitted":"Yes","wotPower":"120–200 hp (by trim)","tyreSizeFront":"30x10-14","tyreSizeRear":"30x10-14",
+    "frontBrakeType":"Hydraulic disc","rearBrakeType":"Hydraulic disc","fuelTankCapacity":"40","weightKg":"680","groundClearanceMm":"355",
+    "notes":"Can-Am Maverick X3 — 900 cc Rotax turbocharged inline-triple sport side-by-side (UTV); up to ~200 hp (Turbo RR). The performance-SxS benchmark. Verify plug/lash/boost against the Can-Am manual." }
+  $mav$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda Pioneer 1000
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-pioneer-1000';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-pioneer-1000','Honda','Pioneer 1000','Quad Bike',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $pioneer$
+  { "year":"Utility side-by-side (UTV)","strokeType":"4-Stroke","ccSize":"999","cylCount":"2","firingOrder":"Parallel twin","valveTrain":"OHC 8v","coolingType":"Liquid cooled","fuelSystem":"Fuel injection (EFI)",
+    "starterType":"Electric","driveType":"Shaft","transType":"6-speed DCT (automatic)","wotPower":"~72 hp","tyreSizeFront":"27x9-14","tyreSizeRear":"27x11-14",
+    "frontBrakeType":"Hydraulic disc","rearBrakeType":"Hydraulic disc","fuelTankCapacity":"30","weightKg":"680","groundClearanceMm":"315",
+    "notes":"Honda Pioneer 1000 — 999 cc twin utility side-by-side (UTV) with Honda's true 6-speed DCT automatic (no belt). Work/rec crossover. Verify plug/lash against the Honda manual." }
+  $pioneer$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'ATV/UTV batch imported (13 machines).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000')
 ORDER BY e.type, e.make, e.model;
