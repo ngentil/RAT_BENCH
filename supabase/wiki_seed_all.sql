@@ -1596,9 +1596,152 @@ BEGIN
   RAISE NOTICE 'Lawn/commercial V-twin batch imported (11 engines).';
 END $$;
 
+-- ═══ Classic 2-stroke outboards ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Mercury 9.9 (2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mercury-9-9-2-stroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mercury-9-9-2-stroke','Mercury','9.9 (2-Stroke)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $m99t$
+  { "year":"Classic 2-stroke","strokeType":"2-Stroke","ccSize":"262","cylCount":"2","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"50:1 (or oil-injected)","starterType":"Manual / electric","wotRpm":"4500–5500","wotPower":"9.9 hp",
+    "obShaftLength":"15\" / 20\"","obTiltTrim":"Manual tilt","obSteering":"Tiller","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"37",
+    "notes":"Mercury 9.9 (2-stroke) — classic 2-cyl loop-charged carbureted outboard; simple and rebuildable, a long-running tiller/kicker. 50:1 premix (or oil-injected on some). Verify plug/timing against the Mercury manual." }
+  $m99t$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Mercury 40 (2-stroke, 3-cyl)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mercury-40-2-stroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mercury-40-2-stroke','Mercury','40 (2-Stroke)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $m40t$
+  { "year":"Classic 2-stroke","strokeType":"2-Stroke","ccSize":"644","cylCount":"3","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"50:1 (or oil-injected)","starterType":"Electric / manual","wotRpm":"5000–5500","wotPower":"40 hp",
+    "obShaftLength":"20\"","obTiltTrim":"Power trim & tilt","obSteering":"Tiller / remote","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"78",
+    "notes":"Mercury 40 (2-stroke) — classic 3-cylinder carbureted outboard, a popular tinny/tender motor. 50:1 premix or oil injection. Verify plug/timing against the Mercury manual." }
+  $m40t$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Mercury 115 (2-stroke, inline-4)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mercury-115-2-stroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mercury-115-2-stroke','Mercury','115 (2-Stroke)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $m115t$
+  { "year":"Classic 2-stroke","strokeType":"2-Stroke","ccSize":"1710","cylCount":"4","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"Oil-injected (or 50:1)","starterType":"Electric","wotRpm":"5000–5500","wotPower":"115 hp",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Remote","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"163",
+    "notes":"Mercury 115 (2-stroke) — classic inline-4 carbureted outboard, a workhorse on runabouts and bass boats. Oil-injected (or premix). Verify displacement/plug/timing against the Mercury manual." }
+  $m115t$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Mercury 150 Black Max (2.5L V6)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mercury-150-black-max';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mercury-150-black-max','Mercury','150 Black Max','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $mbm$
+  { "year":"Classic 2-stroke V6","strokeType":"2-Stroke","ccSize":"2496","cylCount":"6","firingOrder":"60° V6","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"Oil-injected","starterType":"Electric","wotRpm":"5000–5500","wotPower":"150 hp",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Remote","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"191",
+    "notes":"Mercury 150 Black Max / XR — the classic 2.5 L 60° V6 2-stroke, a legendary bass-boat and offshore powerplant with a huge rebuild/aftermarket community. Oil-injected. Verify plug/timing against the Mercury manual." }
+  $mbm$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Johnson/Evinrude 9.9 (2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='evinrude-9-9-2-stroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('evinrude-9-9-2-stroke','Evinrude','9.9 (2-Stroke)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ev99$
+  { "year":"Classic 2-stroke (OMC)","strokeType":"2-Stroke","ccSize":"211","cylCount":"2","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"50:1 (or VRO oil-injected)","starterType":"Manual / electric","wotRpm":"4500–5500","wotPower":"9.9 hp",
+    "obShaftLength":"15\" / 20\"","obTiltTrim":"Manual tilt","obSteering":"Tiller","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"32",
+    "notes":"Johnson/Evinrude 9.9 (OMC 2-stroke) — classic 2-cyl carbureted kicker, shared across the Johnson & Evinrude badges. 50:1 premix or VRO oil injection. Verify plug/timing against the OMC/BRP manual." }
+  $ev99$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Evinrude 40 (2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='evinrude-40-2-stroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('evinrude-40-2-stroke','Evinrude','40 (2-Stroke)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ev40$
+  { "year":"Classic 2-stroke (OMC)","strokeType":"2-Stroke","ccSize":"521","cylCount":"2","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"50:1 (or VRO)","starterType":"Electric / manual","wotRpm":"4500–5500","wotPower":"40 hp",
+    "obShaftLength":"15\" / 20\"","obTiltTrim":"Manual / power tilt","obSteering":"Tiller / remote","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"70",
+    "notes":"Johnson/Evinrude 40 (OMC 2-stroke) — classic 2-cyl carbureted outboard. 50:1 premix or VRO oil injection. Verify displacement/plug/timing against the OMC/BRP manual." }
+  $ev40$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Johnson 70 (3-cyl 2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='johnson-70-2-stroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('johnson-70-2-stroke','Johnson','70 (2-Stroke)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $j70$
+  { "year":"Classic 2-stroke (OMC)","strokeType":"2-Stroke","cylCount":"3","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"50:1 (or VRO)","starterType":"Electric","wotRpm":"4500–5500","wotPower":"70 hp",
+    "obShaftLength":"20\"","obTiltTrim":"Power trim & tilt","obSteering":"Remote","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"104",
+    "notes":"Johnson/Evinrude 70 (OMC 2-stroke) — classic 3-cyl carbureted outboard. 50:1 premix or VRO. Displacement omitted pending confirmation. Verify plug/timing against the OMC/BRP manual." }
+  $j70$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Evinrude 90 (V4 2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='evinrude-90-v4';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('evinrude-90-v4','Evinrude','90 (V4)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ev90$
+  { "year":"Classic 2-stroke V4 (OMC)","strokeType":"2-Stroke","ccSize":"1600","cylCount":"4","firingOrder":"90° V4","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"50:1 (or VRO)","starterType":"Electric","wotRpm":"4500–5500","wotPower":"90 hp",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Remote","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"143",
+    "notes":"Johnson/Evinrude 90 (OMC 90° V4 2-stroke) — the classic ~1.6 L V4 loop-charged carbureted outboard (also 100/112/115 hp). 50:1 premix or VRO. Verify plug/timing against the OMC/BRP manual." }
+  $ev90$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Evinrude E-TEC 150 (DI 2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='evinrude-e-tec-150';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('evinrude-e-tec-150','Evinrude','E-TEC 150','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $etec$
+  { "year":"Direct-injection 2-stroke (BRP)","strokeType":"2-Stroke","ccSize":"2589","cylCount":"6","firingOrder":"60° V6","coolingType":"Liquid cooled","fuelSystem":"Direct injection (E-TEC)",
+    "mixRatio":"Auto oil injection (no premix)","starterType":"Electric","wotRpm":"5000–6000","wotPower":"150 hp",
+    "obShaftLength":"20\" / 25\"","obTiltTrim":"Power trim & tilt","obSteering":"Remote","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"196",
+    "notes":"Evinrude E-TEC 150 — BRP's direct-injection 2-stroke V6; no scheduled dealer maintenance for years, auto oil injection (no premix), clean-burning. Discontinued 2020 but well supported. Verify against the BRP manual." }
+  $etec$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha 40 (2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-40-2-stroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-40-2-stroke','Yamaha','40 (2-Stroke)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $y40t$
+  { "year":"Classic 2-stroke","strokeType":"2-Stroke","ccSize":"703","cylCount":"3","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"50:1 (or oil-injected)","starterType":"Electric / manual","wotRpm":"4500–5500","wotPower":"40 hp",
+    "obShaftLength":"15\" / 20\"","obTiltTrim":"Power trim & tilt","obSteering":"Tiller / remote","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"71",
+    "notes":"Yamaha 40 (2-stroke) — classic 3-cyl carbureted outboard (the 2-stroke 40/50 family), famously durable. 50:1 premix or oil injection. Verify plug/timing against the Yamaha manual." }
+  $y40t$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tohatsu 9.8 (2-stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tohatsu-9-8-2-stroke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tohatsu-9-8-2-stroke','Tohatsu','9.8 (2-Stroke)','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $t98$
+  { "year":"Classic 2-stroke","strokeType":"2-Stroke","ccSize":"169","cylCount":"2","coolingType":"Liquid cooled","fuelSystem":"Carburetted",
+    "mixRatio":"50:1","starterType":"Manual","wotRpm":"4500–5500","wotPower":"9.8 hp",
+    "obShaftLength":"15\" / 20\"","obTiltTrim":"Manual tilt","obSteering":"Tiller","obLowerUnitOilType":"SAE 90 gear lube",
+    "obAnodeMaterial":"Sacrificial anode (per water type)","weightKg":"26",
+    "notes":"Tohatsu 9.8 (2-stroke) — light 2-cyl carbureted outboard, one of the lightest in class; a popular tender/kicker. 50:1 premix. Verify plug/timing against the Tohatsu manual." }
+  $t98$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Classic 2-stroke outboard batch imported (11 motors).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke')
 ORDER BY e.type, e.make, e.model;
