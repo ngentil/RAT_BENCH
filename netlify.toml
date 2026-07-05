@@ -1,3 +1,8 @@
 [build]
-  command = "npm run build"
+  # `prerender` runs after `build` to emit static SEO HTML per wiki entry +
+  # sitemap.xml (scripts/prerender-wiki.mjs). It degrades gracefully — if the
+  # Supabase env vars are absent or the fetch fails, it logs and exits 0 so the
+  # SPA still deploys. Requires VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY in the
+  # Netlify build environment (already set for the app build).
+  command = "npm run build && npm run prerender"
   publish = "dist"
