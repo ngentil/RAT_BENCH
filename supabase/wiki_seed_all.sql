@@ -2339,9 +2339,124 @@ BEGIN
   RAISE NOTICE 'Deep-spec iconic bike batch imported (8 bikes).';
 END $$;
 
+-- ═══ Deep-spec iconic street/sport bikes (batch 2, 40+ fields) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Kawasaki Ninja 650
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-ninja-650';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-ninja-650','Kawasaki','Ninja 650','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $n650$
+  { "year":"2017–present","bodyType":"Sport tourer","strokeType":"4-Stroke","ccSize":"649","compressionRatio":"10.8:1","cylCount":"2","firingOrder":"180° parallel twin","valveTrain":"DOHC","camType":"DOHC — 8 valves",
+    "boreDiameter":"83.0","crankStroke":"60.0","pistonDiameter":"83.0","coilType":"Electronic","starterType":"Electric / key start only","fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"15",
+    "coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"2.0","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"520 chain","finalDriveRatio":"15/46",
+    "forkType":"Telescopic (41 mm)","forkDiameter":"41","forkTravel":"125","rearShockType":"Offset laydown monoshock","rearTravel":"130","frontBrakeType":"Dual 300 mm disc, 2-piston","rearBrakeType":"220 mm disc, 1-piston",
+    "tyreSizeFront":"120/70-17","tyreSizeRear":"160/60-17","wotPower":"68 hp @ 8,000 rpm","torqueNm":"65.7","topSpeed":"~210 km/h (130 mph)","frameType":"Steel trellis","wheelbaseMm":"1410","seatHeightMm":"790","groundClearanceMm":"130","weightKg":"193 (wet)",
+    "notes":"Kawasaki Ninja 650 — 649 cc parallel-twin sport-tourer (shares its engine with the Z650); a light, friendly all-rounder. Verify plug and valve clearances against the Kawasaki manual." }
+  $n650$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha MT-09
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-mt-09';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-mt-09','Yamaha','MT-09','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $mt09$
+  { "year":"2021–present (890 CP3)","bodyType":"Naked","strokeType":"4-Stroke","ccSize":"890","compressionRatio":"11.5:1","cylCount":"3","firingOrder":"120° inline triple (CP3)","valveTrain":"DOHC","camType":"DOHC — 12 valves",
+    "boreDiameter":"78.0","crankStroke":"62.1","pistonDiameter":"78.0","coilType":"Electronic (TCI)","starterType":"Electric / key start only","fuelSystem":"Fuel injection (ride-by-wire)","fuelTankCapacity":"14",
+    "coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"2.4","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"525 chain","finalDriveRatio":"16/45",
+    "forkType":"USD (41 mm)","forkDiameter":"41","forkTravel":"130","rearShockType":"Link-type monoshock","rearTravel":"122","frontBrakeType":"Dual 298 mm disc, 4-piston radial","rearBrakeType":"245 mm disc, 1-piston",
+    "tyreSizeFront":"120/70-17","tyreSizeRear":"180/55-17","wotPower":"117 hp @ 10,000 rpm","torqueNm":"93","topSpeed":"~215 km/h (134 mph)","frameType":"Aluminium CF die-cast Deltabox","wheelbaseMm":"1430","seatHeightMm":"825","groundClearanceMm":"140","weightKg":"189 (wet)",
+    "notes":"Yamaha MT-09 — 890 cc CP3 crossplane inline-triple naked; punchy and light, the basis of the Tracer 9 and XSR900. Ride-by-wire, IMU rider aids. Verify plug and valve clearances against the Yamaha manual." }
+  $mt09$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha YZF-R3
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-yzf-r3';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-yzf-r3','Yamaha','YZF-R3','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $r3$
+  { "year":"2015–present","bodyType":"Supersport","strokeType":"4-Stroke","ccSize":"321","compressionRatio":"11.2:1","cylCount":"2","firingOrder":"180° parallel twin","valveTrain":"DOHC","camType":"DOHC — 8 valves",
+    "boreDiameter":"68.0","crankStroke":"44.1","pistonDiameter":"68.0","coilType":"Electronic (TCI)","starterType":"Electric / key start only","fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"14",
+    "coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"1.6","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet","finalDriveType":"520 chain","finalDriveRatio":"14/43",
+    "forkType":"USD (37 mm)","forkDiameter":"37","forkTravel":"130","rearShockType":"Link-type monoshock","rearTravel":"125","frontBrakeType":"298 mm disc, 2-piston","rearBrakeType":"220 mm disc, 1-piston",
+    "tyreSizeFront":"110/70-17","tyreSizeRear":"140/70-17","wotPower":"42 hp @ 10,750 rpm","torqueNm":"29.5","topSpeed":"~180 km/h (112 mph)","frameType":"Steel diamond","wheelbaseMm":"1380","seatHeightMm":"780","groundClearanceMm":"160","weightKg":"169 (wet)",
+    "notes":"Yamaha YZF-R3 — 321 cc parallel-twin entry supersport; revvy and light, popular for new riders and lightweight racing. Verify plug and valve clearances against the Yamaha manual." }
+  $r3$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda CB650R
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-cb650r';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-cb650r','Honda','CB650R','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $cb650r$
+  { "year":"2019–present","bodyType":"Neo-café naked","strokeType":"4-Stroke","ccSize":"649","compressionRatio":"11.6:1","cylCount":"4","firingOrder":"Inline-4","valveTrain":"DOHC","camType":"DOHC — 16 valves",
+    "boreDiameter":"67.0","crankStroke":"46.0","pistonDiameter":"67.0","coilType":"Electronic","starterType":"Electric / key start only","fuelSystem":"Fuel injection (PGM-FI)","fuelTankCapacity":"15.4",
+    "coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"2.3","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"525 chain","finalDriveRatio":"15/42",
+    "forkType":"USD (Showa SFF-BP 41 mm)","forkDiameter":"41","forkTravel":"120","rearShockType":"Monoshock","rearTravel":"128","frontBrakeType":"Dual 310 mm disc, 4-piston radial","rearBrakeType":"240 mm disc, 1-piston",
+    "tyreSizeFront":"120/70-17","tyreSizeRear":"180/55-17","wotPower":"94 hp @ 12,000 rpm","torqueNm":"63","topSpeed":"~210 km/h (130 mph)","frameType":"Steel diamond","wheelbaseMm":"1450","seatHeightMm":"810","groundClearanceMm":"150","weightKg":"202 (wet)",
+    "notes":"Honda CB650R — 649 cc inline-four neo-sports-café naked with a characterful screaming top end; refined and reliable. Verify plug and valve clearances against the Honda manual." }
+  $cb650r$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki ZX-6R
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-zx-6r';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-zx-6r','Kawasaki','ZX-6R','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $zx6r$
+  { "year":"636 cc supersport","bodyType":"Supersport","strokeType":"4-Stroke","ccSize":"636","compressionRatio":"12.9:1","cylCount":"4","firingOrder":"Inline-4","valveTrain":"DOHC","camType":"DOHC — 16 valves",
+    "boreDiameter":"67.0","crankStroke":"45.1","pistonDiameter":"67.0","coilType":"Electronic","starterType":"Electric / key start only","fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"17",
+    "coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"2.9","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"520 chain","finalDriveRatio":"16/43",
+    "forkType":"USD (Showa SFF-BP 41 mm)","forkDiameter":"41","forkTravel":"120","rearShockType":"Uni-Trak monoshock","rearTravel":"134","frontBrakeType":"Dual 310 mm disc, 4-piston radial","rearBrakeType":"220 mm disc, 1-piston",
+    "tyreSizeFront":"120/70-17","tyreSizeRear":"180/55-17","wotPower":"130 hp @ 13,500 rpm","torqueNm":"70.8","topSpeed":"~260 km/h (162 mph)","frameType":"Aluminium perimeter","wheelbaseMm":"1400","seatHeightMm":"830","groundClearanceMm":"130","weightKg":"196 (wet)",
+    "notes":"Kawasaki ZX-6R — 636 cc inline-four supersport; the 'extra 36 cc' gives midrange few 600s have. Track and road favourite. Verify plug and valve clearances against the Kawasaki manual." }
+  $zx6r$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Triumph Street Triple 765
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='triumph-street-triple-765';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('triumph-street-triple-765','Triumph','Street Triple 765','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $stt765$
+  { "year":"2017–present","bodyType":"Naked","strokeType":"4-Stroke","ccSize":"765","compressionRatio":"12.65:1","cylCount":"3","firingOrder":"Inline triple","valveTrain":"DOHC","camType":"DOHC — 12 valves",
+    "boreDiameter":"78.0","crankStroke":"53.4","pistonDiameter":"78.0","coilType":"Electronic","starterType":"Electric / key start only","fuelSystem":"Fuel injection (ride-by-wire)","fuelTankCapacity":"15",
+    "coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (slipper)","finalDriveType":"525 chain","finalDriveRatio":"16/47",
+    "forkType":"USD (Showa/Big Piston 41 mm)","forkDiameter":"41","forkTravel":"115","rearShockType":"Monoshock","rearTravel":"134","frontBrakeType":"Dual 310 mm disc, 4-piston radial (Brembo)","rearBrakeType":"220 mm disc, 1-piston",
+    "tyreSizeFront":"120/70-17","tyreSizeRear":"180/55-17","wotPower":"118–128 hp (by trim)","torqueNm":"79","topSpeed":"~230 km/h (143 mph)","frameType":"Aluminium twin-spar","wheelbaseMm":"1405","seatHeightMm":"826","groundClearanceMm":"145","weightKg":"189 (wet)",
+    "notes":"Triumph Street Triple 765 — 765 cc inline-triple naked (the engine base for Moto2); R and RS trims differ in output and brakes/suspension. A handling benchmark. Verify plug and valve clearances against the Triumph manual." }
+  $stt765$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Ducati Monster 937
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='ducati-monster-937';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('ducati-monster-937','Ducati','Monster 937','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $mon937$
+  { "year":"2021–present","bodyType":"Naked","strokeType":"4-Stroke","ccSize":"937","compressionRatio":"13.3:1","cylCount":"2","firingOrder":"90° L-twin (Testastretta 11°)","valveTrain":"DOHC (Desmodromic)","camType":"Desmo — 8 valves",
+    "boreDiameter":"94.0","crankStroke":"67.5","pistonDiameter":"94.0","coilType":"Electronic","starterType":"Electric / key start only","fuelSystem":"Fuel injection (ride-by-wire)","fuelTankCapacity":"14",
+    "coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (slipper)","finalDriveType":"525 chain","finalDriveRatio":"15/41",
+    "forkType":"USD (43 mm)","forkDiameter":"43","forkTravel":"130","rearShockType":"Monoshock (progressive)","rearTravel":"140","frontBrakeType":"Dual 320 mm disc, 4-piston radial (Brembo M4.32)","rearBrakeType":"245 mm disc, 2-piston",
+    "tyreSizeFront":"120/70-17","tyreSizeRear":"180/55-17","wotPower":"111 hp @ 9,250 rpm","torqueNm":"93","topSpeed":"~220 km/h (137 mph)","frameType":"Aluminium front frame (GP-derived)","wheelbaseMm":"1474","seatHeightMm":"820","groundClearanceMm":"","weightKg":"188 (wet)",
+    "notes":"Ducati Monster 937 — 937 cc Testastretta 11° desmodromic L-twin naked; the modern aluminium-frame Monster. Desmo valve service is interval-critical — verify clearances/timing against the Ducati manual." }
+  $mon937$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Suzuki GSX-S750
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='suzuki-gsx-s750';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('suzuki-gsx-s750','Suzuki','GSX-S750','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $gsxs750$
+  { "year":"2017–present","bodyType":"Naked","strokeType":"4-Stroke","ccSize":"749","compressionRatio":"12.3:1","cylCount":"4","firingOrder":"Inline-4","valveTrain":"DOHC","camType":"DOHC — 16 valves",
+    "boreDiameter":"72.0","crankStroke":"46.0","pistonDiameter":"72.0","coilType":"Electronic","starterType":"Electric / key start only","fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"16",
+    "coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"3.1","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet","finalDriveType":"525 chain","finalDriveRatio":"16/42",
+    "forkType":"Telescopic (41 mm)","forkDiameter":"41","forkTravel":"120","rearShockType":"Link-type monoshock","rearTravel":"130","frontBrakeType":"Dual 310 mm disc, 4-piston radial","rearBrakeType":"240 mm disc, 1-piston",
+    "tyreSizeFront":"120/70-17","tyreSizeRear":"180/55-17","wotPower":"114 hp @ 10,500 rpm","torqueNm":"81","topSpeed":"~230 km/h (143 mph)","frameType":"Steel twin-spar","wheelbaseMm":"1455","seatHeightMm":"820","groundClearanceMm":"135","weightKg":"213 (wet)",
+    "notes":"Suzuki GSX-S750 — 749 cc inline-four naked derived from a K5-era GSX-R750 engine; strong, characterful four-cylinder value. Verify plug and valve clearances against the Suzuki manual." }
+  $gsxs750$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Deep-spec iconic bike batch 2 imported (8 bikes).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750')
 ORDER BY e.type, e.make, e.model;
