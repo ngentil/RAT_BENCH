@@ -2569,9 +2569,74 @@ BEGIN
   RAISE NOTICE 'Deep-spec flagship bike batch 3 imported (8 bikes).';
 END $$;
 
+-- ═══ British Seagull vintage outboards ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- British Seagull Forty Plus
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-forty-plus';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-forty-plus','British Seagull','Forty Plus','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage)', $sgfp$
+  { "year":"~1940s–1990s (classic series)","strokeType":"2-Stroke","ccSize":"64","cylCount":"1","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Amal; Bing on late models)","mixRatio":"10:1 (Amal-carb models) / 25:1 (Bing-carb, ~1979-on)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers / Wipac)","starterType":"Rope pull (knotted cord on flywheel)",
+    "starterMotorType":"None — manual rope only","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard / long (by model code)",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"Bevel gear reduction, direct drive","transType":"Direct drive (no neutral; clutch on 'C' models)",
+    "wotPower":"~2 hp (rated 'Forty Plus')","wotRpm":"~3800","fuelTankCapacity":"~1.8 (brass tank)","weightKg":"~12",
+    "notes":"British Seagull Forty Plus — the archetypal Seagull: 64 cc water-cooled 2-stroke single, brass tank, flywheel magneto, knotted-rope start, direct drive (no neutral — the prop turns whenever it runs; clutch versions carry a C in the model code). CRITICAL: pre-~1979 Amal-carb models run a very rich 10:1 premix by design (plain bearings depend on it) — do NOT lean it to modern ratios without a Bing carb/needle-roller conversion; late Bing-carb models run 25:1. Points gap ~0.020 in. Model code stamped on the crankcase identifies year/variant. Parts and lore: the Save Our Seagulls community. Verify against the Seagull handbook for your model code." }
+  $sgfp$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- British Seagull Forty Minus
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-forty-minus';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-forty-minus','British Seagull','Forty Minus','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage)', $sgfm$
+  { "year":"~1950s–1980s (classic series)","strokeType":"2-Stroke","ccSize":"64","cylCount":"1","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Amal; Bing on late models)","mixRatio":"10:1 (Amal-carb models) / 25:1 (Bing-carb, ~1979-on)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers / Wipac)","starterType":"Rope pull (knotted cord on flywheel)",
+    "starterMotorType":"None — manual rope only","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard / long (by model code)",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"Bevel gear reduction, direct drive","transType":"Direct drive (no neutral)",
+    "wotPower":"~1.5 hp (rated 'Forty Minus')","wotRpm":"~3600","fuelTankCapacity":"~1.8 (brass tank)","weightKg":"~11",
+    "notes":"British Seagull Forty Minus — the lower-rated sibling of the Forty Plus (same 64 cc block, smaller-pitch prop/lower rating) for dinghies and tenders. Same rules: 10:1 premix on Amal-carb models (25:1 only on late Bing-carb), Champion D16 plug, knotted-rope start, no neutral. Verify against the Seagull handbook for your model code." }
+  $sgfm$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- British Seagull Silver Century
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-silver-century';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-silver-century','British Seagull','Silver Century','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage)', $sgsc$
+  { "year":"~1950s–1990s (classic series)","strokeType":"2-Stroke","ccSize":"102","cylCount":"1","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Amal; Bing on late models)","mixRatio":"10:1 (Amal-carb models) / 25:1 (Bing-carb, ~1979-on)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers / Wipac)","starterType":"Rope pull (knotted cord on flywheel)",
+    "starterMotorType":"None — manual rope only","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard / long (by model code)",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"Bevel gear reduction, direct drive","transType":"Direct drive (clutch on 'C' models)",
+    "wotPower":"~4 hp (Century class; Plus variants higher-thrust prop)","wotRpm":"~4000","fuelTankCapacity":"~2.3 (brass tank)","weightKg":"~17",
+    "notes":"British Seagull Silver Century — the 102 cc big single of the classic range (Century / Silver Century / Century Plus variants differ in prop, tank and shaft). Same golden rules: 10:1 premix on Amal-carb models, Champion D16, SAE 140 in the gearbox, no neutral on standard models. The big-prop, low-rev thrust makes it a legendary displacement-dinghy pusher. Verify against the Seagull handbook for your model code." }
+  $sgsc$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- British Seagull QB / Kingfisher
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-qb-kingfisher';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-qb-kingfisher','British Seagull','QB / Kingfisher','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage)', $sgqb$
+  { "year":"~1980s (modernized series)","strokeType":"2-Stroke","ccSize":"~64–110 (by model)","cylCount":"1","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Bing)","mixRatio":"25:1","plugType":"Champion (14 mm on late models — verify per engine)","coilType":"Wipac CD ignition (electronic on late models)",
+    "starterType":"Recoil","obSteering":"Tiller","obTiltTrim":"Manual tilt","obLowerUnitOilType":"SAE 140 gear oil (heavy)",
+    "transType":"Direct drive / clutch (by model)","wotPower":"~2–5 hp (by model)","weightKg":"~13–18",
+    "notes":"British Seagull QB ('Quiet Britain') / Kingfisher series — the 1980s modernization attempt: recoil start, cowling, quieter exhaust, Bing carb, 25:1 mix, CD ignition. Less loved by purists but the same simple bones. Model-specific figures vary — treat this entry as a family overview and verify displacement/plug against your engine's handbook. Production ended in the mid-1990s; the classic range's parts supply remains strong via the enthusiast community." }
+  $sgqb$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'British Seagull vintage batch imported (4 motors).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6','honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660','triumph-bonneville-t120')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6','honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660','triumph-bonneville-t120','british-seagull-forty-plus','british-seagull-forty-minus','british-seagull-silver-century','british-seagull-qb-kingfisher')
 ORDER BY e.type, e.make, e.model;
