@@ -2634,9 +2634,160 @@ BEGIN
   RAISE NOTICE 'British Seagull vintage batch imported (4 motors).';
 END $$;
 
+-- ═══ Vintage & Aussie icons (Victa, postie, farm bikes, vintage saws, B&S flathead) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Victa Power Torque 160
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='victa-power-torque-160';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('victa-power-torque-160','Victa','Power Torque 160','Lawnmower',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage)', $victa$
+  { "year":"~1975–2000s (Australian icon)","strokeType":"2-Stroke","ccSize":"160","cylCount":"1","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted (Victa G4 diaphragm; later LM)","mixRatio":"25:1","coilType":"Points magneto (electronic on later)","starterType":"Recoil only",
+    "bladeType":"Twin swing-back blades on disc","deckSize":"18–20 in (by model)","wotRpm":"~3200","weightKg":"~30",
+    "notes":"Victa Power Torque 160 — the Australian 2-stroke mower engine, millions made in Sydney; powered the classic Victa 18/20 alloy- and steel-deck mowers. 25:1 premix through the G4 diaphragm carb (primer bulb); swing-back blade disc underneath. Crank seals and reed/carb diaphragms are the usual old-age fixes. Earlier Victas ran the 125 cc 'full-crank' 2-stroke. Verify plug/points for your era against the Victa handbook." }
+  $victa$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda CT110 (Postie)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-ct110';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-ct110','Honda','CT110','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (postie bike)', $ct110$
+  { "year":"1980–2012 (the Postie)","bodyType":"Trail / utility","strokeType":"4-Stroke","ccSize":"105","compressionRatio":"8.5:1","cylCount":"1","valveTrain":"OHC","camType":"OHC — 2 valves",
+    "boreDiameter":"52.0","crankStroke":"49.5","pistonDiameter":"52.0","plugType":"NGK C7HSA","plugGap":"0.6–0.7","coilType":"CDI","starterType":"Kick",
+    "fuelSystem":"Carburetted","fuelTankCapacity":"5.5","coolingType":"Air cooled","driveType":"Chain (fully enclosed case)","transType":"4-speed semi-auto + hi/lo dual range",
+    "clutchType":"Automatic centrifugal","finalDriveType":"428 chain","forkType":"Telescopic","rearShockType":"Twin shocks","frontBrakeType":"Drum","rearBrakeType":"Drum",
+    "tyreSizeFront":"2.75-17","tyreSizeRear":"2.75-17","wotPower":"~7.6 hp @ 7,500 rpm","topSpeed":"~80 km/h","frameType":"Pressed-steel step-through","seatHeightMm":"795","weightKg":"~90 (wet)",
+    "notes":"Honda CT110 — the Australia Post 'postie bike', the best-selling motorcycle in Australian history. 105 cc OHC single, 4-speed semi-auto (no clutch lever) with a hi/lo dual-range sub-transmission, enclosed chain case, drums both ends. Utterly rebuildable; ex-AusPost auction bikes are an enthusiast institution. Verify clearances against the Honda manual (typically ~0.05 mm both, cold)." }
+  $ct110$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha AG200
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-ag200';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-ag200','Yamaha','AG200','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (farm bike)', $ag200$
+  { "year":"1984–present (farm bike)","bodyType":"Agricultural","strokeType":"4-Stroke","ccSize":"196","cylCount":"1","valveTrain":"SOHC","camType":"SOHC — 2 valves",
+    "boreDiameter":"67.0","crankStroke":"55.7","pistonDiameter":"67.0","coilType":"CDI","starterType":"Kick (electric on AG200E)","fuelSystem":"Carburetted","fuelTankCapacity":"9.8",
+    "coolingType":"Air cooled","driveType":"Chain (fully enclosed case)","transType":"5-speed","clutchType":"Multi-plate wet","forkType":"Telescopic (with gaiters)","rearShockType":"Monoshock",
+    "frontBrakeType":"Drum","rearBrakeType":"Drum","tyreSizeFront":"90/100-19? — verify by year","tyreSizeRear":"110/100-16? — verify by year",
+    "wotPower":"~16 hp","topSpeed":"~110 km/h","seatHeightMm":"800","weightKg":"~110 (wet)",
+    "notes":"Yamaha AG200 — the purpose-built Aussie/NZ farm bike, in production largely unchanged for 40 years: fully enclosed chain case, dual side stands, front and rear carry racks, drum brakes for mud, sealed electrics. The 196 cc air-cooled single is famously unkillable. Tyre sizes changed across years — verify against your model's manual." }
+  $ag200$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha AG100
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-ag100';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-ag100','Yamaha','AG100','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (farm bike)', $ag100$
+  { "year":"1973–2000s (farm bike)","bodyType":"Agricultural","strokeType":"2-Stroke","ccSize":"97","cylCount":"1","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted","mixRatio":"Autolube oil injection (no premix)","coilType":"Magneto CDI (points early)","starterType":"Kick",
+    "driveType":"Chain (fully enclosed case)","transType":"5-speed","clutchType":"Multi-plate wet","forkType":"Telescopic (gaiters)","rearShockType":"Twin shocks (mono later)",
+    "frontBrakeType":"Drum","rearBrakeType":"Drum","wotPower":"~10 hp","topSpeed":"~90 km/h","weightKg":"~95 (wet)",
+    "notes":"Yamaha AG100 — the 2-stroke little brother of the AG200 and one of the longest-serving farm bikes ever. 97 cc single with Yamaha Autolube oil injection (fill the oil tank — no premixing), enclosed chain, dual stands, racks. Keep the Autolube pump bled and cable-synced after carb work. Verify plug/jetting against the Yamaha manual for your year." }
+  $ag100$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Suzuki DR200SE Trojan
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='suzuki-dr200se-trojan';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('suzuki-dr200se-trojan','Suzuki','DR200SE Trojan','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (farm bike)', $trojan$
+  { "year":"1996–present (farm/trail)","bodyType":"Agricultural / trail","strokeType":"4-Stroke","ccSize":"199","compressionRatio":"9.4:1","cylCount":"1","valveTrain":"SOHC","camType":"SOHC — 2 valves",
+    "boreDiameter":"66.0","crankStroke":"58.2","pistonDiameter":"66.0","coilType":"CDI","starterType":"Electric","fuelSystem":"Carburetted (Mikuni BST31)","fuelTankCapacity":"13",
+    "coolingType":"Air cooled","driveType":"Chain","transType":"5-speed","clutchType":"Multi-plate wet","forkType":"Telescopic","rearShockType":"Monoshock",
+    "frontBrakeType":"Disc","rearBrakeType":"Drum","tyreSizeFront":"70/100-21","tyreSizeRear":"100/90-18","wotPower":"~19 hp","topSpeed":"~110 km/h","seatHeightMm":"810","weightKg":"~126 (wet)",
+    "notes":"Suzuki DR200SE 'Trojan' — the electric-start farm/trail 200 with a big 13 L tank; the third leg of the Aussie farm-bike trio alongside the AG200 and CT110-descended posties. Simple air-cooled SOHC single, easy valve access. Verify clearances/plug against the Suzuki manual." }
+  $trojan$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda Z50 Monkey
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-z50';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-z50','Honda','Z50','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (minibike classic)', $z50$
+  { "year":"1968–1999 (Monkey / Mini Trail)","bodyType":"Minibike","strokeType":"4-Stroke","ccSize":"49","cylCount":"1","valveTrain":"OHC","camType":"OHC — 2 valves",
+    "plugType":"NGK C5HSA / C6HS (by year)","coilType":"Points (CDI later)","starterType":"Kick","fuelSystem":"Carburetted","coolingType":"Air cooled",
+    "driveType":"Chain","transType":"3-speed semi-auto","clutchType":"Automatic centrifugal","frontBrakeType":"Drum","rearBrakeType":"Drum",
+    "tyreSizeFront":"3.50-8","tyreSizeRear":"3.50-8","wotPower":"~2.5 hp","topSpeed":"~40 km/h","weightKg":"~50",
+    "notes":"Honda Z50 Monkey / Mini Trail — the 49 cc OHC minibike that launched a million riders (and the modern Monkey 125 homage). 3-speed semi-auto, 8-inch wheels, folding bars on early models. Massive collector and pit-bike aftermarket; the horizontal 50 engine family (Z50/C50/CT70) is endlessly interchangeable. Verify plug/points era against the Honda manual for your year." }
+  $z50$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki KE100
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-ke100';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-ke100','Kawasaki','KE100','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (classic 2-stroke)', $ke100$
+  { "year":"1976–2001 (dual-purpose)","bodyType":"Dual-purpose","strokeType":"2-Stroke","ccSize":"99","cylCount":"1","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted (rotary disc valve)","mixRatio":"Oil injection (Superlube)","coilType":"Magneto (points early, CDI later)","starterType":"Kick",
+    "driveType":"Chain","transType":"5-speed","clutchType":"Multi-plate wet","frontBrakeType":"Drum","rearBrakeType":"Drum",
+    "tyreSizeFront":"2.75-19","tyreSizeRear":"3.00-18","wotPower":"~11 hp","topSpeed":"~100 km/h","weightKg":"~99 (wet)",
+    "notes":"Kawasaki KE100 — 99 cc rotary-disc-valve 2-stroke dual-purpose bike, sold near-unchanged for 25 years; oil-injected (no premix). A beloved cheap trail/learner classic. Verify plug/jetting against the Kawasaki manual for your year." }
+  $ke100$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Homelite XL-12
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='homelite-xl-12';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('homelite-xl-12','Homelite','XL-12','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage saw)', $xl12$
+  { "year":"1963–1980s (vintage)","strokeType":"2-Stroke","ccSize":"~54","cylCount":"1","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted (Tillotson/Walbro diaphragm)","mixRatio":"16:1 original spec (32:1 acceptable with modern 2T oil — see notes)",
+    "plugType":"Champion CJ8 (verify)","coilType":"Points magneto","starterType":"Recoil only","chainPitchCS":"3/8\"","barLength":"14–20 in","weightKg":"~6.5 (powerhead)",
+    "notes":"Homelite XL-12 — one of the best-selling saws of all time; a light (for its day) ~54 cc direct-drive 2-stroke with a huge survivor population. Original manuals call for 16:1 with 1960s oils; most restorers run 32:1 with modern oil — never lean an original-spec vintage saw to 50:1. Points ignition (~0.015 in) unless converted to electronic. Verify displacement variant (XL-12 family spans models) against your serial." }
+  $xl12$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- McCulloch Mac 10-10
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mcculloch-mac-10-10';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mcculloch-mac-10-10','McCulloch','Mac 10-10','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage saw)', $mac1010$
+  { "year":"1965–1980s (vintage)","strokeType":"2-Stroke","ccSize":"~54","cylCount":"1","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted (diaphragm)","mixRatio":"40:1 with McCulloch oil (orig.) / 16:1 with standard oils of the era — 32:1 modern",
+    "coilType":"Points magneto","starterType":"Recoil only","chainPitchCS":"3/8\"","barLength":"16–20 in","weightKg":"~7 (powerhead)",
+    "notes":"McCulloch Mac 10-10 — the classic yellow farm saw of the 70s, ~54 cc direct-drive with automatic + manual chain oiling. Factory quoted 40:1 with McCulloch-branded oil or richer with generic; 32:1 with modern oil is the safe restorer's choice. Points ignition; kits and parts still circulate. Verify plug/points against the McCulloch manual." }
+  $mac1010$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Stihl 070
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-070';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-070','Stihl','070','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage big-bore)', $s070$
+  { "year":"1968–present in some markets","strokeType":"2-Stroke","ccSize":"106","cylCount":"1","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted","mixRatio":"25:1 original spec (50:1 with modern Stihl oil — see notes)","plugType":"Bosch WSR6F / NGK BPMR7A (later)","coilType":"Points magneto (electronic later)",
+    "starterType":"Recoil only","chainPitchCS":".404\"","barLength":"25–36 in","wotPower":"~4.1 kW (5.5 hp)","weightKg":"~10.5 (powerhead)",
+    "notes":"Stihl 070 — the legendary 106 cc big-bore workhorse, still manufactured for developing markets decades after its 1968 debut; slow-revving, torque-monster milling and big-timber saw. Early spec was 25:1; with modern Stihl HP oils 50:1 is factory-approved on later builds — match the era of your engine. Points saws need ~0.4 mm gap. Verify against the Stihl manual." }
+  $s070$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Stihl 090
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='stihl-090';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('stihl-090','Stihl','090','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (vintage big-bore)', $s090$
+  { "year":"1971–2000s (vintage giant)","strokeType":"2-Stroke","ccSize":"137","cylCount":"1","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted","mixRatio":"25:1 original spec (50:1 with modern Stihl oil on later builds)","coilType":"Points magneto (electronic later)",
+    "starterType":"Recoil only","chainPitchCS":".404\"","barLength":"30–60 in","wotPower":"~4.8 kW (6.5 hp)","weightKg":"~12 (powerhead)",
+    "notes":"Stihl 090 — the 137 cc giant, one of the largest production chainsaws ever; the definitive slabbing/milling and giant-timber saw, hugely sought-after today. Slow, brutal torque; runs .404 chain on bars up to 5 ft. Match oil ratio to your engine's era (25:1 original). Verify against the Stihl manual." }
+  $s090$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Briggs & Stratton 5HP Flathead
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='briggs-5hp-flathead';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('briggs-5hp-flathead','Briggs & Stratton','5HP Flathead','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import (classic)', $b5hp$
+  { "year":"~1960s–2000s (Model 130200-series et al.)","strokeType":"4-Stroke","ccSize":"~206","cylCount":"1","valveTrain":"Flathead (L-head side-valve)","camType":"Side-valve — 2 valves",
+    "coolingType":"Air cooled","fuelSystem":"Carburetted (Flo-Jet / Pulsa-Jet by series)","plugType":"Champion J19LM","plugGap":"0.76 (0.030 in)","coilType":"Points under flywheel (Magnetron electronic later)",
+    "starterType":"Recoil only","idleRpm":"1750","wotRpm":"3600 (governed)","wotPower":"5 hp @ 3,600 rpm","shaftType":"Horizontal 3/4\" keyed","weightKg":"~14",
+    "notes":"Briggs & Stratton 5 HP flathead — the L-head single that powered a generation of minibikes, karts, tillers and mowers; the engine every young wrench learned on. Points under the flywheel (0.020 in) on older units, Magnetron electronic conversion is a classic upgrade; Champion J19LM plug at 0.030 in. Huge vintage-kart racing scene. Verify series (Pulsa-Jet vs Flo-Jet carb, tank config) by the model number stamped on the shroud." }
+  $b5hp$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Vintage & Aussie icons batch imported (12 machines).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6','honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660','triumph-bonneville-t120','british-seagull-forty-plus','british-seagull-forty-minus','british-seagull-silver-century','british-seagull-qb-kingfisher')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6','honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660','triumph-bonneville-t120','british-seagull-forty-plus','british-seagull-forty-minus','british-seagull-silver-century','british-seagull-qb-kingfisher','victa-power-torque-160','honda-ct110','yamaha-ag200','yamaha-ag100','suzuki-dr200se-trojan','honda-z50','kawasaki-ke100','homelite-xl-12','mcculloch-mac-10-10','stihl-070','stihl-090','briggs-5hp-flathead')
 ORDER BY e.type, e.make, e.model;
