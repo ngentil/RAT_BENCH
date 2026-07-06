@@ -2210,9 +2210,138 @@ BEGIN
   RAISE NOTICE 'Generator/pressure-washer/pump batch imported (10 units).';
 END $$;
 
+-- ═══ Deep-spec iconic street/adventure bikes (40+ fields) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Suzuki SV650
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='suzuki-sv650';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('suzuki-sv650','Suzuki','SV650','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $sv650$
+  { "year":"2016–present (EFI)","strokeType":"4-Stroke","ccSize":"645","compressionRatio":"11.2:1","cylCount":"2","firingOrder":"90° V-twin","valveTrain":"DOHC","camType":"DOHC — 8 valves",
+    "boreDiameter":"81.0","crankStroke":"62.6","pistonDiameter":"81.0","coilType":"Electronic (transistorized)","starterType":"Electric / key start only",
+    "fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"14.5","coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"1.5",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"525 chain","finalDriveRatio":"15/45",
+    "forkType":"Telescopic (41 mm)","forkDiameter":"41","forkTravel":"125","rearShockType":"Link-type monoshock","rearTravel":"130",
+    "frontBrakeType":"Dual 290 mm disc, 2-piston","rearBrakeType":"240 mm disc, 1-piston","tyreSizeFront":"120/70-17","tyreSizeRear":"160/60-17",
+    "wotPower":"75 hp @ 8,500 rpm","torqueNm":"64","topSpeed":"~200 km/h (124 mph)","frameType":"Steel trellis","wheelbaseMm":"1445","seatHeightMm":"785","groundClearanceMm":"135","weightKg":"198 (wet)",
+    "notes":"Suzuki SV650 — 645 cc 90° V-twin naked; a beloved all-rounder, trackday and streetfighter favourite with Low-RPM Assist. Verify plug and valve clearances against the Suzuki manual." }
+  $sv650$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha MT-07
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-mt-07';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-mt-07','Yamaha','MT-07','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $mt07$
+  { "year":"2014–present","strokeType":"4-Stroke","ccSize":"689","compressionRatio":"11.5:1","cylCount":"2","firingOrder":"270° parallel twin (CP2)","valveTrain":"DOHC","camType":"DOHC — 8 valves",
+    "boreDiameter":"80.0","crankStroke":"68.6","pistonDiameter":"80.0","coilType":"Electronic (TCI)","starterType":"Electric / key start only",
+    "fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"14","coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"2.1",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"525 chain","finalDriveRatio":"16/43",
+    "forkType":"Telescopic (41 mm)","forkDiameter":"41","forkTravel":"130","rearShockType":"Link-type monoshock","rearTravel":"130",
+    "frontBrakeType":"Dual 298 mm disc, 4-piston","rearBrakeType":"245 mm disc, 1-piston","tyreSizeFront":"120/70-17","tyreSizeRear":"180/55-17",
+    "wotPower":"73 hp @ 8,750 rpm","torqueNm":"67","topSpeed":"~205 km/h (127 mph)","frameType":"Steel diamond (backbone)","wheelbaseMm":"1400","seatHeightMm":"805","groundClearanceMm":"140","weightKg":"184 (wet)",
+    "notes":"Yamaha MT-07 — 689 cc CP2 270° crossplane parallel-twin naked; torquey, light and enormously popular (also powers the R7, Ténéré 700, XSR700). Verify plug and valve clearances against the Yamaha manual." }
+  $mt07$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki Ninja 400
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-ninja-400';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-ninja-400','Kawasaki','Ninja 400','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $ninja400$
+  { "year":"2018–present","strokeType":"4-Stroke","ccSize":"399","compressionRatio":"11.5:1","cylCount":"2","firingOrder":"180° parallel twin","valveTrain":"DOHC","camType":"DOHC — 8 valves",
+    "boreDiameter":"70.0","crankStroke":"51.8","pistonDiameter":"70.0","coilType":"Electronic (TCI)","starterType":"Electric / key start only",
+    "fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"14","coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"1.5",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"520 chain","finalDriveRatio":"14/43",
+    "forkType":"Telescopic (41 mm)","forkDiameter":"41","forkTravel":"120","rearShockType":"Bottom-link Uni-Trak monoshock","rearTravel":"130",
+    "frontBrakeType":"310 mm disc, 2-piston","rearBrakeType":"220 mm disc, 2-piston","tyreSizeFront":"110/70-17","tyreSizeRear":"150/60-17",
+    "wotPower":"45 hp @ 10,000 rpm","torqueNm":"38","topSpeed":"~185 km/h (115 mph)","frameType":"Steel trellis","wheelbaseMm":"1370","seatHeightMm":"785","groundClearanceMm":"140","weightKg":"168 (wet)",
+    "notes":"Kawasaki Ninja 400 — 399 cc parallel-twin sportbike on a light trellis frame; a class benchmark for new riders and lightweight racing. Verify plug and valve clearances against the Kawasaki manual." }
+  $ninja400$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda CB500X
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-cb500x';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-cb500x','Honda','CB500X','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $cb500x$
+  { "year":"2013–present (adventure-touring)","strokeType":"4-Stroke","ccSize":"471","compressionRatio":"10.7:1","cylCount":"2","firingOrder":"180° parallel twin","valveTrain":"DOHC","camType":"DOHC — 8 valves",
+    "boreDiameter":"67.0","crankStroke":"66.8","pistonDiameter":"67.0","coilType":"Electronic","starterType":"Electric / key start only",
+    "fuelSystem":"Fuel injection (PGM-FI)","fuelTankCapacity":"17.7","coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"1.8",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"520 chain","finalDriveRatio":"15/40",
+    "forkType":"USD (41 mm)","forkDiameter":"41","forkTravel":"150","rearShockType":"Pro-Link monoshock","rearTravel":"135",
+    "frontBrakeType":"310 mm disc, 2-piston","rearBrakeType":"240 mm disc, 1-piston","tyreSizeFront":"110/80-19","tyreSizeRear":"160/60-17",
+    "wotPower":"47 hp @ 8,600 rpm","torqueNm":"43","topSpeed":"~180 km/h (112 mph)","frameType":"Steel diamond","wheelbaseMm":"1445","seatHeightMm":"830","groundClearanceMm":"150","weightKg":"199 (wet)",
+    "notes":"Honda CB500X — 471 cc parallel-twin adventure-tourer with a 19-inch front wheel; a light, thrifty A2-friendly all-rounder. Verify plug and valve clearances against the Honda manual." }
+  $cb500x$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kawasaki Z900
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kawasaki-z900';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kawasaki-z900','Kawasaki','Z900','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $z900$
+  { "year":"2017–present","strokeType":"4-Stroke","ccSize":"948","compressionRatio":"11.8:1","cylCount":"4","firingOrder":"Inline-4","valveTrain":"DOHC","camType":"DOHC — 16 valves",
+    "boreDiameter":"73.4","crankStroke":"56.0","pistonDiameter":"73.4","coilType":"Electronic","starterType":"Electric / key start only",
+    "fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"17","coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50","coolantCapacity":"3.0",
+    "driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet (assist/slipper)","finalDriveType":"525 chain","finalDriveRatio":"15/44",
+    "forkType":"USD (41 mm)","forkDiameter":"41","forkTravel":"120","rearShockType":"Horizontal back-link monoshock","rearTravel":"140",
+    "frontBrakeType":"Dual 300 mm disc, 4-piston","rearBrakeType":"250 mm disc, 1-piston","tyreSizeFront":"120/70-17","tyreSizeRear":"180/55-17",
+    "wotPower":"125 hp @ 9,500 rpm","torqueNm":"98.6","topSpeed":"~240 km/h (149 mph)","frameType":"Steel trellis","wheelbaseMm":"1450","seatHeightMm":"820","groundClearanceMm":"145","weightKg":"212 (wet)",
+    "notes":"Kawasaki Z900 — 948 cc inline-four naked (sugomi styling); strong midrange and a light trellis frame. Verify plug and valve clearances against the Kawasaki manual." }
+  $z900$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- KTM 390 Duke
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='ktm-390-duke';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('ktm-390-duke','KTM','390 Duke','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $duke390$
+  { "year":"Naked single","bodyType":"Naked / streetfighter","strokeType":"4-Stroke","ccSize":"373","compressionRatio":"12.6:1","cylCount":"1","valveTrain":"DOHC","camType":"DOHC — 4 valves",
+    "boreDiameter":"89.0","crankStroke":"60.0","pistonDiameter":"89.0","coilType":"Electronic","starterType":"Electric / key start only",
+    "fuelSystem":"Fuel injection (ride-by-wire)","fuelTankCapacity":"13.4","coolingType":"Liquid cooled","coolantType":"Ethylene glycol 50/50",
+    "driveType":"Chain","transType":"6-speed","clutchType":"PASC slipper (multi-plate wet)","finalDriveType":"520 chain","finalDriveRatio":"15/45",
+    "forkType":"USD (WP APEX 43 mm)","forkDiameter":"43","forkTravel":"150","rearShockType":"WP APEX monoshock","rearTravel":"150",
+    "frontBrakeType":"320 mm disc, 4-piston radial","rearBrakeType":"230 mm disc, 1-piston","tyreSizeFront":"110/70-17","tyreSizeRear":"150/60-17",
+    "wotPower":"43 hp @ 9,000 rpm","torqueNm":"37","topSpeed":"~167 km/h (104 mph)","frameType":"Steel trellis","wheelbaseMm":"1357","seatHeightMm":"830","groundClearanceMm":"185","weightKg":"149 (wet)",
+    "notes":"KTM 390 Duke — 373 cc DOHC single naked; ride-by-wire, WP suspension, radial brake — a sharp lightweight streetbike (shares its engine with the RC390 and 390 Adventure). Verify plug and valve clearances against the KTM manual." }
+  $duke390$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Royal Enfield Himalayan
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='royal-enfield-himalayan';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('royal-enfield-himalayan','Royal Enfield','Himalayan','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $himalayan$
+  { "year":"2016–present (411 LS410)","bodyType":"Adventure tourer","strokeType":"4-Stroke","ccSize":"411","compressionRatio":"9.5:1","cylCount":"1","idleRpm":"1400","valveTrain":"SOHC","camType":"SOHC — 2 valves",
+    "boreDiameter":"78.0","crankStroke":"86.0","pistonDiameter":"78.0","coilType":"Electronic","starterType":"Electric / key start only",
+    "fuelSystem":"Fuel injection (EFI)","fuelTankCapacity":"15","coolingType":"Air cooled (oil-cooled)","driveType":"Chain","transType":"5-speed","clutchType":"Multi-plate wet",
+    "finalDriveType":"520 chain","finalDriveRatio":"15/37","forkType":"Telescopic (41 mm)","forkDiameter":"41","forkTravel":"200",
+    "rearShockType":"Monoshock (linkage)","rearTravel":"180","frontBrakeType":"300 mm disc, 2-piston","rearBrakeType":"240 mm disc","tyreSizeFront":"90/90-21","tyreSizeRear":"120/90-17",
+    "wotPower":"24 hp @ 6,500 rpm","torqueNm":"32","topSpeed":"~140 km/h (87 mph)","frameType":"Half-duplex split cradle","wheelbaseMm":"1465","seatHeightMm":"800","groundClearanceMm":"220","weightKg":"199 (wet)",
+    "notes":"Royal Enfield Himalayan (LS410) — 411 cc air/oil-cooled SOHC single adventure bike; simple, torquey and affordable, a huge value-ADV following. (A 452 cc liquid-cooled Himalayan launched 2024.) Verify plug and valve clearances against the RE manual." }
+  $himalayan$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Honda XR250R (classic dual-sport/enduro)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='honda-xr250r';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('honda-xr250r','Honda','XR250R','Motorcycle',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Detailed spec import', $xr250r$
+  { "year":"1986–2004 (classic enduro)","strokeType":"4-Stroke","ccSize":"249","compressionRatio":"9.5:1","cylCount":"1","valveTrain":"SOHC (RFVC)","camType":"SOHC — 4 valves (radial)",
+    "boreDiameter":"73.0","crankStroke":"59.5","pistonDiameter":"73.0","intakeValveClear":"0.10 mm (cold)","exhaustValveClear":"0.12 mm (cold)","plugType":"NGK DPR8EA-9","plugGap":"0.7",
+    "coilType":"CDI","starterType":"Kick","fuelSystem":"Carburetted","fuelTankCapacity":"9.5","coolingType":"Air cooled","driveType":"Chain","transType":"6-speed","clutchType":"Multi-plate wet",
+    "finalDriveType":"520 chain","forkType":"Telescopic (43 mm)","forkTravel":"280","rearShockType":"Pro-Link monoshock","rearTravel":"280",
+    "frontBrakeType":"240 mm disc","rearBrakeType":"220 mm disc","tyreSizeFront":"3.00-21","tyreSizeRear":"4.60-18",
+    "wotPower":"~28 hp","torqueNm":"23","topSpeed":"~120 km/h (75 mph)","frameType":"Semi-double-cradle steel","wheelbaseMm":"1420","seatHeightMm":"940","groundClearanceMm":"330","weightKg":"116 (dry)",
+    "notes":"Honda XR250R — air-cooled RFVC SOHC single enduro (1986–2004); one of the most reliable, popular vintage dual-sport/trail bikes. Kick start, carbureted. Verify clearances against the Honda manual." }
+  $xr250r$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Deep-spec iconic bike batch imported (8 bikes).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r')
 ORDER BY e.type, e.make, e.model;
