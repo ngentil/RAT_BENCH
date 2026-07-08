@@ -2785,9 +2785,131 @@ BEGIN
   RAISE NOTICE 'Vintage & Aussie icons batch imported (12 machines).';
 END $$;
 
+-- ═══ British Seagull — enriched from Saving Old Seagulls (sourced) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- ENRICH: Forty Plus (sourced bore/stroke, codes, gears, prop)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-forty-plus';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-forty-plus','British Seagull','Forty Plus','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Enriched from Saving Old Seagulls / brochure data', $sgfp2$
+  { "year":"1956–1990s (code SJP 1956–67; later variants)","strokeType":"2-Stroke (3-port)","ccSize":"64","cylCount":"1",
+    "boreDiameter":"45.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Villiers/Amal; Bing from ~1978)","mixRatio":"10:1 (pre-1978 Villiers/Amal) / 25:1 (Bing, or after conversion)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers/Wipac; breakerless CD on late models)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard / long (by model code)",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"2.5:1 reduction","obPropPitch":"3-blade anti-weed, 8 in (203 mm) dia",
+    "transType":"Direct drive (no neutral; clutch on 'C' codes; FN gears on late)","wotPower":"~3 hp thrust class (55 lb / 25 kg thrust)","wotRpm":"~4000","fuelTankCapacity":"~1.8 (brass tank)","weightKg":"~12",
+    "notes":"British Seagull Forty Plus — the archetypal Seagull. Code SJP (1956–1967); continued in later variants into the 1990s. 64 cc (45×40 mm) 3-port water-cooled single, 2.5:1 reduction, 8-inch 3-blade anti-weed prop, ~55 lb thrust (marketed as the 3 hp class). CRITICAL: pre-1978 Villiers/Amal-carb engines run 10:1 premix by design — convertible to 25:1; Bing-carb engines run 25:1. Plug Champion D16, points ~0.020 in. Dating: serial letters = month, digit = year (A3 = Jan '63; from 1973 doubled letters, AA3 = Jan '73). Sources: saving-old-seagulls.co.uk, britishseagullparts.com." }
+  $sgfp2$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- ENRICH: Forty Minus
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-forty-minus';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-forty-minus','British Seagull','Forty Minus','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Enriched from Saving Old Seagulls / brochure data', $sgfm2$
+  { "year":"1955–1967 (code SJM)","strokeType":"2-Stroke (3-port)","ccSize":"64","cylCount":"1",
+    "boreDiameter":"45.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Villiers/Amal)","mixRatio":"10:1 (convertible to 25:1)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers/Wipac)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"10/21 reduction","obPropPitch":"4-blade, 6 in (152 mm) dia",
+    "transType":"Direct drive (no neutral)","wotPower":"~1.5 hp class","wotRpm":"~3500","fuelTankCapacity":"~1.8 (brass tank)","weightKg":"~12 (26 lb)",
+    "notes":"British Seagull Forty Minus — code SJM, 1955–1967; the lower-rated 64 cc sibling (10/21 gears, 6-inch 4-blade prop, ~3500 rpm) for 6–9 ft dinghies with low transoms. Same 10:1-premix rules and Champion D16 plug as the rest of the classic range. Succeeded in spirit by the Forty Featherweight. Sources: saving-old-seagulls.co.uk, britishseagullparts.com." }
+  $sgfm2$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: Forty Featherweight
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-forty-featherweight';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-forty-featherweight','British Seagull','Forty Featherweight','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from Saving Old Seagulls / brochure data', $sgff$
+  { "year":"1967–1976 (code F; GF 1977–78)","strokeType":"2-Stroke (3-port)","ccSize":"64","cylCount":"1",
+    "boreDiameter":"45.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Seagull-Villiers pre-1978; Bing after)","mixRatio":"10:1 (pre-1978; convertible) / 25:1 (Bing)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Wipac)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"10/21 reduction","obPropPitch":"4-blade, 6 in (152 mm) dia",
+    "transType":"Direct drive (no neutral)","wotPower":"~1.5 hp class","wotRpm":"~3500","weightKg":"~12 (26 lb)",
+    "notes":"British Seagull Forty Featherweight — code F (1967–1976), GF (1977–78); the lightest classic Seagull, successor to the Forty Minus for small dinghies and tenders. 64 cc (45×40 mm), 10/21 gears, 6-inch 4-blade prop, ~26 lb. Model 45 continued the 1.5 hp line after it. 10:1 premix on Villiers-carb engines (pre-Jan-1978), 25:1 on Bing. Sources: saving-old-seagulls.co.uk, britishseagullparts.com." }
+  $sgff$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: Model 102
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-102';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-102','British Seagull','Model 102','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from Saving Old Seagulls / brochure data', $sg102$
+  { "year":"1936–1960s (first '102' badged Marston Seagull)","strokeType":"2-Stroke (3-port)","ccSize":"102","cylCount":"1",
+    "coolingType":"Liquid cooled (raw water, water-injected exhaust)","fuelSystem":"Carburetted (Amal; 'A' in code = Amal)",
+    "mixRatio":"10:1","plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","transType":"Direct drive (clutch on 'C' codes)","wotPower":"~4 hp class","weightKg":"~18",
+    "notes":"British Seagull Model 102 — the pre-war original of the big-block line: first sold 1936 wearing the 'Marston Seagull' logo, with an integral cylinder block/head and water-injected exhaust. Codes carry letters for features ('A' = Amal carb, 'C' = clutch, 'D' = model series). The square-block Century family descended from it. Strictly 10:1 premix — plain bearings depend on the oil. A genuine collector's motor with parts still circulating via the Seagull community. Sources: saving-old-seagulls.co.uk, britishseagullparts.com." }
+  $sg102$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- ENRICH: Silver Century (sourced bore/stroke + prop)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-silver-century';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-silver-century','British Seagull','Silver Century','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Enriched from Saving Old Seagulls / brochure data', $sgsc2$
+  { "year":"1950s–1990s (codes S/WS; WSPC = long-shaft Plus)","strokeType":"2-Stroke (3-port)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"44.0","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Amal; Bing from ~1978)","mixRatio":"10:1 (pre-1978) / 25:1 (Bing or converted)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers/Wipac; CD on late)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard (S) / long (W-prefix)",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"12/48 (4:1) reduction","obPropPitch":"5-blade, 11 in (280 mm) dia",
+    "transType":"Direct drive (clutch on 'C' codes)","wotPower":"4–5.5 hp","wotRpm":"~4500 max","fuelTankCapacity":"~2.3 (brass tank)","weightKg":"~17",
+    "notes":"British Seagull Silver Century / Silver Century Plus — the 102 cc (57×44 mm) big single. Codes: S, SP, SPC, WS, WSC, WSPC, ESC, ESPC (W = long shaft, P = Plus big gearbox/prop, C = clutch, E = electronic ignition). 12/48 gears swinging a 5-blade 11-inch prop — legendary displacement-dinghy thrust; main engine for 14–17 ft boats. 10:1 premix pre-1978, 25:1 with Bing. Dating: serial letter=month, digit=year (doubled letters from 1973: AA3 = Jan '73). Sources: saving-old-seagulls.co.uk, britishseagullparts.com." }
+  $sgsc2$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: Model 90/110 series
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-90-110';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-90-110','British Seagull','Model 90/110','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from Saving Old Seagulls / brochure data', $sg90$
+  { "year":"1979–1990s (with Models 75 & 80)","strokeType":"2-Stroke (3-port)","ccSize":"102","cylCount":"1",
+    "coolingType":"Liquid cooled (raw water)","fuelSystem":"Carburetted (Bing)","mixRatio":"25:1",
+    "plugType":"Champion D16 (18 mm)","coilType":"Breakerless CD ignition (sealed)","starterType":"Rope pull / recoil (by variant)",
+    "obSteering":"Tiller","obTiltTrim":"Manual tilt","obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"12/48 (4:1) reduction",
+    "transType":"FNR gearbox (forward-neutral-reverse) on 110","wotPower":"~5 hp","weightKg":"~20",
+    "notes":"British Seagull Models 75 / 80 / 90 / 110 (from 1979) — the metricated, Bing-carb, CD-ignition evolution of the Century line, all ~5 hp on the 102 block with 12/48 gears. The Model 110 adds an FNR gearbox (forward-neutral-reverse) — the first Seagulls you could take out of gear. 25:1 mix as standard. Model 80 = Silver Century Plus CD. Sources: saving-old-seagulls.co.uk (90/110 series page), britishseagullparts.com." }
+  $sg90$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: Model 170
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-170';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-170','British Seagull','Model 170','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from Saving Old Seagulls / brochure data', $sg170$
+  { "year":"1982–1996 (with Model 125 from 1984)","strokeType":"2-Stroke","ccSize":"~102 (170 = model, not cc)","cylCount":"1",
+    "coolingType":"Liquid cooled (raw water)","fuelSystem":"Carburetted (upgraded Bing)","mixRatio":"25:1",
+    "coilType":"Breakerless CD ignition","starterType":"Recoil","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","transType":"Direct / clutch (by variant)","wotPower":"~5 hp class",
+    "notes":"British Seagull Model 170 (1982–1996) and Model 125 (1984–1996) — the late cowled Seagulls: enclosed engine, upgraded carburettors and cylinder blocks, recoil start; visually modern but classic Seagull underneath. Produced until the company's mid-1990s end. Verify per-engine figures against the handbook — late-model variants differ. Sources: saving-old-seagulls.co.uk, britishseagullparts.com." }
+  $sg170$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- ENRICH: QB / Kingfisher (sourced: 102cc 5-port, 3.1:1 FNR, 55.5 lb, 1987)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-qb-kingfisher';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-qb-kingfisher','British Seagull','QB / Kingfisher','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Enriched from Saving Old Seagulls / brochure data', $sgqb2$
+  { "year":"1987–1990s (QB series)","strokeType":"2-Stroke (5-port)","ccSize":"102","cylCount":"1",
+    "coolingType":"Liquid cooled (raw water)","fuelSystem":"Carburetted (Bing)","mixRatio":"25:1",
+    "coilType":"Breakerless CD ignition","starterType":"Recoil","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"3.1:1 reduction","transType":"FNR gearbox (forward-neutral-reverse)",
+    "wotPower":"6 hp (Kingfisher) / 5 hp (Osprey) / 4 hp (Curlew)","weightKg":"25.2 (55.5 lb dry)",
+    "notes":"British Seagull QB series — launched at the 1987 London Boat Show with the 6 hp Kingfisher, followed by the 5 hp Osprey and 4 hp Curlew. A genuinely modernized Seagull: 102 cc 5-port engine, 3.1:1 FNR gearbox, recoil start, cowling, CD ignition, 25:1 mix. Less loved by purists but the most usable Seagulls day-to-day. Sources: saving-old-seagulls.co.uk, britishseagullparts.com." }
+  $sgqb2$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Seagull enrichment batch complete (4 enriched + 4 new = 8 entries).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6','honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660','triumph-bonneville-t120','british-seagull-forty-plus','british-seagull-forty-minus','british-seagull-silver-century','british-seagull-qb-kingfisher','victa-power-torque-160','honda-ct110','yamaha-ag200','yamaha-ag100','suzuki-dr200se-trojan','honda-z50','kawasaki-ke100','homelite-xl-12','mcculloch-mac-10-10','stihl-070','stihl-090','briggs-5hp-flathead')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6','honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660','triumph-bonneville-t120','british-seagull-forty-plus','british-seagull-forty-minus','british-seagull-silver-century','british-seagull-qb-kingfisher','victa-power-torque-160','honda-ct110','yamaha-ag200','yamaha-ag100','suzuki-dr200se-trojan','honda-z50','kawasaki-ke100','homelite-xl-12','mcculloch-mac-10-10','stihl-070','stihl-090','briggs-5hp-flathead','british-seagull-forty-featherweight','british-seagull-102','british-seagull-90-110','british-seagull-170')
 ORDER BY e.type, e.make, e.model;
