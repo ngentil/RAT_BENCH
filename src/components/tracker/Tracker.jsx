@@ -52,11 +52,10 @@ function GuideStep2({ onSkip }) {
     </div>
   );
 }
-function MachinePhotoRow({ machine: m, onClick, clientName, company }) {
+function MachinePhotoRow({ machine: m, onClick, clientName }) {
   const svc = getMachineServiceStatus(m);
   const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
   const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
-  const rev = hrs * (company?.hourly_rate||0);
   return (
     <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
       <div style={{width:64,height:64,flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid "+BRD,background:"#111",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -92,7 +91,6 @@ function MachinePhotoRow({ machine: m, onClick, clientName, company }) {
           {!svc.overdue&&svc.dueSoon&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44"}}>DUE SOON</span>}
           {clientName&&<span style={{fontSize:9,color:ACC}}>👤 {clientName}</span>}
           {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
-          {rev>0&&<span style={{fontSize:9,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}
         </div>
       </div>
       <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:26}}>▶</span>
@@ -100,11 +98,10 @@ function MachinePhotoRow({ machine: m, onClick, clientName, company }) {
   );
 }
 
-function MachineRow({ machine: m, onClick, clientName, company }) {
+function MachineRow({ machine: m, onClick, clientName }) {
   const svc = getMachineServiceStatus(m);
   const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
   const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
-  const rev = hrs * (company?.hourly_rate||0);
   return (
     <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
       <span style={{fontSize:22,flexShrink:0,lineHeight:1,marginTop:3}}>{mIcon(m.type)}</span>
@@ -138,7 +135,6 @@ function MachineRow({ machine: m, onClick, clientName, company }) {
           {clientName&&<span style={{fontSize:9,color:ACC}}>👤 {clientName}</span>}
           {m.dueDate&&(()=>{const due=new Date(m.dueDate);const ov=due<new Date();return<span style={{fontSize:9,color:ov?"#e87a0a":MUT}}>{ov?"⚠ OVERDUE":"DUE "+due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
           {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
-          {rev>0&&<span style={{fontSize:9,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}
           {(m.rage||0)>0&&<span style={{fontSize:9,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}
         </div>
       </div>
@@ -203,7 +199,6 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   }):filtered;
 
   const totalHrsAll = useMemo(() => machines.reduce((s,m) => s + (m.timeLog||[]).reduce((a,e) => a+(e.seconds||0),0)/3600, 0), [machines]);
-  const rate = company?.hourly_rate || 0;
 
   const addM=async m=>{
     setSaving(true);
@@ -283,14 +278,14 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           </div>
         </div>
       )}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",rowGap:8,marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",rowGap:6}}>
           <SL t="Machines" />
-          {sortBy&&<span style={{fontSize:10,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
-          {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:10,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em"}}>{machines.length}/{machineLimit(profile,company)}</span>}
-          {totalHrsAll>0&&<span style={{fontSize:10,color:GRN,letterSpacing:"0.06em"}}>{totalHrsAll.toFixed(1)}h{rate>0?" · $"+(totalHrsAll*rate).toFixed(0):""}</span>}
+          {sortBy&&<span style={{fontSize:10,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px",whiteSpace:"nowrap"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
+          {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:10,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{machines.length}/{machineLimit(profile,company)}</span>}
+          {totalHrsAll>0&&<span style={{fontSize:10,color:GRN,letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{totalHrsAll.toFixed(1)}h</span>}
         </div>
-        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
           <button style={{...btnG,color:sortBy?ACC:MUT,alignSelf:"stretch"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
           <button onClick={()=>setViewP(view==="list"?"grid":view==="grid"?"compact":view==="compact"?"photo":"list")} style={{...btnG,minWidth:36,alignSelf:"stretch",color:view!=="list"?ACC:undefined}} title={view==="list"?"Grid view":view==="grid"?"Compact list":view==="compact"?"Photo list":"Standard list"}>{view==="list"?"⊞":view==="grid"?"≡":view==="compact"?"▣":"☰"}</button>
           {isGuest&&machines.length>=3
@@ -338,13 +333,13 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       ):view==="compact"?(
         <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
           {sorted.map(m=>(
-            <MachineRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} company={company}/>
+            <MachineRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
           ))}
         </div>
       ):view==="photo"?(
         <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
           {sorted.map(m=>(
-            <MachinePhotoRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} company={company}/>
+            <MachinePhotoRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
           ))}
         </div>
       ):sorted.length > 0 && (
