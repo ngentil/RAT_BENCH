@@ -3801,6 +3801,116 @@ BEGIN
   RAISE NOTICE 'Briggs & Stratton Racing batch imported (3 engines).';
 END $$;
 
+-- ═══ Type correction — force-fix wiki_entries.type for every curated slug in this file ═══
+-- Why this exists: the enrich-or-create pattern used throughout this file ("IF v_entry IS NULL
+-- THEN INSERT ... END IF") only sets the type column on a BRAND-NEW row. For any slug that
+-- already existed in the database before this seed file touched it (e.g. from the earlier
+-- Wikipedia bulk import), the INSERT is skipped and the pre-existing (sometimes wrong) type is
+-- left untouched — only the revision/spec data gets enriched. This has produced real drift:
+-- e.g. predator-212-hemi, honda-gx120/160/270/340/390, honda-gx630/690, kawasaki-fx730v/fx850v,
+-- kohler-ch440/ch740, duromax-xp7hp and honda-wb30 were observed live under "Custom", "Go-kart",
+-- "Lawnmower" or "Ride-on Mower" instead of their intended type. This block force-corrects the
+-- type for every slug this project has curated, scoped ONLY to those exact slugs (never touches
+-- unrelated user-submitted wiki content). Idempotent: the WHERE type<>'target' guard makes every
+-- statement a no-op once applied, safe to re-run.
+
+UPDATE wiki_entries SET type='Blower' WHERE type<>'Blower' AND slug IN (
+  'stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-350bt','husqvarna-580bts','echo-pb-580','echo-pb-8010'
+);
+
+UPDATE wiki_entries SET type='Chainsaw' WHERE type<>'Chainsaw' AND slug IN (
+  'stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291',
+  'stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880',
+  'husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher',
+  'husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp',
+  'echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','homelite-xl-12','mcculloch-mac-10-10',
+  'stihl-070','stihl-090','solo-rex','solo-611-twin','mcculloch-250-super250','mcculloch-superpro60',
+  'mcculloch-797-super797','mcculloch-sp125-cp125','dolmar-model-a'
+);
+
+UPDATE wiki_entries SET type='Generator' WHERE type<>'Generator' AND slug IN (
+  'honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500',
+  'duromax-xp13000eh','generac-gp6500'
+);
+
+UPDATE wiki_entries SET type='Go-kart' WHERE type<>'Go-kart' AND slug IN (
+  'briggs-lo206','iame-x30','rotax-max','yamaha-kt100','predator-ghost',
+  'briggs-world-formula','briggs-animal','briggs-raptor'
+);
+
+UPDATE wiki_entries SET type='Lawnmower' WHERE type<>'Lawnmower' AND slug IN (
+  'victa-power-torque-160'
+);
+
+UPDATE wiki_entries SET type='Moped' WHERE type<>'Moped' AND slug IN (
+  'sachs-50-series','puch-e50-za50','minarelli-v1','simson-s50-s51'
+);
+
+UPDATE wiki_entries SET type='Motorcycle' WHERE type<>'Motorcycle' AND slug IN (
+  'kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs',
+  'bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r',
+  'honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300',
+  'suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs',
+  'suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke',
+  'royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r',
+  'kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6',
+  'honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660',
+  'triumph-bonneville-t120','honda-ct110','yamaha-ag200','yamaha-ag100','suzuki-dr200se-trojan','honda-z50',
+  'kawasaki-ke100'
+);
+
+UPDATE wiki_entries SET type='Outboard Motor' WHERE type<>'Outboard Motor' AND slug IN (
+  'yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke',
+  'mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90',
+  'suzuki-df60','tohatsu-mfs9-9','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke',
+  'mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke',
+  'evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke',
+  'british-seagull-forty-plus','british-seagull-forty-minus','british-seagull-silver-century',
+  'british-seagull-qb-kingfisher','british-seagull-forty-featherweight','british-seagull-102',
+  'british-seagull-90-110','british-seagull-170','british-seagull-little-forty','british-seagull-century',
+  'british-seagull-century-plus','british-seagull-silver-century-plus','british-seagull-125',
+  'british-seagull-qb-osprey','british-seagull-qb-curlew','elto-cub','elto-ace','johnson-light-twin',
+  'champion-1927','champion-blue-ribbon-2j'
+);
+
+UPDATE wiki_entries SET type='Pressure Washer' WHERE type<>'Pressure Washer' AND slug IN (
+  'simpson-megashot-msh3125','simpson-powershot-ps4240'
+);
+
+UPDATE wiki_entries SET type='Quad Bike' WHERE type<>'Quad Bike' AND slug IN (
+  'honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r',
+  'polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750',
+  'kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000'
+);
+
+UPDATE wiki_entries SET type='Standalone Engine' WHERE type<>'Standalone Engine' AND slug IN (
+  'honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270',
+  'honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190',
+  'predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459',
+  'predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp',
+  'kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v',
+  'kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745',
+  'briggs-vanguard-810','briggs-intek-v-twin','briggs-5hp-flathead','briggs-wm-wmb',
+  'kohler-k91','kohler-k161','kohler-k241','kohler-k301','kohler-k662',
+  'onan-cck','onan-bf-bfa-bga-nh',
+  'tecumseh-hssk50','tecumseh-h50-h70','tecumseh-hmsk80','tecumseh-hm100','tecumseh-ovrm120',
+  'tecumseh-lav-series','tecumseh-tvm-series',
+  'clinton-700a','clinton-vs100','clinton-vs200','clinton-a400-panther',
+  'briggs-model-p-pb','briggs-model-5-6','briggs-model-9','briggs-model-14','briggs-model-23',
+  'briggs-model-z-zz','briggs-model-fh','briggs-quantum','briggs-classic-sprint-quattro',
+  'briggs-ic-500','briggs-vanguard-small-block','briggs-vanguard-midblock','briggs-vanguard-bigblock',
+  'briggs-exi-series'
+);
+
+UPDATE wiki_entries SET type='Trimmer' WHERE type<>'Trimmer' AND slug IN (
+  'stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','husqvarna-128ld','husqvarna-525ls',
+  'echo-srm-225','echo-srm-2620'
+);
+
+UPDATE wiki_entries SET type='Water Pump' WHERE type<>'Water Pump' AND slug IN (
+  'honda-wb30'
+);
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
