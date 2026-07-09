@@ -8,7 +8,7 @@ import { atMachineLimit, machineLimit } from '../../lib/gates';
 import { getPref, savePref } from '../../lib/db/preferences';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
-import { SL, Empty } from '../ui/shared';
+import { Empty } from '../ui/shared';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
@@ -198,7 +198,6 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
     return 0;
   }):filtered;
 
-  const totalHrsAll = useMemo(() => machines.reduce((s,m) => s + (m.timeLog||[]).reduce((a,e) => a+(e.seconds||0),0)/3600, 0), [machines]);
 
   const addM=async m=>{
     setSaving(true);
@@ -280,10 +279,9 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       )}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",rowGap:8,marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",rowGap:6}}>
-          <SL t="Machines" />
+          <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,whiteSpace:"nowrap"}}>Machines</span>
           {sortBy&&<span style={{fontSize:10,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px",whiteSpace:"nowrap"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
           {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:10,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{machines.length}/{machineLimit(profile,company)}</span>}
-          {totalHrsAll>0&&<span style={{fontSize:10,color:GRN,letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{totalHrsAll.toFixed(1)}h</span>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
           <button style={{...btnG,color:sortBy?ACC:MUT,alignSelf:"stretch"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
