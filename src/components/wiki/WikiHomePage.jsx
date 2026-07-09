@@ -2,17 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
 import { searchWiki, getWikiStats, getRecentWikiEntries, tokenizeSearch } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
+import { hl } from './wikiSearchHighlight';
 
-function hl(text, tokens) {
-  if (!tokens.length || !text) return text;
-  const escaped = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  const parts = String(text).split(new RegExp(`(${escaped.join('|')})`, 'gi'));
-  return parts.map((p, i) =>
-    i % 2 === 1
-      ? <mark key={i} style={{ background: '#1e3a1e', color: '#7fc97f', padding: '0 1px', borderRadius: 2 }}>{p}</mark>
-      : p
-  );
-}
+// Handed off to the entry page so it can keep highlighting your search term
+// after you click through — sessionStorage covers the embedded (in-app) nav
+// path, where navigation is a state switch rather than a real page load.
+const LAST_QUERY_KEY = 'wikiSearchQuery';
 
 function WikiHomePage({ onSelect, embedded = false, profile }) {
   const [query, setQuery] = useState("");
@@ -50,9 +45,19 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
   const recentIds = new Set(recentlyAdded.map(e => e.id));
   const list = query.trim() ? results : recent.filter(e => !recentIds.has(e.id));
 
-  // Same boundary-splitting tokenizer as the search itself, so "ms441"
-  // highlights "ms" and "441" inside "MS 441".
+  // Same plain-substring model as the Spec Search tab, so what's highlighted
+  // is exactly what you typed.
   const tokens = tokenizeSearch(query);
+  const trimmedQuery = query.trim();
+
+  // Stash the query so the entry page can keep highlighting it after you
+  // click through — sessionStorage for the embedded (in-app) switch, a URL
+  // param for the standalone wiki-subdomain page (a real navigation).
+  const persistQuery = () => {
+    if (trimmedQuery) sessionStorage.setItem(LAST_QUERY_KEY, trimmedQuery);
+    else sessionStorage.removeItem(LAST_QUERY_KEY);
+  };
+  const entryHref = slug => "/" + slug + (trimmedQuery ? "?q=" + encodeURIComponent(trimmedQuery) : "");
 
   const EntryRow = ({ e }) => {
     const slugMatchOnly = tokens.length > 0
@@ -73,9 +78,9 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
     );
 
     if (embedded) {
-      return <div key={e.id} onClick={() => onSelect(e.slug)} style={{ marginBottom: 10 }}>{inner}</div>;
+      return <div key={e.id} onClick={() => { persistQuery(); onSelect(e.slug); }} style={{ marginBottom: 10 }}>{inner}</div>;
     }
-    return <a key={e.id} href={"/" + e.slug} style={{ display: "block", textDecoration: "none", marginBottom: 10 }}>{inner}</a>;
+    return <a key={e.id} href={entryHref(e.slug)} onClick={persistQuery} style={{ display: "block", textDecoration: "none", marginBottom: 10 }}>{inner}</a>;
   };
 
   const searchBox = (

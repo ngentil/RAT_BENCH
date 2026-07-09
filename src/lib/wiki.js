@@ -291,14 +291,14 @@ export async function getWikiModels(make, query) {
 }
 
 // Tokenize a search query — used for result HIGHLIGHTING (the actual matching
-// happens server-side in the search_wiki RPC). Splits on whitespace AND at
-// letter↔digit boundaries so "ms441" highlights "ms" and "441" inside "MS 441".
+// happens server-side in the search_wiki RPC). Mirrors the Spec Search tab's
+// model: the whole trimmed query is treated as one plain substring rather than
+// split into multiple fuzzy sub-tokens, so highlighting stays simple and
+// predictable — what lights up is exactly the text you typed, wherever it
+// appears (case-insensitively).
 export function tokenizeSearch(query) {
-  return String(query || "").trim()
-    .split(/\s+/)
-    .map(t => t.replace(/[^a-zA-Z0-9\-]/g, ""))
-    .flatMap(t => t.match(/[a-zA-Z]+|\d+/g) || [])
-    .filter(t => /^[a-zA-Z0-9]+$/.test(t));
+  const q = String(query || "").trim();
+  return q ? [q] : [];
 }
 
 // Server-side fuzzy search via the search_wiki RPC (supabase/wiki_fuzzy_search_rpc.sql).

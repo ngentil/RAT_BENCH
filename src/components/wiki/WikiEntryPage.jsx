@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
-import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount } from '../../lib/wiki';
+import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
+import { hl } from './wikiSearchHighlight';
+
+const LAST_QUERY_KEY = 'wikiSearchQuery';
+// Recover the search term that led here — sessionStorage for the embedded
+// (in-app) nav path, a "?q=" URL param for the standalone wiki-subdomain page.
+function getIncomingSearchQuery(embedded) {
+  if (embedded) return sessionStorage.getItem(LAST_QUERY_KEY) || "";
+  try { return new URLSearchParams(window.location.search).get('q') || ""; }
+  catch { return ""; }
+}
 
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
@@ -131,6 +141,11 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
   });
   const allFields = Object.entries(WIKI_FIELD_LABELS);
 
+  // If you arrived here via a wiki search, keep that term highlighted across
+  // every field on the page — same "show me what matched" idea as the Spec
+  // Search tab, using the wiki's own plain-substring highlight.
+  const searchTokens = tokenizeSearch(getIncomingSearchQuery(embedded));
+
   // Last revision metadata
   const rev = entry.currentRevision;
   const lastEditor = rev?.username;
@@ -152,9 +167,9 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
         {embedded && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{entry.make} <span style={{ color: ACC }}>{entry.model}</span></div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: TXT }}>{hl(entry.make, searchTokens)} <span style={{ color: ACC }}>{hl(entry.model, searchTokens)}</span></div>
             </div>
-            {entry.type && <div style={{ display: "inline-block", fontSize: 8, color: ACC, background: ACC + "12", border: "1px solid " + ACC + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{entry.type}</div>}
+            {entry.type && <div style={{ display: "inline-block", fontSize: 8, color: ACC, background: ACC + "12", border: "1px solid " + ACC + "33", padding: "1px 6px", borderRadius: 2, letterSpacing: "0.08em", textTransform: "uppercase" }}>{hl(entry.type, searchTokens)}</div>}
           </div>
         )}
 
@@ -225,9 +240,10 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
             const value = revData[k] ?? entry?.[k];
             const isEditing = editingField === k;
             const hasValue = value != null && value !== "" && value !== false;
+            const isNotes = k === "notes";
 
             return (
-              <div key={k} style={{ background: SURF, border: "1px solid " + (isEditing ? ACC : BRD), borderRadius: 2, padding: "8px 12px" }}>
+              <div key={k} style={{ background: SURF, border: "1px solid " + (isEditing ? ACC : BRD), borderRadius: 2, padding: isNotes ? "12px 16px" : "8px 12px", gridColumn: isNotes ? "1 / -1" : undefined }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: isEditing ? 6 : 2 }}>
                   <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.12em", textTransform: "uppercase" }}>{label}</div>
                   {/* Only admins see the inline edit button */}
@@ -261,8 +277,14 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
                     </div>
                   </>
                 ) : (
-                  <div style={{ fontSize: 12, color: hasValue ? TXT : MUT, fontStyle: hasValue ? "normal" : "italic" }}>
-                    {hasValue ? String(value) : "—"}
+                  <div style={{
+                    fontSize: isNotes ? 14 : 12,
+                    lineHeight: isNotes ? 1.65 : 1.3,
+                    color: hasValue ? TXT : MUT,
+                    fontStyle: hasValue ? "normal" : "italic",
+                    whiteSpace: isNotes ? "pre-wrap" : undefined,
+                  }}>
+                    {hasValue ? hl(String(value), searchTokens) : "—"}
                   </div>
                 )}
               </div>
