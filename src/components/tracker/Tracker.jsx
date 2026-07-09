@@ -13,7 +13,9 @@ import StatusBadge from '../ui/StatusBadge';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
-import { getMachineServiceStatus, mIcon } from '../../lib/helpers';
+import { getMachineServiceStatus, mIcon, machineMatchesQuery, findMachineSpecMatch } from '../../lib/helpers';
+import { tokenizeSearch } from '../../lib/wiki';
+import { hl } from '../wiki/wikiSearchHighlight';
 
 const _ARW = "#e8870a";
 const _M = { fontFamily:"'IBM Plex Mono',monospace" };
@@ -52,10 +54,11 @@ function GuideStep2({ onSkip }) {
     </div>
   );
 }
-function MachinePhotoRow({ machine: m, onClick, clientName }) {
+function MachinePhotoRow({ machine: m, onClick, clientName, searchQuery, searchTokens }) {
   const svc = getMachineServiceStatus(m);
   const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
   const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
+  const specMatch = findMachineSpecMatch(m, searchQuery);
   return (
     <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
       <div style={{width:64,height:64,flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid "+BRD,background:"#111",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -65,14 +68,14 @@ function MachinePhotoRow({ machine: m, onClick, clientName }) {
       </div>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:14,fontWeight:700,color:TXT,lineHeight:1.2}}>
-          {m.name}
+          {hl(m.name,searchTokens)}
           {timerRunning&&<span style={{display:"inline-block",width:5,height:5,borderRadius:"50%",background:GRN,boxShadow:"0 0 5px "+GRN,marginLeft:6,verticalAlign:"middle"}}/>}
         </div>
         {[m.make,m.model,m.year].filter(Boolean).length>0&&
           <div style={{fontSize:10,color:MUT,marginTop:2}}>
-            {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
+            {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
           </div>}
-        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{m.type}</div>}
+        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
         <div style={{display:"flex",gap:4,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
           <StatusBadge status={m.status||"Active"}/>
           {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
@@ -92,30 +95,37 @@ function MachinePhotoRow({ machine: m, onClick, clientName }) {
           {clientName&&<span style={{fontSize:9,color:ACC}}>👤 {clientName}</span>}
           {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
         </div>
+        {specMatch&&(
+          <div style={{fontSize:9,color:MUT,marginTop:4,lineHeight:1.4}}>
+            <span style={{color:ACC,textTransform:"uppercase",letterSpacing:"0.06em",fontSize:8}}>{specMatch.label}:</span>{" "}
+            {hl(specMatch.value,searchTokens)}
+          </div>
+        )}
       </div>
       <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:26}}>▶</span>
     </div>
   );
 }
 
-function MachineRow({ machine: m, onClick, clientName }) {
+function MachineRow({ machine: m, onClick, clientName, searchQuery, searchTokens }) {
   const svc = getMachineServiceStatus(m);
   const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
   const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
+  const specMatch = findMachineSpecMatch(m, searchQuery);
   return (
     <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
       <span style={{fontSize:22,flexShrink:0,lineHeight:1,marginTop:3}}>{mIcon(m.type)}</span>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:14,fontWeight:700,color:TXT,lineHeight:1.2}}>
-          {m.name}
+          {hl(m.name,searchTokens)}
           {timerRunning&&<span style={{display:"inline-block",width:5,height:5,borderRadius:"50%",background:GRN,boxShadow:"0 0 5px "+GRN,marginLeft:6,verticalAlign:"middle"}}/>}
         </div>
         {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
           <div style={{fontSize:10,color:MUT,marginTop:2}}>
-            {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
-            {m.source&&<span style={{color:"#444"}}> · {m.source}</span>}
+            {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
+            {m.source&&<span style={{color:"#444"}}> · {hl(m.source,searchTokens)}</span>}
           </div>}
-        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{m.type}</div>}
+        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
         <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap",alignItems:"center"}}>
           <StatusBadge status={m.status||"Active"}/>
           {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
@@ -137,6 +147,12 @@ function MachineRow({ machine: m, onClick, clientName }) {
           {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
           {(m.rage||0)>0&&<span style={{fontSize:9,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}
         </div>
+        {specMatch&&(
+          <div style={{fontSize:9,color:MUT,marginTop:4,lineHeight:1.4}}>
+            <span style={{color:ACC,textTransform:"uppercase",letterSpacing:"0.06em",fontSize:8}}>{specMatch.label}:</span>{" "}
+            {hl(specMatch.value,searchTokens)}
+          </div>
+        )}
       </div>
       <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:4}}>▶</span>
     </div>
@@ -177,9 +193,13 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
     {k:"rage_lo",l:"Rage ☠️ (Lowest)"},
   ];
 
-  const searched=search.trim()
-    ?machines.filter(m=>{const q=search.toLowerCase();return (m.name||"").toLowerCase().includes(q)||(m.make||"").toLowerCase().includes(q)||(m.model||"").toLowerCase().includes(q)||(m.type||"").toLowerCase().includes(q);})
+  const searchQuery=search.trim();
+  const searched=searchQuery
+    ?machines.filter(m=>machineMatchesQuery(m,searchQuery))
     :machines;
+  // Same tokenizer the wiki search uses (a single plain substring), and the
+  // exact same hl() highlight component, so matches render identically.
+  const searchTokens=tokenizeSearch(search);
   const filtered=statusFilter?searched.filter(m=>(m.status||"Active")===statusFilter):searched;
   const sorted=sortBy?[...filtered].sort((a,b)=>{
     if(sortBy==="name_az") return (a.name||"").localeCompare(b.name||"");
@@ -277,7 +297,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           </div>
         </div>
       )}
-      {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
+      <input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search name, make, model, or any spec (e.g. plug gap, tyre size)…" value={search} onChange={e=>setSearch(e.target.value)} />
       {machines.length>1&&<div style={{display:"flex",gap:0,marginBottom:10}}>
         {[null,"Active","Queued","Complete"].map((s,i,arr)=>{
           const count=s?searched.filter(m=>(m.status||"Active")===s).length:searched.length;
@@ -318,26 +338,26 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto"}}>
           <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
             <button onClick={()=>setTileOpen(null)} style={{...btnA,width:"100%",marginBottom:8,fontSize:12,background:ACC,borderColor:ACC,color:"#000",fontWeight:700}}>✕ Close</button>
-            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse/>
+            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse searchQuery={searchQuery} searchTokens={searchTokens}/>
           </div>
         </div>
       ):null;})()}
       {view==="grid"?(
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
           {sorted.map(m=>(
-            <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+            <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
           ))}
         </div>
       ):view==="compact"?(
         <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
           {sorted.map(m=>(
-            <MachineRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+            <MachineRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
           ))}
         </div>
       ):view==="photo"?(
         <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
           {sorted.map(m=>(
-            <MachinePhotoRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+            <MachinePhotoRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
           ))}
         </div>
       ):sorted.length > 0 && (
@@ -347,7 +367,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
               useWindowScroll
               data={sorted}
               itemContent={(_idx, m) => (
-                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
+                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} searchQuery={searchQuery} searchTokens={searchTokens}/>
               )}
             />
           : sorted.map((m,idx)=>(
@@ -360,7 +380,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
                 onDragEnd={onDragEnd}
                 style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
               >
-                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
+                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} searchQuery={searchQuery} searchTokens={searchTokens}/>
               </div>
             ))
       )}

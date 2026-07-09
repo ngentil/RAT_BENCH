@@ -1,18 +1,7 @@
-import React, { useState } from 'react';
-import { MUT, ACC, BRD, BRD2, SURF, TXT, inp, btnG, sm } from '../../lib/styles';
-import { SL, Empty } from '../ui/shared';
-import TabGuide from '../ui/TabGuide';
-import { mIcon } from '../../lib/helpers';
-import { getPref } from '../../lib/db/preferences';
-import StatusBadge from '../ui/StatusBadge';
-
-const FIELDS=[
-  {k:"name",             l:"Name",                              u:""},
-  {k:"make",             l:"Make",                              u:""},
-  {k:"model",            l:"Model",                             u:""},
-  {k:"type",             l:"Machine Type",                      u:""},
-  {k:"source",           l:"Source",                            u:""},
-  {k:"status",           l:"Status",                            u:""},
+// Every machine spec field the Tracker's search bar can match against —
+// moved here from the old standalone Spec Search tab (now folded into the
+// Tracker's own search box) so it's a shared, reusable list.
+export const SPEC_SEARCH_FIELDS = [
   {k:"strokeType",       l:"Engine Type",                       u:""},
   {k:"plugGap",          l:"Spark Plug Gap",                    u:"mm"},
   {k:"coilType",         l:"Coil Type",                         u:""},
@@ -90,12 +79,12 @@ const FIELDS=[
   {k:"iatSensor",        l:"IAT Sensor",                        u:""},
   {k:"o2Sensor",         l:"O2 Sensor",                         u:""},
   {k:"iacSensor",        l:"IAC",                               u:""},
-  {k:"notes",            l:"Notes",                             u:""},
   {k:"year",             l:"Year",                              u:""},
   {k:"colour",           l:"Colour",                            u:""},
   {k:"bodyType",         l:"Body Type",                         u:""},
   {k:"driveConfig",      l:"Drive Configuration",               u:""},
   {k:"desc",             l:"Description",                       u:""},
+  {k:"source",           l:"Source",                            u:""},
   {k:"pumpBrand",        l:"Pump Brand",                        u:""},
   {k:"pumpModel",        l:"Pump Model",                        u:""},
   {k:"pumpPsi",          l:"Pump Max PSI",                      u:"PSI"},
@@ -127,94 +116,5 @@ const FIELDS=[
   {k:"obGearRatio",      l:"Outboard Gear Ratio",               u:""},
   {k:"obLowerUnitOilType",l:"Lower Unit Oil Type",              u:""},
   {k:"obAnodeMaterial",  l:"Anode Material",                    u:""},
+  {k:"notes",            l:"Notes",                             u:""},
 ];
-
-function SpecSearch({machines, profile}){
-  const [query,setQuery]=useState("");
-  const q=query.trim().toLowerCase();
-
-  const results=!q?[]:machines.map(m=>{
-    const hits=FIELDS.filter(f=>{
-      const valMatch=(m[f.k]||"").toString().toLowerCase().includes(q);
-      const labelMatch=f.l.toLowerCase().includes(q);
-      return (valMatch||labelMatch)&&m[f.k];
-    });
-    const scored=hits.map(f=>({
-      ...f,
-      score:(m[f.k]||"").toString().toLowerCase().includes(q)?2:1
-    })).sort((a,b)=>b.score-a.score);
-
-    const fastenerHits=[];
-    (m.fasteners||[]).forEach((f,idx)=>{
-      const vals=[f.location,f.locOther,f.fType,f.driveType,f.diameter,f.length,f.spacing,f.countPerSide,f.torqueNm?f.torqueNm+"Nm":null,f.torqueFtlb?f.torqueFtlb+"ft-lb":null].filter(Boolean);
-      const matchedVals=vals.filter(v=>v.toString().toLowerCase().includes(q));
-      if(matchedVals.length){
-        fastenerHits.push({
-          k:`fastener_${idx}`,
-          l:`Fastener: ${f.location==="Other"?f.locOther:f.location||"Unknown"}`,
-          u:"",value:vals.join(" · "),score:2,isFastener:true,fastenerData:f,
-        });
-      }
-    });
-
-    const allHits=[...scored,...fastenerHits];
-    return allHits.length?{m,hits:allHits}:null;
-  }).filter(Boolean).sort((a,b)=>{
-    const aScore=a.hits.reduce((s,f)=>s+f.score,0);
-    const bScore=b.hits.reduce((s,f)=>s+f.score,0);
-    return bScore-aScore;
-  });
-
-  return (
-    <div style={{padding:16,flex:1}}>
-      <SL t="Spec Search" />
-      <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Search any spec across your inventory — stud spacing, carb brand, plug type, bolt size.</div>
-      <TabGuide storageKey="rat_tut_search" variant="info" title="cross-machine search" lines={["search any spec across all your machines","plug gap · compression · bar length & more"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_search",false)} />
-      <div style={{display:"flex",gap:8,marginBottom:14}}>
-        <input style={{...inp,fontSize:13}} placeholder="e.g.  28  /  Walbro  /  NGK  /  M5..." value={query} onChange={e=>setQuery(e.target.value)} />
-        {query&&<button style={{...btnG,...sm,whiteSpace:"nowrap"}} onClick={()=>setQuery("")}>Clear</button>}
-      </div>
-      {!q&&machines.length===0&&<Empty icon="🔍" t="No machines yet" sub="Add machines from the Tracker tab to search their specs here." />}
-      {!q&&machines.length>0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0",lineHeight:2}}>{machines.length} machine{machines.length!==1?"s":""} in inventory<br /><span style={{fontSize:9}}>Start typing to search</span></div>}
-      {q&&results.length===0&&<Empty t={"No matches for \""+query+"\""} />}
-      {q&&results.length>0&&(
-        <>
-          <div style={{fontSize:9,color:MUT,marginBottom:10,letterSpacing:"0.1em"}}>{results.length} match{results.length!==1?"es":""} for "{query}"</div>
-          {results.map(({m,hits})=>(
-            <div key={m.id} style={{background:SURF,border:"1px solid "+BRD,borderLeft:"3px solid "+ACC,borderRadius:2,marginBottom:10,padding:"13px 14px"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                <span style={{fontSize:15}}>{mIcon(m.type)}</span>
-                <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:TXT}}>{m.name}</div><div style={{fontSize:9,color:MUT,marginTop:1}}>{[m.make,m.model,m.source].filter(Boolean).join(" · ")}</div></div>
-                <StatusBadge status={m.status||"Active"} />
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                {hits.map(f=>(
-                  f.isFastener
-                    ? <div key={f.k} style={{background:ACC+"0a",border:"1px solid "+ACC+"33",borderRadius:2,padding:"6px 9px",gridColumn:"1/-1"}}>
-                        <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
-                        <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{f.value}</div>
-                      </div>
-                    : <div key={f.k} style={{background:ACC+"0a",border:"1px solid "+ACC+"33",borderRadius:2,padding:"6px 9px"}}>
-                        <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:ACC,marginBottom:2}}>{f.l}</div>
-                        <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
-                      </div>
-                ))}
-              </div>
-              {FIELDS.filter(f=>m[f.k]&&!hits.find(h=>h.k===f.k)).length>0&&(
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginTop:4}}>
-                  {FIELDS.filter(f=>m[f.k]&&!hits.find(h=>h.k===f.k)).map(f=>(
-                    <div key={f.k} style={{background:"#0d0d0d",border:"1px solid #1e1e1e",borderRadius:2,padding:"6px 9px"}}>
-                      <div style={{fontSize:10,letterSpacing:"0.12em",textTransform:"uppercase",color:MUT,marginBottom:2}}>{f.l}</div>
-                      <div style={{fontSize:11,color:"#484848",fontFamily:"'IBM Plex Mono',monospace"}}>{m[f.k]}{f.u?" "+f.u:""}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </>
-      )}
-    </div>
-  );
-}
-export default SpecSearch;

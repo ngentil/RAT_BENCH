@@ -1,6 +1,7 @@
 import { MACHINE_TYPES } from './constants';
 import { DEFAULT_STORAGE_TIERS } from './storageTiers';
 import { parseLocalDate } from './dates';
+import { SPEC_SEARCH_FIELDS } from './constants/specSearchFields';
 // ── helpers ───────────────────────────────────────────────────────────────────
 export const uid  = () => crypto.randomUUID();
 export const nowL = () => { const n = new Date(); return new Date(n - n.getTimezoneOffset()*60000).toISOString().slice(0,16); };
@@ -38,6 +39,46 @@ export const parseNum = (v, { min = -Infinity, max = Infinity } = {}) => {
   return n;
 };
 export const mIcon = t => MACHINE_TYPES.find(m => m.label === t)?.icon || "⚙️";
+
+// Same matching model as the wiki search: a single plain, case-insensitive
+// substring, checked against name/make/model/type first, then every spec
+// field the old Spec Search tab used to cover (plug gap, bore, carb brand,
+// tyre size, etc.) — so one search box covers every Tracker view mode.
+export function machineMatchesQuery(m, q) {
+  const lowerQ = q.toLowerCase();
+  if ((m.name||"").toLowerCase().includes(lowerQ)) return true;
+  if ((m.make||"").toLowerCase().includes(lowerQ)) return true;
+  if ((m.model||"").toLowerCase().includes(lowerQ)) return true;
+  if ((m.type||"").toLowerCase().includes(lowerQ)) return true;
+  return SPEC_SEARCH_FIELDS.some(f => {
+    const v = m[f.k];
+    return v != null && v !== "" && v !== false && String(v).toLowerCase().includes(lowerQ);
+  });
+}
+
+const SNIPPET_MAX = 90; // long free-text fields (e.g. notes, port notes) get a trimmed snippet around the match
+
+// Finds the first spec field that explains a match not already obvious
+// from name/make/model/type, so a result tile/row/card can show WHY it
+// matched — mirrors findSpecMatch() in WikiHomePage.jsx exactly.
+export function findMachineSpecMatch(m, q) {
+  if (!q) return null;
+  const lowerQ = q.toLowerCase();
+  for (const f of SPEC_SEARCH_FIELDS) {
+    const raw = m[f.k];
+    if (raw == null || raw === "" || raw === false) continue;
+    const value = String(raw) + (f.u ? " " + f.u : "");
+    const lowerValue = value.toLowerCase();
+    if (!lowerValue.includes(lowerQ)) continue;
+    if (value.length <= SNIPPET_MAX) return { label: f.l, value };
+    const idx = lowerValue.indexOf(lowerQ);
+    const start = Math.max(0, idx - 30);
+    const end = Math.min(value.length, idx + q.length + 50);
+    const snippet = (start > 0 ? "…" : "") + value.slice(start, end) + (end < value.length ? "…" : "");
+    return { label: f.l, value: snippet };
+  }
+  return null;
+}
 
 export const resizeImg = (b64, maxW=1800) => new Promise(res => {
   const img = new Image();
