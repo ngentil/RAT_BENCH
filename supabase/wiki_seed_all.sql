@@ -2907,9 +2907,682 @@ BEGIN
   RAISE NOTICE 'Seagull enrichment batch complete (4 enriched + 4 new = 8 entries).';
 END $$;
 
+-- ═══ British Seagull — complete the range (sourced from Saving Old Seagulls et al.) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- NEW: Little Forty (earliest small Seagull)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-little-forty';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-little-forty','British Seagull','Little Forty','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from Saving Old Seagulls (sourced)', $sglf$
+  { "year":"1949 onward (first 'Little Model 40', 1949)","strokeType":"2-Stroke (3-port)","ccSize":"40 (Model F) / 56 (FV, FVP)","cylCount":"1",
+    "coolingType":"Liquid cooled (raw water)","fuelSystem":"Carburetted (Villiers)","mixRatio":"10:1 (plain-bearing engine)",
+    "plugType":"Champion D16 (18 mm; classic-range plug)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller (mounted to the CENTRE of the crankcase — unique to the Little Forty)","obTiltTrim":"Manual tilt",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"10/21 (2.1:1) reduction","transType":"Direct drive (no neutral)","wotPower":"~1–1.5 hp class",
+    "notes":"British Seagull Little Forty — the earliest small Seagull, first sold as the 'Little Model 40' in 1949. Three sub-models: Model F (40 cc) and the larger FV / FVP (56 cc) — note these are SMALLER than the 64 cc block of the later Forty Minus/Featherweight, so parts do not interchange. Several details are unique to it: the tiller arm mounts to the CENTRE of the crankcase (not the side), the transom bracket is plated bronze, the fuel pipe is plated, the drive-shaft tube is CLAMPED to the base of the crankcase (later models bolt it) and SCREWED into the gearbox (later models clamp it). Strictly 10:1 premix — plain bronze bearings depend on the oil. Spares are now largely obsolete; a collector's engine. Sources: saving-old-seagulls.co.uk (little_forty), britishseagullparts.com." }
+  $sglf$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: Century (base / Century 100)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-century';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-century','British Seagull','Century','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from Saving Old Seagulls (sourced)', $sgcen$
+  { "year":"1956/57–1973 (LLS Villiers 1956/57–1967; W Wipac 1967–1973)","strokeType":"2-Stroke (3-port)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Villiers; round inlet port)","mixRatio":"10:1 (pre-1978 Villiers) / 25:1 (after conversion)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Villiers magneto (LLS) / Wipac (W, from 1967)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard ~16 in / long ~22 in (verify)",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"10/35 (3.5:1) standard; 4:1 fixed and 4:1 clutched boxes also offered","obPropPitch":"4-blade, 9 in (229 mm) dia (11 in on clutch box)",
+    "transType":"Direct drive (no neutral; 4:1 clutched box optional)","wotPower":"3–4 hp class","wotRpm":"~3800–4000","fuelTankCapacity":"~2.27 (4-pint brass/steel)","weightKg":"~17 (37 lb)",
+    "notes":"British Seagull Century ('Century 100') — the base 102 cc big single. Codes LLS (1956/57–1967, Villiers magneto) and W (1967–1973, Wipac). Runs a Villiers carburettor with a ROUND cylinder inlet port on the opposite side of the block to the later Amal-carb Silver Century — the quickest way to tell the two apart. Three lower units were offered: the standard 3.5:1 (10/35), a 4:1 fixed and a 4:1 clutched box, all with Villiers carbs. 10:1 premix in the Villiers era; Champion D16; SAE 140 in the gearbox. Stroke shown as 40 mm to reconcile with 102 cc — some Plus-series data prints 44 mm; verify against the handbook. Sources: saving-old-seagulls.co.uk (century_series), britishseagullparts.com (LLS), lagerholm.com." }
+  $sgcen$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: Century Plus
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-century-plus';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-century-plus','British Seagull','Century Plus','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from Saving Old Seagulls (sourced)', $sgcp$
+  { "year":"1957–1973 (CP/CPC 1957–1967 Villiers; WP/WPC 1967–1973 Wipac)","strokeType":"2-Stroke (3-port)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"40.0 (verify; some Plus data prints 44)","coolingType":"Liquid cooled (raw water)",
+    "fuelSystem":"Carburetted (Villiers)","mixRatio":"10:1 (pre-1978 Villiers) / 25:1 (after conversion)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Villiers magneto (CP/CPC) / Wipac (WP/WPC)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"Big 'Plus' reduction box, slow-turning (~4:1 class; some data prints 10/35 — verify)","obPropPitch":"Large coarse-pitch prop (~11 in on clutch box)",
+    "transType":"Fixed drive (CP/WP) or clutch drive with neutral (CPC/WPC)","wotPower":"4–5.5 hp class","wotRpm":"~4500","fuelTankCapacity":"~2.27 (4-pint)","weightKg":"~17 (37 lb)",
+    "notes":"British Seagull Century Plus — the higher-thrust Century. Codes: CP (fixed, 1957–67), CPC (clutch, 1959–67), WP (fixed, 1967–69), WPC (clutch, 1967–73). The 'Plus' is a physically much larger, slower-turning gearbox swinging a big coarse-pitch prop — built for thrust on heavier displacement hulls (17–19 ft boats), not top speed. Villiers carb, 10:1 premix in period. Fixed-drive (CP/WP) has no neutral; clutch versions (CPC/WPC) add neutral. Roughly 3¼ hours per gallon at ½–¾ throttle. Sources: saving-old-seagulls.co.uk ('Differences between Century and Plus'), britishseagullparts.com (CP/CPC), lagerholm.com." }
+  $sgcp$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: Silver Century Plus
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-silver-century-plus';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-silver-century-plus','British Seagull','Silver Century Plus','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from British Seagull Parts (sourced)', $sgscp$
+  { "year":"1966–1973 (WSP/WSPC; WSPCL long-shaft; later ESPC with CD ignition)","strokeType":"2-Stroke (3-port)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"44.0 (as printed on WSPC data; note 57×44 ≈ 112 cc — verify)","coolingType":"Liquid cooled (raw water); fully water-jacketed cast-iron cylinder",
+    "fuelSystem":"Carburetted (Seagull-Amal 46 twin-jet)","mixRatio":"10:1 (pre-1978, Power Jet 45) / 25:1 (from 1978, Power Jet 40)",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Wipac magneto (WSP/WSPC); breakerless CD on ESPC",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard; long-shaft = WSPCL (L suffix)",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"12/48 (4:1) reduction","obPropPitch":"5-blade Hydrofan, 11 in (280 mm) dia, compound pitch",
+    "transType":"Fixed drive (WSP) or clutch drive with neutral (WSPC)","wotPower":"4–5.5 hp class","wotRpm":"~4500","fuelTankCapacity":"~2.27 (4-pint) / 3.12 (5.5-pint long-range)","weightKg":"17 (37 lb dry)",
+    "notes":"British Seagull Silver Century Plus — the top classic big-single. Codes: WSP (fixed), WSPC (clutch), WSPCL (clutch long-shaft), later ESPC (CD ignition). Seagull-Amal 46 twin-jet carb; the big 12/48 (4:1) 'Plus' gearbox swings a 5-blade 11-inch Hydrofan for maximum low-rev thrust on heavy hulls. ~2.5 hours per gallon. Fuel mix: 10:1 with the No.45 power jet pre-1978, 25:1 with the No.40 jet (part S7/062/40) from 1978. Dating example: WSPCL 1734 BB3 = long-shaft SCP, unit 1734, Feb 1973 (doubled month letters signal 1973-on). Sources: britishseagullparts.com (WSPC), saving-old-seagulls.co.uk (i_d_letters), lagerholm.com." }
+  $sgscp$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: Model 125 (cowled) — promoted to its own entry
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-125';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-125','British Seagull','Model 125','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from British Seagull Parts (sourced)', $sg125$
+  { "year":"Late 1980s–1996 (cowled era; some data 1982–1987 — verify)","strokeType":"2-Stroke (4-port)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water; centrifugal impeller)",
+    "fuelSystem":"Carburetted (upgraded; Bing-type)","mixRatio":"25:1 (a 50:1 spec was tried at launch, then reverted to 25:1 after bearing failures)",
+    "plugType":"Seagull IGN70006 short-reach (NOT the classic D16)","plugGap":"0.50 mm (0.020 in) (verify)","coilType":"Breakerless CD ignition (sealed, waterproof)",
+    "starterType":"Recoil","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard; long-shaft ~47 in (1168 mm) overall",
+    "obLowerUnitOilType":"SAE 90 / EP90 (sealed box)","obGearRatio":"2.5:1 Forward-Neutral (F-N)","transType":"F-N gearbox (forward + neutral; not full reverse like the 170)",
+    "wotPower":"~6 hp equivalent (125 lb prop thrust)","fuelTankCapacity":"~27 (6-gallon remote)","weightKg":"~25 (56 lb, verify)",
+    "notes":"British Seagull Model 125 — one of the two late cowled Seagulls (with the larger Model 170). The '125' is propeller thrust in pounds (≈6 hp), not a displacement — it uses the same 102 cc (57×40 mm) block, here with a 4-port head, sealed breakerless CD ignition, recoil start and a full cowling. Runs a 2.5:1 forward-neutral box (the 170 gets full FNR). CAUTION: the 125/170 pair suffered a poorly-designed crankshaft/con-rod bushing that caused warranty failures — worst on lean mixtures, which is why the launch 50:1 spec was pulled back to 25:1. Sealed gearbox takes SAE 90, not SAE 140. Production years and dry weight vary between sources — verify against the handbook. Sources: britishseagullparts.com (model-125), saving-old-seagulls.co.uk." }
+  $sg125$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: QB Osprey
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-qb-osprey';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-qb-osprey','British Seagull','QB Osprey','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from British Seagull Parts (sourced)', $sgosp$
+  { "year":"1987–1996 (QB series)","strokeType":"2-Stroke (5-port)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water; centrifugal impeller; water-cooled underwater exhaust)",
+    "fuelSystem":"Carburetted (Bing)","mixRatio":"25:1","plugType":"Champion N4 / Seagull IGN70006 (verify)","plugGap":"0.50 mm (0.020 in) (verify)",
+    "coilType":"Breakerless CD ignition (sealed, waterproof)","starterType":"Recoil","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obShaftLength":"Standard 15 in (381 mm) / long 20 in (508 mm)","obLowerUnitOilType":"SAE 90 / EP90 (sealed box)","obGearRatio":"3.1:1 FNR reduction","transType":"FNR gearbox (forward-neutral-reverse)",
+    "wotPower":"5 hp (Seagull 5; ~90–110 lb thrust)","weightKg":"~25 (≈ Kingfisher block; verify)",
+    "notes":"British Seagull QB Osprey (Seagull 5) — the middle engine of the 1980s QB ('Quiet Britain') range developed with Queen's University Belfast. Same 102 cc (57×40 mm) 5-port block and cylinder-head casting as the 6 hp Kingfisher, but tuned and propped for 5 hp. Cross-scavenge combustion, water-cooled underwater exhaust, sealed breakerless CD ignition, recoil start, cowling, 3.1:1 FNR gearbox, 25:1 mix. Per-model dry weight and tank are not separately published — the figure shown is the shared-block value; verify against the handbook. Sources: britishseagullparts.com (QB), saving-old-seagulls.co.uk (qb_series)." }
+  $sgosp$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- NEW: QB Curlew
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-qb-curlew';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-qb-curlew','British Seagull','QB Curlew','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Spec import from British Seagull Parts (sourced)', $sgcur$
+  { "year":"1987–1996 (QB series; factory code QB1)","strokeType":"2-Stroke","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water; centrifugal impeller; water-cooled underwater exhaust)",
+    "fuelSystem":"Carburetted (Bing)","mixRatio":"25:1","plugType":"Champion N4 / Seagull IGN70006 (verify)","plugGap":"0.50 mm (0.020 in) (verify)",
+    "coilType":"Breakerless CD ignition (sealed, waterproof)","starterType":"Recoil","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obShaftLength":"Standard 15 in (381 mm) / long 20 in (508 mm)","obLowerUnitOilType":"SAE 90 / EP90 (sealed box)","obGearRatio":"3.1:1 FNR reduction","transType":"FNR gearbox (forward-neutral-reverse); clutch",
+    "wotPower":"4 hp (Seagull 4; ~60–75 lb thrust)","weightKg":"~25 (≈ Kingfisher block; verify)",
+    "notes":"British Seagull QB Curlew (Seagull 4, factory code QB1) — the smallest, lowest-tuned engine of the 1980s QB range. Uses the same 102 cc (57×40 mm) block as the Kingfisher and Osprey but, unlike those two (which share one head casting), the Curlew has its OWN model-specific cylinder head. 4 hp, cross-scavenge, water-cooled underwater exhaust, sealed breakerless CD ignition, recoil start, cowling, 3.1:1 FNR gearbox with clutch, 25:1 mix. Per-model weight/tank not separately published — the shared-block figure is shown; verify against the handbook. Sources: britishseagullparts.com (QB), saving-old-seagulls.co.uk (qb_series)." }
+  $sgcur$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- ENRICH: Model 170 (real sourced specs; de-bundle the 125)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-170';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-170','British Seagull','Model 170','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Enriched from British Seagull Parts (sourced)', $sg170b$
+  { "year":"Late 1980s–1996 (cowled era; some data 1982–1987 — verify)","strokeType":"2-Stroke (4-port, loop-scavenged)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water; centrifugal impeller)",
+    "fuelSystem":"Carburetted (upgraded; Bing-type)","mixRatio":"25:1 (50:1 tried at launch, reverted to 25:1)",
+    "plugType":"Seagull IGN70006 short-reach (NOT the classic D16)","plugGap":"0.50 mm (0.020 in) (verify)","coilType":"Breakerless CD ignition (sealed, waterproof)",
+    "starterType":"Recoil","obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard (overall 45.5 in / 1155 mm) / long (49.5 in / 1257 mm)",
+    "obLowerUnitOilType":"SAE 90 / EP90 (sealed box)","obGearRatio":"3:1 FNR reduction","obPropPitch":"4-blade anti-weed, 10.625 in (270 mm) dia",
+    "transType":"FNR gearbox (forward-neutral-reverse)","wotPower":"~7.5 hp equivalent (170 lb prop thrust)","fuelTankCapacity":"~27 (6-gallon remote)",
+    "notes":"British Seagull Model 170 — the largest and last major Seagull, flagship of the late cowled range (with the smaller Model 125). The '170' is propeller thrust in pounds (≈7.5 hp), not displacement: it uses the same 102 cc (57×40 mm) block with a 4-port loop-scavenged head, sealed breakerless CD ignition, recoil start, a full cowling and a 3:1 FNR gearbox swinging a 4-blade 10.625-inch anti-weed prop. Fuel use ~3.5 pints (2 L) per hour at ½–¾ throttle from a 6-gallon remote tank. CAUTION: the 125/170 pair suffered a poorly-designed crankshaft/con-rod bushing that caused warranty failures (worst on lean mixtures — hence the launch 50:1 spec was pulled back to 25:1), denting Seagull's reliability reputation near the end. Sealed gearbox takes SAE 90. Production years and dry weight differ between sources — verify against the handbook. Sources: britishseagullparts.com (model-170), saving-old-seagulls.co.uk." }
+  $sg170b$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- ENRICH: Model 102 (add sourced bore/stroke, gear, rpm)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-102';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-102','British Seagull','Model 102','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Enriched with sourced bore/stroke & gearing', $sg102b$
+  { "year":"1936–1960s (first '102' badged Marston Seagull)","strokeType":"2-Stroke (3-port)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water, water-injected exhaust)","fuelSystem":"Carburetted (Amal; 'A' in code = Amal)",
+    "mixRatio":"10:1","plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Flywheel magneto (Villiers)",
+    "starterType":"Rope pull (knotted cord on flywheel)","obSteering":"Tiller","obTiltTrim":"Manual tilt",
+    "obLowerUnitOilType":"SAE 140 gear oil (heavy)","obGearRatio":"2.5:1 (Plus/clutch variants 4:1)","transType":"Direct drive (clutch on 'C' codes)","wotPower":"~4 hp class","wotRpm":"~3800","weightKg":"~18",
+    "notes":"British Seagull Model 102 — the pre-war original of the big-block line: first sold 1936 wearing the 'Marston Seagull' logo, 102 cc (57×40 mm) with an integral cylinder block/head and water-injected exhaust. Codes carry letters for features ('A' = Amal carb, 'C' = clutch, 'W' = Wipac ignition added early-70s). All 102s except Plus versions ran the 2.5:1 box (Plus = 4:1). The square-block Century family descended from it. Strictly 10:1 premix — plain bearings depend on the oil. A genuine collector's motor with parts still circulating via the Seagull community. Sources: saving-old-seagulls.co.uk (102_models), britishseagullparts.com." }
+  $sg102b$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- ENRICH: Model 90/110 (correct EFNR gearbox & sealed-box oil; add bore/stroke)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='british-seagull-90-110';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('british-seagull-90-110','British Seagull','Model 90/110','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Enriched: EFNR gearbox, sealed-box oil, bore/stroke', $sg90b$
+  { "year":"1979–1990s (with Models 75 & 80)","strokeType":"2-Stroke (3-port)","ccSize":"102","cylCount":"1",
+    "boreDiameter":"57.0","crankStroke":"40.0","coolingType":"Liquid cooled (raw water)","fuelSystem":"Carburetted (Bing)","mixRatio":"25:1",
+    "plugType":"Champion D16 (18 mm)","plugGap":"0.50 mm (0.020 in)","coilType":"Breakerless CD ignition (sealed)","starterType":"Rope pull / recoil (by variant)",
+    "obSteering":"Tiller","obTiltTrim":"Manual tilt","obShaftLength":"Standard / long","obLowerUnitOilType":"SAE 90 / EP90 (sealed EFNR box)","obGearRatio":"3.1:1 FNR (EFNR box on 90/110); 12/48 (4:1) on fixed-box variants",
+    "transType":"FNR gearbox (forward-neutral-reverse) — the first Seagulls you could take out of gear","wotPower":"~5 hp (90 = 90 lb thrust; 110 = 110 lb thrust)","wotRpm":"~4500","weightKg":"~20",
+    "notes":"British Seagull Models 75 / 80 / 90 / 110 (from 1979) — the metricated, Bing-carb, CD-ignition evolution of the Century line on the 102 block. The numbers are propeller thrust in pounds, not cc. Model code EFNR (E = electronic/CD ignition, F = 40/Forty series lineage, NR = neutral-reverse gearbox), 3.1:1 FNR box; a fixed 12/48 (4:1) lower unit was the alternative. The FNR gearbox made these the first Seagulls with a neutral. Model 80 ≈ Silver Century Plus with CD ignition. Sealed gearbox takes SAE 90, not SAE 140. 25:1 mix as standard. Sources: saving-old-seagulls.co.uk (90/110 series), britishseagullparts.com." }
+  $sg90b$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Seagull range-completion batch: 7 new + 3 enriched. Library Seagull total now 15.';
+END $$;
+
+-- ═══ Cult small engines — vintage industrial, Tecumseh & Clinton (Standalone Engine) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Briggs & Stratton WM/WMB
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='briggs-wm-wmb';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('briggs-wm-wmb','Briggs & Stratton','WM/WMB','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $bwm$
+  { "year":"1940s–1950s (WM/WMB family; exact range verify)","strokeType":"4-Stroke","ccSize":"103 (6.28 cu in)","cylCount":"1",
+    "coolingType":"Air cooled","wotPower":"1.20 hp @ 2,200 rpm / 1.48 hp @ 2,700 rpm / 1.60 hp @ 3,200 rpm (rated curve)",
+    "plugType":"14mm, Champion J8 or equivalent","coilType":"High-tension magneto","fuelTankCapacity":"0.95 (1 quart)",
+    "notes":"Briggs & Stratton WM/WMB — a classic cast-iron collector flathead, part of the same letter-series family as the Model N, 6B and 8B. WM has the spark plug mounted on the side of the head; WMB has it vertical in the head. Early WMB used an external breather with a cast-iron head; later WMB switched to an internal breather with an aluminum head. Flywheel nut is LEFT-HAND thread (loosens clockwise) — a classic gotcha for first-time rebuilders. Oil capacity ~1 pint. Primary application: washing machines, plus some lawn mowers. Prized by the stationary-engine collector community (smokstak.com) as an easy, cheap, forgiving entry point into vintage engine restoration — parts are plentiful and castings are simple. Siblings Model N, 6B and 8B exist in the same family but lack independently confirmed hp/rpm/ignition/weight figures and were not given separate entries. Verify exact production years against manual/collector forum." }
+  $bwm$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler K91
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-k91';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-k91','Kohler','K91','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $k91$
+  { "year":"~1951 introduction (one source cites a 1959 line-rationalization redesignation from K90 — conflicting, verify)","strokeType":"4-Stroke","ccSize":"~145 (calculated from bore/stroke; verify against manual)","cylCount":"1",
+    "boreDiameter":"60.33","crankStroke":"50.80","valveTrain":"L-head (side valve)","coolingType":"Air cooled",
+    "shaftType":"Horizontal PTO","wotPower":"4.0 hp (4.1 PS / 3.0 kW) @ 4,000 rpm","wotRpm":"4000",
+    "starterType":"Recoil (rope-start most common); some battery/starter-generator variants existed",
+    "coilType":"Magneto, battery, or breakerless ignition depending on application/era",
+    "notes":"Kohler K91 — smallest of the classic K-series garden-tractor engines. Part of a family (K91/K161/K181/K241/K301/K321/K341) that shares enough ignition-coil, points and service-manual commonality to function as a single rebuild ecosystem — a big driver of parts availability today. Prized in the garden-tractor collector/puller community for cast-iron durability and being easy to hop up; dedicated garden-tractor-pulling tuning guides cover head/cam modification for competition classes. Kohler discontinued the K-series in the early 1980s for the Magnum line, described by collectors as 'essentially K's with new sheet metal and electronic ignition.' Sources: engine-specs.net, Wersis.net, smokstak.com." }
+  $k91$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler K161
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-k161';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-k161','Kohler','K161','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $k161$
+  { "year":"~1952 introduction (verify)","strokeType":"4-Stroke","ccSize":"~278 (calculated from bore/stroke; verify against manual)","cylCount":"1",
+    "boreDiameter":"74.62","crankStroke":"63.50","valveTrain":"L-head (side valve)","coolingType":"Air cooled",
+    "shaftType":"Horizontal PTO","wotPower":"7.0 hp (7.1 PS / 5.2 kW) @ 3,600 rpm","wotRpm":"3600",
+    "coilType":"Ignition varies by era: magneto with recoil, or battery ignition with starter/generator, some with camshaft spark advance",
+    "notes":"Kohler K161 — mid-size K-series engine, part of the same shared-parts family as the K91/K241/K301/K662. Garden-tractor collector cult values cast-iron durability and easy hop-up potential. See Kohler K91 entry for the broader family/discontinuation context. Sources: engine-specs.net, Wersis.net, wfmachines.com forum." }
+  $k161$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler K241
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-k241';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-k241','Kohler','K241','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $k241$
+  { "year":"Garden-tractor application era ~1970–1971, before many uses transitioned to the K301 in 1972 (verify exact cutover)","strokeType":"4-Stroke","ccSize":"391 (23.86 cu in)","cylCount":"1",
+    "boreDiameter":"82.6","crankStroke":"73.0","valveTrain":"L-head (side valve)","coolingType":"Air cooled",
+    "shaftType":"Horizontal PTO","wotPower":"10.0 hp (10.2 PS / 7.5 kW) @ 3,600 rpm","wotRpm":"3600",
+    "coilType":"Magneto ignition — shares coil/points part numbering (e.g. 47-755-20-S) with K141/K161/K181/K301/K321",
+    "notes":"Kohler K241 (10 hp) — garden-tractor mainstay of the K-series, common on 1970–71 tractors. Oil capacity documented as 1 or 2 quarts depending on crankcase/sump variant — verify against your specific serial's manual. Part of the shared K-series rebuild ecosystem (see K91 entry). Sources: engine-specs.net, tractorgearbox.com, justanswer.com, enginebore.com." }
+  $k241$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler K301
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-k301';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-k301','Kohler','K301','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $k301$
+  { "year":"1972 onward (succeeded K241 in garden-tractor applications; verify)","strokeType":"4-Stroke","ccSize":"476 (29.05 cu in)","cylCount":"1",
+    "boreDiameter":"85.7","crankStroke":"82.6","valveTrain":"L-head (side valve)","coolingType":"Air cooled",
+    "wotPower":"12.0 hp (12.2 PS / 9.0 kW) @ 3,600 rpm","wotRpm":"3600",
+    "notes":"Kohler K301 (12 hp) — the larger sibling that succeeded the K241 in most garden-tractor lines from 1972. Required a lower-compression cylinder head; this led to LP (propane)-fuel heads being discontinued across the line in the early 1960s (verify detail against collector forum/manual). A favorite of the garden-tractor-pulling competition scene for its cast-iron durability and tuning headroom. Sources: engine-specs.net, tractorgearbox.com, gardentractorpullingtips.com." }
+  $k301$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Kohler K662 (twin)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='kohler-k662';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('kohler-k662','Kohler','K662','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $k662$
+  { "year":"K-series twin era (verify exact years)","strokeType":"4-Stroke","ccSize":"1101 (67.20 cu in)","cylCount":"2",
+    "boreDiameter":"92.0","crankStroke":"82.5","valveTrain":"L-head (side valve), horizontal PTO","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted (downdraft)","wotPower":"24 hp (24.3 PS / 17.9 kW) @ 3,600 rpm","wotRpm":"3600",
+    "notes":"Kohler K662 — the twin-cylinder flagship of the K-series, with pressurized lubrication (positive-displacement oil pump), full-flow oil filter, and a paper air cleaner with optional oiled foam pre-cleaner. A 'K661' designation appears in parts numbering but no independently verified separate spec was found for it — treat K662 as the documented twin. Part of the same garden-tractor-pulling collector cult as the smaller K-series singles. Sources: engine-specs.net." }
+  $k662$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Onan CCK
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='onan-cck';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('onan-cck','Onan','CCK','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $onck$
+  { "year":"Late 1950s–late 1980s/early 1990s (very long production run; units dated as early as Sept. 1959 documented)","strokeType":"4-Stroke","ccSize":"816.2 (49.8 cu in)","cylCount":"2",
+    "boreDiameter":"82.55","crankStroke":"76.2","valveTrain":"L-head (side valve), opposed twin","coolingType":"Air cooled",
+    "wotPower":"12.2–16.0 hp (9.1–12.3 kW) depending on rpm/source — figures inconsistent across secondary sources, verify against Onan CCK manual 927-0753/927-0754",
+    "starterType":"Exciter-cranked (standard across nearly all CCK gensets; the MCCK variant is the documented exception)",
+    "coilType":"Magneto (stock); many field units retrofitted to breakerless/electronic ignition + electronic governor (a very active DIY topic on smokstak.com)",
+    "notes":"Onan CCK — 'the workhorse of the Onan line' per owner consensus, described as running 'forever with just the slightest care.' Widely used inside rebadged welder-generator sets — Miller AEA/AEAD 200-amp welder-gensets (run at 3,000 rpm, 5kW AC at 1,860 rpm per one source), plus private-label units sold as Bug welder, P&H, Craftsman, Solar Welder and General Electric — Onan built essentially the same core for many welder brands, creating a distinct welder-generator collector niche alongside straight-generator collectors. A single-source forum claim ties the Case 646 tractor to CCK power — verify. Sources: tractorgearbox.com, smokstak.com, onanfamily.org, archive.lib.msu.edu." }
+  $onck$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Onan BF/BFA/BGA/NH family
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='onan-bf-bfa-bga-nh';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('onan-bf-bfa-bga-nh','Onan','BF/BFA/BGA/NH','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $onbf$
+  { "year":"Mid-1970s–mid-1980s (NH units commonly dated 1978–1983 in collector listings)","strokeType":"4-Stroke","ccSize":"NH: 983 (60.0 cu in) — family also includes BF 659cc/40.25cu in, BFA 710cc/43.3cu in, BGA 777cc/47.4cu in","cylCount":"2 (opposed)",
+    "coolingType":"Air cooled","wotPower":"NH: 14.0 hp / BF: 8.5 hp / BFA: 8.5 hp / BGA: 10.0 hp — all rated at 1,800 rpm","wotRpm":"1800",
+    "starterType":"Exciter-cranked 12-volt starting system, standard across the whole family",
+    "weightKg":"NH: 129.3 (285 lb) / BF: 98.4 (217 lb) / BFA: 106.6 (235 lb) / BGA: 74.8 (165 lb)",
+    "notes":"Onan BF/BFA/BGA/NH — the classic RV/industrial genset family, shared four-cycle air-cooled opposed-twin architecture with a revolving-armature four-pole generator end. BF at 60Hz RV rating: 4,000W, 120V, 33A. Reportedly built in Huntsville, Alabama, prior to Linamar taking over production in a later corporate transition — verify against a company-history source rather than forum recollection. Valued by RV owners for simplicity, ease of field repair, and durability; the NH in particular is a staple of 'best Onan genset' owner discussions. Sources: manualzz.com (900-0337 service manual), archive.org, smokstak.com, onanfamily.org." }
+  $onbf$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tecumseh HSSK50
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tecumseh-hssk50';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tecumseh-hssk50','Tecumseh','HSSK50','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult mini-bike/kart swap-engine spec import', $thssk$
+  { "year":"1980s–1990s (Snow King small-frame era; exact range verify)","strokeType":"4-Stroke","ccSize":"197.34 (12.04 cu in)","cylCount":"1",
+    "boreDiameter":"71.4","crankStroke":"49.2","valveTrain":"L-head (flathead)","shaftType":"Horizontal, small frame",
+    "coolingType":"Forced air","wotPower":"5.0 hp (3.7 kW) @ 3,600 rpm rated","torqueNm":"11.1 (8.2 ft-lb) @ 2,800 rpm",
+    "starterType":"Recoil (rewind, 'mitten grip' handle); electric-start variants existed on related HSK models",
+    "fuelTankCapacity":"1.9 (2.0 qt)","weightKg":"15.1 (33.0 lb)",
+    "notes":"Tecumseh HSSK50 — THE classic mini-bike/go-kart swap engine, even though its factory purpose was snow blowers ('SK' = Snow King), not recreational vehicles. Its small-frame horizontal footprint fits tight vintage frames (Baja, Doodlebug-style, Coleman, older Rupp/Taco-era builds) where larger engines won't fit, and became cheap/plentiful once snowblowers were scrapped each spring. Mechanical governor runs in crankcase oil. Forum consensus (oldminibikes.com, diygokarts.com) flags the HS-series connecting rod as the 'weakest link' vs. the cast-iron-sleeved, dual-bearing Predator 212 clone that has largely displaced it in the performance-swap scene; mounting bolt patterns/shaft height commonly match a Predator 212 for a straight swap, but the Tecumseh uses a stepped crank (~7/8in OD at the clutch step) vs. the Predator's straight 3/4in OD — a recurring gotcha in swap threads. ARC is repeatedly cited as essentially the sole remaining performance-parts vendor for these engines. Tecumseh sold its engine business to Platinum Equity in 2007, the manufacturing division closed Dec 2008, and Certified Parts Corporation acquired the parts/tooling/IP in Feb 2009 — the hobby now runs on remaining OEM/NOS stock plus reproduction parts. Sources: tractorgearbox.com, pinrepair.com, oldminibikes.com, diygokarts.com, support.mtdproducts.com." }
+  $thssk$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tecumseh H50/H70
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tecumseh-h50-h70';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tecumseh-h50-h70','Tecumseh','H50/H70','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $th5070$
+  { "year":"~1960s–1980s (cast-iron industrial line, later superseded by aluminum-block engines; verify exact range)","strokeType":"4-Stroke","ccSize":"H50: 188.4 (11.5 cu in) / H70: 245.8 (15.0 cu in)","cylCount":"1",
+    "boreDiameter":"69.85 (2.75 in, both)","crankStroke":"H50: 49.2 (1-15/16 in) / H70: 64.3 (2-17/32 in)",
+    "valveTrain":"L-head (cast-iron industrial line)","coolingType":"Air cooled",
+    "wotPower":"H50: 5 hp / H70: 7 hp @ 3,600 rpm rated (both)","wotRpm":"3600",
+    "starterType":"Recoil standard; 12V and 120V electric-start options existed on industrial suffix codes (verify exact codes against manual)",
+    "weightKg":"~17.7 (39.0 lb, both — this identical figure across differing displacements looks suspicious and should be checked against the OEM manual)",
+    "notes":"Tecumseh H50/H70 — cast-iron 'H series' industrial horizontal engines: pumps, generators, compressors, garden tractors (a Wheel Horse forum thread references H60 use in Wheel Horse tractors). Oil capacity 0.60 qt. An H60 exists in the same family but its specs could not be separated from H50/H70 in this research pass — omitted rather than guessed. Sources: tractorgearbox.com, brentchalmers.com (combined H50/H60/H70/HH50/HH60 manual), mytractorforum.com." }
+  $th5070$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tecumseh HMSK80
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tecumseh-hmsk80';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tecumseh-hmsk80','Tecumseh','HMSK80','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $thmsk80$
+  { "year":"1980s–1990s (2-stage snow-blower era; verify)","strokeType":"4-Stroke","ccSize":"318.46 (19.43 cu in)","cylCount":"1",
+    "boreDiameter":"79.4","crankStroke":"64.3","valveTrain":"L-head (flathead)","shaftType":"Horizontal, Snow King large frame","coolingType":"Air cooled",
+    "wotPower":"8.0 hp (5.9 kW) @ 3,600 rpm","torqueNm":"16.9 (12.4 ft-lb) @ 2,800 rpm",
+    "notes":"Tecumseh HMSK80 — larger Snow King engine for 2-stage snow blowers (MTD/Yard-Man, Craftsman, Ariens); a 1995 MTD Yard-Man is documented using this exact engine. A forum claim states the HMSK80 shares cam, crank and carb with the larger HM100 (below), differing mainly in bore/displacement — this is a forum claim, not an OEM spec-sheet confirmation, so treat with caution before assuming full parts interchangeability. Sources: tractorgearbox.com, snowblowerforum.com, itstillruns.com." }
+  $thmsk80$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tecumseh HM100
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tecumseh-hm100';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tecumseh-hm100','Tecumseh','HM100','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $thm100$
+  { "year":"1980s–1990s (2-stage snow-blower era; verify)","strokeType":"4-Stroke","ccSize":"333.08 (20.2 cu in)","cylCount":"1",
+    "boreDiameter":"81.0","crankStroke":"64.3","valveTrain":"L-head (flathead)","shaftType":"Horizontal, Snow King large frame","coolingType":"Air cooled",
+    "wotPower":"10.0 hp (7.4 kW) @ 3,600 rpm","torqueNm":"20.8 (15.4 ft-lb) @ 2,800 rpm",
+    "notes":"Tecumseh HM100 — the larger 2-stage snow-blower sibling of the HMSK80, same Snow King large-frame family. See HMSK80 entry for the cam/crank/carb-sharing forum claim (unconfirmed against an OEM document). Sources: tractorgearbox.com, snowblowerforum.com." }
+  $thm100$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tecumseh OVRM120
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tecumseh-ovrm120';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tecumseh-ovrm120','Tecumseh','OVRM120','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $tovrm$
+  { "year":"Later Tecumseh consumer line (verify exact years)","strokeType":"4-Stroke","ccSize":"195 (11.90 cu in)","cylCount":"1",
+    "boreDiameter":"70.99","crankStroke":"49.23","valveTrain":"OHV (overhead valve)","shaftType":"Vertical, small frame rotary mower","coolingType":"Air cooled",
+    "wotPower":"6.5 hp (4.47 kW)",
+    "notes":"Tecumseh OVRM120 — Tecumseh's later OHV answer to Honda-style GC/GX push-mower engines, replacing the older L-head consumer lines. Included as the best-documented example of Tecumseh's late-era consumer engine architecture, since the parallel 'Vantage' European line (Mountfield/Wolf-Garten mowers) could not be verified with hard bore/stroke/rpm figures in this research pass and was omitted rather than padded. Sources: jackssmallengines.com." }
+  $tovrm$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tecumseh LAV series
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tecumseh-lav-series';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tecumseh-lav-series','Tecumseh','LAV30/35/40/50','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $tlav$
+  { "year":"Vertical light-equipment line (verify exact years)","strokeType":"4-Stroke","ccSize":"LAV30: 127 (7.75 cu in) / LAV35: 148 (9.05 cu in) / LAV40: 172 (10.5 cu in) / LAV50: 188 (11.5 cu in)","cylCount":"1",
+    "boreDiameter":"LAV30: 58.7 (2.3125 in) / LAV35: 63.5 (2.5 in) / LAV40: 66.7 (2.625 in) / LAV50: 69.85 (2.75 in)",
+    "crankStroke":"LAV30/35: 46.8 (1-27/32 in) / LAV40/50: 49.2 (1-15/16 in)",
+    "shaftType":"Vertical, light frame ('Lightweight Aluminum Vertical')","wotPower":"LAV30: 3 hp / LAV35: 3.5 hp / LAV40: 4 hp / LAV50: 5 hp",
+    "notes":"Tecumseh LAV30/35/40/50 — light-duty vertical-shaft push-mower and rotary-equipment engines. Aftermarket kit listings show one shared carburetor part number (632795A) fitting the whole LAV30–LAV50 range plus the related ECV100 — a good interchangeability signal, though sourced from aftermarket vendors rather than an OEM parts-interchange document. Ignition, governor, starter and weight were not independently confirmed for this family — omitted rather than guessed. Sources: repairfaq.org (LMFAQ), allotment-garden.org, smallenginesuppliers.com." }
+  $tlav$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Tecumseh TVM series
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='tecumseh-tvm-series';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('tecumseh-tvm-series','Tecumseh','TVM140/220','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage industrial spec import', $ttvm$
+  { "year":"Riding-mower/garden-tractor era (verify exact years)","strokeType":"4-Stroke","ccSize":"TVM140: 221.7 (13.53 cu in) / TVM220: 357.6 (21.82 cu in)","cylCount":"1",
+    "valveTrain":"L-head (flathead)","shaftType":"Vertical, medium frame","coolingType":"Air cooled",
+    "wotPower":"TVM140: 6.0 hp @ 3,600 rpm / TVM220: 8.0 hp @ 3,400 rpm",
+    "notes":"Tecumseh TVM140/TVM220 — vertical medium-frame engines for riding lawn mowers and garden tractors. This entry is thinner than most in the batch: bore/stroke, ignition, governor, starter and weight were not confirmed in this research pass, so only displacement and the rated power/rpm are reported — do not treat this as a full spec sheet without further manual verification. Sources: tractorgearbox.com, smallenginesuppliers.com." }
+  $ttvm$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Clinton 700-A (Doodle Bug engine)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='clinton-700a';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('clinton-700a','Clinton','700-A','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage minibike-scooter spec import', $c700a$
+  { "year":"1946–1948 (Beam Mfg. Co. 'Doodle Bug' Standard Model B scooter era)","strokeType":"4-Stroke","cylCount":"1","coolingType":"Air cooled",
+    "wotPower":"1.5 hp @ 3,000 rpm / 2.0 hp @ 3,600 rpm","coilType":"Bendix Scintilla magneto — the only Clinton series documented using this ignition brand",
+    "notes":"Clinton 700-A (710-A-S-L-B) — the OEM engine on the Beam Manufacturing 'Doodle Bug' scooter's Standard Model B variant, one of very few submodels built with a Clinton rather than the far more common Briggs & Stratton engine (an estimated 1,000 units or fewer, out of a 10,000-unit first production run) — a genuine rarity prized by scooter/minibike collectors. Model-code decode: 700A = basic model, S = kickstart, L = lighting coil, B = Beam Scooter fitment. Early units (710ASLB) were built in Clinton, Michigan before the company's move to Iowa and differ from later production. Sources: Wikipedia (Doodle Bug scooter), smokstak.com, AACA/AMCA antique-scooter forums." }
+  $c700a$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Clinton VS-100 / Model 100
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='clinton-vs100';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('clinton-vs100','Clinton','VS-100','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage minibike-era spec import', $cvs100$
+  { "year":"~1956 (per a Clinton parts book of that date; verify)","strokeType":"4-Stroke, vertical shaft, 'clamshell design' aluminum block","ccSize":"118 (7.2 cu in)","cylCount":"1",
+    "boreDiameter":"60.3 (2-3/8 in)","crankStroke":"41.3 (1-5/8 in)","coolingType":"Air cooled",
+    "wotPower":"1.45 hp @ 2,200 rpm / 2.0 hp @ 2,800 rpm / 2.5 hp @ 3,600 rpm",
+    "notes":"Clinton VS-100 / Model 100 — used on a lot of early rotary lawn mowers; direct ancestor/relative of the small Clinton engines later adopted into the minibike/kart scene. This research pass could not fully confirm whether 'VS-100' and 'Model 100' are exactly identical or merely closely related variants — flag as unresolved, verify against manual. Sources: smokstak.com ('Little Clinton 100' / 'Clinton Engine Model ID' threads)." }
+  $cvs100$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Clinton VS-200
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='clinton-vs200';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('clinton-vs200','Clinton','VS-200','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage minibike-era spec import', $cvs200$
+  { "year":"Vintage minibike/mower era (verify exact years)","strokeType":"2-Stroke","cylCount":"1","coolingType":"Air cooled",
+    "boreDiameter":"47.6 (1-7/8 in)","crankStroke":"41.3 (1-5/8 in)","mixRatio":"16:1 (using 30-weight oil)",
+    "wotPower":"1.1–2.25 hp @ 2,000–3,800 rpm (two conflicting figure sets found across sources — likely different sub-variants; verify against manual)",
+    "notes":"Clinton VS-200 — ignition point gap .018\"–.021\", fixed timing at 27°. Its 'Panther' branding is genuinely disputed among collectors: one Smokstak contributor states flatly the VS-200 is not a Panther engine, while another owns a decal-matching example they call a Panther — an unresolved identity question worth preserving rather than flattening. Sources: smokstak.com ('Clinton VS200 Panther?' and 'Clinton VS200' threads)." }
+  $cvs200$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Clinton A-400 Panther
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='clinton-a400-panther';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('clinton-a400-panther','Clinton','A-400 Panther','Standalone Engine',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage kart/minibike spec import', $ca400$
+  { "year":"Vintage go-kart/minibike era (verify exact years)","strokeType":"2-Stroke","cylCount":"1","coolingType":"Air cooled",
+    "wotPower":"2.5 hp (early) / 2.75 hp @ 3,600 rpm (later production — figure varies by year/variant)",
+    "starterType":"'E-Z Pull' branded recoil starter",
+    "notes":"Clinton A-400 (A400-1000) 'Panther' — a classic vintage go-kart and minibike engine. Its illustrated parts list is combined with the A-490-1000 in Clinton's own documentation, implying close mechanical kinship between the two. Other Clinton 2-stroke kart/minibike-adjacent models (A-490, A-2100, E-65, D-25) exist in period parts catalogs and eBay listings but yielded no independently verifiable bore/stroke/hp/weight figures in this research pass — they were deliberately left out of the wiki rather than published with invented numbers. Sources: rucenterprises.com parts-list filenames, eBay/Worthpoint vintage-listing titles, smokstak.com." }
+  $ca400$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Cult industrial/Tecumseh/Clinton batch imported (19 engines).';
+END $$;
+-- ═══ Cult vintage chainsaws — Solo, McCulloch, Dolmar ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Solo Rex
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='solo-rex';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('solo-rex','Solo','Rex','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage chainsaw spec import', $srex$
+  { "year":"1958","strokeType":"2-Stroke (piston-ported)","ccSize":"125 (7.2 cu in)","cylCount":"1",
+    "boreDiameter":"54.0","crankStroke":"54.0","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted (diaphragm carburetor)","wotPower":"5 hp DIN / 7 hp SAE (advertised)",
+    "barLength":"17","weightKg":"11.4 (26 lb) with 17 in bar",
+    "notes":"Solo Rex (1958) — marketed as the first European one-man chainsaw with a diaphragm carburetor, a genuine 'first of its kind' claim. Aluminum cylinder with a chrome-plated bore. Solo Kleinmotoren GmbH was founded 10 Feb 1948 in Stuttgart by brothers Heinz and Hans Emmerich, whose first product was a small 2-stroke engine built into a vineyard sprayer. The family sold most Solo product lines to the Austrian Al-Ko group in 2014; collector consensus (arboristsite.com) holds that present-day 'Solo' chainsaws are rebadged generic imports, distinct from these vintage West-German-built saws. Sources: vintagechainsawcollection.blogspot.com, fireandsaw.com, solo.global." }
+  $srex$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Solo 611 Twin
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='solo-611-twin';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('solo-611-twin','Solo','611 Twin','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage chainsaw spec import — vintage holy grail', $s611$
+  { "year":"1965","strokeType":"2-Stroke (piston-ported)","ccSize":"100 (2 x 50cc twin-cylinder)","cylCount":"2",
+    "boreDiameter":"40.0","crankStroke":"40.0 (each cylinder)","coolingType":"Air cooled",
+    "barLength":"17","weightKg":"11.9 (26 lb) with 43cm (17 in) bar and chain",
+    "notes":"Solo 611 Twin (1965) — the ONLY twin-cylinder chainsaw of its kind ever built (two in-line 50cc cylinders), and universally regarded by collectors as one of the most desirable vintage chainsaws in existence, consistently topping 'holy grail' vintage-saw lists (arboristsite.com, opeforum.com). Aluminum cylinders with chrome-plated bores. Famous for a distinctive, high-revving exhaust note — described by collectors as sounding like 'a howling banshee.' Very few surface for sale and prices run high when they do. Sources: acresinternet.com ('Model Profile: 611 TWIN'), arboristsite.com, opeforum.com." }
+  $s611$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- McCulloch 250 / Super 250
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mcculloch-250-super250';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mcculloch-250-super250','McCulloch','250/Super 250','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage chainsaw spec import', $m250$
+  { "year":"~1970–1975 (Super 250)","strokeType":"2-Stroke","ccSize":"250: 80 / Super 250: 87","cylCount":"1",
+    "boreDiameter":"54.0 (2.125 in, both)","crankStroke":"250: 34.9 (1.375 in) / Super 250: 38.1 (1.5 in)","coolingType":"Air cooled",
+    "notes":"McCulloch 250 / Super 250 — the Super 250 adds an automatic oil pump (with manual override) and more aggressive porting over the base 250, plus a distinctive long, rounded black top cover with a row of holes down each side. Positioned as the mid-size 'step-up' saw in McCulloch's classic range and a popular collector entry point. Sources: thisoldchainsaw.com, acresinternet.com, chainsawpartsworld.com." }
+  $m250$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- McCulloch Super Pro 60
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mcculloch-superpro60';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mcculloch-superpro60','McCulloch','Super Pro 60','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage chainsaw spec import', $msp60$
+  { "year":"Classic McCulloch Super Pro era (verify exact years)","strokeType":"2-Stroke","ccSize":"60 (3.7 cu in)","cylCount":"1","coolingType":"Air cooled",
+    "barLength":"20","barGauge":"0.050 in","chainPitchCS":"3/8 in","weightKg":"8.3 (18.3 lb)",
+    "notes":"McCulloch Super Pro 60 — McCulloch never officially published horsepower on these saws; forum estimates for comparable 60cc-class Macs run ~3.4–4.2 hp, unverified against a factory document. Known among collectors for being heavy for its displacement but torquey and durable — the classic McCulloch trait of pulling long bars off a relatively small cc. A Super Pro 80 sibling exists in the same parts family but lacked independently confirmed specs in this research pass — omitted rather than padded. Sources: leonschainsawpartsandrepair.com, arboristsite.com ('Super Pro 60 Horsepower rating')." }
+  $msp60$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- McCulloch 795/797/Super 797
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mcculloch-797-super797';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mcculloch-797-super797','McCulloch','795/797/Super 797','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage chainsaw spec import', $m797$
+  { "year":"Super 797 illustrated parts list dated Aug. 1969 (model no. 600130)","strokeType":"2-Stroke","ccSize":"795: 103 / 797 & Super 797: 123 (7.5 cu in)","cylCount":"1",
+    "boreDiameter":"795: 56.3 / 797: 57.9","crankStroke":"795: 41.5 / 797: 46.6","coolingType":"Air cooled",
+    "notes":"McCulloch 795/797/Super 797 — McCulloch's classic big-inch 'one-man muscle saws,' direct predecessors to the CP-125/SP-125 line. IMPORTANT: a figure claiming 'McCulloch 090 = 137cc' surfaced in research but is almost certainly a mix-up with the unrelated Stihl 090 (137cc) — McCulloch never made a model called '090'; do not use that figure. There is also no verified McCulloch or Dolmar model called 'PS-120,' nor any confirmed record of a 'biggest gas chainsaw ever built' title for either brand — treat any such claim as unconfirmed. Sources: opeforum.com, leonschainsawpartsandrepair.com." }
+  $m797$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- McCulloch SP125/CP125
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='mcculloch-sp125-cp125';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('mcculloch-sp125-cp125','McCulloch','SP125/CP125','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage chainsaw spec import', $msp125$
+  { "year":"Classic McCulloch big-saw era (verify exact years)","strokeType":"2-Stroke","ccSize":"123","cylCount":"1","coolingType":"Air cooled",
+    "notes":"McCulloch SP125 / CP125 / Super Pro 125 — the largest documented production ONE-MAN McCulloch saw. Features anti-vibration handles, an automatic chain oiler, a quick-release air filter, a two-handed wrap-around grip, and a decompression valve. The CP125 uses a single large reed valve versus the SP125's dual-reed-petal setup and runs about 5 lb lighter; the SP125C variant (chrome bore, better-balanced crank, larger wrist-pin needle bearing) is regarded by collectors as the smoothest and strongest-running of the family. Rumored larger 130cc ('549') and 160cc ('755') one-man models are mentioned in a single secondary collector-forum source only — unverified, and deliberately not given their own entries. Sources: arboristsite.com ('McCulloch SP125'), opeforum.com, chainsawcollectors.se." }
+  $msp125$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Dolmar Model A (1927)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='dolmar-model-a';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('dolmar-model-a','Dolmar','Model A','Chainsaw',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage chainsaw spec import — corrects a fictitious \"PS-120\" claim', $dolma$
+  { "year":"1927 (patent granted 15 June 1928; produced ~1927–1931/32, succeeded by the Model C 1930–1937)","strokeType":"2-Stroke (two-man saw)","ccSize":"~245 (single-sourced figure, verify against manual/museum record)","cylCount":"1",
+    "wotPower":"~8 hp","weightKg":"57–58 (125–128 lb)",
+    "notes":"Dolmar Model A (1927) — built by Emil Lerp, this is THE FIRST GASOLINE-POWERED CHAINSAW FOR TREE WORK ever built, requiring two operators. The company name 'Dolmar' comes directly from the Dolmar Hill test site in the Thuringer forest where the saw was developed and proven. IMPORTANT CORRECTION: there is no verified Dolmar model ever called 'PS-120,' and no confirmed record of Dolmar holding a 'biggest gas chainsaw ever built' title — Dolmar's real '120'/'120 Super'/'120si' family is actually a mid-size ~67-68cc ONE-MAN saw, not a giant. This 1927 Model A is the genuine 'biggest/first' Dolmar story. Contemporary two-man rivals cited in period lore include the Titan 'C' and IEL 'K'/'M' models, plus a French REXO at a claimed 350cc — treat these comparisons as forum lore, not independently verified figures. Sources: Wikipedia ('Emil Lerp'), fireandsaw.com, amickssuperstore.com, arboristsite.com ('The Biggest Saw Of All Time')." }
+  $dolma$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Cult vintage chainsaw batch imported (7 saws).';
+END $$;
+-- ═══ Cult vintage European moped engines — Sachs, Puch, Minarelli, Simson ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Sachs 50-series
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='sachs-50-series';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('sachs-50-series','Sachs','50-Series','Moped',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage moped spec import', $sachs$
+  { "year":"~1960–1990 (501/502/504/505 family with A–D sub-variants; verify exact start date)","strokeType":"2-Stroke","ccSize":"47.6 stock; 49.9 (D variant, 44mm stroke)","cylCount":"1",
+    "crankStroke":"42.0 stock / 44.0 (D variant)","coolingType":"Air cooled","compressionRatio":"~10:1 (D variant)",
+    "fuelSystem":"Carburetted (Bing; A/C = 12mm square, B = 10mm, D = high-output 12mm no-needle '85/12/104')",
+    "coilType":"Flywheel magneto, points-type (Bosch and Motoplat units used across variants)",
+    "transType":"1-speed automatic, 2-speed, or 3-speed manual (foot-shift or handlebar lever) — shared case, drilled differently per variant",
+    "starterType":"Pedal-start (505-series, often with back-pedal coaster-brake engagement); kick-start on earlier 501",
+    "wotPower":"A: 1.8 hp / B: 1.5 hp / D: 2.7 hp",
+    "notes":"Sachs (Fichtel & Sachs, Germany) 50-series — powered Hercules (F&S bought Hercules in 1963), Sparta (Netherlands), Columbia, KKM, Grycner, Foxi, General, Eagle, Moppet and MBK. The last true US-market Sachs application was the KKM Mopet, built in Ohio 1988–1990. Cult/tuning: a strong, mostly German-language tuning scene centers on the Hercules Prima platform (mofapower.de, mopedparts.de); community wisdom holds 3-speed motors don't tolerate tuning past ~50km/h and fail quickly, so the 2-speed variant is preferred for performance builds. Dutch site mofakult.nl markets Sachs as making 'indestructible 2-strokes' — Sparta, the largest Dutch moped maker of the 1970s, built its reputation on Sachs power. Sources: mopedarmy.com/wiki/Sachs_Motor_Differences, en.wikipedia.org (Sachs Motorcycles, Sparta B.V.), vwtechie.tripod.com." }
+  $sachs$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Puch E50/ZA50
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='puch-e50-za50';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('puch-e50-za50','Puch','E50/ZA50','Moped',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage moped spec import', $puch$
+  { "year":"1970s–1980s (verify exact start/end)","strokeType":"2-Stroke","ccSize":"48","cylCount":"1",
+    "boreDiameter":"38.0","crankStroke":"42.0","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted (Bing, 12mm stock)","coilType":"Flywheel magneto with points (Bosch, Iskra, or Ducati factory-fitted); CDI a common aftermarket retrofit",
+    "transType":"E50 = single-speed automatic (centrifugal clutch); ZA50 = two-speed automatic — no manual gearbox",
+    "starterType":"Pedal-start (1970s models, doubles as propulsion when disengaged); later kick-start",
+    "wotPower":"1.0 / 1.5 / 2.0 hp factory states of tune (20/25/30 mph top-speed limited); Sport MK-II variant up to 2.4 hp",
+    "weightKg":"~39 (86 lb, approximate)",
+    "notes":"Puch (Steyr-Daimler-Puch, Austria) E50/ZA50 — powered the Puch Maxi, Sport, Luxe, Newport, Pinto, Magnum and Cobra; rebadged in the US as Sears, Montgomery Ward 'Free Spirit,' J.C. Penney and Murray-branded mopeds. Frequently called 'the Volkswagen of mopeds' for mechanical simplicity and parts commonality across years. Central platform of the US moped-army scene — Moped Army's own wiki maintains a dedicated tuning page covering derestricting the airbox, exhaust-pipe swaps, head-gasket removal and carb re-tuning as the standard performance path. Sources: mopedarmy.com/wiki/E50, en.wikipedia.org (Puch Maxi), myronsmopeds.com, puchshop.de, dualwheeljourney.com." }
+  $puch$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Minarelli V1
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='minarelli-v1';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('minarelli-v1','Minarelli','V1','Moped',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage moped spec import', $minv1$
+  { "year":"1969–1990 (full variant timeline: V1/V1N 1969–77, V1 1977–80 plastic shroud, V1A 1977–80 aluminum cyl, V1P 1979–86 iron cyl, V1H 1982–87 aluminum cyl, V1L 1987–89 iron reed valve, V1HL 1988–90 aluminum reed)","strokeType":"2-Stroke","ccSize":"~49.7 (38.8mm bore) / ~53.6 (40.3mm bore variant) — calculated from sourced bore/stroke","cylCount":"1",
+    "boreDiameter":"38.8 / 40.3 (variant)","crankStroke":"42.0","coolingType":"Air cooled",
+    "coilType":"Stock magneto/points; aftermarket fixed-curve CDI kits widely sold (e.g. Italkit Racing)",
+    "wotPower":"~1.9 hp (stock V1; rpm not confirmed)",
+    "notes":"Minarelli (Motori Minarelli, Bologna, Italy), founded 1951 by Vittorio Minarelli, built exclusively two-stroke engines. This V1 timeline is the most complete production-year table found across all four moped brands researched. Genuine racing pedigree: 24 world speed records across the 50/75/100/175cc classes, plus four manufacturer titles and two rider titles in 125cc world championship road racing during the 1970s. Powered badge-engineered mopeds (Cimatti, Gitane, Testi, Concord, Motron, Fantic, General, AMF, Baretta, Gadabout, Motomarina, Safari) largely uncredited on the finished bike — this 'hidden engineer' mystique is a real part of its enthusiast appeal, since many owners don't realize their bike is Minarelli-powered until they open the crankcase. Has the deepest aftermarket of all four moped brands researched — Polini and Malossi both manufacture extensive cylinder-kit and variator lines for Minarelli-based engines. Sources: myronsmopeds.com, en.wikipedia.org (Motori Minarelli), motoriminarelli.it." }
+  $minv1$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Simson S50/S51
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='simson-s50-s51';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('simson-s50-s51','Simson','S50/S51','Moped',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult vintage moped spec import', $simson$
+  { "year":"S50: 1975–1980 / S51: 1980–1991 (combined family production over 1.6 million units — the most numerous moped ever built in Germany)","strokeType":"2-Stroke","ccSize":"49.6","cylCount":"1",
+    "boreDiameter":"38.0 (S51)","crankStroke":"44.0 (S51; a long-stroke redesign vs. the S50 specifically to improve low/mid-range torque)","coolingType":"Air cooled",
+    "fuelSystem":"Carburetted (BVF, 16mm)","coilType":"Stock 6V flywheel magneto with points; 12V CDI a very common modern retrofit",
+    "transType":"3- or 4-speed manual, foot-shift","wotPower":"3.75 hp (2.8 kW) @ 5,500 rpm (S51)","torqueNm":"5.0 (3.69 ft-lb) @ 4,800 rpm (S51)",
+    "topSpeed":"60 km/h (37 mph) standard; S51 N variant limited to 40 km/h","weightKg":"~78–86 (varies by year/variant — S51 B1-4 1980: 78.5kg; S51 N 1986: 86kg)",
+    "notes":"Simson (VEB Simson, Suhl, East Germany) S50/S51 — the deepest 'living cult' of all four moped brands researched. Near-ubiquitous in East Germany; after reunification became a powerful nostalgia object (the DDR-Museum covers Simson/MZ as 'the two-wheeled forge of the GDR'). An active dedicated Simson Forum exists with threads specifically on DDR-era tuning. Genuine period racing lore: privateer racers reportedly built 50cc Simson-based racebikes with 6-speed gearboxes and rotary-valve induction reaching up to 16 hp — described as unofficial, never factory-backed (unverified single figure, flag for a primary German-language source). Contemporary manufacturing in Suhl/Thuringia continues today with M451/M471 engines used as rebuild bases for old East German mopeds still on the road. Sources: autoevolution.com, cyclechaos.com/wiki/Simson_S51, ddr-museum.de, simsonforum.net." }
+  $simson$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Cult vintage moped batch imported (4 mopeds).';
+END $$;
+-- ═══ Cult antique outboard motors — Elto, Johnson, Champion (AOMCI collector cult) ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Elto Cub
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='elto-cub';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('elto-cub','Elto','Cub','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult antique outboard spec import', $ecub$
+  { "year":"1939–1941","strokeType":"2-Stroke","cylCount":"1","wotPower":"0.5 hp","weightKg":"3.9 (8.5 lb)",
+    "notes":"Elto Cub (1939–1941) — marketed as the 'world's lightest outboard' on introduction, priced at $29.50 new. Only produced for 2 years before being discontinued in 1941, deliberately a throwback to convenience-over-power even as the rest of the industry chased bigger and faster motors. Built by Evinrude Motors Division, Outboard Marine & Manufacturing Co., Milwaukee, WI. A novelty/oddity collectible prized by the Antique Outboard Motor Club International (AOMCI) independent of performance. Sources: Wisconsin Historical Society (wisconsinhistory.org)." }
+  $ecub$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Elto Ace
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='elto-ace';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('elto-ace','Elto','Ace','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult antique outboard spec import', $eace$
+  { "year":"Developed 1934–36, produced into the early 1940s","strokeType":"2-Stroke","cylCount":"1",
+    "wotPower":"1.4 hp (earliest run); 1.6 hp and 1.8 hp variants seen in later production years — verify exact figure against AOMCI records for a given year",
+    "coolingType":"Piston-type water pump (early production); switched to a two-stage centrifugal ('centripetal') water pump in the gear case on later production",
+    "notes":"Elto Ace — derived from the 1934 1.5 hp Evinrude Sportsman (Model 4091: 25 lb, die-cast aluminum, ~3 ft tall). Marketed at a slightly lower horsepower than its Sportsman parent, in part to justify a lower price point. Part of the Elto brand's founding-era product family — Elto (Evinrude Light Twin Outboard) began in 1921 and its Ruddertwin used a distinctive fixed powerhead steered by an independent rudder, unlike rival Johnson's full swivel-steer design (see Johnson Light Twin entry). Sources: aomci.org forum ('Elto ace 1.4 hp'), eBay period listings." }
+  $eace$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Johnson Light Twin / Model A / Waterbug
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='johnson-light-twin';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('johnson-light-twin','Johnson','Light Twin','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult antique outboard spec import', $jlt$
+  { "year":"1921 (debuted Dec 19, 1921, for the 1922 model year)","strokeType":"2-Stroke","cylCount":"2","wotPower":"2 hp","weightKg":"15.9 (35 lb)",
+    "starterType":"Rope pull","obSteering":"Full 360° swivel (tiltable) — the opposite design philosophy to Elto's fixed-head rudder steering, one of the defining 'first-generation outboard' engineering forks in the hobby",
+    "notes":"Johnson Light Twin ('Model A' / 'Waterbug') — Johnson's very first outboard and the brand's founding product. Aluminum twin-cylinder construction, deliberately built lighter than cast-iron competitors of the era. 3,429 units were ordered at the 1922 New York Motor Boat Show — proof of the model's instant commercial impact. Johnson Motors' profits collapsed in the Depression (from $445,613 in 1929 to $141,086 in 1930); the company entered voluntary receivership in 1932, and Outboard Marine Corporation acquired its assets in 1935 for $800,000 — Johnson then sold 20,872 motors in its first year under OMC, repaying the purchase price in a single season. Collectors treat pre-1935 'Johnson Motor Company' era motors as a distinct, more collectible sub-era versus post-1935 OMC-owned Johnson production. 2021 marked the 100th anniversary of both Johnson and Elto, celebrated with a joint 4-day AOMCI national meet. Sources: yankeeaomci.org, en.wikipedia.org (Johnson Outboards, Outboard Marine Corporation)." }
+  $jlt$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Champion (1927 original)
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='champion-1927';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('champion-1927','Champion','1927 Original','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult antique outboard spec import — corrects a fictitious \"Iron Horse\" claim', $champ27$
+  { "year":"1927","strokeType":"2-Stroke","cylCount":"1","wotPower":"1.5 hp","weightKg":"13.6 (30 lb)",
+    "notes":"Champion (1927 original) — the true founding product of the Champion Outboard Motor brand, hand-built by three St. Paul, Minnesota men: Henry Dolan, Sig Conrad and 'Dutch' Witch. Only an estimated ~30 units were ever built (single-sourced figure — an unusually specific claim that would benefit from a second corroborating source before being treated as settled fact). The 'Champion' name was sold to Flour City Ornamental Iron Co. in 1927/1928, which then manufactured the motor in Minneapolis for years afterward. IMPORTANT CORRECTION: there is no verified Champion outboard ever called the 'Iron Horse' — that name belongs to an unrelated OMC D-400 lawnmower engine and should not be confused with Champion's outboard history. See the Champion Blue Ribbon 2J entry for the brand's later, second-generation era. Sources: everythingaboutboats.org." }
+  $champ27$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Champion Blue Ribbon 2J
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='champion-blue-ribbon-2j';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('champion-blue-ribbon-2j','Champion','Blue Ribbon 2J','Outboard Motor',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Cult antique outboard spec import', $champ2j$
+  { "year":"1946/1947","strokeType":"2-Stroke","cylCount":"1","wotPower":"4.2 hp",
+    "starterType":"Rewind/recoil starter (2J 'Deluxe'); the 1J 'Standard' sibling instead used a rope sheave on the flywheel and lacked the 2J's flywheel cover",
+    "notes":"Champion Blue Ribbon Model 2J — from the second-generation Champion Outboard Motor Co., founded 1935 by Stanley Grey and Earl DuMonte, manufactured under contract by a small tool-and-punch-press operation from 1935–1942 (no production 1943–1945 during WWII), then resumed by DuMonte at his own facility 1946–1957. In 1939 DuMonte struck a distribution deal with Firestone Tire Co., reportedly pushing Champion to the #2 US outboard maker behind Evinrude. The final Champion model before production ceased in 1957 was the Tandem 33 — a twin pair of counter-rotating 16.5 hp outboards (33 hp combined) for cruiser/heavy-runabout use. Sources: Adirondack Experience museum collection listing, AOMCI forum, everythingaboutboats.org." }
+  $champ2j$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Cult antique outboard batch imported (5 motors).';
+END $$;
+-- ═══ Modern kart-racing engines (active cult, not vintage) — LO206, X30, Rotax Max, KT100, Predator Ghost ═══
+DO $$
+DECLARE
+  v_admin uuid; v_entry uuid; v_rev uuid;
+BEGIN
+  SELECT id INTO v_admin FROM auth.users
+    WHERE email IN ('nathan.gentil.ai@gmail.com','nathan.gentil@gmail.com') ORDER BY email LIMIT 1;
+
+  -- Briggs & Stratton LO206
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='briggs-lo206';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('briggs-lo206','Briggs & Stratton','LO206','Go-kart',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Modern spec-racing engine import', $lo206$
+  { "year":"Introduced ~2009 (current)","strokeType":"4-Stroke, OHV","ccSize":"204","cylCount":"1",
+    "boreDiameter":"68.3","crankStroke":"68.3","compressionRatio":"8.5:1","coolingType":"Air cooled",
+    "wotPower":"8.8 hp @ 5,500 rpm","torqueNm":"13.5 (~10 ft-lb)","wotRpm":"6,100 (hard rev-limiter ceiling)",
+    "fuelSystem":"Carburetted (Briggs-tooled 22mm round-slide, fixed factory jetting — non-adjustable under most sanctioning-body rules); 87-octane pump gasoline, no oil premix (wet-sump 4-stroke)",
+    "coilType":"Digital electronic ignition with built-in rev limiter, 29° BTDC fixed timing","starterType":"Integrated recoil (pull-start, lawnmower-style)",
+    "notes":"Briggs & Stratton LO206 — introduced as a low-cost, strictly regulated spec engine to replace the aging, cheat-prone Yamaha/2-stroke karting classes and 'level the playing field.' The bottom end is factory-sealed with two tamper-evident seals; a broken or missing seal is an automatic disqualification under IKF, WKA and virtually every sanctioning body's rules — teams cannot legally access the crank/rod/piston without buying an entirely new short block, a deliberate anti-cheating design. Now the dominant North American grassroots spec-racing engine, run from Kid Kart through Masters classes via swappable carburetor restrictor plates; WKA launched a dedicated '206 Only Series' in 2022, and flagship events (Cup Karts North America Grand Nationals) reportedly draw 500+ drivers. Weight not officially published — verify against the official Briggs 206 Rule Set. Sources: briggsracing.com, worldkarting.com." }
+  $lo206$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- IAME X30
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='iame-x30';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('iame-x30','IAME','X30','Go-kart',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Modern spec-racing engine import', $x30$
+  { "year":"Launched 2005 (current)","strokeType":"2-Stroke, reed-valve inlet","ccSize":"123.67 (125cc class)","cylCount":"1",
+    "boreDiameter":"54.00 (max 54.28)","crankStroke":"54.00","coolingType":"Liquid cooled (radiator)",
+    "wotPower":"30 hp (Senior) / 21 hp (Junior)","torqueNm":"19.5 (Senior) / 11 (Junior)",
+    "wotRpm":"~15,800 soft-cut limiter engagement; hard ceiling cited 14,000–16,000 depending on class/homologation year — verify current rulebook",
+    "fuelSystem":"Carburetted (Tillotson HW-27A)","mixRatio":"~18:1–25:1 (regulations reference a 4–6% oil window; community baseline ~25:1, commonly run ~18:1; 95-octane fuel recommended, castor-based racing oil favored — verify exact ratio against the current IAME manual)",
+    "coilType":"Selettra Digital 'K' or 'S' ECU — only unmodified factory units are legal","starterType":"Electric (integrated)","clutchType":"Centrifugal dry clutch","weightKg":"12.0 (dry, bare engine)",
+    "notes":"IAME X30 — launched as a successor to older 125cc TaG ('Touch and Go') engines, and became the dominant international sprint/TaG platform, effectively displacing most rival 125cc TaG engines in modern sprint karting. Used in SKUSA, USPKS, IKF, WKA, WSK, IAME's own single-brand X30 Challenge/Euro Series, and dozens of national federations across 30+ countries. Strict homologation (unmodified ignition unit, controlled carburetor and fuel rules) keeps the class a driver/chassis-skill contest rather than an engine-tuning arms race — similar in spirit to the LO206's seal system, though less rigidly sealed. Sources: iameengines.com, iame-motorsport.com, bilsport.no (technical regulations)." }
+  $x30$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Rotax Max
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='rotax-max';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('rotax-max','Rotax','Max','Go-kart',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Modern spec-racing engine import', $rotax$
+  { "year":"Introduced 1997 as the Rotax 125 MAX (current, Evo generation)","strokeType":"2-Stroke","ccSize":"125.0 (all class variants share the same bottom end)","cylCount":"1",
+    "boreDiameter":"54.00","crankStroke":"54.5","coolingType":"Liquid cooled, integrated water pump + balance shaft",
+    "fuelSystem":"Carburetted (Dellorto VHSB34)","coilType":"Digital battery-based CDI (proprietary Rotax digital ignition); Senior MAX adds an electronically timed exhaust power valve",
+    "starterType":"Electric (integrated, standard since the 1997 introduction)","clutchType":"Centrifugal clutch",
+    "weightKg":"12.0 (Senior MAX bare engine, ~26.5 lb); complete power pack ~23.1 kg (51.0 lb)",
+    "wotPower":"Micro: 6 kW (~9.5 hp) @ 7,500 rpm / Mini: 11 kW (~15 hp) @ 8,500 rpm / Junior Evo: 17 kW (23 hp) @ 8,500 rpm / Senior Evo: 22 kW (30 hp) @ 11,500 rpm",
+    "torqueNm":"Micro: 9 @ 7,500 rpm / Mini: 13 @ 8,000 rpm / Junior: 19 @ 8,500 rpm / Senior: 21 @ 9,000 rpm",
+    "notes":"Rotax Max — notable at its 1997 launch for pairing a 125cc two-stroke with an electric starter, removing the need for push/bump starting. The Rotax Max Challenge is a global one-make karting structure run in 60+ countries with annual Grand Finals (started 2000 in Puerto Rico with 66 drivers from 19 countries). Widely cited as a primary karting-to-Formula-1 pipeline over the last 20+ years: Max Verstappen raced Rotax Mini MAX in 2007, winning the Belgian and Dutch Rotax championships in that category; Lando Norris was a Rotax Mini winner in the UK; other Rotax-graduate names cited in motorsport media include Kimi Raikkonen, Jenson Button, George Russell (early career), Giorgio Pantano, Anthony Davidson, Esteban Gutierrez and Robert Kubica. Alongside IAME X30, one of the two dominant international sprint-kart platforms; sealed/tech-inspected engine rules (Global RMC Technical Regulation) keep engines standardized across the one-make series. Sources: rotax-racing.com, rotax.com (100-years company history), en.wikipedia.org (Rotax Max Challenge)." }
+  $rotax$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Yamaha KT100
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='yamaha-kt100';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('yamaha-kt100','Yamaha','KT100','Go-kart',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Modern (legacy) spec-racing engine import', $kt100$
+  { "year":"Introduced ~1977 (still actively raced)","strokeType":"2-Stroke, piston-ported (not reed-valve)","ccSize":"97.6 (marketed as '100cc' nominal)","cylCount":"1",
+    "boreDiameter":"52.0","crankStroke":"46.0","coolingType":"Air cooled",
+    "wotPower":"~15 hp (11 kW) @ 10,000 rpm stock; racers report ~17 bhp tuned at 15,500–16,000 rpm, and up to 19–20 bhp with a 90-degree expansion-chamber pipe — these higher figures are anecdotal/tuned, not stock factory spec",
+    "fuelSystem":"Carburetted (Walbro WB-3A)","mixRatio":"20:1 (Yamalube 2R recommended)","coilType":"Transistor-controlled ignition (TCI)",
+    "starterType":"None integrated — historically derived from an ultralight-aircraft engine; run with an external electric starter (17mm crank-nut adapter) or bump-started direct-drive",
+    "clutchType":"None as standard — commonly run direct-drive (chain sprocket straight to axle); centrifugal-clutch setups exist for some classes",
+    "weightKg":"~9.5 (21 lb dry — secondary-source figure, verify against a Yamaha spec sheet)",
+    "notes":"Yamaha KT100 — became, per community sources, 'the most popular engine in kart racing' at tracks across the US and beyond through the 1980s–90s, and a staple of WKA/IKF-sanctioned sprint karting for decades (Junior/Senior/Modified divisions via the KT100S variant). A genuine still-actively-raced 'cult' engine today: current karting-forum discourse frames it as declining in mainstream use (displaced by the LO206) but kept alive by a loyal, affordability-driven enthusiast base. This is the thinnest-documented of the modern racing engines researched — no official Yamaha spec-sheet could be directly confirmed in this pass, so displacement, weight and starter details rely on secondary sources; recommend sourcing an original Yamaha KT100 owner's/service manual before treating exact figures as locked in. Sources: Wikipedia, sciencing.com, 4cycle.com/ekartingnews.com forum discussion." }
+  $kt100$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  -- Predator 212 Ghost
+  SELECT id INTO v_entry FROM wiki_entries WHERE slug='predator-ghost';
+  IF v_entry IS NULL THEN INSERT INTO wiki_entries (slug,make,model,type,created_by)
+    VALUES ('predator-ghost','Predator','212 Ghost','Go-kart',v_admin) RETURNING id INTO v_entry; END IF;
+  INSERT INTO wiki_revisions (entry_id,edited_by,username,edit_summary,data) VALUES (v_entry,v_admin,'Rat Bench','Modern clone-scene racing engine import', $ghost$
+  { "year":"Launched June 2022 (current, Harbor Freight SKU 57531)","strokeType":"4-Stroke, OHV","ccSize":"211.66 (marketed as '212cc')","cylCount":"1",
+    "boreDiameter":"70.0","crankStroke":"55.0","compressionRatio":"8.5:1","coolingType":"Air cooled",
+    "wotRpm":"6,000–6,100 (digital rev-limiter; sources vary slightly)","wotPower":"~9.9 hp stock (independent dyno test); community claims of 15+ hp with bolt-on mods are anecdotal, not a stock rating",
+    "torqueNm":"~19 (~14 ft-lb, community-reported — verify against Harbor Freight spec sheet)",
+    "fuelSystem":"Carburetted (PZ22 slide-type, manual choke); 91+ octane fuel, treated with stabilizer","coilType":"Digital/CDI ignition with built-in electronic rev limiter — mechanical governor deleted entirely",
+    "starterType":"Recoil only — no electric-start option","shaftType":"Horizontal 3/4 in (0.75 in), ~2.43 in length — standard clone/Honda GX200 spec (single source, verify)",
+    "weightKg":"~15.9 (35 lb — single source, verify)",
+    "notes":"Predator 212 'Ghost' Kart Racing Engine — developed with input from a 3x national go-kart racing champion. Genuinely distinct internals from the standard Hemi/Non-Hemi: a forged-steel crankshaft on dual ball bearings (vs. the base 212's crank on a bushing/single bearing), a high-flow racing intake port, a fire-ring head gasket, a racing piston-ring package and high-silicon valve springs. Explicitly marketed and discussed in the karting community as a budget, unsealed, moddable alternative to the sealed Briggs LO206 spec engine. Part of the broader Honda GX160/GX200 'clone' scene (Ducar/Lifan/Loncin-built clones sold by Harbor Freight, DuroMax and others) and its Stage 1/2/3 build culture: Stage 1 = bolt-on tuning (carb jetting, exhaust, air filter, timing); Stage 2 = governor removal (already deleted from factory on the Ghost, but the standard mod on other clone engines); Stage 3 = internal reinforcement (billet rod/flywheel, stroker kits, big-valve heads) to survive higher RPM safely. Oil capacity 0.63 qt, 10W-30 full synthetic recommended. Sources: harborfreight.com, newsroom.harborfreight.com (June 2022 press release), slashgear.com, gokartnerds.com." }
+  $ghost$::jsonb) RETURNING id INTO v_rev; UPDATE wiki_entries SET current_rev_id=v_rev WHERE id=v_entry;
+
+  RAISE NOTICE 'Modern kart-racing + clone-scene batch imported (5 engines).';
+END $$;
+
 -- Verify — one row per seeded machine with its field count
 SELECT e.type, e.make, e.model,
        (SELECT count(*) FROM jsonb_object_keys(r.data)) AS spec_fields
 FROM wiki_entries e JOIN wiki_revisions r ON r.id = e.current_rev_id
-WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6','honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660','triumph-bonneville-t120','british-seagull-forty-plus','british-seagull-forty-minus','british-seagull-silver-century','british-seagull-qb-kingfisher','victa-power-torque-160','honda-ct110','yamaha-ag200','yamaha-ag100','suzuki-dr200se-trojan','honda-z50','kawasaki-ke100','homelite-xl-12','mcculloch-mac-10-10','stihl-070','stihl-090','briggs-5hp-flathead','british-seagull-forty-featherweight','british-seagull-102','british-seagull-90-110','british-seagull-170')
+WHERE e.slug IN ('kawasaki-klr650','suzuki-dr650','suzuki-dr-z400','yamaha-tw200','yamaha-wr450f','bmw-f650','bmw-f650gs','bmw-g650gs','cfmoto-450mt','cfmoto-800mt','honda-gx25','honda-gx35','honda-gx120','honda-gx160','honda-gx200','honda-gx240','honda-gx270','honda-gx340','honda-gx390','honda-gx630','honda-gx690','honda-gc160','honda-gc190','stihl-ms-170','stihl-ms-180','stihl-ms-211','stihl-ms-250','stihl-ms-261','stihl-ms-271','stihl-ms-291','stihl-ms-362','stihl-ms-391','stihl-ms-400','stihl-ms-462','stihl-ms-500i','stihl-ms-661','stihl-ms-880','yamaha-f9-9','yamaha-f15','yamaha-f25','yamaha-f60','yamaha-f115','yamaha-f150','mercury-9-9-fourstroke','mercury-25-fourstroke','mercury-60-fourstroke','mercury-115-fourstroke','honda-bf50','honda-bf90','suzuki-df60','tohatsu-mfs9-9','husqvarna-435','husqvarna-445','husqvarna-450','husqvarna-455-rancher','husqvarna-460-rancher','husqvarna-550-xp','husqvarna-562-xp','husqvarna-572-xp','husqvarna-372-xp','husqvarna-395-xp','echo-cs-400','echo-cs-490','echo-cs-590','echo-cs-800p','predator-212-hemi','predator-212-non-hemi','predator-224','predator-301','predator-420','predator-459','predator-670','tillotson-212r','lifan-168f-2','loncin-g200f','duromax-xp7hp','stihl-fs-55','stihl-fs-91','stihl-fs-131','stihl-fs-250','stihl-bg-86','stihl-br-600','stihl-br-700','husqvarna-128ld','husqvarna-525ls','husqvarna-350bt','husqvarna-580bts','echo-srm-225','echo-srm-2620','echo-pb-580','echo-pb-8010','kawasaki-fr691v','kawasaki-fr730v','kawasaki-fx730v','kawasaki-fx850v','kawasaki-fx1000v','kohler-ch270','kohler-ch440','kohler-ch740','kohler-kt745','briggs-vanguard-810','briggs-intek-v-twin','mercury-9-9-2-stroke','mercury-40-2-stroke','mercury-115-2-stroke','mercury-150-black-max','evinrude-9-9-2-stroke','evinrude-40-2-stroke','johnson-70-2-stroke','evinrude-90-v4','evinrude-e-tec-150','yamaha-40-2-stroke','tohatsu-9-8-2-stroke','honda-trx420-rancher','honda-trx520-foreman','yamaha-raptor-700','yamaha-grizzly-700','yamaha-yfz450r','polaris-sportsman-570','can-am-outlander-650','can-am-outlander-1000','suzuki-kingquad-750','kawasaki-brute-force-750','polaris-rzr-xp-1000','can-am-maverick-x3','honda-pioneer-1000','honda-crf300l','honda-crf450l','honda-xr650l','honda-crf450r','honda-africa-twin-crf1100l','yamaha-wr250r','yamaha-yz250','yamaha-tenere-700','kawasaki-klx300','suzuki-v-strom-650','ktm-350-exc-f','ktm-500-exc-f','ktm-300-xc','husqvarna-701-enduro','bmw-r1250gs','honda-eu2200i','honda-eu3000is','yamaha-ef2000is','predator-3500-inverter','westinghouse-igen4500','duromax-xp13000eh','generac-gp6500','simpson-megashot-msh3125','simpson-powershot-ps4240','honda-wb30','suzuki-sv650','yamaha-mt-07','kawasaki-ninja-400','honda-cb500x','kawasaki-z900','ktm-390-duke','royal-enfield-himalayan','honda-xr250r','kawasaki-ninja-650','yamaha-mt-09','yamaha-yzf-r3','honda-cb650r','kawasaki-zx-6r','triumph-street-triple-765','ducati-monster-937','suzuki-gsx-s750','yamaha-yzf-r6','honda-cbr600rr','suzuki-gsx-r750','suzuki-gsx-r1000','yamaha-yzf-r1','bmw-s1000rr','aprilia-rs660','triumph-bonneville-t120','british-seagull-forty-plus','british-seagull-forty-minus','british-seagull-silver-century','british-seagull-qb-kingfisher','victa-power-torque-160','honda-ct110','yamaha-ag200','yamaha-ag100','suzuki-dr200se-trojan','honda-z50','kawasaki-ke100','homelite-xl-12','mcculloch-mac-10-10','stihl-070','stihl-090','briggs-5hp-flathead','british-seagull-forty-featherweight','british-seagull-102','british-seagull-90-110','british-seagull-170','british-seagull-little-forty','british-seagull-century','british-seagull-century-plus','british-seagull-silver-century-plus','british-seagull-125','british-seagull-qb-osprey','british-seagull-qb-curlew','briggs-wm-wmb','kohler-k91','kohler-k161','kohler-k241','kohler-k301','kohler-k662','onan-cck','onan-bf-bfa-bga-nh','tecumseh-hssk50','tecumseh-h50-h70','tecumseh-hmsk80','tecumseh-hm100','tecumseh-ovrm120','tecumseh-lav-series','tecumseh-tvm-series','clinton-700a','clinton-vs100','clinton-vs200','clinton-a400-panther','solo-rex','solo-611-twin','mcculloch-250-super250','mcculloch-superpro60','mcculloch-797-super797','mcculloch-sp125-cp125','dolmar-model-a','sachs-50-series','puch-e50-za50','minarelli-v1','simson-s50-s51','elto-cub','elto-ace','johnson-light-twin','champion-1927','champion-blue-ribbon-2j','briggs-lo206','iame-x30','rotax-max','yamaha-kt100','predator-ghost')
 ORDER BY e.type, e.make, e.model;
