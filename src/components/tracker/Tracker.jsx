@@ -8,7 +8,7 @@ import { atMachineLimit, machineLimit } from '../../lib/gates';
 import { getPref, savePref } from '../../lib/db/preferences';
 import MachineTile from '../machine/MachineTile';
 import MachineCard from '../machine/MachineCard';
-import { SL, Empty } from '../ui/shared';
+import { Empty } from '../ui/shared';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
@@ -198,7 +198,6 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
     return 0;
   }):filtered;
 
-  const totalHrsAll = useMemo(() => machines.reduce((s,m) => s + (m.timeLog||[]).reduce((a,e) => a+(e.seconds||0),0)/3600, 0), [machines]);
 
   const addM=async m=>{
     setSaving(true);
@@ -278,12 +277,20 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           </div>
         </div>
       )}
+      {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
+      {machines.length>1&&<div style={{display:"flex",gap:0,marginBottom:10}}>
+        {[null,"Active","Queued","Complete"].map((s,i,arr)=>{
+          const count=s?searched.filter(m=>(m.status||"Active")===s).length:searched.length;
+          const active=statusFilter===s;
+          const c=s?SCOL[s]:MUT;
+          return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:10,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:i===0?"2px 0 0 2px":i===arr.length-1?"0 2px 2px 0":0,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(active?c+"55":"#252525"),borderRight:i<arr.length-1?"none":undefined,background:active?c+"18":"transparent",color:active?c:c+"66"}}>{s||"All"} {count}</button>;
+        })}
+      </div>}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",rowGap:8,marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",rowGap:6}}>
-          <SL t="Machines" />
+          <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,whiteSpace:"nowrap"}}>Machines</span>
           {sortBy&&<span style={{fontSize:10,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px",whiteSpace:"nowrap"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
           {!isGuest&&(profile?.tier||"free")==="free"&&<span style={{fontSize:10,color:atMachineLimit(machines.length,profile,company)?RED:MUT,letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{machines.length}/{machineLimit(profile,company)}</span>}
-          {totalHrsAll>0&&<span style={{fontSize:10,color:GRN,letterSpacing:"0.06em",whiteSpace:"nowrap"}}>{totalHrsAll.toFixed(1)}h</span>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
           <button style={{...btnG,color:sortBy?ACC:MUT,alignSelf:"stretch"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
@@ -301,15 +308,6 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
             : <button style={{...btnA, minHeight:44, display:"flex", alignItems:"center"}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
       </div>
-      {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
-      {machines.length>1&&<div style={{display:"flex",gap:0,marginBottom:10}}>
-        {[null,"Active","Queued","Complete"].map((s,i,arr)=>{
-          const count=s?searched.filter(m=>(m.status||"Active")===s).length:searched.length;
-          const active=statusFilter===s;
-          const c=s?SCOL[s]:MUT;
-          return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:10,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:i===0?"2px 0 0 2px":i===arr.length-1?"0 2px 2px 0":0,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(active?c+"55":"#252525"),borderRight:i<arr.length-1?"none":undefined,background:active?c+"18":"transparent",color:active?c:c+"66"}}>{s||"All"} {count}</button>;
-        })}
-      </div>}
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
       {tutStep===1&&<GuideStep1 onSkip={skipTut} isGuest={isGuest} onUpgrade={()=>setShowUpgrade(true)}/>}
       {tutStep===0&&machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
