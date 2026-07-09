@@ -14,9 +14,52 @@ import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
 import { getMachineServiceStatus, mIcon } from '../../lib/helpers';
+import { SPEC_SEARCH_FIELDS } from '../../lib/constants/specSearchFields';
+import { tokenizeSearch } from '../../lib/wiki';
+import { hl } from '../wiki/wikiSearchHighlight';
 
 const _ARW = "#e8870a";
 const _M = { fontFamily:"'IBM Plex Mono',monospace" };
+
+// Same matching model as the wiki search: a single plain, case-insensitive
+// substring, checked against name/make/model/type first, then every spec
+// field the old Spec Search tab used to cover (plug gap, bore, carb brand,
+// tyre size, etc.) — so one search box now does both jobs.
+function machineMatchesQuery(m, q) {
+  const lowerQ = q.toLowerCase();
+  if ((m.name||"").toLowerCase().includes(lowerQ)) return true;
+  if ((m.make||"").toLowerCase().includes(lowerQ)) return true;
+  if ((m.model||"").toLowerCase().includes(lowerQ)) return true;
+  if ((m.type||"").toLowerCase().includes(lowerQ)) return true;
+  return SPEC_SEARCH_FIELDS.some(f => {
+    const v = m[f.k];
+    return v != null && v !== "" && v !== false && String(v).toLowerCase().includes(lowerQ);
+  });
+}
+
+const SNIPPET_MAX = 90; // long free-text fields (e.g. notes, port notes) get a trimmed snippet around the match
+
+// Finds the first spec field that explains a match not already obvious
+// from name/make/model/type, so a result row can show WHY it matched —
+// mirrors findSpecMatch() in WikiHomePage.jsx exactly.
+function findMachineSpecMatch(m, q) {
+  if (!q) return null;
+  const lowerQ = q.toLowerCase();
+  for (const f of SPEC_SEARCH_FIELDS) {
+    const raw = m[f.k];
+    if (raw == null || raw === "" || raw === false) continue;
+    const value = String(raw) + (f.u ? " " + f.u : "");
+    const lowerValue = value.toLowerCase();
+    if (!lowerValue.includes(lowerQ)) continue;
+    if (value.length <= SNIPPET_MAX) return { label: f.l, value };
+    const idx = lowerValue.indexOf(lowerQ);
+    const start = Math.max(0, idx - 30);
+    const end = Math.min(value.length, idx + q.length + 50);
+    const snippet = (start > 0 ? "…" : "") + value.slice(start, end) + (end < value.length ? "…" : "");
+    return { label: f.l, value: snippet };
+  }
+  return null;
+}
 
 function GuideStep1({ onSkip, isGuest, onUpgrade }) {
   return (
@@ -52,10 +95,11 @@ function GuideStep2({ onSkip }) {
     </div>
   );
 }
-function MachinePhotoRow({ machine: m, onClick, clientName }) {
+function MachinePhotoRow({ machine: m, onClick, clientName, searchQuery, searchTokens }) {
   const svc = getMachineServiceStatus(m);
   const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
   const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
+  const specMatch = findMachineSpecMatch(m, searchQuery);
   return (
     <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
       <div style={{width:64,height:64,flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid "+BRD,background:"#111",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -65,14 +109,14 @@ function MachinePhotoRow({ machine: m, onClick, clientName }) {
       </div>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:14,fontWeight:700,color:TXT,lineHeight:1.2}}>
-          {m.name}
+          {hl(m.name,searchTokens)}
           {timerRunning&&<span style={{display:"inline-block",width:5,height:5,borderRadius:"50%",background:GRN,boxShadow:"0 0 5px "+GRN,marginLeft:6,verticalAlign:"middle"}}/>}
         </div>
         {[m.make,m.model,m.year].filter(Boolean).length>0&&
           <div style={{fontSize:10,color:MUT,marginTop:2}}>
-            {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
+            {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
           </div>}
-        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{m.type}</div>}
+        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
         <div style={{display:"flex",gap:4,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
           <StatusBadge status={m.status||"Active"}/>
           {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
@@ -92,30 +136,37 @@ function MachinePhotoRow({ machine: m, onClick, clientName }) {
           {clientName&&<span style={{fontSize:9,color:ACC}}>👤 {clientName}</span>}
           {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
         </div>
+        {specMatch&&(
+          <div style={{fontSize:9,color:MUT,marginTop:4,lineHeight:1.4}}>
+            <span style={{color:ACC,textTransform:"uppercase",letterSpacing:"0.06em",fontSize:8}}>{specMatch.label}:</span>{" "}
+            {hl(specMatch.value,searchTokens)}
+          </div>
+        )}
       </div>
       <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:26}}>▶</span>
     </div>
   );
 }
 
-function MachineRow({ machine: m, onClick, clientName }) {
+function MachineRow({ machine: m, onClick, clientName, searchQuery, searchTokens }) {
   const svc = getMachineServiceStatus(m);
   const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
   const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
+  const specMatch = findMachineSpecMatch(m, searchQuery);
   return (
     <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
       <span style={{fontSize:22,flexShrink:0,lineHeight:1,marginTop:3}}>{mIcon(m.type)}</span>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:14,fontWeight:700,color:TXT,lineHeight:1.2}}>
-          {m.name}
+          {hl(m.name,searchTokens)}
           {timerRunning&&<span style={{display:"inline-block",width:5,height:5,borderRadius:"50%",background:GRN,boxShadow:"0 0 5px "+GRN,marginLeft:6,verticalAlign:"middle"}}/>}
         </div>
         {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
           <div style={{fontSize:10,color:MUT,marginTop:2}}>
-            {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
-            {m.source&&<span style={{color:"#444"}}> · {m.source}</span>}
+            {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
+            {m.source&&<span style={{color:"#444"}}> · {hl(m.source,searchTokens)}</span>}
           </div>}
-        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{m.type}</div>}
+        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
         <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap",alignItems:"center"}}>
           <StatusBadge status={m.status||"Active"}/>
           {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
@@ -137,6 +188,12 @@ function MachineRow({ machine: m, onClick, clientName }) {
           {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
           {(m.rage||0)>0&&<span style={{fontSize:9,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}
         </div>
+        {specMatch&&(
+          <div style={{fontSize:9,color:MUT,marginTop:4,lineHeight:1.4}}>
+            <span style={{color:ACC,textTransform:"uppercase",letterSpacing:"0.06em",fontSize:8}}>{specMatch.label}:</span>{" "}
+            {hl(specMatch.value,searchTokens)}
+          </div>
+        )}
       </div>
       <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:4}}>▶</span>
     </div>
@@ -177,9 +234,13 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
     {k:"rage_lo",l:"Rage ☠️ (Lowest)"},
   ];
 
-  const searched=search.trim()
-    ?machines.filter(m=>{const q=search.toLowerCase();return (m.name||"").toLowerCase().includes(q)||(m.make||"").toLowerCase().includes(q)||(m.model||"").toLowerCase().includes(q)||(m.type||"").toLowerCase().includes(q);})
+  const searchQuery=search.trim();
+  const searched=searchQuery
+    ?machines.filter(m=>machineMatchesQuery(m,searchQuery))
     :machines;
+  // Same tokenizer the wiki search uses (a single plain substring), and the
+  // exact same hl() highlight component, so matches render identically.
+  const searchTokens=tokenizeSearch(search);
   const filtered=statusFilter?searched.filter(m=>(m.status||"Active")===statusFilter):searched;
   const sorted=sortBy?[...filtered].sort((a,b)=>{
     if(sortBy==="name_az") return (a.name||"").localeCompare(b.name||"");
@@ -277,7 +338,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           </div>
         </div>
       )}
-      {machines.length>5&&<input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search machines…" value={search} onChange={e=>setSearch(e.target.value)} />}
+      <input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search name, make, model, or any spec (e.g. plug gap, tyre size)…" value={search} onChange={e=>setSearch(e.target.value)} />
       {machines.length>1&&<div style={{display:"flex",gap:0,marginBottom:10}}>
         {[null,"Active","Queued","Complete"].map((s,i,arr)=>{
           const count=s?searched.filter(m=>(m.status||"Active")===s).length:searched.length;
@@ -331,13 +392,13 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       ):view==="compact"?(
         <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
           {sorted.map(m=>(
-            <MachineRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+            <MachineRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
           ))}
         </div>
       ):view==="photo"?(
         <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
           {sorted.map(m=>(
-            <MachinePhotoRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+            <MachinePhotoRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
           ))}
         </div>
       ):sorted.length > 0 && (

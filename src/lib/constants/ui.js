@@ -182,7 +182,6 @@ export const TABS = [
   {id:"reminders", label:"🔔 Remind"},
   {id:"workshop",  label:"🔨 Workshop"},
   {id:"wiki",      label:"📖 Wiki"},
-  {id:"search",    label:"🔍 Search"},
 ];
 
 export const WORKSHOP_TABS = [
