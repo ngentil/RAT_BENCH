@@ -11,6 +11,7 @@ on:
         options:
           - full-cleanup
           - deduplicate
+          - fix-types
           - thin-entries
           - remove-samples
       min_fields:
@@ -51,9 +52,13 @@ jobs:
             full-cleanup)
               node scripts/wiki-import/cleanup-duplicates.mjs $DRY
               node scripts/wiki-import/cleanup-thin-entries.mjs --min=${{ inputs.min_fields || '10' }} $DRY
+              node scripts/wiki-import/reconcile-types.mjs $DRY
               ;;
             deduplicate)
               node scripts/wiki-import/cleanup-duplicates.mjs $DRY
+              ;;
+            fix-types)
+              node scripts/wiki-import/reconcile-types.mjs $DRY
               ;;
             thin-entries)
               node scripts/wiki-import/cleanup-thin-entries.mjs --min=${{ inputs.min_fields || '10' }} $DRY
