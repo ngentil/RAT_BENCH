@@ -13,53 +13,12 @@ import StatusBadge from '../ui/StatusBadge';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
-import { getMachineServiceStatus, mIcon } from '../../lib/helpers';
-import { SPEC_SEARCH_FIELDS } from '../../lib/constants/specSearchFields';
+import { getMachineServiceStatus, mIcon, machineMatchesQuery, findMachineSpecMatch } from '../../lib/helpers';
 import { tokenizeSearch } from '../../lib/wiki';
 import { hl } from '../wiki/wikiSearchHighlight';
 
 const _ARW = "#e8870a";
 const _M = { fontFamily:"'IBM Plex Mono',monospace" };
-
-// Same matching model as the wiki search: a single plain, case-insensitive
-// substring, checked against name/make/model/type first, then every spec
-// field the old Spec Search tab used to cover (plug gap, bore, carb brand,
-// tyre size, etc.) — so one search box now does both jobs.
-function machineMatchesQuery(m, q) {
-  const lowerQ = q.toLowerCase();
-  if ((m.name||"").toLowerCase().includes(lowerQ)) return true;
-  if ((m.make||"").toLowerCase().includes(lowerQ)) return true;
-  if ((m.model||"").toLowerCase().includes(lowerQ)) return true;
-  if ((m.type||"").toLowerCase().includes(lowerQ)) return true;
-  return SPEC_SEARCH_FIELDS.some(f => {
-    const v = m[f.k];
-    return v != null && v !== "" && v !== false && String(v).toLowerCase().includes(lowerQ);
-  });
-}
-
-const SNIPPET_MAX = 90; // long free-text fields (e.g. notes, port notes) get a trimmed snippet around the match
-
-// Finds the first spec field that explains a match not already obvious
-// from name/make/model/type, so a result row can show WHY it matched —
-// mirrors findSpecMatch() in WikiHomePage.jsx exactly.
-function findMachineSpecMatch(m, q) {
-  if (!q) return null;
-  const lowerQ = q.toLowerCase();
-  for (const f of SPEC_SEARCH_FIELDS) {
-    const raw = m[f.k];
-    if (raw == null || raw === "" || raw === false) continue;
-    const value = String(raw) + (f.u ? " " + f.u : "");
-    const lowerValue = value.toLowerCase();
-    if (!lowerValue.includes(lowerQ)) continue;
-    if (value.length <= SNIPPET_MAX) return { label: f.l, value };
-    const idx = lowerValue.indexOf(lowerQ);
-    const start = Math.max(0, idx - 30);
-    const end = Math.min(value.length, idx + q.length + 50);
-    const snippet = (start > 0 ? "…" : "") + value.slice(start, end) + (end < value.length ? "…" : "");
-    return { label: f.l, value: snippet };
-  }
-  return null;
-}
 
 function GuideStep1({ onSkip, isGuest, onUpgrade }) {
   return (
@@ -379,14 +338,14 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto"}}>
           <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
             <button onClick={()=>setTileOpen(null)} style={{...btnA,width:"100%",marginBottom:8,fontSize:12,background:ACC,borderColor:ACC,color:"#000",fontWeight:700}}>✕ Close</button>
-            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse/>
+            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse searchQuery={searchQuery} searchTokens={searchTokens}/>
           </div>
         </div>
       ):null;})()}
       {view==="grid"?(
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
           {sorted.map(m=>(
-            <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null}/>
+            <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
           ))}
         </div>
       ):view==="compact"?(
@@ -408,7 +367,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
               useWindowScroll
               data={sorted}
               itemContent={(_idx, m) => (
-                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
+                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} searchQuery={searchQuery} searchTokens={searchTokens}/>
               )}
             />
           : sorted.map((m,idx)=>(
@@ -421,7 +380,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
                 onDragEnd={onDragEnd}
                 style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
               >
-                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)}/>
+                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} searchQuery={searchQuery} searchTokens={searchTokens}/>
               </div>
             ))
       )}

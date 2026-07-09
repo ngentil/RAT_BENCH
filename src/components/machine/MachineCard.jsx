@@ -5,7 +5,8 @@ import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../
 import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, inp, btnA, btnG, btnD, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, DEFAULT_EXPAND, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
-import { mIcon, fmtDT, getMachineServiceStatus, getStorageStatus } from '../../lib/helpers';
+import { mIcon, fmtDT, getMachineServiceStatus, getStorageStatus, findMachineSpecMatch } from '../../lib/helpers';
+import { hl } from '../wiki/wikiSearchHighlight';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { canUse, effectiveTier } from '../../lib/gates';
 import { getTiers, TIER_NAMES } from '../../lib/storageTiers';
@@ -16,7 +17,7 @@ const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse}){
+function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse,searchQuery,searchTokens}){
   const [open,setOpen]=useState(!!initialOpen);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -239,6 +240,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
 
   const timerRunning = m.jobTimers?.[0]?.status === "running";
   const svcStatus = getMachineServiceStatus(m);
+  const specMatch = findMachineSpecMatch(m, searchQuery);
 
   const _jBase   = {cursor:"pointer",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"9px 14px",borderRadius:2,fontFamily:"'IBM Plex Mono',monospace",border:"none",width:"100%",boxSizing:"border-box",minHeight:44,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center"};
   const _jAct    = {..._jBase,background:ACC,color:"#fff"};
@@ -319,17 +321,17 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:6}}>
                 <div className={timerRunning?"loading-rat":undefined} style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,color:TXT,lineHeight:1.25}}>
-                  {m.name}
+                  {hl(m.name,searchTokens)}
                   {timerRunning&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:GRN,boxShadow:"0 0 6px "+GRN,marginLeft:7,verticalAlign:"middle"}}/>}
                 </div>
                 {!hideCollapse&&<span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:2,userSelect:"none"}}>{open?"▲":"▼"}</span>}
               </div>
               {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
                 <div style={{fontSize:11,color:MUT,marginTop:3,lineHeight:1.4}}>
-                  {[m.make,m.model,m.year].filter(Boolean).join(" · ")}
-                  {m.source&&<span style={{color:"#444"}}> · {m.source}</span>}
+                  {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
+                  {m.source&&<span style={{color:"#444"}}> · {hl(m.source,searchTokens)}</span>}
                 </div>}
-              {m.type&&<div style={{fontSize:9,color:"#555",marginTop:2,letterSpacing:"0.06em",textTransform:"uppercase"}}>{m.type}</div>}
+              {m.type&&<div style={{fontSize:9,color:"#555",marginTop:2,letterSpacing:"0.06em",textTransform:"uppercase"}}>{hl(m.type,searchTokens)}</div>}
             </div>
           </div>
 
@@ -359,6 +361,13 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const dueColor=overdue?"#e87a0a":now.toDateString()===due.toDateString()?"#4a9eff":MUT;return<span style={{fontSize:9,color:dueColor,whiteSpace:"nowrap"}}>{overdue?"⚠ OVERDUE":"DUE "}{!overdue&&due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
               {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const hasHrs=tHrs>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRage)return null;return<>{hasHrs&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRage&&<span style={{fontSize:9,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</>;})()}
             </div>}
+
+          {specMatch&&(
+            <div style={{fontSize:9,color:MUT,marginTop:6,lineHeight:1.4}}>
+              <span style={{color:ACC,textTransform:"uppercase",letterSpacing:"0.06em",fontSize:8}}>{specMatch.label}:</span>{" "}
+              {hl(specMatch.value,searchTokens)}
+            </div>
+          )}
 
         </div>
       </div>
