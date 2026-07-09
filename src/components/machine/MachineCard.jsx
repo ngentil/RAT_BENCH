@@ -357,7 +357,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,flexWrap:"wrap"}}>
               {clientName&&<span style={{fontSize:9,color:ACC,whiteSpace:"nowrap"}}>👤 {clientName}</span>}
               {m.dueDate&&(()=>{const due=new Date(m.dueDate);const now=new Date();const overdue=due<now;const dueColor=overdue?"#e87a0a":now.toDateString()===due.toDateString()?"#4a9eff":MUT;return<span style={{fontSize:9,color:dueColor,whiteSpace:"nowrap"}}>{overdue?"⚠ OVERDUE":"DUE "}{!overdue&&due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
-              {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const rate=company?.hourly_rate||0;const rev=tHrs*rate;const hasHrs=tHrs>0;const hasRev=rate>0&&rev>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRev&&!hasRage)return null;return<>{hasHrs&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRev&&<span style={{fontSize:9,color:ACC,fontFamily:"'IBM Plex Mono',monospace"}}>${rev.toFixed(0)}</span>}{hasRage&&<span style={{fontSize:9,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</>;})()}
+              {(()=>{const tHrs=(m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;const hasHrs=tHrs>0;const hasRage=(m.rage||0)>0;if(!hasHrs&&!hasRage)return null;return<>{hasHrs&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{tHrs.toFixed(1)}h</span>}{hasRage&&<span style={{fontSize:9,color:RED,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}</>;})()}
             </div>}
 
         </div>
