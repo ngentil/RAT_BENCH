@@ -23,9 +23,14 @@
 -- make/model/type/slug-only for them, same as before this change.
 -- At ~1k entries a per-query normalized scan is sub-millisecond; if the wiki
 -- grows large, add a normalized generated column + GIN trgm index.
+--
+-- Also returns each entry's current revision `data` JSONB (spec fields) so
+-- the client can show WHICH field/value actually matched next to a result
+-- (e.g. "Spark Plug: NGK BPMR7A") rather than a bare make/model row that
+-- doesn't explain why it matched — see findSpecMatch() in WikiHomePage.jsx.
 
 CREATE OR REPLACE FUNCTION search_wiki(q text, lim int DEFAULT 50)
-RETURNS TABLE (id uuid, slug text, make text, model text, type text, view_count int)
+RETURNS TABLE (id uuid, slug text, make text, model text, type text, view_count int, data jsonb)
 LANGUAGE plpgsql STABLE
 AS $$
 DECLARE
@@ -33,8 +38,10 @@ DECLARE
 BEGIN
   IF q IS NULL OR btrim(q) = '' THEN
     RETURN QUERY
-      SELECT e.id, e.slug, e.make, e.model, e.type, e.view_count
-      FROM wiki_entries e WHERE NOT e.is_sample
+      SELECT e.id, e.slug, e.make, e.model, e.type, e.view_count, r.data
+      FROM wiki_entries e
+      LEFT JOIN wiki_revisions r ON r.id = e.current_rev_id
+      WHERE NOT e.is_sample
       ORDER BY e.view_count DESC NULLS LAST LIMIT lim;
     RETURN;
   END IF;
@@ -49,15 +56,17 @@ BEGIN
 
   IF pats IS NULL OR array_length(pats, 1) IS NULL THEN
     RETURN QUERY
-      SELECT e.id, e.slug, e.make, e.model, e.type, e.view_count
-      FROM wiki_entries e WHERE NOT e.is_sample
+      SELECT e.id, e.slug, e.make, e.model, e.type, e.view_count, r.data
+      FROM wiki_entries e
+      LEFT JOIN wiki_revisions r ON r.id = e.current_rev_id
+      WHERE NOT e.is_sample
       ORDER BY e.view_count DESC NULLS LAST LIMIT lim;
     RETURN;
   END IF;
 
   -- Stage 1: despaced substring AND match — make/model/type/slug + spec data
   RETURN QUERY
-    SELECT e.id, e.slug, e.make, e.model, e.type, e.view_count
+    SELECT e.id, e.slug, e.make, e.model, e.type, e.view_count, r.data
     FROM wiki_entries e
     LEFT JOIN wiki_revisions r ON r.id = e.current_rev_id
     WHERE NOT e.is_sample
@@ -71,8 +80,9 @@ BEGIN
 
   -- Stage 2: trigram typo fallback
   RETURN QUERY
-    SELECT e.id, e.slug, e.make, e.model, e.type, e.view_count
+    SELECT e.id, e.slug, e.make, e.model, e.type, e.view_count, r.data
     FROM wiki_entries e
+    LEFT JOIN wiki_revisions r ON r.id = e.current_rev_id
     WHERE NOT e.is_sample
       AND greatest(
             word_similarity(lower(q), lower(coalesce(e.make,''))),
