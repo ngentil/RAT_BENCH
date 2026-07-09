@@ -87,7 +87,7 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
     <input
       value={query}
       onChange={e => setQuery(e.target.value)}
-      placeholder="Search by make, model or type…"
+      placeholder="Search by make, model, type, or a spec (e.g. plug code)…"
       style={{ width: "100%", boxSizing: "border-box", background: "#0a0a0a", border: "1px solid " + BRD, color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, padding: "8px 12px", borderRadius: 2, outline: "none", marginBottom: 14 }}
     />
   );
