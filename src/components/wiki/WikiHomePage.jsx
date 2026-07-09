@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
-import { searchWiki, getWikiStats, getRecentWikiEntries, tokenizeSearch } from '../../lib/wiki';
+import { searchWiki, getWikiStats, getRecentWikiEntries, tokenizeSearch, WIKI_FIELD_LABELS } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 import { hl } from './wikiSearchHighlight';
 
@@ -8,6 +8,34 @@ import { hl } from './wikiSearchHighlight';
 // after you click through — sessionStorage covers the embedded (in-app) nav
 // path, where navigation is a state switch rather than a real page load.
 const LAST_QUERY_KEY = 'wikiSearchQuery';
+
+// Already shown elsewhere in the row (make/model/type badge) — skip these
+// when looking for which spec field explains a match.
+const SKIP_SPEC_KEYS = new Set(['make', 'model', 'type']);
+const SNIPPET_MAX = 90; // long free-text fields (e.g. notes) get trimmed to a snippet around the match
+
+// Finds the first spec field whose value contains one of the search tokens,
+// so a result row can show WHY it matched (e.g. "Spark Plug: NGK BPMR7A")
+// instead of a bare make/model that doesn't explain a spec-only match.
+function findSpecMatch(specData, tokens) {
+  if (!specData || !tokens.length) return null;
+  for (const [key, label] of Object.entries(WIKI_FIELD_LABELS)) {
+    if (SKIP_SPEC_KEYS.has(key)) continue;
+    const raw = specData[key];
+    if (raw == null || raw === '' || raw === false) continue;
+    const value = String(raw);
+    const lowerValue = value.toLowerCase();
+    const hitToken = tokens.find(t => lowerValue.includes(t.toLowerCase()));
+    if (!hitToken) continue;
+    if (value.length <= SNIPPET_MAX) return { label, value };
+    const idx = lowerValue.indexOf(hitToken.toLowerCase());
+    const start = Math.max(0, idx - 30);
+    const end = Math.min(value.length, idx + hitToken.length + 50);
+    const snippet = (start > 0 ? '…' : '') + value.slice(start, end) + (end < value.length ? '…' : '');
+    return { label, value: snippet };
+  }
+  return null;
+}
 
 function WikiHomePage({ onSelect, embedded = false, profile }) {
   const [query, setQuery] = useState("");
@@ -63,6 +91,7 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
     const slugMatchOnly = tokens.length > 0
       && !tokens.some(t => [(e.make||''), (e.model||''), (e.type||'')].some(f => f.toLowerCase().includes(t.toLowerCase())))
       && tokens.some(t => (e.slug||'').toLowerCase().includes(t.toLowerCase()));
+    const specMatch = findSpecMatch(e.data, tokens);
     const inner = (
       <div style={{ background: SURF, border: "1px solid " + BRD, borderLeft: "3px solid " + ACC, padding: "12px 16px", borderRadius: 2, cursor: "pointer" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
@@ -74,6 +103,12 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
           {slugMatchOnly && <span style={{ fontSize: 8, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>{hl(e.slug, tokens)}</span>}
           <span style={{ fontSize: 8, color: MUT, marginLeft: "auto" }}>👁 {e.view_count || 0}</span>
         </div>
+        {specMatch && (
+          <div style={{ fontSize: 9, color: MUT, marginTop: 5, lineHeight: 1.4 }}>
+            <span style={{ color: ACC, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 8 }}>{specMatch.label}:</span>{" "}
+            {hl(specMatch.value, tokens)}
+          </div>
+        )}
       </div>
     );
 
