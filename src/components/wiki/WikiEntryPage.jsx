@@ -293,9 +293,9 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
         </div>
 
         {/* Contribution disclaimer */}
-        <div style={{ marginTop: 20, padding: "12px 14px", border: "1px solid " + BRD, borderLeft: "3px solid " + MUT, borderRadius: 2, background: SURF }}>
-          <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Is this information correct?</div>
-          <div style={{ fontSize: 9, color: MUT, lineHeight: 1.6 }}>
+        <div style={{ marginTop: 20, padding: "12px 14px", border: "1px solid " + RED + "55", borderLeft: "3px solid " + RED, borderRadius: 2, background: RED + "14" }}>
+          <div style={{ fontSize: 9, color: RED, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6, fontWeight: 700 }}>Is this information correct?</div>
+          <div style={{ fontSize: 9, color: RED, lineHeight: 1.6 }}>
             To contribute a correction or additional specs, add this machine to your garage using{" "}
             <strong style={{ color: TXT }}>+ Add to Garage</strong>, fill in any missing details, then tap{" "}
             <strong style={{ color: TXT }}>Push to Wiki</strong> on your machine. Your update will appear here with your name attached.
