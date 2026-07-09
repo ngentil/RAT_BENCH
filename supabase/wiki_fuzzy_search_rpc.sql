@@ -28,6 +28,12 @@
 -- the client can show WHICH field/value actually matched next to a result
 -- (e.g. "Spark Plug: NGK BPMR7A") rather than a bare make/model row that
 -- doesn't explain why it matched — see findSpecMatch() in WikiHomePage.jsx.
+--
+-- Postgres won't let CREATE OR REPLACE change a function's return columns
+-- (the `data` column is new here) — DROP first, every time this file adds
+-- or removes an output column, or re-running it errors with 42P13.
+
+DROP FUNCTION IF EXISTS search_wiki(text, int);
 
 CREATE OR REPLACE FUNCTION search_wiki(q text, lim int DEFAULT 50)
 RETURNS TABLE (id uuid, slug text, make text, model text, type text, view_count int, data jsonb)
