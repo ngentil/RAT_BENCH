@@ -33,7 +33,7 @@ BEGIN
   RETURN QUERY
   SELECT
     u.id,
-    u.email,
+    u.email::text,
     p.display_name,
     p.username,
     COALESCE(p.tier, 'free') AS tier,
