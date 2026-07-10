@@ -1228,9 +1228,6 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
       {/* Expanded body */}
       {open && (
         <div className="card-expand" style={{ padding: "0 14px 16px", borderTop: "1px solid #1a1a1a" }}>
-          {onClose && (
-            <button onClick={ev => { ev.stopPropagation(); onClose(); }} style={{ width: "100%", marginTop: 10, padding: "9px 14px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace", background: "transparent", border: "1px solid " + BRD, color: MUT, cursor: "pointer" }}>✕ Close</button>
-          )}
           {jobGuide && (
             <div style={{ background: "#0a0f0a", border: "1px solid #1a2a1a", borderRadius: 2, padding: "10px 12px", margin: "10px 0 8px" }}>
               <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Job Card</div>
@@ -1270,6 +1267,9 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
               </button>
             ))}
           </div>
+          {onClose && (
+            <button onClick={ev => { ev.stopPropagation(); onClose(); }} style={{ width: "100%", marginTop: 8, padding: "9px 14px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace", background: "transparent", border: "1px solid " + BRD, color: MUT, cursor: "pointer" }}>✕ Close</button>
+          )}
           {(m.timeLog?.length >= 5) && (
             <div style={{ marginTop: 10 }}>
               <div style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Rage Factor</div>
