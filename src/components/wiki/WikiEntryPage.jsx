@@ -146,13 +146,6 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
   // Search tab, using the wiki's own plain-substring highlight.
   const searchTokens = tokenizeSearch(getIncomingSearchQuery(embedded));
 
-  // Last revision metadata
-  const rev = entry.currentRevision;
-  const lastEditor = rev?.username;
-  const lastEditDate = rev?.created_at
-    ? new Date(rev.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-    : null;
-
   return (
     <div style={embedded ? {} : { minHeight: "100vh", background: BG, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>
       {!embedded && (
@@ -210,16 +203,6 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
             )}
           </div>
         </div>
-
-        {/* Last updated attribution */}
-        {lastEditor && lastEditDate && (
-          <div style={{ fontSize: 8, color: MUT, marginBottom: 14, letterSpacing: "0.06em" }}>
-            Last updated by <span style={{ color: TXT }}>{lastEditor}</span> · {lastEditDate}
-            {rev?.edit_summary && rev.edit_summary !== 'Updated specs' && (
-              <span style={{ opacity: 0.7 }}> · {rev.edit_summary}</span>
-            )}
-          </div>
-        )}
 
         {/* Social proof — distinct mechanics who've contributed */}
         {contributors > 0 && (
