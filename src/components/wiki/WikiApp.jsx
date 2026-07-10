@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import WikiHomePage from './WikiHomePage';
 import WikiEntryPage from './WikiEntryPage';
 import WikiHistoryPage from './WikiHistoryPage';
+import WikiLeaderboard from './WikiLeaderboard';
 
 // Standalone router for wiki.ratbench.net
 function WikiApp() {
@@ -24,6 +25,7 @@ function WikiApp() {
     });
   }, []);
 
+  if (slug === "leaderboard") return <WikiLeaderboard />;
   if (slug && sub === "history") return <WikiHistoryPage slug={slug} session={session} profile={profile} />;
   if (slug) return <WikiEntryPage slug={slug} session={session} profile={profile} />;
   return <WikiHomePage />;

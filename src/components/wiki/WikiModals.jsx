@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { BG, SURF, BRD, TXT, MUT, ACC, GRN, RED, inp, btnA, btnG, col, sm, ovly, mdl, mdlH, mdlB } from '../../lib/styles';
-import { makeSlug, getWikiEntryBySlug, getWikiRevisions, deleteWikiEntry, deleteWikiRevision, saveWikiRevision, prepareWikiPublish } from '../../lib/wiki';
+import { makeSlug, getWikiEntryBySlug, getWikiRevisions, deleteWikiEntry, deleteWikiRevision, saveWikiRevision, prepareWikiPublish, awardWikiPushPoints, awardWikiEditPoints } from '../../lib/wiki';
 
 export function WikiTrackerModal({machine,profile,onClose}){
   const [tab,setTab]=React.useState("publish");
@@ -141,9 +141,11 @@ export function PublishWikiModal({machine,profile,onClose,onPublished,inline}){
         if(error)throw error;
         await saveWikiRevision(entry.id,result.specData,summary||"Initial publish",profile);
         await supabase.from("wiki_contributions").insert({entry_id:entry.id,machine_id:machine.id,user_id:profile.id});
+        awardWikiPushPoints(entry.id);
       } else {
-        await saveWikiRevision(result.entry.id,{...result.currentRevision?.data,...finalData},summary,profile);
+        const rev=await saveWikiRevision(result.entry.id,{...result.currentRevision?.data,...finalData},summary,profile);
         await supabase.from("wiki_contributions").insert({entry_id:result.entry.id,machine_id:machine.id,user_id:profile.id});
+        awardWikiEditPoints(rev.id);
       }
       setPublishedSlug(result.slug);
       setStep("done");

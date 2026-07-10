@@ -5,7 +5,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } fr
 
 const TIER_COLOR  = { free: MUT, enthusiast: '#e8670a', business: '#e8c20a' };
 const ALL_TIERS   = ['free', 'enthusiast', 'business'];
-const ADMIN_TABS  = ['Overview', 'Users', 'Grants', 'Flags', 'Announcements', 'Audit'];
+const ADMIN_TABS  = ['Overview', 'Users', 'Grants', 'Flags', 'Wiki Reports', 'Announcements', 'Audit'];
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
 const lbl  = { fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 };
@@ -461,6 +461,66 @@ function FlagsTab() {
   );
 }
 
+// ─── Wiki Reports ─────────────────────────────────────────────────────────────
+// Photos auto-hidden after 3 community reports (report_wiki_photo RPC). Each
+// resolution pays every reporter on that photo: +1 if they were right
+// (removed), -1 if they weren't (cleared) — see resolve_wiki_photo_report.
+
+function WikiReportsTab() {
+  const [photos, setPhotos] = useState([]);
+  const [reports, setReports] = useState({}); // photo_id -> unresolved report rows
+  const [busy, setBusy] = useState(null);
+  const [msg, setMsg] = useState(null);
+
+  const load = async () => {
+    const { data: hidden } = await supabase.from('wiki_entry_photos').select('*').eq('status', 'hidden').order('created_at');
+    setPhotos(hidden || []);
+    if (hidden?.length) {
+      const { data: reps } = await supabase.from('wiki_photo_reports').select('*')
+        .in('photo_id', hidden.map(p => p.id)).eq('resolved', false);
+      const byPhoto = {};
+      (reps || []).forEach(r => { (byPhoto[r.photo_id] ||= []).push(r); });
+      setReports(byPhoto);
+    } else {
+      setReports({});
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const resolve = async (photoId, outcome) => {
+    setBusy(photoId); setMsg(null);
+    const { error } = await supabase.rpc('resolve_wiki_photo_report', { p_photo_id: photoId, p_outcome: outcome });
+    setBusy(null);
+    if (error) { setMsg({ ok: false, text: error.message }); return; }
+    setMsg({ ok: true, text: outcome === 'removed' ? 'Photo removed — reporters credited +1 each.' : 'Photo cleared — reporters penalized -1 each.' });
+    load();
+  };
+
+  return (
+    <div>
+      <Msg m={msg} />
+      {photos.length === 0 && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No flagged photos.</div>}
+      {photos.map(p => {
+        const reps = reports[p.id] || [];
+        return (
+          <div key={p.id} style={{ ...card, marginBottom: 10, display: 'flex', gap: 12 }}>
+            <img src={p.url} alt="" style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 2, border: '1px solid ' + BRD, flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 9, color: MUT, marginBottom: 4 }}>{reps.length} report{reps.length !== 1 ? 's' : ''}</div>
+              <div style={{ fontSize: 9, color: TXT, marginBottom: 8 }}>{reps.map(r => r.reason.replace(/_/g, ' ')).join(', ') || '—'}</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button onClick={() => resolve(p.id, 'removed')} disabled={busy === p.id} style={{ ...btnD, fontSize: 9, opacity: busy === p.id ? 0.5 : 1 }}>Remove Photo</button>
+                <button onClick={() => resolve(p.id, 'cleared')} disabled={busy === p.id} style={{ ...btnG, ...sm, fontSize: 9, opacity: busy === p.id ? 0.5 : 1 }}>Clear (False Report)</button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Announcements ───────────────────────────────────────────────────────────
 
 const EMPTY_ANN = { message: '', tier_filter: 'all', expires_at: '', link_url: '', link_label: '' };
@@ -611,6 +671,7 @@ export default function AdminPanel() {
       {tab === 'Users'         && <UsersTab />}
       {tab === 'Grants'        && <GrantsTab />}
       {tab === 'Flags'         && <FlagsTab />}
+      {tab === 'Wiki Reports'  && <WikiReportsTab />}
       {tab === 'Announcements' && <AnnouncementsTab />}
       {tab === 'Audit'         && <AuditTab />}
     </div>

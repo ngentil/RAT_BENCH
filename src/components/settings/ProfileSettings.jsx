@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 import { updateProfile } from '../../lib/db';
-import { getMyContributionStats } from '../../lib/wiki';
+import { getMyContributionStats, getMyWikiPoints, setWikiLeaderboardOptIn } from '../../lib/wiki';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
 import { Tooltip } from '../ui/shared';
 const TIER_LABEL = { enthusiast:"Enthusiast", team:"Team", business:"Business" };
@@ -29,13 +29,29 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
   const [applyBusy,setApplyBusy]=useState(false);
   const [applyMsg,setApplyMsg]=useState(null);
   const [contrib,setContrib]=useState(null);
+  const [wikiPoints,setWikiPoints]=useState(0);
+  const [leaderboardOptIn,setLeaderboardOptIn]=useState(!!profile?.wiki_leaderboard_opt_in);
+  const [optInSaving,setOptInSaving]=useState(false);
 
   useEffect(()=>{
     if(isGuest||!session?.user?.id) return;
     let alive=true;
     getMyContributionStats(session.user.id).then(s=>{ if(alive) setContrib(s); });
+    getMyWikiPoints().then(p=>{ if(alive) setWikiPoints(p); });
     return ()=>{alive=false;};
   },[isGuest,session?.user?.id]);
+
+  const toggleLeaderboardOptIn = async () => {
+    const next = !leaderboardOptIn;
+    setLeaderboardOptIn(next); setOptInSaving(true);
+    try {
+      await setWikiLeaderboardOptIn(profile.id, next);
+      setProfile(p=>({...p, wiki_leaderboard_opt_in: next}));
+    } catch (e) {
+      setLeaderboardOptIn(!next); // revert on failure
+    }
+    setOptInSaving(false);
+  };
 
   const pendingValid = profile?.pending_code && profile?.pending_code_expires_at
     && new Date(profile.pending_code_expires_at) > new Date();
@@ -124,7 +140,7 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
         {err&&<div style={{fontSize:10,color:RED,marginBottom:10}}>{err}</div>}
         {saved&&<div style={{fontSize:10,color:GRN,marginBottom:10}}>✓ Saved</div>}
         <button onClick={saveProfile} disabled={saving} style={{...btnA,...sm,opacity:saving?0.6:1}}>{saving?"Saving…":"Save Profile"}</button>
-        {contrib&&(contrib.entries>0||contrib.edits>0)&&(
+        {contrib&&(contrib.entries>0||contrib.edits>0||wikiPoints!==0)&&(
           <div style={{marginTop:14,paddingTop:14,borderTop:"1px solid "+BRD}}>
             <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Wiki Contributions</div>
             <div style={{display:"flex",gap:10}}>
@@ -136,8 +152,16 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
                 <div style={{fontSize:18,fontWeight:700,color:ACC}}>{contrib.edits}</div>
                 <div style={{fontSize:8,color:MUT,textTransform:"uppercase",letterSpacing:"0.08em"}}>spec edit{contrib.edits!==1?"s":""}</div>
               </div>
+              <div style={{flex:1,background:GRN+"0d",border:"1px solid "+GRN+"33",borderRadius:2,padding:"10px 12px"}}>
+                <div style={{fontSize:18,fontWeight:700,color:GRN}}>{wikiPoints}</div>
+                <div style={{fontSize:8,color:MUT,textTransform:"uppercase",letterSpacing:"0.08em"}}>point{wikiPoints!==1?"s":""}</div>
+              </div>
             </div>
             <div style={{fontSize:8,color:MUT,marginTop:8,lineHeight:1.6}}>Thanks for helping build the community reference. 🔧</div>
+            <label style={{display:"flex",alignItems:"center",gap:8,marginTop:12,cursor:"pointer",opacity:optInSaving?0.6:1}}>
+              <input type="checkbox" checked={leaderboardOptIn} onChange={toggleLeaderboardOptIn} disabled={optInSaving} />
+              <span style={{fontSize:9,color:MUT}}>Show me on the public wiki leaderboard</span>
+            </label>
           </div>
         )}
       </div>

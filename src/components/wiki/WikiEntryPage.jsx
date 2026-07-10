@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
-import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch } from '../../lib/wiki';
+import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
 import { hl } from './wikiSearchHighlight';
 
@@ -36,6 +36,12 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
   const [notFound, setNotFound] = useState(false);
   const [contributors, setContributors] = useState(0);
 
+  // Photos
+  const [photos, setPhotos] = useState([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [reportMenuFor, setReportMenuFor] = useState(null);
+  const [reportMsg, setReportMsg] = useState(null);
+
   // Admin field editing
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -58,6 +64,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
         setRevData(e.currentRevision?.data || {});
         incrementViewCount(e.id);
         getEntryContributorCount(e.id).then(n => { if (alive) setContributors(n); });
+        getWikiEntryPhotos(e.id).then(p => { if (alive) setPhotos(p); });
         if (!embedded) document.title = `${e.make} ${e.model} — Rat Bench Wiki`;
       }
       setLoading(false);
@@ -77,11 +84,39 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
     setSaving(true); setSaveErr("");
     try {
       const oldValue = revData[editingField] ?? entry?.[editingField] ?? "";
-      await saveWikiFieldEdit(entry.id, revData, editingField, oldValue, editValue, profile);
+      const rev = await saveWikiFieldEdit(entry.id, revData, editingField, oldValue, editValue, profile);
       setRevData(d => ({ ...d, [editingField]: editValue }));
       setEditingField(null);
+      awardWikiEditPoints(rev.id);
     } catch (e) { setSaveErr(e.message); }
     setSaving(false);
+  };
+
+  // ── Photos ─────────────────────────────────────────────────────────────────
+  const handlePhotoUpload = async (ev) => {
+    const file = ev.target.files?.[0];
+    ev.target.value = ""; // allow re-selecting the same file next time
+    if (!file || !profile) return;
+    setUploadingPhoto(true);
+    try {
+      const photo = await uploadWikiPhoto(entry.id, file, profile.id);
+      setPhotos(p => [photo, ...p]);
+    } catch (e) {
+      alert('Upload failed: ' + e.message);
+    }
+    setUploadingPhoto(false);
+  };
+
+  const submitPhotoReport = async (photoId, reason) => {
+    setReportMenuFor(null);
+    try {
+      const res = await reportWikiPhoto(photoId, reason);
+      if (res.hidden) setPhotos(p => p.filter(ph => ph.id !== photoId));
+      setReportMsg('Reported — thanks for keeping the wiki accurate.');
+      setTimeout(() => setReportMsg(null), 3000);
+    } catch (e) {
+      alert('Report failed: ' + e.message);
+    }
   };
 
   // ── Import to garage ───────────────────────────────────────────────────────
@@ -93,7 +128,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
     "photos","iPPhotos","ePPhotos","jobPhotos",
     "parts","timeLog","jobTimers","dueDate",
     "lastServiceDate","lastServiceOdo","lastServiceNotes",
-    "status","source","rage","notes",
+    "status","source","rage","notes","name",
     "submittedToWiki","wikiMachineId","tileFields","tileColors","expandFields",
   ];
   const doImport = async () => {
@@ -106,6 +141,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
         specOnly.carbSpec = carbRest;
       }
       await upsertMachine({
+        name: [entry.make, entry.model].filter(Boolean).join(" ") || entry.type || "Imported Machine",
         make: entry.make,
         model: entry.model,
         type: typeof entry.type === "string" ? entry.type : "",
@@ -210,6 +246,61 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
             ✓ Specs confirmed by {contributors} mechanic{contributors !== 1 ? "s" : ""}
           </div>
         )}
+
+        {/* Photos */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ fontSize: 9, color: ACC, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>
+              Photos{photos.length > 0 && ` (${photos.length})`}
+            </div>
+            {profile && (
+              <label style={{ ...btnG, ...sm, fontSize: 9, cursor: uploadingPhoto ? "default" : "pointer", opacity: uploadingPhoto ? 0.6 : 1 }}>
+                {uploadingPhoto ? "Uploading…" : "+ Add Photo"}
+                <input type="file" accept="image/*" style={{ display: "none" }} disabled={uploadingPhoto} onChange={handlePhotoUpload} />
+              </label>
+            )}
+          </div>
+
+          {photos.length === 0 ? (
+            <div style={{ fontSize: 9, color: MUT, fontStyle: "italic" }}>No photos yet{profile ? " — be the first to add one." : "."}</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 8 }}>
+              {photos.map(p => (
+                <div key={p.id} style={{ position: "relative" }}>
+                  <img src={p.url} alt="" style={{ width: "100%", height: 84, objectFit: "cover", borderRadius: 2, border: "1px solid " + BRD, display: "block" }} />
+                  {profile && p.uploaded_by !== profile.id && (
+                    <button
+                      onClick={() => setReportMenuFor(reportMenuFor === p.id ? null : p.id)}
+                      title="Report this photo"
+                      style={{ position: "absolute", top: 3, right: 3, background: "#000000aa", border: "none", color: TXT, fontSize: 10, borderRadius: 2, padding: "2px 5px", cursor: "pointer", lineHeight: 1 }}
+                    >⚑</button>
+                  )}
+                  {reportMenuFor === p.id && (
+                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, zIndex: 20, background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: 6, minWidth: 140, boxShadow: "0 4px 12px #0009" }}>
+                      {[
+                        ["ai_generated", "AI-generated"],
+                        ["wrong_machine", "Wrong machine"],
+                        ["inappropriate", "Inappropriate"],
+                        ["duplicate", "Duplicate"],
+                      ].map(([val, label]) => (
+                        <button key={val} onClick={() => submitPhotoReport(p.id, val)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: TXT, fontSize: 9, padding: "5px 6px", cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace" }}>{label}</button>
+                      ))}
+                      <button onClick={() => setReportMenuFor(null)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: MUT, fontSize: 9, padding: "5px 6px", cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace" }}>Cancel</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {reportMsg && <div style={{ fontSize: 9, color: ACC, marginTop: 6 }}>{reportMsg}</div>}
+
+          {profile && (
+            <div style={{ fontSize: 8, color: MUT, marginTop: 6, lineHeight: 1.5, opacity: 0.8 }}>
+              Real photos only, of the actual machine you're working on — AI-generated or stock images get removed and cost the uploader points.
+            </div>
+          )}
+        </div>
 
         {fields.length === 0 && (
           <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>
