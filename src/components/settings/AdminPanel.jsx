@@ -168,11 +168,13 @@ function UsersTab() {
   const [loading, setLoading]   = useState(false);
   const [busy,   setBusy]       = useState(null);
   const [msg,    setMsg]        = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   const load = useCallback(async (q = '') => {
     setLoading(true);
-    const { data } = await supabase.rpc('admin_list_users', { p_search: q, p_limit: 50, p_offset: 0 });
+    const { data, error } = await supabase.rpc('admin_list_users', { p_search: q, p_limit: 50, p_offset: 0 });
     setUsers(data || []);
+    setLoadError(error ? error.message : null);
     setLoading(false);
   }, []);
 
@@ -230,6 +232,7 @@ function UsersTab() {
         <button onClick={() => { setSearch(''); load(''); }} style={{ ...btnG, ...sm }}>All</button>
       </div>
       <Msg m={msg} />
+      <Msg m={loadError ? { ok: false, text: loadError } : null} />
       {loading && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 20 }}>Loading…</div>}
       {users.map(u => (
         <div key={u.id} style={{ ...card, marginBottom: 8 }}>
@@ -271,7 +274,7 @@ function UsersTab() {
           </div>
         </div>
       ))}
-      {!loading && users.length === 0 && (
+      {!loading && !loadError && users.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No users found.</div>
       )}
     </div>
