@@ -376,7 +376,8 @@ Stripe
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | 🔨 Workshop parent tab (nested sub-tab bar) | ✅ | App.jsx, WORKSHOP_TABS constant | Free |
-| Workshop sub-tabs: Parts, Clients, Tools, Vehicles, Equipment, Consumables, Revenue | ✅ | WORKSHOP_TABS, App.jsx content panels | Free / Ent+ |
+| Workshop sub-tabs: Remind, Parts, Clients, Tools, Vehicles, Equipment, Consumables, Revenue | ✅ | WORKSHOP_TABS, App.jsx content panels | Free / Ent+ |
+| ~~Standalone 🔔 Remind top-level tab~~ | ❌ moved | Folded into Workshop as its first sub-tab (was its own entry in TABS, cluttering the main nav for what's really a workshop-scoped view). The overdue/due-soon count badge moved from the top-level tab bar onto the Remind sub-tab, and the top-level 🔨 Workshop tab itself now also carries that badge so the at-a-glance signal isn't lost by nesting one level deeper. Old saved `profile.preferences.tab==="reminders"` values are migrated on load straight to Workshop → Remind rather than being silently dropped | Free |
 | Per-subtab upgrade banner (shows only when at item limit) | ✅ | VehiclesTab / EquipmentTab / ToolsTab / StockItemTab — each shows banner only when atLimit/atAssetLimit; global Workshop tab banner removed from App.jsx | Free |
 | Revenue sub-tab gated behind Enthusiast+ | ✅ | WORKSHOP_TABS enthusiastOnly flag | Enthusiast+ |
 | Per-user Workshop tab visibility preferences | ✅ | profiles.tab_order.workshop_visible (Supabase), TabOrderSettings.jsx checkboxes | Free |
