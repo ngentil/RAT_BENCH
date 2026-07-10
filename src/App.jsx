@@ -205,9 +205,12 @@ function App(){
     if(!prefsSynced&&!prefsSyncStartedRef.current){
       prefsSyncStartedRef.current=true;
       const prefs=profile.preferences||{};
-      const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue"]);
+      const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue","reminders"]);
       if(prefs.tab&&prefs.tab!=="users"){
-        if(WS_IDS.has(prefs.tab)){setTab("workshop");if(prefs.workshopTab)setWorkshopTab(prefs.workshopTab);}
+        // Reminders used to be its own top-level tab — route old saved prefs
+        // straight to its new home instead of the last-used workshop sub-tab.
+        if(prefs.tab==="reminders"){setTab("workshop");setWorkshopTab("reminders");}
+        else if(WS_IDS.has(prefs.tab)){setTab("workshop");if(prefs.workshopTab)setWorkshopTab(prefs.workshopTab);}
         else setTab(prefs.tab);
       } else if(prefs.workshopTab){
         setWorkshopTab(prefs.workshopTab);
@@ -411,8 +414,8 @@ function App(){
         {mainTabsToShow.map(t=>{
           const active=tab===t.id;
           const badge=
-            t.id==="reminders"&&overdueCount>0?{n:overdueCount,c:RED}:
-            t.id==="reminders"&&dueSoonCount>0?{n:dueSoonCount,c:"#e8870a"}:
+            t.id==="workshop"&&overdueCount>0?{n:overdueCount,c:RED}:
+            t.id==="workshop"&&dueSoonCount>0?{n:dueSoonCount,c:"#e8870a"}:
             t.id==="jobs"&&timerRunning?{n:"▶",c:GRN}:
             null;
           return (
@@ -425,18 +428,26 @@ function App(){
       </div>
       {tab==="workshop"&&(
         <div style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
-          {visibleWorkshopTabs.map(t=>(
-            <button key={t.id} onClick={()=>setWorkshopTab(t.id)} style={{flexShrink:0,padding:"8px 12px",fontSize:10,fontWeight:workshopTab===t.id?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:workshopTab===t.id?ACC:MUT,cursor:"pointer",border:"none",background:workshopTab===t.id?ACC+"1a":"none",borderBottom:workshopTab===t.id?"3px solid "+ACC:"3px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap"}}>
+          {visibleWorkshopTabs.map(t=>{
+            const active=workshopTab===t.id;
+            const badge=
+              t.id==="reminders"&&overdueCount>0?{n:overdueCount,c:RED}:
+              t.id==="reminders"&&dueSoonCount>0?{n:dueSoonCount,c:"#e8870a"}:
+              null;
+            return (
+            <button key={t.id} onClick={()=>setWorkshopTab(t.id)} style={{flexShrink:0,padding:"8px 12px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?ACC+"1a":"none",borderBottom:active?"3px solid "+ACC:"3px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
               {t.label}
+              {badge&&<span style={{position:"absolute",top:2,right:2,fontSize:9,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
             </button>
-          ))}
+            );
+          })}
         </div>
       )}
 
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
