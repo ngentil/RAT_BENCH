@@ -261,7 +261,11 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       {(()=>{
         const Comp = view==="grid"?MachineTile:view==="compact"?MachineRow:MachinePhotoRow;
         const wrapStyle = view==="grid"
-          ?{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}
+          // alignItems:"start" stops a tile with a long wrapped name from
+          // stretching its whole grid row — without it every tile in that
+          // row grows to match the tallest one, leaving dead space under
+          // shorter tiles instead of each one just hugging its own content.
+          ?{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8,alignItems:"start"}
           :{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"};
         return (
           <div style={wrapStyle}>
