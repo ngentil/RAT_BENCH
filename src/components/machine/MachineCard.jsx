@@ -17,7 +17,7 @@ const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse,searchQuery,searchTokens}){
+function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse,onClose,searchQuery,searchTokens}){
   const [open,setOpen]=useState(!!initialOpen);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -80,8 +80,11 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
 
   // Android back button collapses this card when it's open.
   // Pushing { cardOpen: id } means: back closes photo first (if open), then collapses card.
+  // Skipped entirely when hideCollapse — that mode is the Tracker's full-screen
+  // tile overlay, which owns back-button handling itself (closeTile) so one
+  // press exits to the tracker instead of just collapsing the card underneath.
   useEffect(()=>{
-    if(!open) return;
+    if(!open||hideCollapse) return;
     history.pushState({ cardOpen: m.id }, '');
     const onPop = e => {
       // If we landed on our own state somehow, ignore. Otherwise we were just popped.
@@ -298,11 +301,12 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
 
       {/* ── Collapsed card — poster style ── */}
       <div onClick={()=>{
+        if(hideCollapse) return;
         // Closing via tap must pop the {cardOpen} history entry we pushed on
         // open (mirrors PhotoViewer) or stale entries pile up on the stack.
         if(open&&history.state?.cardOpen===m.id){setOpen(false);history.back();}
         else setOpen(o=>!o);
-      }} style={{cursor:"pointer",userSelect:"none"}}>
+      }} style={{cursor:hideCollapse?"default":"pointer",userSelect:"none"}}>
 
         {/* Hero photo / icon placeholder */}
         {m.photos?.[0]
@@ -583,6 +587,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
+            {onClose&&<button style={{..._jAct,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();onClose();}}>✕ Close</button>}
             <button style={{..._jDel,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();setConfirmDelete(true);}}>Delete</button>
           </div>
           {showGuide&&(
