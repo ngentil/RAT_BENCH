@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS wiki_revision_verifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_wiki_rev_verif_revision ON wiki_revision_verifications(revision_id);
+CREATE INDEX IF NOT EXISTS idx_wiki_rev_verif_verifier ON wiki_revision_verifications(verifier_id);
 
 ALTER TABLE wiki_revision_verifications ENABLE ROW LEVEL SECURITY;
 
@@ -29,7 +30,7 @@ CREATE POLICY wiki_rev_verif_select ON wiki_revision_verifications
   USING (
     EXISTS (
       SELECT 1 FROM wiki_revisions r
-      WHERE r.id = revision_id AND _wiki_entry_visible(r.entry_id, auth.uid())
+      WHERE r.id = revision_id AND _wiki_entry_visible(r.entry_id, (select auth.uid()))
     )
   );
 
@@ -41,6 +42,7 @@ GRANT EXECUTE ON FUNCTION _wiki_entry_visible(uuid, uuid) TO anon; -- idempotent
 CREATE OR REPLACE FUNCTION submit_wiki_verification(p_revision_id uuid, p_vote text)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_rev      wiki_revisions%ROWTYPE;

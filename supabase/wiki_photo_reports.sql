@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS wiki_photo_reports (
 );
 
 CREATE INDEX IF NOT EXISTS idx_wiki_photo_reports_photo ON wiki_photo_reports(photo_id);
+CREATE INDEX IF NOT EXISTS idx_wiki_photo_reports_reporter ON wiki_photo_reports(reporter_id);
 
 ALTER TABLE wiki_photo_reports ENABLE ROW LEVEL SECURITY;
 
@@ -28,7 +29,7 @@ DROP POLICY IF EXISTS wiki_photo_reports_select ON wiki_photo_reports;
 
 CREATE POLICY wiki_photo_reports_select ON wiki_photo_reports
   FOR SELECT TO authenticated
-  USING (reporter_id = auth.uid() OR is_admin_user());
+  USING (reporter_id = (select auth.uid()) OR (select is_admin_user()));
 
 GRANT SELECT ON wiki_photo_reports TO authenticated;
 -- No direct INSERT/UPDATE grant — reporting and resolution both go through
@@ -37,6 +38,7 @@ GRANT SELECT ON wiki_photo_reports TO authenticated;
 CREATE OR REPLACE FUNCTION report_wiki_photo(p_photo_id uuid, p_reason text)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_photo wiki_entry_photos%ROWTYPE;
@@ -79,6 +81,7 @@ GRANT EXECUTE ON FUNCTION report_wiki_photo(uuid, text) TO authenticated;
 CREATE OR REPLACE FUNCTION resolve_wiki_photo_report(p_photo_id uuid, p_outcome text)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_photo wiki_entry_photos%ROWTYPE;

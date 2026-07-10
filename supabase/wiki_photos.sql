@@ -30,23 +30,26 @@ DROP POLICY IF EXISTS wiki_entry_photos_delete ON wiki_entry_photos;
 -- SELECT: live photos are public (same read model as specs). Hidden/removed
 -- photos stay visible only to their uploader (so they can see it's under
 -- review) or an admin — strangers shouldn't see a photo mid-moderation.
+-- auth.uid()/is_admin_user() calls wrapped in (select ...) so Postgres
+-- evaluates them once per statement instead of once per row (Supabase's
+-- perf advisor: "auth_rls_initplan") — no behavior change, just faster.
 CREATE POLICY wiki_entry_photos_select ON wiki_entry_photos
   FOR SELECT
   USING (
     status = 'live'
-    OR uploaded_by = auth.uid()
-    OR is_admin_user()
+    OR uploaded_by = (select auth.uid())
+    OR (select is_admin_user())
   );
 
 -- INSERT: any authenticated user, only attributing the upload to themselves.
 CREATE POLICY wiki_entry_photos_insert ON wiki_entry_photos
   FOR INSERT TO authenticated
-  WITH CHECK (uploaded_by = auth.uid());
+  WITH CHECK (uploaded_by = (select auth.uid()));
 
 -- DELETE: uploader can remove their own photo; admin can remove any.
 CREATE POLICY wiki_entry_photos_delete ON wiki_entry_photos
   FOR DELETE TO authenticated
-  USING (uploaded_by = auth.uid() OR is_admin_user());
+  USING (uploaded_by = (select auth.uid()) OR (select is_admin_user()));
 
 GRANT SELECT, INSERT, DELETE ON wiki_entry_photos TO authenticated;
 GRANT SELECT ON wiki_entry_photos TO anon;
