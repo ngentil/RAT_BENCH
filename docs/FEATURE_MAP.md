@@ -388,7 +388,27 @@ All new SQL (wiki_photos.sql, wiki_points.sql, wiki_verification.sql, wiki_photo
 
 ---
 
-## 12. Navigation & UX
+## 13. Marketplace
+
+| Feature | Status | Depends on | Tier |
+|---------|--------|-----------|------|
+| marketplace_listings table + RLS | ✅ | profiles/machines — run supabase/marketplace_listings.sql; a listing SNAPSHOTS the seller's machine data (make/model/type/year/photos) at listing time rather than live-referencing it, mirroring the wiki's publish-snapshot pattern, so a listing survives the underlying Tracker machine being edited or deleted later; machine_id kept as a nullable ON DELETE SET NULL provenance pointer only, never read for display; SELECT: active listings public, own listings (any status) visible to the seller; INSERT/UPDATE/DELETE restricted to seller_id = auth.uid() | Free |
+| marketplace_threads + marketplace_messages tables + RLS | ✅ | marketplace_listings, profiles — run supabase/marketplace_messaging.sql; deliberately modeled as fixed 1:1 buyer↔seller threads per listing (UNIQUE(listing_id, buyer_id)), not a generic N-party participant model — matches how every real marketplace (eBay, Facebook Marketplace, Gumtree) actually works; messages readable/writable only by the thread's two parties; read receipts use a column-level GRANT (REVOKE UPDATE, GRANT UPDATE (read_at) only) so a recipient can mark a message read but can never edit its body, and the RLS USING clause blocks a sender from marking their own message read | Free |
+| get_or_create_marketplace_thread() RPC | ✅ | marketplace_messaging.sql — SECURITY DEFINER, idempotent (ON CONFLICT DO NOTHING + re-select dedups concurrent calls to the same thread); blocks a seller from messaging their own listing; blocks starting a NEW thread on a no-longer-active listing while leaving existing threads on that listing still accessible (so an in-progress sale conversation isn't cut off, only new buyer contact is) | Free |
+| get_my_marketplace_unread_count() RPC | ✅ | marketplace_messaging.sql — SECURITY DEFINER STABLE; counts unread messages across all of the caller's threads where they're not the sender; powers the Messages nav badge | Free |
+| Marketplace tab: Browse listings | ✅ | MarketplaceTab.jsx, MarketplaceBrowse.jsx, ListingTile.jsx + getActiveListings() in lib/marketplace.js — grid of active listings (2-col, alignItems:"start" so uneven tile heights don't stretch neighbors, same fix as the Tracker grid), title search, sold/removed listings show a status overlay when reached directly (e.g. via a stale link) | Free |
+| Marketplace tab: Sell a machine | ✅ | SellForm.jsx + createListing() — pick any machine from your own Tracker (reuses MachineTile for the picker grid), fill title/price/location/description, publishes a listing snapshotting that machine's make/model/type/year/photos | Free |
+| Marketplace tab: My Listings (manage) | ✅ | MyListings.jsx + getMyListings()/markListingSold()/relistListing()/removeListing() — seller can mark a listing sold, relist a sold one, or remove it entirely | Free |
+| Marketplace tab: Listing detail + Message Seller | ✅ | ListingDetail.jsx — photo carousel (falls back to a type-emoji tile with no photos), price/description/location, seller name; non-owners see a "💬 Message Seller" button (calls get_or_create_marketplace_thread then opens the thread) unless the listing is no longer active; owners see the manage actions instead | Free |
+| Marketplace messaging: inbox + realtime thread view | ✅ | MarketplaceInbox.jsx, ThreadView.jsx + getMyThreads()/getThreadMessages()/sendMessage()/markThreadRead() — inbox lists every thread the user is a party to (other party's name, associated listing, last message preview, unread indicator), newest activity first; thread view is a real-time chat (Supabase Realtime `postgres_changes` on marketplace_messages, same mechanism as App.jsx's existing machines-sync channel — no new infra, no MQTT broker needed) with auto-scroll and auto-mark-read on open/incoming message | Free |
+| Marketplace: unread message badge | ✅ | MarketplaceTab.jsx — red counter badge on the Messages nav button, kept live via subscribeToMyMessages() (a broad INSERT listener on marketplace_messages that triggers a getMyUnreadCount() re-fetch, since Realtime postgres_changes filters only support one column and buyer_id/seller_id can't both be filtered in one subscription) | Free |
+| 🛒 Market top-level tab | ✅ | ui.js TABS constant, App.jsx — new tab alongside Tracker/Jobs/Workshop/Wiki | Free |
+
+All marketplace SQL (marketplace_listings.sql, marketplace_messaging.sql) locally verified end-to-end against a stub Postgres schema before shipping — built with the security/performance hardening lessons from the wiki work applied from the start rather than retrofitted (search_path pinning, FK covering indexes, `(select auth.uid())` in every RLS policy) so zero issues surfaced on first verification pass: seller_id spoofing blocked, self-messaging blocked, thread dedup on repeated calls, uninvolved third parties can't see or post into a thread, read-receipt column-level grant (sender can't self-mark-read, recipient can mark read but can't edit body), non-owner blocked from changing listing status, owner's status change succeeds, no new threads permitted on a sold listing while existing ones remain reachable, and anon no longer sees a sold listing in the public active-listings feed. UI flows (browse, sell, my listings, listing detail, inbox, real-time thread) Playwright-verified against a mocked Supabase backend with no console errors. Payments were explicitly scoped out — the marketplace only connects buyer and seller, mirroring the user's choice not to build in-app checkout.
+
+---
+
+## 14. Navigation & UX
 
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
@@ -411,7 +431,7 @@ All new SQL (wiki_photos.sql, wiki_points.sql, wiki_verification.sql, wiki_photo
 ---
 
 
-## 13. Queued Features
+## 15. Queued Features
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
