@@ -170,6 +170,23 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [sortBy,setSortBy]=useState(()=>getPref(profile,"trackerSort",null));
   const [view,setView]=useState(()=>getPref(profile,"trackerView","photo"));
   const [tileOpen,setTileOpen]=useState(null);
+  // Phone back button closes the full-screen tile overlay in one press instead
+  // of just collapsing the card inside it (mirrors MachineCard's own cardOpen
+  // history trick, one level up).
+  useEffect(()=>{
+    if(!tileOpen) return;
+    history.pushState({trackerTileOpen:tileOpen},'');
+    const onPop=e=>{
+      if(e.state?.trackerTileOpen===tileOpen) return;
+      setTileOpen(null);
+    };
+    window.addEventListener('popstate',onPop);
+    return ()=>window.removeEventListener('popstate',onPop);
+  },[tileOpen]);
+  const closeTile=()=>{
+    if(history.state?.trackerTileOpen===tileOpen) history.back();
+    else setTileOpen(null);
+  };
   const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
   const [tutDone,setTutDone]=useState(()=>getPref(profile,'rat_tut',false));
@@ -337,8 +354,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
         <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto"}}>
           <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
-            <button onClick={()=>setTileOpen(null)} style={{...btnA,width:"100%",marginBottom:8,fontSize:12,background:ACC,borderColor:ACC,color:"#000",fontWeight:700}}>✕ Close</button>
-            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse searchQuery={searchQuery} searchTokens={searchTokens}/>
+            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse onClose={closeTile} searchQuery={searchQuery} searchTokens={searchTokens}/>
           </div>
         </div>
       ):null;})()}
