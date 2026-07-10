@@ -37,7 +37,7 @@ function findSpecMatch(specData, tokens) {
   return null;
 }
 
-function WikiHomePage({ onSelect, embedded = false, profile }) {
+function WikiHomePage({ onSelect, embedded = false, profile, onShowLeaderboard }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [recent, setRecent] = useState([]);        // most-viewed default list
@@ -133,9 +133,14 @@ function WikiHomePage({ onSelect, embedded = false, profile }) {
   );
   // Headline social proof — how much community knowledge lives here.
   const statsLine = stats && stats.entries > 0 && (
-    <div style={{ fontSize: 10, color: MUT, marginBottom: 14, letterSpacing: "0.04em" }}>
-      <span style={{ color: ACC, fontWeight: 700 }}>{stats.entries.toLocaleString()}</span> machine{stats.entries !== 1 ? "s" : ""} documented
-      {stats.contributions > 0 && <> · <span style={{ color: ACC, fontWeight: 700 }}>{stats.contributions.toLocaleString()}</span> contribution{stats.contributions !== 1 ? "s" : ""}</>}
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+      <div style={{ fontSize: 10, color: MUT, letterSpacing: "0.04em" }}>
+        <span style={{ color: ACC, fontWeight: 700 }}>{stats.entries.toLocaleString()}</span> machine{stats.entries !== 1 ? "s" : ""} documented
+        {stats.contributions > 0 && <> · <span style={{ color: ACC, fontWeight: 700 }}>{stats.contributions.toLocaleString()}</span> contribution{stats.contributions !== 1 ? "s" : ""}</>}
+      </div>
+      {embedded
+        ? <button onClick={onShowLeaderboard} style={{ background: "none", border: "none", color: ACC, fontSize: 9, letterSpacing: "0.06em", cursor: "pointer", padding: 0, fontFamily: "'IBM Plex Mono',monospace" }}>🏆 Leaderboard</button>
+        : <a href="/leaderboard" style={{ color: ACC, fontSize: 9, letterSpacing: "0.06em", textDecoration: "none", fontFamily: "'IBM Plex Mono',monospace" }}>🏆 Leaderboard</a>}
     </div>
   );
   // "Recently added" strip, shown only on the default (no-query) view.
