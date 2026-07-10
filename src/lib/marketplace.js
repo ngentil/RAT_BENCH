@@ -1,23 +1,32 @@
 import { supabase } from './supabase';
 
 // ── Listings ─────────────────────────────────────────────────────────────────
-// Listings snapshot the machine's data at listing time (see
+// Listings snapshot the sellable item's data at listing time (see
 // supabase/marketplace_listings.sql) so a listing survives the underlying
-// Tracker machine being edited or deleted later.
+// Tracker machine / Part / Tool / Consumable / Equipment record being edited
+// or deleted later. Machines/Tools/Equipment sell the whole physical item
+// (no quantity); Parts/Consumables are fungible stock sold by the unit — for
+// those, the DB trigger in marketplace_inventory_listings.sql atomically
+// reserves the listed quantity out of the seller's stock, enforcing their
+// optional "reserve for my workshop" floor server-side.
+const LISTING_KIND_FIELDS = {
+  machine:    (m) => ({ machine_id: m.id, make: m.make || null, model: m.model || null, type: m.type || null, year: m.year || null, photos: m.photos || [] }),
+  part:       (p) => ({ part_id: p.id, make: p.brand || null, model: p.name || null, type: p.category || null, year: null, photos: p.photos || [] }),
+  tool:       (t) => ({ tool_id: t.id, make: t.brand || null, model: t.model || null, type: t.category || null, year: null, photos: t.photos || [] }),
+  consumable: (c) => ({ consumable_id: c.id, make: c.brand || null, model: c.name || null, type: c.category || null, year: null, photos: c.photos || [] }),
+  equipment:  (e) => ({ equipment_id: e.id, make: e.make || null, model: e.model || null, type: e.type || null, year: e.year || null, photos: e.photos || [] }),
+};
 
-export async function createListing(machine, details, userId) {
+export async function createListing(kind, item, details, userId) {
   const { data, error } = await supabase.from('marketplace_listings').insert({
     seller_id:   userId,
-    machine_id:  machine.id || null,
+    item_kind:   kind,
     title:       details.title,
     description: details.description || null,
     price:       details.price ?? null,
     location:    details.location || null,
-    make:        machine.make || null,
-    model:       machine.model || null,
-    type:        machine.type || null,
-    year:        machine.year || null,
-    photos:      machine.photos || [],
+    quantity:    details.quantity ?? null,
+    ...LISTING_KIND_FIELDS[kind](item),
   }).select().single();
   if (error) throw error;
   return data;
