@@ -254,6 +254,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const _jLayout = _jAct;
   const _jTile   = _jAct;
   const _jDel    = {..._jBase,background:RED,color:"#fff"};
+  const _jClose  = {..._jBase,background:"transparent",border:"1px solid "+BRD,color:MUT};
 
   return (
     <div style={{background:SURF,border:"1px solid "+(timerRunning?GRN+"55":BRD),borderRadius:3,marginBottom:8,overflow:"hidden",boxShadow:timerRunning?"0 0 8px "+GRN+"22":undefined}}>
@@ -587,7 +588,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
-            {onClose&&<button style={{..._jAct,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();onClose();}}>✕ Close</button>}
+            {onClose&&<button style={{..._jClose,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();onClose();}}>✕ Close</button>}
             <button style={{..._jDel,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();setConfirmDelete(true);}}>Delete</button>
           </div>
           {showGuide&&(
