@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { escapeLike } from './helpers';
+import { uploadPhoto } from './storage';
 
 // ── Slug ──────────────────────────────────────────────────────────────────────
 export function makeSlug(make, model) {
@@ -465,4 +466,99 @@ export async function publishToWiki(machine, profile) {
   });
 
   return { entry, currentRevision: rev, isNew: true, slug, specData };
+}
+
+// ── Photos ───────────────────────────────────────────────────────────────────
+// A public gallery per entry, separate from spec revisions — photos persist
+// independently of which revision is "current" and carry their own
+// moderation state (live/hidden/removed).
+
+export async function getWikiEntryPhotos(entryId) {
+  const { data, error } = await supabase.from("wiki_entry_photos")
+    .select("*").eq("entry_id", entryId).eq("status", "live")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function uploadWikiPhoto(entryId, file, userId) {
+  const url = await uploadPhoto(file);
+  const { data, error } = await supabase.from("wiki_entry_photos")
+    .insert({ entry_id: entryId, uploaded_by: userId, url }).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function reportWikiPhoto(photoId, reason) {
+  const { data, error } = await supabase.rpc("report_wiki_photo", { p_photo_id: photoId, p_reason: reason });
+  if (error) throw error;
+  return data;
+}
+
+// ── Points ───────────────────────────────────────────────────────────────────
+// Never surfaced as an error to the user — points are a bonus layer on top of
+// an action that has already succeeded (the entry/revision is already saved),
+// so a failed award shouldn't look like the publish/edit itself failed.
+
+export async function awardWikiPushPoints(entryId) {
+  const { data, error } = await supabase.rpc("award_wiki_push_points", { p_entry_id: entryId });
+  if (error) { console.error("awardWikiPushPoints:", error); return null; }
+  return data;
+}
+
+export async function awardWikiEditPoints(revisionId) {
+  const { data, error } = await supabase.rpc("award_wiki_edit_points", { p_revision_id: revisionId });
+  if (error) { console.error("awardWikiEditPoints:", error); return null; }
+  return data;
+}
+
+export async function getMyWikiPoints() {
+  const { data, error } = await supabase.rpc("get_my_wiki_points");
+  if (error) { console.error("getMyWikiPoints:", error); return 0; }
+  return data || 0;
+}
+
+// ── Verification ─────────────────────────────────────────────────────────────
+// Confirm/dispute votes on a revision. 3 confirms pays the editor a bonus,
+// 3 disputes costs them a penalty — both handled server-side in
+// submit_wiki_verification() so vote counts and points can't drift apart.
+
+export async function getRevisionVerifications(revisionId) {
+  const { data, error } = await supabase.from("wiki_revision_verifications")
+    .select("*").eq("revision_id", revisionId);
+  if (error) throw error;
+  return data || [];
+}
+
+// Batched variant for a history page listing many revisions at once —
+// one round trip instead of one per revision. Returns { [revisionId]: rows[] }.
+export async function getVerificationsForRevisions(revisionIds) {
+  if (!revisionIds?.length) return {};
+  const { data, error } = await supabase.from("wiki_revision_verifications")
+    .select("*").in("revision_id", revisionIds);
+  if (error) throw error;
+  const byRev = {};
+  (data || []).forEach(v => { (byRev[v.revision_id] ||= []).push(v); });
+  return byRev;
+}
+
+export async function submitWikiVerification(revisionId, vote) {
+  const { data, error } = await supabase.rpc("submit_wiki_verification", { p_revision_id: revisionId, p_vote: vote });
+  if (error) throw error;
+  return data;
+}
+
+// ── Leaderboard ──────────────────────────────────────────────────────────────
+// Opt-in only — a user's raw points history is otherwise private to them.
+
+export async function getWikiLeaderboard(limit = 20) {
+  const { data, error } = await supabase.rpc("get_wiki_leaderboard", { p_limit: limit });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function setWikiLeaderboardOptIn(profileId, optIn) {
+  const { error } = await supabase.from("profiles")
+    .update({ wiki_leaderboard_opt_in: optIn }).eq("id", profileId);
+  if (error) throw error;
 }
