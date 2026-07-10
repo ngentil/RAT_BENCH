@@ -1,21 +1,20 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Virtuoso } from 'react-virtuoso';
 import { supabase } from '../../lib/supabase';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
-import { ACC, MUT, BRD, SURF, TXT, RED, GRN, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
-import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
+import { ACC, MUT, BRD, SURF, TXT, RED, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
+import { SCOL } from '../../lib/constants';
 import { atMachineLimit, machineLimit } from '../../lib/gates';
 import { getPref, savePref } from '../../lib/db/preferences';
 import MachineTile from '../machine/MachineTile';
+import MachineRow from '../machine/MachineRow';
+import MachinePhotoRow from '../machine/MachinePhotoRow';
 import MachineCard from '../machine/MachineCard';
 import { Empty } from '../ui/shared';
-import StatusBadge from '../ui/StatusBadge';
 import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
-import { getMachineServiceStatus, mIcon, machineMatchesQuery, findMachineSpecMatch } from '../../lib/helpers';
+import { machineMatchesQuery } from '../../lib/helpers';
 import { tokenizeSearch } from '../../lib/wiki';
-import { hl } from '../wiki/wikiSearchHighlight';
 
 const _ARW = "#e8870a";
 const _M = { fontFamily:"'IBM Plex Mono',monospace" };
@@ -54,110 +53,6 @@ function GuideStep2({ onSkip }) {
     </div>
   );
 }
-function MachinePhotoRow({ machine: m, onClick, clientName, searchQuery, searchTokens }) {
-  const svc = getMachineServiceStatus(m);
-  const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
-  const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
-  const specMatch = findMachineSpecMatch(m, searchQuery);
-  return (
-    <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
-      <div style={{width:64,height:64,flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid "+BRD,background:"#111",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        {m.photos?.[0]
-          ? <img src={m.photos[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
-          : <span style={{fontSize:26,lineHeight:1}}>{mIcon(m.type)}</span>}
-      </div>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:14,fontWeight:700,color:TXT,lineHeight:1.2}}>
-          {hl(m.name,searchTokens)}
-          {timerRunning&&<span style={{display:"inline-block",width:5,height:5,borderRadius:"50%",background:GRN,boxShadow:"0 0 5px "+GRN,marginLeft:6,verticalAlign:"middle"}}/>}
-        </div>
-        {[m.make,m.model,m.year].filter(Boolean).length>0&&
-          <div style={{fontSize:10,color:MUT,marginTop:2}}>
-            {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
-          </div>}
-        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
-        <div style={{display:"flex",gap:4,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
-          <StatusBadge status={m.status||"Active"}/>
-          {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
-            if(k==="status") return null;
-            const tc=m.tileColors||{};
-            const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
-            const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
-            const bStyle={fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
-            if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55"),whiteSpace:"nowrap"}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
-            if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:9,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>;
-            const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
-            if(field&&m[k]) return <span key={k} style={bStyle}>{(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "))}: {String(m[k]).slice(0,14)}</span>;
-            return null;
-          })}
-          {svc.overdue&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44"}}>SERVICE</span>}
-          {!svc.overdue&&svc.dueSoon&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44"}}>DUE SOON</span>}
-          {clientName&&<span style={{fontSize:9,color:ACC}}>👤 {clientName}</span>}
-          {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
-        </div>
-        {specMatch&&(
-          <div style={{fontSize:9,color:MUT,marginTop:4,lineHeight:1.4}}>
-            <span style={{color:ACC,textTransform:"uppercase",letterSpacing:"0.06em",fontSize:8}}>{specMatch.label}:</span>{" "}
-            {hl(specMatch.value,searchTokens)}
-          </div>
-        )}
-      </div>
-      <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:26}}>▶</span>
-    </div>
-  );
-}
-
-function MachineRow({ machine: m, onClick, clientName, searchQuery, searchTokens }) {
-  const svc = getMachineServiceStatus(m);
-  const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
-  const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
-  const specMatch = findMachineSpecMatch(m, searchQuery);
-  return (
-    <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
-      <span style={{fontSize:22,flexShrink:0,lineHeight:1,marginTop:3}}>{mIcon(m.type)}</span>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:14,fontWeight:700,color:TXT,lineHeight:1.2}}>
-          {hl(m.name,searchTokens)}
-          {timerRunning&&<span style={{display:"inline-block",width:5,height:5,borderRadius:"50%",background:GRN,boxShadow:"0 0 5px "+GRN,marginLeft:6,verticalAlign:"middle"}}/>}
-        </div>
-        {[m.make,m.model,m.year,m.source].filter(Boolean).length>0&&
-          <div style={{fontSize:10,color:MUT,marginTop:2}}>
-            {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
-            {m.source&&<span style={{color:"#444"}}> · {hl(m.source,searchTokens)}</span>}
-          </div>}
-        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
-        <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap",alignItems:"center"}}>
-          <StatusBadge status={m.status||"Active"}/>
-          {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
-            if(k==="status") return null;
-            const tc=m.tileColors||{};
-            const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
-            const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
-            const bStyle={fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
-            if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"2px 6px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55"),whiteSpace:"nowrap"}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
-            if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:9,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>;
-            const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
-            if(field&&m[k]) return <span key={k} style={bStyle}>{(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "))}: {String(m[k]).slice(0,14)}</span>;
-            return null;
-          })}
-          {svc.overdue&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44"}}>SERVICE</span>}
-          {!svc.overdue&&svc.dueSoon&&<span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44"}}>DUE SOON</span>}
-          {clientName&&<span style={{fontSize:9,color:ACC}}>👤 {clientName}</span>}
-          {m.dueDate&&(()=>{const due=new Date(m.dueDate);const ov=due<new Date();return<span style={{fontSize:9,color:ov?"#e87a0a":MUT}}>{ov?"⚠ OVERDUE":"DUE "+due.toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</span>;})()}
-          {hrs>0&&<span style={{fontSize:9,color:GRN,fontFamily:"'IBM Plex Mono',monospace"}}>{hrs.toFixed(1)}h</span>}
-          {(m.rage||0)>0&&<span style={{fontSize:9,letterSpacing:-1}}>{"☠️".repeat(m.rage)}</span>}
-        </div>
-        {specMatch&&(
-          <div style={{fontSize:9,color:MUT,marginTop:4,lineHeight:1.4}}>
-            <span style={{color:ACC,textTransform:"uppercase",letterSpacing:"0.06em",fontSize:8}}>{specMatch.label}:</span>{" "}
-            {hl(specMatch.value,searchTokens)}
-          </div>
-        )}
-      </div>
-      <span style={{fontSize:10,color:"#555",flexShrink:0,marginTop:4}}>▶</span>
-    </div>
-  );
-}
 
 function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear}){
   const [showAdd,setShowAdd]=useState(false);
@@ -168,7 +63,12 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [dragOver,setDragOver]=useState(null);
   const [showSort,setShowSort]=useState(false);
   const [sortBy,setSortBy]=useState(()=>getPref(profile,"trackerSort",null));
-  const [view,setView]=useState(()=>getPref(profile,"trackerView","photo"));
+  // "list" (poster-card) view was removed — it duplicated the full MachineCard
+  // overlay every tile already opens into. Migrate any saved pref to photo.
+  const [view,setView]=useState(()=>{
+    const v=getPref(profile,"trackerView","photo");
+    return v==="list"?"photo":v;
+  });
   const [tileOpen,setTileOpen]=useState(null);
   // Phone back button closes the full-screen tile overlay in one press instead
   // of just collapsing the card inside it (mirrors MachineCard's own cardOpen
@@ -331,7 +231,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
           <button style={{...btnG,color:sortBy?ACC:MUT,alignSelf:"stretch"}} onClick={()=>setShowSort(true)} title="Sort machines">⚙️</button>
-          <button onClick={()=>setViewP(view==="list"?"grid":view==="grid"?"compact":view==="compact"?"photo":"list")} style={{...btnG,minWidth:36,alignSelf:"stretch",color:view!=="list"?ACC:undefined}} title={view==="list"?"Grid view":view==="grid"?"Compact list":view==="compact"?"Photo list":"Standard list"}>{view==="list"?"⊞":view==="grid"?"≡":view==="compact"?"▣":"☰"}</button>
+          <button onClick={()=>setViewP(view==="grid"?"compact":view==="compact"?"photo":"grid")} style={{...btnG,minWidth:36,alignSelf:"stretch",color:ACC}} title={view==="grid"?"Compact list":view==="compact"?"Photo list":"Grid view"}>{view==="grid"?"≡":view==="compact"?"▣":"☰"}</button>
           {isGuest&&machines.length>=3
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
@@ -358,48 +258,27 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           </div>
         </div>
       ):null;})()}
-      {view==="grid"?(
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
-          {sorted.map(m=>(
-            <MachineTile key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
-          ))}
-        </div>
-      ):view==="compact"?(
-        <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
-          {sorted.map(m=>(
-            <MachineRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
-          ))}
-        </div>
-      ):view==="photo"?(
-        <div style={{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"}}>
-          {sorted.map(m=>(
-            <MachinePhotoRow key={m.id} machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
-          ))}
-        </div>
-      ):sorted.length > 0 && (
-        // Virtuoso for sorted/filtered lists (no drag reorder); fall back to plain map only for manual-drag mode with small lists
-        sortBy || sorted.length > 30
-          ? <Virtuoso
-              useWindowScroll
-              data={sorted}
-              itemContent={(_idx, m) => (
-                <MachineCard key={m.id} machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} searchQuery={searchQuery} searchTokens={searchTokens}/>
-              )}
-            />
-          : sorted.map((m,idx)=>(
-              <div
-                key={m.id}
-                draggable
-                onDragStart={e=>onDragStart(e,idx)}
-                onDragOver={e=>onDragOver(e,idx)}
-                onDrop={e=>onDrop(e,idx)}
-                onDragEnd={onDragEnd}
-                style={{opacity:dragIdx===idx?0.4:1,borderTop:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",transition:"opacity 0.15s,border-color 0.1s"}}
+      {(()=>{
+        const Comp = view==="grid"?MachineTile:view==="compact"?MachineRow:MachinePhotoRow;
+        const wrapStyle = view==="grid"
+          ?{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}
+          :{borderTop:"1px solid "+BRD,borderRadius:3,overflow:"hidden"};
+        return (
+          <div style={wrapStyle}>
+            {sorted.map((m,idx)=>(
+              <div key={m.id} draggable={!sortBy}
+                onDragStart={sortBy?undefined:e=>onDragStart(e,idx)}
+                onDragOver={sortBy?undefined:e=>onDragOver(e,idx)}
+                onDrop={sortBy?undefined:e=>onDrop(e,idx)}
+                onDragEnd={sortBy?undefined:onDragEnd}
+                style={sortBy?undefined:{opacity:dragIdx===idx?0.4:1,outline:dragOver===idx&&dragIdx!==idx?"2px solid "+ACC:"2px solid transparent",outlineOffset:-2,transition:"opacity 0.15s,outline-color 0.1s"}}
               >
-                <MachineCard machine={m} onUpdate={updateM} onDelete={deleteM} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} searchQuery={searchQuery} searchTokens={searchTokens}/>
+                <Comp machine={m} onClick={()=>setTileOpen(m.id)} clientName={m.clientId?clientMap[m.clientId]:null} searchQuery={searchQuery} searchTokens={searchTokens}/>
               </div>
-            ))
-      )}
+            ))}
+          </div>
+        );
+      })()}
       {showUpgrade&&<GuestUpgradeModal profile={profile} setProfile={setProfile} onClose={()=>setShowUpgrade(false)}/>}
     </div>
   );

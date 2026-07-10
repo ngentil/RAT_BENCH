@@ -14,6 +14,9 @@ import { toastError } from '../../lib/toast';
 import StatusBadge from '../ui/StatusBadge';
 import { effectiveTier } from '../../lib/gates';
 import UpgradeBanner from '../ui/UpgradeBanner';
+import MachineTile from '../machine/MachineTile';
+import MachineRow from '../machine/MachineRow';
+import MachinePhotoRow from '../machine/MachinePhotoRow';
 
 const ORANGE = "#e8a20a";
 
@@ -1145,8 +1148,8 @@ const STATUS_COLOR = {
   "Complete": MUT,
 };
 
-function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling }) {
-  const [open, setOpen] = useState(false);
+function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling, initialOpen, hideCollapse, onClose }) {
+  const [open, setOpen] = useState(!!initialOpen);
   const [jobGuide, setJobGuide] = useState(() => !getPref(profile, "rat_tut_job_card", false));
   const dismissJobGuide = () => { setJobGuide(false); savePref(profile?.id, "rat_tut_job_card", true); };
 
@@ -1165,7 +1168,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
   return (
     <div style={{ background: "#0d0d0d", border: "1px solid " + (timerLocked ? "#1a1a1a" : "#252525"), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden", opacity: timerLocked ? 0.65 : 1 }}>
       {/* Collapsed header — poster style */}
-      <div onClick={() => setOpen(o => !o)} style={{ cursor: "pointer", userSelect: "none" }}>
+      <div onClick={() => !hideCollapse && setOpen(o => !o)} style={{ cursor: hideCollapse ? "default" : "pointer", userSelect: "none" }}>
 
         {/* Hero photo / icon placeholder */}
         {m.photos?.[0]
@@ -1187,7 +1190,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
                   {m.name}
                   {isRunning && <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 6px " + GRN, marginLeft: 7, verticalAlign: "middle" }} />}
                 </div>
-                <span style={{ fontSize: 10, color: "#555", flexShrink: 0, marginTop: 2, userSelect: "none" }}>{open ? "▲" : "▼"}</span>
+                {!hideCollapse && <span style={{ fontSize: 10, color: "#555", flexShrink: 0, marginTop: 2, userSelect: "none" }}>{open ? "▲" : "▼"}</span>}
               </div>
               {[m.source, m.make, m.model].filter(Boolean).length > 0 &&
                 <div style={{ fontSize: 11, color: MUT, marginTop: 3, lineHeight: 1.4 }}>
@@ -1225,6 +1228,9 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
       {/* Expanded body */}
       {open && (
         <div className="card-expand" style={{ padding: "0 14px 16px", borderTop: "1px solid #1a1a1a" }}>
+          {onClose && (
+            <button onClick={ev => { ev.stopPropagation(); onClose(); }} style={{ width: "100%", marginTop: 10, padding: "9px 14px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace", background: "transparent", border: "1px solid " + BRD, color: MUT, cursor: "pointer" }}>✕ Close</button>
+          )}
           {jobGuide && (
             <div style={{ background: "#0a0f0a", border: "1px solid #1a2a1a", borderRadius: 2, padding: "10px 12px", margin: "10px 0 8px" }}>
               <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Job Card</div>
@@ -1282,6 +1288,22 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
   const FREE_LIMIT = 3;
   const [jobSearch, setJobSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [view, setView] = useState(() => getPref(profile, "jobsView", "photo"));
+  const setViewP = v => { setView(v); savePref(profile?.id, "jobsView", v); };
+  const [jobTileOpen, setJobTileOpen] = useState(null);
+  // Same back-button trick as Tracker's tile overlay: one press closes the
+  // full job card instead of just collapsing it and leaving the overlay open.
+  useEffect(() => {
+    if (!jobTileOpen) return;
+    history.pushState({ jobTileOpen }, '');
+    const onPop = e => { if (e.state?.jobTileOpen === jobTileOpen) return; setJobTileOpen(null); };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [jobTileOpen]);
+  const closeJobTile = () => {
+    if (history.state?.jobTileOpen === jobTileOpen) history.back();
+    else setJobTileOpen(null);
+  };
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
 
@@ -1331,6 +1353,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
         <SL t="Job Board" />
         {machines.length > 0 && (
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button onClick={() => setViewP(view === "grid" ? "compact" : view === "compact" ? "photo" : "grid")} style={{ ...btnG, ...sm, minWidth: 30, color: ACC }} title={view === "grid" ? "Compact list" : view === "compact" ? "Photo list" : "Grid view"}>{view === "grid" ? "≡" : view === "compact" ? "▣" : "☰"}</button>
             {runningTimer && (
               <span style={{ fontSize: 8, color: GRN, fontWeight: 700, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 4 }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 4px " + GRN, display: "inline-block" }} />
@@ -1382,26 +1405,40 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
       {isFree && machines.length > 0 && (
         <UpgradeBanner label="Free Plan" text={`Showing ${Math.min(machines.length, FREE_LIMIT)} of ${machines.length} machines. First machine has full timer & parts access.`} onUpgrade={onGoToBilling} />
       )}
-      {cappedGroups.map(({ status, items }) => items.length === 0 ? null : (
-        <div key={status} style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <StatusBadge status={status} />
-            <span style={{ fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700 }}>{status}</span>
-            <span style={{ fontSize: 9, color: MUT }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
+      {(() => {
+        const Comp = view === "grid" ? MachineTile : view === "compact" ? MachineRow : MachinePhotoRow;
+        return cappedGroups.map(({ status, items }) => items.length === 0 ? null : (
+          <div key={status} style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <StatusBadge status={status} />
+              <span style={{ fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700 }}>{status}</span>
+              <span style={{ fontSize: 9, color: MUT }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div style={view === "grid" ? { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 } : { borderTop: "1px solid " + BRD, borderRadius: 3, overflow: "hidden" }}>
+              {items.map(m => (
+                <Comp key={m.id} machine={m} onClick={() => setJobTileOpen(m.id)} clientName={m.clientId ? clientMap[m.clientId] : null} />
+              ))}
+            </div>
           </div>
-          {items.map(m => {
-            const freeIdx = isFree ? (freeIdxMap[m.id] ?? 0) : -1;
-            const locked = isFree && freeIdx > 0;
-            return (
-              <JobCard key={m.id} m={m} status={status} timerLocked={locked} partsLocked={locked}
+        ));
+      })()}
+      {hiddenCount > 0 && <UpgradeBanner text={`+${hiddenCount} more machine${hiddenCount !== 1 ? "s" : ""} hidden — upgrade to see all jobs`} onUpgrade={onGoToBilling} marginBottom={8} />}
+      {jobTileOpen && (() => {
+        const m = machines.find(x => x.id === jobTileOpen);
+        if (!m) return null;
+        const freeIdx = isFree ? (freeIdxMap[m.id] ?? 0) : -1;
+        const locked = isFree && freeIdx > 0;
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, overflowY: "auto" }}>
+            <div style={{ maxWidth: 640, margin: "0 auto", padding: "8px 8px 0" }}>
+              <JobCard m={m} status={m.status || "Active"} timerLocked={locked} partsLocked={locked}
                 clientMap={clientMap} clients={clients} company={company} session={session} profile={profile}
                 onUpdate={updateM} onUpdateStatus={updateStatus} onUpdateRage={updateRage}
-                onGoToBilling={onGoToBilling} />
-            );
-          })}
-        </div>
-      ))}
-      {hiddenCount > 0 && <UpgradeBanner text={`+${hiddenCount} more machine${hiddenCount !== 1 ? "s" : ""} hidden — upgrade to see all jobs`} onUpgrade={onGoToBilling} marginBottom={8} />}
+                onGoToBilling={onGoToBilling} initialOpen hideCollapse onClose={closeJobTile} />
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
