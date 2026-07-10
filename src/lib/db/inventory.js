@@ -24,6 +24,7 @@ function fromDb(r) {
     spec:        p.spec        || {},
     minQuantity: minQty,
     maxQuantity: p.maxQuantity != null ? Number(p.maxQuantity) : null,
+    reservedQty: p.reservedQty != null ? Number(p.reservedQty) : 0,
     notes:       p.notes       || '',
     photos:      p.photos      || [],
     createdAt:   r.created_at,
@@ -31,11 +32,12 @@ function fromDb(r) {
 }
 
 function toDb(userId, item) {
-  const qty     = item.quantity    != null ? Number(item.quantity)    : (item.stockQty  !== '' ? parseInt(item.stockQty)  || 0 : 0);
-  const minQty  = item.minQuantity != null ? Number(item.minQuantity) : (item.minStock   !== '' ? parseFloat(item.minStock) || null : null);
-  const maxQty  = item.maxQuantity != null ? Number(item.maxQuantity) : null;
-  const buyP    = item.buyPrice    != null && item.buyPrice !== '' ? parseFloat(item.buyPrice)  || null : null;
-  const sellP   = item.sellPrice   != null && item.sellPrice !== '' ? parseFloat(item.sellPrice) || null : null;
+  const qty      = item.quantity    != null ? Number(item.quantity)    : (item.stockQty  !== '' ? parseInt(item.stockQty)  || 0 : 0);
+  const minQty   = item.minQuantity != null ? Number(item.minQuantity) : (item.minStock   !== '' ? parseFloat(item.minStock) || null : null);
+  const maxQty   = item.maxQuantity != null ? Number(item.maxQuantity) : null;
+  const reserved = item.reservedQty != null ? Number(item.reservedQty) : 0;
+  const buyP     = item.buyPrice    != null && item.buyPrice !== '' ? parseFloat(item.buyPrice)  || null : null;
+  const sellP    = item.sellPrice   != null && item.sellPrice !== '' ? parseFloat(item.sellPrice) || null : null;
   return {
     user_id: userId,
     payload: {
@@ -54,6 +56,7 @@ function toDb(userId, item) {
       spec:        item.spec        || {},
       minQuantity: minQty,
       maxQuantity: maxQty,
+      reservedQty: reserved,
       notes:       item.notes       || null,
       photos:      item.photos      || [],
     },

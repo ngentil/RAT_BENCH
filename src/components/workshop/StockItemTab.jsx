@@ -141,7 +141,7 @@ const SORT_OPTS = [
 const EMPTY_FORM = {
   name: '', category: '', brand: '', supplier: '', partNumber: '', location: '',
   quantity: '0', unit: 'pcs', buyPrice: '', sellPrice: '',
-  minQuantity: '', maxQuantity: '', spec: {}, notes: '',
+  minQuantity: '', maxQuantity: '', reservedQty: '', spec: {}, notes: '',
 };
 
 function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
@@ -159,6 +159,7 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
     sellPrice:   item.sellPrice   != null ? String(item.sellPrice) : '',
     minQuantity: item.minQuantity != null ? String(item.minQuantity) : '',
     maxQuantity: item.maxQuantity != null ? String(item.maxQuantity) : '',
+    reservedQty: item.reservedQty ? String(item.reservedQty) : '',
     spec:        item.spec        || {},
     notes:       item.notes       || '',
   } : { ...EMPTY_FORM };
@@ -202,6 +203,7 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
         sellPrice:   parseNum(f.sellPrice,   { min: 0 }),
         minQuantity: parseNum(f.minQuantity, { min: 0 }),
         maxQuantity: parseNum(f.maxQuantity, { min: 0 }),
+        reservedQty: parseNum(f.reservedQty, { min: 0 }) ?? 0,
         photos,
       });
       setSaving(false);
@@ -283,6 +285,13 @@ function ItemForm({ item, tableType, typeConfig, onSave, onCancel }) {
           <div>
             <FL t="Max par (ceiling)" />
             <input style={fld} type="number" min="0" step="0.1" value={f.maxQuantity} onChange={e => s('maxQuantity', e.target.value)} placeholder={`e.g. 10 ${f.unit}`} />
+          </div>
+          <div style={{ gridColumn: '1/-1' }}>
+            <FL t="Reserve for my workshop (optional)" />
+            <input style={fld} type="number" min="0" step="0.1" value={f.reservedQty} onChange={e => s('reservedQty', e.target.value)} placeholder="e.g. 5 — never let the Marketplace sell below this" />
+            <div style={{ fontSize: 8, color: MUT, marginTop: 4, lineHeight: 1.5 }}>
+              A hard floor, not just a low-stock alert like Min par above — if set, the Marketplace will only ever let you list/sell down to this amount, never below it. Leave blank to sell freely.
+            </div>
           </div>
           {specFields.length > 0 && (
             <div style={{ gridColumn: '1/-1', borderTop: '1px solid #1e1e1e', paddingTop: 10 }}>
@@ -422,6 +431,11 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
                     {item.minQuantity != null && item.maxQuantity != null && <span style={{ margin: '0 4px' }}>·</span>}
                     {item.maxQuantity != null && <span>Max {item.maxQuantity}</span>}
                     <span style={{ marginLeft: 3 }}>{item.unit || 'pcs'}</span>
+                  </div>
+                )}
+                {item.reservedQty > 0 && (
+                  <div style={{ fontSize: 8, color: ORANGE, marginTop: 1 }}>
+                    🔒 {item.reservedQty} {item.unit || 'pcs'} reserved for workshop · {Math.max(0, (item.quantity || 0) - item.reservedQty)} sellable
                   </div>
                 )}
               </div>

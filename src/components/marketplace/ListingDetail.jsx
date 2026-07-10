@@ -8,6 +8,9 @@ import {
 } from '../../lib/marketplace';
 import { formatPrice } from './ListingTile';
 
+const KIND_ICON = { part: "🔩", tool: "🔧", consumable: "📦", equipment: "⚙️" };
+const STOCK_KINDS = new Set(['part', 'consumable']);
+
 function ListingDetail({ listingId, profile, onBack, onOpenThread }) {
   const [listing, setListing] = useState(null);
   const [seller, setSeller] = useState(null);
@@ -48,8 +51,9 @@ function ListingDetail({ listingId, profile, onBack, onOpenThread }) {
   };
 
   const runStatusChange = async (fn) => {
-    setBusy(true);
+    setBusy(true); setError(null);
     try { setListing(await fn(listing.id)); }
+    catch (e) { setError(e.message || 'That action failed.'); }
     finally { setBusy(false); }
   };
 
@@ -61,7 +65,7 @@ function ListingDetail({ listingId, profile, onBack, onOpenThread }) {
         <div style={{ height: 220, background: "#111", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
           {photos.length > 0
             ? <img src={photos[activePhoto]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            : <span style={{ fontSize: 44, opacity: 0.4 }}>{mIcon(listing.type)}</span>}
+            : <span style={{ fontSize: 44, opacity: 0.4 }}>{KIND_ICON[listing.item_kind] || mIcon(listing.type)}</span>}
         </div>
         {photos.length > 1 && (
           <div style={{ display: "flex", gap: 6, padding: "8px 10px", overflowX: "auto" }}>
@@ -80,6 +84,7 @@ function ListingDetail({ listingId, profile, onBack, onOpenThread }) {
         {listing.status !== "active" && (
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", padding: "2px 6px", borderRadius: 2, background: RED + "22", color: RED, border: "1px solid " + RED + "44" }}>{listing.status.toUpperCase()}</span>
         )}
+        {listing.quantity != null && <span style={{ fontSize: 9, color: ACC }}>×{listing.quantity}</span>}
         {listing.type && <span style={{ fontSize: 9, color: MUT }}>{listing.type}</span>}
         {(listing.make || listing.model) && <span style={{ fontSize: 9, color: MUT }}>{[listing.make, listing.model, listing.year].filter(Boolean).join(" · ")}</span>}
         {listing.location && <span style={{ fontSize: 9, color: MUT }}>📍 {listing.location}</span>}
@@ -94,9 +99,10 @@ function ListingDetail({ listingId, profile, onBack, onOpenThread }) {
       {isMine ? (
         <div>
           <div style={{ fontSize: 9, color: MUT, marginBottom: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>Manage listing</div>
+          {error && <div style={{ fontSize: 10, color: RED, marginBottom: 8 }}>{error}</div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {listing.status === "active" && <button disabled={busy} onClick={() => runStatusChange(markListingSold)} style={btnA}>Mark Sold</button>}
-            {listing.status === "sold" && <button disabled={busy} onClick={() => runStatusChange(relistListing)} style={btnG}>Relist</button>}
+            {listing.status === "sold" && !STOCK_KINDS.has(listing.item_kind) && <button disabled={busy} onClick={() => runStatusChange(relistListing)} style={btnG}>Relist</button>}
             {listing.status !== "removed" && <button disabled={busy} onClick={() => runStatusChange(removeListing)} style={{ ...btnG, color: RED, borderColor: "#3a1a1a" }}>Remove</button>}
           </div>
         </div>
