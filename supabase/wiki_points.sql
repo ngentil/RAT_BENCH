@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS wiki_points_ledger (
 );
 
 CREATE INDEX IF NOT EXISTS idx_wiki_points_user ON wiki_points_ledger(user_id);
+CREATE INDEX IF NOT EXISTS idx_wiki_points_ledger_entry ON wiki_points_ledger(entry_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_wiki_points_award
   ON wiki_points_ledger(user_id, ref_table, ref_id, action);
@@ -36,7 +37,7 @@ DROP POLICY IF EXISTS wiki_points_ledger_select ON wiki_points_ledger;
 -- instead, which is the only place opt-in visibility is enforced.
 CREATE POLICY wiki_points_ledger_select ON wiki_points_ledger
   FOR SELECT TO authenticated
-  USING (user_id = auth.uid() OR is_admin_user());
+  USING (user_id = (select auth.uid()) OR (select is_admin_user()));
 
 GRANT SELECT ON wiki_points_ledger TO authenticated;
 -- Deliberately no INSERT/UPDATE/DELETE grant to authenticated.
@@ -48,6 +49,7 @@ GRANT SELECT ON wiki_points_ledger TO authenticated;
 CREATE OR REPLACE FUNCTION _wiki_points_rate_limited(p_uid uuid)
 RETURNS boolean
 LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public
 AS $$
   SELECT COUNT(*) >= 5
   FROM wiki_points_ledger
@@ -56,10 +58,18 @@ AS $$
     AND created_at >= date_trunc('day', now());
 $$;
 
+-- Private helper (matches the underscore-prefix convention for internal-only
+-- functions like _wiki_entry_visible) — only ever called from inside other
+-- SECURITY DEFINER functions below, never directly by a client. Postgres
+-- grants EXECUTE to PUBLIC by default on function creation; revoke it here
+-- since this one was never meant to be callable via the REST RPC endpoint.
+REVOKE EXECUTE ON FUNCTION _wiki_points_rate_limited(uuid) FROM PUBLIC;
+
 -- ── Award: pushing a new machine to the wiki ─────────────────────────────────
 CREATE OR REPLACE FUNCTION award_wiki_push_points(p_entry_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_entry wiki_entries%ROWTYPE;
@@ -97,6 +107,7 @@ GRANT EXECUTE ON FUNCTION award_wiki_push_points(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION award_wiki_edit_points(p_revision_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_rev wiki_revisions%ROWTYPE;
@@ -134,6 +145,7 @@ GRANT EXECUTE ON FUNCTION award_wiki_edit_points(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION get_my_wiki_points()
 RETURNS bigint
 LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public
 AS $$
   SELECT COALESCE(SUM(points), 0) FROM wiki_points_ledger WHERE user_id = auth.uid();
 $$;

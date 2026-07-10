@@ -33,6 +33,7 @@ RETURNS TABLE (
   points       bigint
 )
 LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public
 AS $$
   SELECT l.user_id, p.display_name, p.username, SUM(l.points) AS points
   FROM wiki_points_ledger l
