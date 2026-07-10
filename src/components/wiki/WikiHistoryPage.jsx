@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, BG, btnG, btnA, sm } from '../../lib/styles';
-import { getWikiEntryBySlug, getWikiRevisions, revertToRevision, WIKI_FIELD_LABELS } from '../../lib/wiki';
+import { getWikiEntryBySlug, getWikiRevisions, revertToRevision, WIKI_FIELD_LABELS, getVerificationsForRevisions, submitWikiVerification } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 
 function WikiHistoryPage({ slug, profile }) {
@@ -11,6 +11,9 @@ function WikiHistoryPage({ slug, profile }) {
   const [revertErr, setRevertErr] = useState("");
   const [revertOk, setRevertOk] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [verifications, setVerifications] = useState({}); // { [revisionId]: rows[] }
+  const [votingOn, setVotingOn] = useState(null); // rev id currently submitting a vote
+  const [voteErr, setVoteErr] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -23,6 +26,7 @@ function WikiHistoryPage({ slug, profile }) {
         const r = await getWikiRevisions(e.id);
         if (!alive) return;
         setRevs(r);
+        getVerificationsForRevisions(r.map(x => x.id)).then(v => { if (alive) setVerifications(v); });
       } else {
         setNotFound(true);
       }
@@ -30,6 +34,19 @@ function WikiHistoryPage({ slug, profile }) {
     })();
     return () => { alive = false; };
   }, [slug]);
+
+  const vote = async (rev, choice) => {
+    if (!profile) return;
+    setVotingOn(rev.id); setVoteErr("");
+    try {
+      await submitWikiVerification(rev.id, choice);
+      const updated = await getVerificationsForRevisions(revs.map(x => x.id));
+      setVerifications(updated);
+    } catch (e) {
+      setVoteErr(e.message);
+    }
+    setVotingOn(null);
+  };
 
   const doRevert = async (rev) => {
     if (!profile) return;
@@ -73,6 +90,7 @@ function WikiHistoryPage({ slug, profile }) {
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px" }}>
         {revertOk && <div style={{ fontSize: 10, color: GRN, marginBottom: 12, padding: "8px 12px", background: "#0d1a0d", border: "1px solid #1a3a1a", borderRadius: 2 }}>{revertOk}</div>}
         {revertErr && <div style={{ fontSize: 10, color: RED, marginBottom: 12 }}>{revertErr}</div>}
+        {voteErr && <div style={{ fontSize: 10, color: RED, marginBottom: 12 }}>{voteErr}</div>}
 
         {revs.length === 0 && <div style={{ fontSize: 10, color: MUT, textAlign: "center", marginTop: 40 }}>No revisions yet.</div>}
         {revs.map((r, i) => {
@@ -114,6 +132,32 @@ function WikiHistoryPage({ slug, profile }) {
                   )}
                 </div>
               </div>
+              {(() => {
+                const votes = verifications[r.id] || [];
+                const confirms = votes.filter(v => v.vote === 'confirm').length;
+                const disputes = votes.filter(v => v.vote === 'dispute').length;
+                const myVote = profile && votes.find(v => v.verifier_id === profile.id)?.vote;
+                const isOwn = profile && r.edited_by === profile.id;
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, paddingTop: 8, borderTop: "1px solid " + BRD, flexWrap: "wrap" }}>
+                    {disputes >= 3 && (
+                      <span style={{ fontSize: 8, color: RED, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700, border: "1px solid " + RED + "55", padding: "2px 6px", borderRadius: 2 }}>⚠ Disputed</span>
+                    )}
+                    <span style={{ fontSize: 9, color: GRN }}>✓ {confirms}</span>
+                    <span style={{ fontSize: 9, color: RED }}>✕ {disputes}</span>
+                    {profile && !isOwn && (
+                      <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+                        <button onClick={() => vote(r, 'confirm')} disabled={votingOn === r.id} style={{ ...btnG, ...sm, fontSize: 8, color: myVote === 'confirm' ? GRN : undefined, opacity: votingOn === r.id ? 0.5 : 1 }}>
+                          {myVote === 'confirm' ? '✓ Confirmed' : 'Confirm'}
+                        </button>
+                        <button onClick={() => vote(r, 'dispute')} disabled={votingOn === r.id} style={{ ...btnG, ...sm, fontSize: 8, color: myVote === 'dispute' ? RED : undefined, opacity: votingOn === r.id ? 0.5 : 1 }}>
+                          {myVote === 'dispute' ? '✕ Disputed' : 'Dispute'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
