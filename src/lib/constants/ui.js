@@ -179,12 +179,12 @@ export const getTileFields = (type) => TILE_FIELDS.filter(f=>!f.types||f.types.i
 export const TABS = [
   {id:"tracker",   label:"📋 Tracker"},
   {id:"jobs",      label:"🗂 Jobs"},
-  {id:"reminders", label:"🔔 Remind"},
   {id:"workshop",  label:"🔨 Workshop"},
   {id:"wiki",      label:"📖 Wiki"},
 ];
 
 export const WORKSHOP_TABS = [
+  {id:"reminders",   label:"🔔 Remind"},
   {id:"parts",       label:"🔩 Parts"},
   {id:"consumables", label:"📦 Consumables"},
   {id:"tools",       label:"🔧 Tools"},
