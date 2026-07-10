@@ -1,9 +1,10 @@
 -- Community reporting of wiki photos (AI-generated, wrong machine,
 -- inappropriate, duplicate). 3 distinct reports auto-hides a photo pending
 -- review. An admin resolves the report batch, which pays every reporter +1
--- if they were right (photo removed) or -1 if they weren't (photo cleared) —
--- reporting has to cost something when it's wrong, or it's free to
--- mass-report out of spite.
+-- if they were right (photo removed) — clearing a report as false pays
+-- nothing, deliberately not a penalty. Reporting is still an act of trying
+-- to improve the wiki even when the call turns out wrong; only confirmed
+-- catches get rewarded.
 -- Requires supabase/wiki_photos.sql (wiki_entry_photos) and
 -- supabase/wiki_points.sql (wiki_points_ledger).
 -- Run in Supabase SQL Editor.
@@ -95,15 +96,16 @@ BEGIN
     RAISE EXCEPTION 'Photo not found';
   END IF;
 
-  FOR r IN SELECT * FROM wiki_photo_reports WHERE photo_id = p_photo_id AND resolved = false LOOP
-    INSERT INTO wiki_points_ledger (user_id, entry_id, ref_table, ref_id, action, points)
-    VALUES (
-      r.reporter_id, v_photo.entry_id, 'wiki_photo_reports', r.id,
-      CASE WHEN p_outcome = 'removed' THEN 'report_confirmed' ELSE 'report_false' END,
-      CASE WHEN p_outcome = 'removed' THEN 1 ELSE -1 END
-    )
-    ON CONFLICT (user_id, ref_table, ref_id, action) DO NOTHING;
-  END LOOP;
+  -- Only a confirmed report pays out — clearing one as false costs the
+  -- reporter nothing, so there's no downside to flagging something in good
+  -- faith that turns out fine.
+  IF p_outcome = 'removed' THEN
+    FOR r IN SELECT * FROM wiki_photo_reports WHERE photo_id = p_photo_id AND resolved = false LOOP
+      INSERT INTO wiki_points_ledger (user_id, entry_id, ref_table, ref_id, action, points)
+      VALUES (r.reporter_id, v_photo.entry_id, 'wiki_photo_reports', r.id, 'report_confirmed', 1)
+      ON CONFLICT (user_id, ref_table, ref_id, action) DO NOTHING;
+    END LOOP;
+  END IF;
 
   UPDATE wiki_photo_reports SET resolved = true, outcome = p_outcome
   WHERE photo_id = p_photo_id AND resolved = false;

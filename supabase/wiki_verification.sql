@@ -1,7 +1,10 @@
 -- Community verification of wiki corrections: any authenticated user (other
 -- than the editor) can confirm or dispute a revision. 3 confirms pays the
--- editor a +2 bonus; 3 disputes costs them -2. Both payouts happen exactly
--- once per revision, enforced by wiki_points_ledger's unique index.
+-- editor a +2 bonus, exactly once per revision, enforced by
+-- wiki_points_ledger's unique index. Disputes are tracked and surfaced (a
+-- "disputed" marker on the revision) as a quality signal, but deliberately
+-- carry no points penalty — someone flagging a correction they believe is
+-- wrong is still trying to improve the wiki, not something to discipline.
 -- Requires supabase/wiki_points.sql (wiki_points_ledger) and
 -- supabase/wiki_revisions_rls_helper.sql (_wiki_entry_visible).
 -- Run in Supabase SQL Editor.
@@ -82,11 +85,9 @@ BEGIN
     ON CONFLICT (user_id, ref_table, ref_id, action) DO NOTHING;
   END IF;
 
-  IF v_disputes >= 3 AND v_rev.edited_by IS NOT NULL THEN
-    INSERT INTO wiki_points_ledger (user_id, entry_id, ref_table, ref_id, action, points)
-    VALUES (v_rev.edited_by, v_rev.entry_id, 'wiki_revisions', p_revision_id, 'verified_penalty', -2)
-    ON CONFLICT (user_id, ref_table, ref_id, action) DO NOTHING;
-  END IF;
+  -- Disputes are tracked (v_disputes, returned below) and shown as a
+  -- "disputed" marker in the UI, but deliberately never cost the editor
+  -- points — no penalty side to this system.
 
   RETURN jsonb_build_object('confirms', v_confirms, 'disputes', v_disputes);
 END;
