@@ -93,7 +93,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
     "photos","iPPhotos","ePPhotos","jobPhotos",
     "parts","timeLog","jobTimers","dueDate",
     "lastServiceDate","lastServiceOdo","lastServiceNotes",
-    "status","source","rage","notes",
+    "status","source","rage","notes","name",
     "submittedToWiki","wikiMachineId","tileFields","tileColors","expandFields",
   ];
   const doImport = async () => {
@@ -106,6 +106,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
         specOnly.carbSpec = carbRest;
       }
       await upsertMachine({
+        name: [entry.make, entry.model].filter(Boolean).join(" ") || entry.type || "Imported Machine",
         make: entry.make,
         model: entry.model,
         type: typeof entry.type === "string" ? entry.type : "",
