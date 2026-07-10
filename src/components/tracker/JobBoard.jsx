@@ -101,13 +101,14 @@ const round2 = n => Math.round(n * 100) / 100;
 const qtyOf = p => (p.qty == null || p.qty === '') ? 1 : (Number(p.qty) || 0);
 
 async function exportInvoice(machine, company, clients, userId, docType = 'invoice', onUpdate) {
-  const allLog = machine.timeLog || [];
-  // Sessions already invoiced must not be billed again. (Cycle a session's
-  // status chip back to "Logged" to deliberately re-invoice it.)
+  const allLog   = machine.timeLog || [];
+  const allParts = machine.parts   || [];
+  // Sessions/parts already invoiced must not be billed again. (Cycle a
+  // session's or part's status chip back to "Logged" to deliberately re-issue.)
   const log   = allLog.filter(e => (e.billStatus || 'logged') !== 'invoiced');
-  const parts = machine.parts   || [];
+  const parts = allParts.filter(p => (p.billStatus || 'logged') !== 'invoiced');
   if (!log.length && !parts.length) {
-    if (allLog.length) alert('All sessions are already invoiced. Tap a session\'s status chip to set it back to Logged if you need to re-issue.');
+    if (allLog.length || allParts.length) alert('Everything here is already invoiced. Tap a session\'s or part\'s status chip to set it back to Logged if you need to re-issue.');
     return;
   }
 
@@ -292,15 +293,20 @@ ${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to
   win.document.write(html);
   win.document.close();
 
-  // Mark the billed sessions so the next invoice doesn't re-charge them.
+  // Mark the billed sessions/parts so the next invoice doesn't re-charge them.
   if (!isQuote && onUpdate) {
-    const billed = new Set(log.map(e => e.id));
-    const updated = { ...machine, timeLog: allLog.map(e => billed.has(e.id) ? { ...e, billStatus: 'invoiced' } : e) };
+    const billedSessions = new Set(log.map(e => e.id));
+    const billedParts    = new Set(parts.map(p => p.id));
+    const updated = {
+      ...machine,
+      timeLog: allLog.map(e => billedSessions.has(e.id) ? { ...e, billStatus: 'invoiced' } : e),
+      parts:   allParts.map(p => billedParts.has(p.id)   ? { ...p, billStatus: 'invoiced' } : p),
+    };
     onUpdate(updated);
     try { await upsertMachine(updated); }
     catch (err) {
       console.error('mark invoiced:', err);
-      toastError("Invoice created, but couldn't mark sessions as invoiced — check connection");
+      toastError("Invoice created, but couldn't mark sessions/parts as invoiced — check connection");
     }
   }
 }
@@ -322,7 +328,8 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
   const [editingNotes, setEditingNotes] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
   const log = machine.timeLog || [];
-  if (!log.length) return null;
+  const hasParts = (machine.parts || []).length > 0;
+  if (!log.length && !hasParts) return null;
 
   const totalSecs = log.reduce((s, e) => s + (e.seconds || 0), 0);
 
@@ -371,22 +378,28 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
   return (
     <div style={{ marginTop: 8, padding: "8px 10px", background: "#0a0a0a", border: "1px solid #1e1e1e", borderRadius: 2 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span
-          onClick={() => setExpanded(x => !x)}
-          style={{ fontSize: 9, color: MUT, cursor: "pointer", userSelect: "none" }}
-        >
-          {expanded ? "▼" : "▶"}
-        </span>
-        <span
-          onClick={() => setExpanded(x => !x)}
-          style={{ fontSize: 9, color: GRN, letterSpacing: "0.06em", flex: 1, cursor: "pointer" }}
-        >
-          {log.length} session{log.length !== 1 ? "s" : ""} · {fmtDuration(totalSecs)} total
-        </span>
+        {log.length > 0 ? (
+          <>
+            <span
+              onClick={() => setExpanded(x => !x)}
+              style={{ fontSize: 9, color: MUT, cursor: "pointer", userSelect: "none" }}
+            >
+              {expanded ? "▼" : "▶"}
+            </span>
+            <span
+              onClick={() => setExpanded(x => !x)}
+              style={{ fontSize: 9, color: GRN, letterSpacing: "0.06em", flex: 1, cursor: "pointer" }}
+            >
+              {log.length} session{log.length !== 1 ? "s" : ""} · {fmtDuration(totalSecs)} total
+            </span>
+          </>
+        ) : (
+          <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em", flex: 1 }}>Parts only — no time logged</span>
+        )}
         <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote', onUpdate)} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Quote</button>
         <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice', onUpdate)} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Invoice</button>
       </div>
-      {expanded && (
+      {expanded && log.length > 0 && (
         <div style={{ marginTop: 8 }}>
           {log.map((entry, idx) => {
             const bs = BILL_STATUS[entry.billStatus || "logged"];
@@ -608,6 +621,27 @@ function PartsSection({ machine, onUpdate, userId }) {
     }
   };
 
+  const cyclePartBillStatus = async (partId) => {
+    const order = ["logged", "quoted", "invoiced"];
+    const original = machine;
+    const updated = {
+      ...machine,
+      parts: parts.map(p => {
+        if (p.id !== partId) return p;
+        const cur = p.billStatus || "logged";
+        const next = order[(order.indexOf(cur) + 1) % order.length];
+        return { ...p, billStatus: next };
+      }),
+    };
+    onUpdate(updated);
+    try { await upsertMachine(updated); }
+    catch (e) {
+      console.error("part bill status:", e);
+      onUpdate(original);
+      toastError("Couldn't update status — check connection");
+    }
+  };
+
   return (
     <div style={{ marginTop:8 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
@@ -754,6 +788,20 @@ function PartsSection({ machine, onUpdate, userId }) {
                 </div>
               )}
             </div>
+            {(() => { const bs = BILL_STATUS[p.billStatus || "logged"]; return (
+              <button
+                onClick={() => cyclePartBillStatus(p.id)}
+                title="Click to cycle: Logged → Quoted → Invoiced"
+                style={{
+                  background: "none", border: "1px solid " + bs.color + "55",
+                  color: bs.color, fontSize: 7, padding: "2px 5px", borderRadius: 2,
+                  cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace",
+                  fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", flexShrink: 0,
+                }}
+              >
+                {bs.label}
+              </button>
+            ); })()}
             <button onClick={() => remove(idx)} style={{ background:"none", border:"none", color:MUT, cursor:"pointer", fontSize:11, lineHeight:1, padding:"0 2px", flexShrink:0 }}>✕</button>
           </div>
         );
