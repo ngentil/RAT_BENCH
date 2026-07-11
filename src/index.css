@@ -39,6 +39,13 @@ button:active { opacity: 0.65; transform: scale(0.95); }
 }
 .arrow-guide { animation: arrowGlow 2.4s ease-in-out infinite; overflow: visible; display: block; }
 
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(61,158,80,0.55); }
+  70%  { box-shadow: 0 0 0 5px rgba(61,158,80,0); }
+  100% { box-shadow: 0 0 0 0 rgba(61,158,80,0); }
+}
+.live-dot { animation: livePulse 1.8s ease-out infinite; }
+
 @keyframes fieldGlow {
   0%, 100% { box-shadow: 0 0 0 1px rgba(232,135,10,0.25); }
   50%       { box-shadow: 0 0 0 2px rgba(232,135,10,0.50), 0 0 10px rgba(232,135,10,0.12); }
