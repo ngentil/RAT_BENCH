@@ -5,6 +5,11 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } fr
 
 const TIER_COLOR  = { free: MUT, enthusiast: '#e8670a', business: '#e8c20a' };
 const ALL_TIERS   = ['free', 'enthusiast', 'business'];
+// Display-only — the stored tier value is still literally 'enthusiast'/
+// 'business' in the DB (and that's what every RPC call below still sends),
+// this just avoids showing that raw legacy string to an admin who only
+// knows the tier as "Member" everywhere else in the app.
+const TIER_LABEL  = { free: 'Free', enthusiast: 'Member', business: 'Member', team: 'Member' };
 const ADMIN_TABS  = ['Overview', 'Users', 'Grants', 'Flags', 'Wiki Reports', 'Announcements', 'Audit'];
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
@@ -256,7 +261,7 @@ function UsersTab() {
                 onChange={e => setTier(u.email, e.target.value)}
                 disabled={busy === u.email}
               >
-                {ALL_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+                {ALL_TIERS.map(t => <option key={t} value={t}>{TIER_LABEL[t] || t}</option>)}
               </select>
               <button onClick={() => deactivate(u.email)} disabled={!!busy}
                 style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1 }}>
@@ -588,7 +593,7 @@ function AnnouncementsTab() {
               <div style={lbl}>Show to</div>
               <select style={inp} value={form.tier_filter} onChange={set('tier_filter')}>
                 <option value="all">All users</option>
-                {ALL_TIERS.map(t => <option key={t} value={t}>{t}</option>)}
+                {ALL_TIERS.map(t => <option key={t} value={t}>{TIER_LABEL[t] || t}</option>)}
               </select>
             </div>
             <div><div style={lbl}>Expires (optional)</div><input style={inp} type="datetime-local" value={form.expires_at} onChange={set('expires_at')} /></div>
