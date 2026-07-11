@@ -39,8 +39,12 @@ function GuideArrow({ anchor }) {
 
 function GuideStep1({ onSkip, isGuest, onUpgrade, visible }) {
   if (!visible) return null;
+  // marginTop clears the arrow's actual footprint (its box is 140px tall,
+  // anchored just above the button) — the arrow's tail dips down further
+  // than the old, much smaller arrow did, so this needed to grow to match
+  // or the tail would cut through this text.
   return (
-    <div style={{ marginTop:58, marginBottom:20, userSelect:"none" }}>
+    <div style={{ marginTop:134, marginBottom:20, userSelect:"none" }}>
       <div style={{ ..._M, fontSize:13, color:_ARW, fontWeight:700 }}>start here</div>
       <div style={{ ..._M, fontSize:9, color:"#666", marginTop:4 }}>tap + Add to track your first machine</div>
       <div style={{ ..._M, fontSize:9, color:"#555", marginTop:2 }}>name &amp; type is all you need to begin</div>
