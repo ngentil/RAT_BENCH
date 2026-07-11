@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ACC, MUT, BRD, SURF, TXT, RED, BG, inp, btnA, btnG, sm } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, RED, BG, GRN, inp, btnA, btnG, sm } from '../../lib/styles';
 import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
 import { hl } from './wikiSearchHighlight';
@@ -15,7 +15,7 @@ function getIncomingSearchQuery(embedded) {
 
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
-export function WikiHeader({ title, subtitle, backHref, backLabel }) {
+export function WikiHeader({ title, subtitle, backHref, backLabel, onlineCount }) {
   return (
     <div style={{ background: SURF, borderBottom: "2px solid " + ACC, padding: "12px 18px", display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ fontSize: 20 }}>🐀</span>
@@ -23,12 +23,18 @@ export function WikiHeader({ title, subtitle, backHref, backLabel }) {
         <div style={{ fontSize: 17, fontWeight: 700, color: ACC, letterSpacing: "0.04em", textTransform: "uppercase" }}>{title}</div>
         {subtitle && <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 1 }}>{subtitle}</div>}
       </div>
+      {onlineCount != null && (
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }} title="People currently viewing the wiki">
+          <span className="live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: GRN, display: "inline-block" }} />
+          <span style={{ fontSize: 9, color: MUT }}><span style={{ color: GRN, fontWeight: 700 }}>{onlineCount}</span> online</span>
+        </div>
+      )}
       {backHref && <a href={backHref} style={{ fontSize: 9, color: MUT, textDecoration: "none", letterSpacing: "0.06em" }}>{backLabel || "← Back"}</a>}
     </div>
   );
 }
 
-function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
+function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlineCount }) {
   const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
   const [entry, setEntry] = useState(null);
   const [revData, setRevData] = useState({});
@@ -190,6 +196,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false }) {
           subtitle="Rat Bench Wiki"
           backHref="/"
           backLabel="← Wiki"
+          onlineCount={onlineCount}
         />
       )}
       <div style={{ maxWidth: embedded ? "none" : 680, margin: embedded ? 0 : "0 auto", padding: embedded ? "0 0 24px" : "24px 16px" }}>

@@ -3,7 +3,7 @@ import { ACC, MUT, BRD, SURF, TXT, GRN, RED, BG, btnG, btnA, sm } from '../../li
 import { getWikiEntryBySlug, getWikiRevisions, revertToRevision, WIKI_FIELD_LABELS, getVerificationsForRevisions, submitWikiVerification } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 
-function WikiHistoryPage({ slug, profile }) {
+function WikiHistoryPage({ slug, profile, onlineCount }) {
   const [revs, setRevs] = useState([]);
   const [entry, setEntry] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,6 +86,7 @@ function WikiHistoryPage({ slug, profile }) {
         subtitle="Revision History"
         backHref={"/" + slug}
         backLabel="← Entry"
+        onlineCount={onlineCount}
       />
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px" }}>
         {revertOk && <div style={{ fontSize: 10, color: GRN, marginBottom: 12, padding: "8px 12px", background: "#0d1a0d", border: "1px solid #1a3a1a", borderRadius: 2 }}>{revertOk}</div>}

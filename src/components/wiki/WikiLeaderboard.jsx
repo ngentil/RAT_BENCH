@@ -5,7 +5,7 @@ import { WikiHeader } from './WikiEntryPage';
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-function WikiLeaderboard({ embedded = false, onBack }) {
+function WikiLeaderboard({ embedded = false, onBack, onlineCount }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +44,7 @@ function WikiLeaderboard({ embedded = false, onBack }) {
 
   return (
     <div style={{ minHeight: "100vh", background: BG, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>
-      <WikiHeader title="Top Contributors" subtitle="Rat Bench Wiki" backHref="/" backLabel="← Wiki" />
+      <WikiHeader title="Top Contributors" subtitle="Rat Bench Wiki" backHref="/" backLabel="← Wiki" onlineCount={onlineCount} />
       {body}
     </div>
   );
