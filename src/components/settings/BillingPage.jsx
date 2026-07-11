@@ -29,11 +29,17 @@ function GlowBtn({ onClick, disabled, style, glow, children }) {
 
 // Same single "Member" tier at three billing cadences — see the price-to-tier
 // mapping in supabase/functions/stripe-webhook, which maps all three back to
-// "enthusiast". Annual is ~10% cheaper than paying monthly all year.
+// "enthusiast". Each less-frequent option must be an unambiguous discount, not
+// just "correct" under a precise 52/12-weeks-per-month conversion nobody
+// actually does in their head — $15/mo (the exact 4.33x-weekly figure) reads
+// as a worse deal than weekly against the obvious "$3.50 x 4 = $14" napkin
+// math, so there'd be no reason to ever pick it. $13.50/mo beats both that
+// napkin math AND the precise weekly-equivalent ($15.17); $145/yr is ~10% off
+// paying monthly all year ($162).
 const PERIODS = [
-  { id: "weekly",  label: "Weekly",  price: "$3.50", per: "/wk", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_WEEKLY || import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST },
-  { id: "monthly", label: "Monthly", price: "$15",   per: "/mo", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_MONTHLY },
-  { id: "annual",  label: "Annual",  price: "$162",  per: "/yr", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_ANNUAL, badge: "Save 10%" },
+  { id: "weekly",  label: "Weekly",  price: "$3.50",  per: "/wk", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_WEEKLY || import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST },
+  { id: "monthly", label: "Monthly", price: "$13.50", per: "/mo", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_MONTHLY },
+  { id: "annual",  label: "Annual",  price: "$145",   per: "/yr", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_ANNUAL, badge: "Save 10%" },
 ];
 
 // One paid tier covers everything — see the comment in lib/gates.js for why
