@@ -30,23 +30,21 @@ const _M = { fontFamily:"'IBM Plex Mono',monospace" };
 function GuideArrow({ anchor }) {
   if (!anchor) return null;
   return (
-    <svg className="arrow-guide" width="62" height="54" viewBox="0 0 62 54" style={{ position:"absolute", right:anchor.right, top:anchor.top, zIndex:1 }}>
-      {/* Mirrored horizontally (tail was bottom-left curving to an
-          up-right-pointing head; now bottom-right curving to up-left) so the
-          arrowhead is now 54px in from the box's right edge, not 8px — see
-          the matching offset in the anchor calculation above. */}
-      <g transform="scale(-1,1) translate(-62,0)">
-        <path d="M 8 51 C 14 35, 32 18, 54 8" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
-        <path d="M 49 4 L 56 9 L 51 15" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      </g>
+    <svg className="arrow-guide" width="130" height="140" viewBox="0 0 130 140" style={{ position:"absolute", left:anchor.left, top:anchor.top, zIndex:1 }}>
+      <path d="M 118 128 C 95 90, 55 45, 22 18" stroke={_ARW} strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M 45 10 L 22 18 L 35 45" stroke={_ARW} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function GuideStep1({ onSkip, isGuest, onUpgrade, visible }) {
   if (!visible) return null;
+  // marginTop clears the arrow's actual footprint (its box is 140px tall,
+  // anchored just above the button) — the arrow's tail dips down further
+  // than the old, much smaller arrow did, so this needed to grow to match
+  // or the tail would cut through this text.
   return (
-    <div style={{ marginTop:58, marginBottom:20, userSelect:"none" }}>
+    <div style={{ marginTop:134, marginBottom:20, userSelect:"none" }}>
       <div style={{ ..._M, fontSize:13, color:_ARW, fontWeight:700 }}>start here</div>
       <div style={{ ..._M, fontSize:9, color:"#666", marginTop:4 }}>tap + Add to track your first machine</div>
       <div style={{ ..._M, fontSize:9, color:"#555", marginTop:2 }}>name &amp; type is all you need to begin</div>
@@ -128,14 +126,12 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       if(!addBtnRef.current||!contentRef.current)return;
       const btn=addBtnRef.current.getBoundingClientRect();
       const container=contentRef.current.getBoundingClientRect();
-      // The arrow is mirrored (see GuideArrow) so its head sits 54px in from
-      // the SVG box's own right edge, not 8px — anchoring the box's right
-      // edge straight to the button's right EDGE would land the arrowhead
-      // well past the button, not centered on it. Anchoring to the button's
-      // horizontal CENTER instead keeps it pointing squarely at the button
-      // regardless of the button's own width.
-      const btnCenterX=(btn.left+btn.right)/2-container.left;
-      setAddBtnAnchor({right:(container.right-container.left)-btnCenterX-54,top:btn.bottom-container.top+8});
+      // The arrow's tip sits at local (22,18) in its own 130x140 box (see
+      // GuideArrow) — anchored off the button's RIGHT edge (not left) so the
+      // tail sweeps down further to the right, clear of the guide text below
+      // rather than crossing through it.
+      const btnRightX=btn.right-container.left;
+      setAddBtnAnchor({left:btnRightX-8,top:btn.bottom-container.top-4});
     };
     measure();
     window.addEventListener('resize',measure);
