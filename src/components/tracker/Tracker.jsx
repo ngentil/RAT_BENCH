@@ -31,8 +31,14 @@ function GuideArrow({ anchor }) {
   if (!anchor) return null;
   return (
     <svg className="arrow-guide" width="62" height="54" viewBox="0 0 62 54" style={{ position:"absolute", right:anchor.right, top:anchor.top, zIndex:1 }}>
-      <path d="M 8 51 C 14 35, 32 18, 54 8" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
-      <path d="M 49 4 L 56 9 L 51 15" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Mirrored horizontally (tail was bottom-left curving to an
+          up-right-pointing head; now bottom-right curving to up-left) so the
+          arrowhead is now 54px in from the box's right edge, not 8px — see
+          the matching offset in the anchor calculation above. */}
+      <g transform="scale(-1,1) translate(-62,0)">
+        <path d="M 8 51 C 14 35, 32 18, 54 8" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
+        <path d="M 49 4 L 56 9 L 51 15" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
     </svg>
   );
 }
@@ -122,14 +128,14 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       if(!addBtnRef.current||!contentRef.current)return;
       const btn=addBtnRef.current.getBoundingClientRect();
       const container=contentRef.current.getBoundingClientRect();
-      // The arrowhead sits 8px in from the SVG box's own right edge (see the
-      // path's endpoint at x=54 of a 62-wide viewBox) — anchoring the box's
-      // right edge to the button's right EDGE therefore lands the arrowhead
-      // near that edge/corner, not centered on the button, which reads as
-      // pointing off at an angle rather than squarely at it. Anchoring to
-      // the button's horizontal CENTER instead fixes that.
+      // The arrow is mirrored (see GuideArrow) so its head sits 54px in from
+      // the SVG box's own right edge, not 8px — anchoring the box's right
+      // edge straight to the button's right EDGE would land the arrowhead
+      // well past the button, not centered on it. Anchoring to the button's
+      // horizontal CENTER instead keeps it pointing squarely at the button
+      // regardless of the button's own width.
       const btnCenterX=(btn.left+btn.right)/2-container.left;
-      setAddBtnAnchor({right:(container.right-container.left)-btnCenterX-8,top:btn.bottom-container.top+8});
+      setAddBtnAnchor({right:(container.right-container.left)-btnCenterX-54,top:btn.bottom-container.top+8});
     };
     measure();
     window.addEventListener('resize',measure);
