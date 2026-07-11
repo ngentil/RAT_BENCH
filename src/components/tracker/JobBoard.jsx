@@ -1373,7 +1373,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           </div>
         )}
       </div>
-      <TabGuide storageKey="rat_tut_jobs" variant="info" title="your job board" lines={["start a timer from any machine card in Tracker","time + parts log here automatically"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_jobs",false)} />
+      <TabGuide storageKey="rat_tut_jobs" variant="info" title="How this tab works" lines={["Open a machine from this tab and start its timer while you work on it.","Add parts or consumables as you use them — they're pulled from your Workshop stock and billed at their sell price.","Labour cost = hours × the rate you set in Settings → Billing & Storage."]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_jobs",false)} />
       {machines.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 24px" }}>
           <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
