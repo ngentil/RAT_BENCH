@@ -27,7 +27,14 @@ function GlowBtn({ onClick, disabled, style, glow, children }) {
   );
 }
 
-const MEMBER_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST;
+// Same single "Member" tier at three billing cadences — see the price-to-tier
+// mapping in supabase/functions/stripe-webhook, which maps all three back to
+// "enthusiast". Annual is ~10% cheaper than paying monthly all year.
+const PERIODS = [
+  { id: "weekly",  label: "Weekly",  price: "$3.50", per: "/wk", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_WEEKLY || import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST },
+  { id: "monthly", label: "Monthly", price: "$15",   per: "/mo", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_MONTHLY },
+  { id: "annual",  label: "Annual",  price: "$162",  per: "/yr", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_ANNUAL, badge: "Save 10%" },
+];
 
 // One paid tier covers everything — see the comment in lib/gates.js for why
 // (community-spam prevention + "you've got skin in the game", not an upsell
@@ -43,16 +50,37 @@ const PLANS = [
   {
     id: "enthusiast",
     label: "Member",
-    price: "$3.50",
-    period: "/wk",
-    features: ["Unlimited machines, tools, vehicles & equipment","Storage policy — automated fee tracking & escalation alerts","Publish & edit specs on the community Wiki","Sell on the Marketplace","Organisation / multi-user (3 seats included, more at $2/wk each)","Access control per machine & asset","Priority support","Early access to new features"],
+    features: ["Unlimited machines, tools, vehicles & equipment","Storage policy — automated fee tracking & escalation alerts","Publish & edit specs on the community Wiki","Sell & message on the Marketplace","Organisation / multi-user (3 seats included, more at $2/wk each)","Access control per machine & asset","Priority support","Early access to new features"],
     highlight: true,
   },
 ];
 
-function PlanCard({ plan, current, onUpgrade, onManage, loading, orgToggle }) {
+function PeriodPicker({ period, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 4, marginBottom: 14 }}>
+      {PERIODS.map(p => {
+        const active = p.id === period;
+        return (
+          <button key={p.id} onClick={() => onChange(p.id)} style={{
+            flex: 1, position: "relative", background: active ? ACC + "1a" : "none",
+            border: "1px solid " + (active ? ACC : BRD), color: active ? ACC : MUT,
+            fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+            textTransform: "uppercase", padding: "6px 4px", borderRadius: 2, cursor: "pointer",
+          }}>
+            {p.label}
+            {p.badge && <span style={{ position: "absolute", top: -8, right: -4, background: GRN, color: "#000", fontSize: 7, fontWeight: 700, padding: "1px 4px", borderRadius: 2 }}>{p.badge}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlanCard({ plan, current, onUpgrade, onManage, loading, orgToggle, period, onPeriodChange }) {
   const isCurrent = plan.id === current;
-  const price = plan.price + (plan.period || "");
+  const isMember = plan.id === "enthusiast";
+  const activePeriod = isMember ? PERIODS.find(p => p.id === period) : null;
+  const price = isMember ? activePeriod.price + activePeriod.per : plan.price + (plan.period || "");
   const isLoading = loading === plan.id;
 
   const accentColor = isCurrent ? GRN : plan.highlight ? ACC : BRD;
@@ -81,11 +109,19 @@ function PlanCard({ plan, current, onUpgrade, onManage, loading, orgToggle }) {
         </div>
       )}
       <div style={{ fontSize: 10, color: accentColor, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{plan.label}</div>
-      <div style={{ marginBottom: 16, display: "flex", alignItems: "baseline", gap: 4 }}>
-        <span style={{ fontSize: 32, fontWeight: 700, color: TXT, letterSpacing: "-0.02em", lineHeight: 1 }}>{price?.split("/")[0] || "$0"}</span>
-        {price?.includes("/") && <span style={{ fontSize: 12, color: MUT }}>/{price.split("/")[1]}</span>}
-        {plan.id === "free" && <span style={{ fontSize: 11, color: MUT }}>forever</span>}
-      </div>
+      {isMember && isCurrent ? (
+        // Which cadence (weekly/monthly/annual) a current subscriber is
+        // actually on isn't tracked locally — only Stripe knows — so this
+        // avoids showing a $-figure that might not match their real price.
+        <div style={{ marginBottom: 16, fontSize: 12, color: MUT }}>Active — see Manage Billing for your exact price and renewal date.</div>
+      ) : (
+        <div style={{ marginBottom: isMember ? 6 : 16, display: "flex", alignItems: "baseline", gap: 4 }}>
+          <span style={{ fontSize: 32, fontWeight: 700, color: TXT, letterSpacing: "-0.02em", lineHeight: 1 }}>{price?.split("/")[0] || "$0"}</span>
+          {price?.includes("/") && <span style={{ fontSize: 12, color: MUT }}>/{price.split("/")[1]}</span>}
+          {plan.id === "free" && <span style={{ fontSize: 11, color: MUT }}>forever</span>}
+        </div>
+      )}
+      {isMember && !isCurrent && <PeriodPicker period={period} onChange={onPeriodChange} />}
       <ul style={{ listStyle: "none", padding: 0, margin: "0 0 16px", fontSize: 11, lineHeight: 1.8 }}>
         {plan.features.map(f => (
           <li key={f} style={{ display: "flex", gap: 8, alignItems: "flex-start", color: MUT, paddingBottom: 2 }}>
@@ -96,7 +132,7 @@ function PlanCard({ plan, current, onUpgrade, onManage, loading, orgToggle }) {
       {!isCurrent && plan.id !== "free" && (
         <>
           <GlowBtn
-            onClick={() => onUpgrade(plan.id)}
+            onClick={() => onUpgrade(activePeriod)}
             disabled={isLoading}
             glow={ACC}
             style={{ ...btnA, ...sm, width: "100%", opacity: isLoading ? 0.6 : 1 }}
@@ -124,6 +160,7 @@ function BillingPage({ profile, company, session }) {
   const [loading, setLoading] = useState(null);
   const [err, setErr] = useState("");
   const [billViaOrg, setBillViaOrg] = useState(false);
+  const [period, setPeriod] = useState("monthly");
   const tier = effectiveTier(profile, company);
   // Legacy subscribers can be stored as "business"/"team" as well as
   // "enthusiast" — all three are the same single paid plan now, so normalize
@@ -133,13 +170,13 @@ function BillingPage({ profile, company, session }) {
   // which would call it "enthusiast" either way once both are the same tier).
   const orgIsBilled = !!(company?.tier && company.tier !== "free");
 
-  const handleUpgrade = async (planId) => {
-    setLoading(planId); setErr("");
+  const handleUpgrade = async (chosenPeriod) => {
+    setLoading("enthusiast"); setErr("");
     try {
       const base = window.location.origin;
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
-          price_id: MEMBER_PRICE_ID,
+          price_id: chosenPeriod.priceId,
           user_id: session.user.id,
           company_id: billViaOrg && company ? company.id : null,
           success_url: base + "/?billing=success",
@@ -200,6 +237,8 @@ function BillingPage({ profile, company, session }) {
             onUpgrade={handleUpgrade}
             loading={loading}
             orgToggle={plan.id === "enthusiast" ? orgToggle : null}
+            period={period}
+            onPeriodChange={setPeriod}
           />
         ))}
       </div>

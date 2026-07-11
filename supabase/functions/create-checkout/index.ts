@@ -18,13 +18,23 @@ function corsHeaders(req: Request) {
   };
 }
 
+// PRICE_ENTHUSIAST_MONTHLY / PRICE_ENTHUSIAST_ANNUAL are the same single
+// "Member" tier billed at a different cadence — see stripe-webhook for the
+// price→tier mapping. PRICE_PRO is kept allowlisted even though the app no
+// longer offers it in checkout, since create-portal-driven plan changes for
+// existing Business subscribers could still reference it.
 const VALID_PRICE_IDS = new Set(
-  [Deno.env.get("PRICE_ENTHUSIAST"), Deno.env.get("PRICE_PRO")].filter(Boolean)
+  [
+    Deno.env.get("PRICE_ENTHUSIAST"),
+    Deno.env.get("PRICE_ENTHUSIAST_MONTHLY"),
+    Deno.env.get("PRICE_ENTHUSIAST_ANNUAL"),
+    Deno.env.get("PRICE_PRO"),
+  ].filter(Boolean)
 );
 // Fail closed: with no allowlist configured, arbitrary caller-supplied price
 // ids would reach Stripe unchecked.
 if (VALID_PRICE_IDS.size === 0) {
-  console.error("create-checkout: PRICE_ENTHUSIAST / PRICE_PRO env vars not set — all requests will be rejected");
+  console.error("create-checkout: no PRICE_* env vars set — all requests will be rejected");
 }
 
 function isSafeUrl(url: string | undefined): boolean {

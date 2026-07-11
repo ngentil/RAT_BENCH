@@ -8,9 +8,16 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+// Weekly/monthly/annual are all the same single paid "Member" tier — just a
+// different billing cadence — so all three map to "enthusiast". PRICE_PRO is
+// kept mapped to "business" (rather than removed) purely so existing
+// Business subscribers' renewal events keep resolving to a known tier
+// instead of falling through to the "unmapped price → free" branch below.
 const PRICE_TO_TIER: Record<string, string> = {
-  [Deno.env.get("PRICE_ENTHUSIAST") || ""]: "enthusiast",
-  [Deno.env.get("PRICE_PRO")        || ""]: "business",
+  [Deno.env.get("PRICE_ENTHUSIAST")         || ""]: "enthusiast",
+  [Deno.env.get("PRICE_ENTHUSIAST_MONTHLY") || ""]: "enthusiast",
+  [Deno.env.get("PRICE_ENTHUSIAST_ANNUAL")  || ""]: "enthusiast",
+  [Deno.env.get("PRICE_PRO")                || ""]: "business",
 };
 
 serve(async (req) => {
