@@ -2,7 +2,16 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Netlify sets COMMIT_REF automatically for every build — surfacing it as
+// VITE_RELEASE lets Sentry tag every error with the exact commit that shipped
+// it, so "which deploy is this from" isn't a manual git-log hunt. Falls back
+// to undefined locally/outside Netlify, which Sentry just treats as no release.
+const RELEASE = process.env.COMMIT_REF || process.env.VERCEL_GIT_COMMIT_SHA;
+
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_RELEASE': JSON.stringify(RELEASE),
+  },
   plugins: [
     react(),
     VitePWA({
