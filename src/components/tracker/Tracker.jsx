@@ -223,7 +223,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:10,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:i===0?"2px 0 0 2px":i===arr.length-1?"0 2px 2px 0":0,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(active?c+"55":"#252525"),borderRight:i<arr.length-1?"none":undefined,background:active?c+"18":"transparent",color:active?c:c+"66"}}>{s||"All"} {count}</button>;
         })}
       </div>}
-      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:8,marginBottom:12}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:8,marginBottom:12,width:"fit-content"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",rowGap:6}}>
           <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,whiteSpace:"nowrap"}}>Machines</span>
           {sortBy&&<span style={{fontSize:10,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px",whiteSpace:"nowrap"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
@@ -244,9 +244,14 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
               </div>
             : <button style={{...btnA, minHeight:44, display:"flex", alignItems:"center"}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
+        {/* Rendered inside this width:"fit-content" header (rather than as a
+            full-width sibling below it) so GuideStep1's alignItems:"flex-end"
+            right-aligns the arrow to the actual button row's edge — i.e.
+            under the real +Add button — instead of the far edge of the whole
+            screen, which is where a full-width container would put it. */}
+        {tutStep===1&&<GuideStep1 onSkip={skipTut} isGuest={isGuest} onUpgrade={()=>setShowUpgrade(true)}/>}
       </div>
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
-      {tutStep===1&&<GuideStep1 onSkip={skipTut} isGuest={isGuest} onUpgrade={()=>setShowUpgrade(true)}/>}
       {tutStep===0&&machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
       {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
       {tutStep===2&&!tutCardOpened&&<GuideStep2 onSkip={skipTut}/>}
