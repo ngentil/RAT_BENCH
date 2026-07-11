@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, RED, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
@@ -19,21 +19,36 @@ import { tokenizeSearch } from '../../lib/wiki';
 const _ARW = "#e8870a";
 const _M = { fontFamily:"'IBM Plex Mono',monospace" };
 
-function GuideStep1({ onSkip, isGuest, onUpgrade }) {
+// The arrow needs pixel precision (it has to actually land on the +Add
+// button), so it's positioned via a measured anchor — but the button sits
+// fairly close to the left edge on a narrow phone screen, so right-anchoring
+// the TEXT below it the same way risked the text block overflowing past the
+// left edge entirely (there isn't always 200px of room to its left). The
+// text doesn't need pixel-perfect alignment the way the arrow does — it just
+// needs to be legible — so it renders in normal document flow, left-aligned
+// like the rest of the page, while only the arrow is absolutely positioned.
+function GuideArrow({ anchor }) {
+  if (!anchor) return null;
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", marginBottom:20, paddingRight:2, userSelect:"none" }}>
-      <svg className="arrow-guide" width="62" height="54" viewBox="0 0 62 54">
-        <path d="M 8 51 C 14 35, 32 18, 54 8" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
-        <path d="M 49 4 L 56 9 L 51 15" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <span style={{ ..._M, fontSize:13, color:_ARW, fontWeight:700, marginTop:4 }}>start here</span>
-      <span style={{ ..._M, fontSize:9, color:"#666", marginTop:4 }}>tap + Add to track your first machine</span>
-      <span style={{ ..._M, fontSize:9, color:"#555", marginTop:2 }}>name &amp; type is all you need to begin</span>
+    <svg className="arrow-guide" width="62" height="54" viewBox="0 0 62 54" style={{ position:"absolute", right:anchor.right, top:anchor.top, zIndex:1 }}>
+      <path d="M 8 51 C 14 35, 32 18, 54 8" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" />
+      <path d="M 49 4 L 56 9 L 51 15" stroke={_ARW} strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function GuideStep1({ onSkip, isGuest, onUpgrade, visible }) {
+  if (!visible) return null;
+  return (
+    <div style={{ marginTop:58, marginBottom:20, userSelect:"none" }}>
+      <div style={{ ..._M, fontSize:13, color:_ARW, fontWeight:700 }}>start here</div>
+      <div style={{ ..._M, fontSize:9, color:"#666", marginTop:4 }}>tap + Add to track your first machine</div>
+      <div style={{ ..._M, fontSize:9, color:"#555", marginTop:2 }}>name &amp; type is all you need to begin</div>
       {isGuest && (
-        <span style={{ ..._M, fontSize:10, color:"#444", marginTop:8 }}>
+        <div style={{ ..._M, fontSize:10, color:"#444", marginTop:8 }}>
           guest: 3-machine limit ·{" "}
           <span onClick={onUpgrade} style={{ color:_ARW, cursor:"pointer" }}>create a free account →</span>
-        </span>
+        </div>
       )}
       <button onClick={onSkip} style={{ ..._M, marginTop:12, background:"none", border:"none", color:"#333", fontSize:10, cursor:"pointer", padding:0, letterSpacing:"0.05em" }}>skip guide</button>
     </div>
@@ -93,6 +108,26 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   const [tutCardOpened,setTutCardOpened]=useState(false);
   const skipTut=()=>{setTutDone(true);savePref(profile?.id,'rat_tut',true);};
   const tutStep=!tutDone?(machines.length===0?1:machines.length===1?2:0):0;
+
+  // Measures the real +Add button position so GuideStep1's arrow can anchor
+  // to it precisely — flexbox right-alignment isn't reliable here since the
+  // guide's own text (e.g. "guest: 3-machine limit…") can be wider than the
+  // button row it's meant to point at.
+  const contentRef=useRef(null);
+  const addBtnRef=useRef(null);
+  const [addBtnAnchor,setAddBtnAnchor]=useState(null);
+  useLayoutEffect(()=>{
+    if(tutStep!==1){setAddBtnAnchor(null);return;}
+    const measure=()=>{
+      if(!addBtnRef.current||!contentRef.current)return;
+      const btn=addBtnRef.current.getBoundingClientRect();
+      const container=contentRef.current.getBoundingClientRect();
+      setAddBtnAnchor({right:container.right-btn.right,top:btn.bottom-container.top+8});
+    };
+    measure();
+    window.addEventListener('resize',measure);
+    return ()=>window.removeEventListener('resize',measure);
+  },[tutStep,isGuest]);
 
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
   const setViewP=v=>{setView(v);savePref(profile?.id,"trackerView",v);};
@@ -186,7 +221,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
   },[templateMachineId]);
 
   return (
-    <div style={{padding:16,flex:1}}>
+    <div ref={contentRef} style={{padding:16,flex:1,position:"relative"}}>
       {showAdd&&<ErrorBoundary><MachineForm existing={prefill||undefined} onSave={m=>{addM(m);setPrefill(null);}} onClose={()=>{setShowAdd(false);setPrefill(null);}} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/></ErrorBoundary>}
       {showSort&&(
         <div style={ovly} onClick={()=>setShowSort(false)}>
@@ -223,7 +258,7 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
           return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:10,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:i===0?"2px 0 0 2px":i===arr.length-1?"0 2px 2px 0":0,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(active?c+"55":"#252525"),borderRight:i<arr.length-1?"none":undefined,background:active?c+"18":"transparent",color:active?c:c+"66"}}>{s||"All"} {count}</button>;
         })}
       </div>}
-      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:8,marginBottom:12,width:"fit-content"}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:8,marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",rowGap:6}}>
           <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,whiteSpace:"nowrap"}}>Machines</span>
           {sortBy&&<span style={{fontSize:10,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",border:"1px solid "+ACC+"44",borderRadius:2,padding:"1px 5px",whiteSpace:"nowrap"}}>{SORT_OPTS.find(o=>o.k===sortBy)?.l}</span>}
@@ -242,15 +277,11 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>{machineLimit(profile,company)} machines — nice work</span>
                 <button style={{...btnA}} onClick={onGoToBilling}>Go unlimited →</button>
               </div>
-            : <button style={{...btnA, minHeight:44, display:"flex", alignItems:"center"}} onClick={()=>setShowAdd(true)}>+ Add</button>}
+            : <button ref={addBtnRef} style={{...btnA, minHeight:44, display:"flex", alignItems:"center"}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>
-        {/* Rendered inside this width:"fit-content" header (rather than as a
-            full-width sibling below it) so GuideStep1's alignItems:"flex-end"
-            right-aligns the arrow to the actual button row's edge — i.e.
-            under the real +Add button — instead of the far edge of the whole
-            screen, which is where a full-width container would put it. */}
-        {tutStep===1&&<GuideStep1 onSkip={skipTut} isGuest={isGuest} onUpgrade={()=>setShowUpgrade(true)}/>}
       </div>
+      <GuideArrow anchor={tutStep===1?addBtnAnchor:null}/>
+      <GuideStep1 onSkip={skipTut} isGuest={isGuest} onUpgrade={()=>setShowUpgrade(true)} visible={tutStep===1}/>
       {saving&&<div style={{fontSize:10,color:MUT,marginBottom:10}}>Saving...</div>}
       {tutStep===0&&machines.length===0&&<Empty icon="🔧" t="No machines yet" sub="Tap + Add above to add your first machine — mowers, bikes, generators, anything you work on." />}
       {machines.length>0&&sorted.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"24px 0"}}>No machines match your filter.</div>}
