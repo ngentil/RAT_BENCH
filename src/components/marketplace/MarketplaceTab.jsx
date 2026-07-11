@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT } from '../../lib/styles';
+import { effectiveTier } from '../../lib/gates';
 import { getMyUnreadCount, subscribeToMyMessages } from '../../lib/marketplace';
+import UpgradeBanner from '../ui/UpgradeBanner';
 import MarketplaceBrowse from './MarketplaceBrowse';
 import ListingDetail from './ListingDetail';
 import SellForm from './SellForm';
@@ -15,12 +17,16 @@ const NAV = [
   { id: "inbox",  label: "Messages" },
 ];
 
-function MarketplaceTab({ machines, profile }) {
+function MarketplaceTab({ machines, profile, company, onGoToBilling }) {
   const [view, setView] = useState("browse");
   const [listingId, setListingId] = useState(null);
   const [threadId, setThreadId] = useState(null);
   const [listingsRefreshKey, setListingsRefreshKey] = useState(0);
   const [unread, setUnread] = useState(0);
+  // Browsing and messaging stay free — selling is the community-facing write
+  // action a disposable account could spam, so it's gated the same way the
+  // Wiki gates publishing.
+  const isFree = effectiveTier(profile, company) === "free";
 
   const refreshUnread = () => getMyUnreadCount().then(setUnread);
 
@@ -84,12 +90,22 @@ function MarketplaceTab({ machines, profile }) {
       )}
 
       {view === "sell" && (
-        <SellForm
-          machines={machines}
-          profile={profile}
-          onCreated={(listing) => { setListingsRefreshKey(k => k + 1); openListing(listing.id); }}
-          onCancel={() => navTo("browse")}
-        />
+        isFree ? (
+          <div>
+            <UpgradeBanner text="Become a Member to sell on the Marketplace — it keeps listings free of spam accounts." onUpgrade={onGoToBilling} />
+            <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>
+              <div style={{ fontSize: 22, marginBottom: 10 }}>🛒</div>
+              Browsing and messaging sellers is always free.
+            </div>
+          </div>
+        ) : (
+          <SellForm
+            machines={machines}
+            profile={profile}
+            onCreated={(listing) => { setListingsRefreshKey(k => k + 1); openListing(listing.id); }}
+            onCancel={() => navTo("browse")}
+          />
+        )
       )}
 
       {view === "mine" && (
