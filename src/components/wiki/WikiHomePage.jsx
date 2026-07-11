@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ACC, MUT, BRD, SURF, TXT, BG, GRN } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
 import { searchWiki, getWikiStats, getRecentWikiEntries, tokenizeSearch, WIKI_FIELD_LABELS } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 import { hl } from './wikiSearchHighlight';
@@ -131,26 +131,15 @@ function WikiHomePage({ onSelect, embedded = false, profile, onShowLeaderboard, 
   const secLabel = t => (
     <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, margin: "4px 0 10px" }}>{t}</div>
   );
-  // Live viewer count — real Presence-based, shown next to the stats.
-  // Standalone (wiki subdomain) shows it in WikiHeader instead (present on
-  // every page there), so this spot is embedded-only to avoid a duplicate.
-  const onlineBadge = embedded && onlineCount != null && (
-    <div style={{ display: "flex", alignItems: "center", gap: 5 }} title="People currently viewing the wiki">
-      <span className="live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: GRN, display: "inline-block" }} />
-      <span style={{ fontSize: 10, color: MUT, letterSpacing: "0.04em" }}>
-        <span style={{ color: GRN, fontWeight: 700 }}>{onlineCount}</span> online
-      </span>
-    </div>
-  );
   // Headline social proof — how much community knowledge lives here.
+  // (Standalone shows the live online count in WikiHeader instead; embedded
+  // usage gets it for free from the main app shell's top bar, so neither
+  // needs its own copy here.)
   const statsLine = stats && stats.entries > 0 && (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ fontSize: 10, color: MUT, letterSpacing: "0.04em" }}>
-          <span style={{ color: ACC, fontWeight: 700 }}>{stats.entries.toLocaleString()}</span> machine{stats.entries !== 1 ? "s" : ""} documented
-          {stats.contributions > 0 && <> · <span style={{ color: ACC, fontWeight: 700 }}>{stats.contributions.toLocaleString()}</span> contribution{stats.contributions !== 1 ? "s" : ""}</>}
-        </div>
-        {onlineBadge}
+      <div style={{ fontSize: 10, color: MUT, letterSpacing: "0.04em" }}>
+        <span style={{ color: ACC, fontWeight: 700 }}>{stats.entries.toLocaleString()}</span> machine{stats.entries !== 1 ? "s" : ""} documented
+        {stats.contributions > 0 && <> · <span style={{ color: ACC, fontWeight: 700 }}>{stats.contributions.toLocaleString()}</span> contribution{stats.contributions !== 1 ? "s" : ""}</>}
       </div>
       {embedded
         ? <button onClick={onShowLeaderboard} style={{ background: "none", border: "none", color: ACC, fontSize: 9, letterSpacing: "0.06em", cursor: "pointer", padding: 0, fontFamily: "'IBM Plex Mono',monospace" }}>🏆 Leaderboard</button>
