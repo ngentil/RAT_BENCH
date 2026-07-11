@@ -23,9 +23,11 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling }) {
   const [threadId, setThreadId] = useState(null);
   const [listingsRefreshKey, setListingsRefreshKey] = useState(0);
   const [unread, setUnread] = useState(0);
-  // Browsing and messaging stay free — selling is the community-facing write
-  // action a disposable account could spam, so it's gated the same way the
-  // Wiki gates publishing.
+  // Browsing stays free; selling and starting a new conversation with a
+  // seller are the community-facing write actions a disposable account
+  // could spam, so both are gated the same way the Wiki gates publishing.
+  // An existing conversation (Messages tab / ThreadView) stays reachable
+  // even if you later lapse to free — only starting a new one is gated.
   const isFree = effectiveTier(profile, company) === "free";
 
   const refreshUnread = () => getMyUnreadCount().then(setUnread);
@@ -84,6 +86,8 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling }) {
         <ListingDetail
           listingId={listingId}
           profile={profile}
+          company={company}
+          onGoToBilling={onGoToBilling}
           onBack={() => navTo("browse")}
           onOpenThread={openThread}
         />
@@ -92,10 +96,10 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling }) {
       {view === "sell" && (
         isFree ? (
           <div>
-            <UpgradeBanner text="Become a Member to sell on the Marketplace — it keeps listings free of spam accounts." onUpgrade={onGoToBilling} />
+            <UpgradeBanner text="Become a Member to sell on the Marketplace — it keeps listings and outreach free of spam accounts." onUpgrade={onGoToBilling} />
             <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>
               <div style={{ fontSize: 22, marginBottom: 10 }}>🛒</div>
-              Browsing and messaging sellers is always free.
+              Browsing is always free.
             </div>
           </div>
         ) : (
