@@ -122,7 +122,14 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
       if(!addBtnRef.current||!contentRef.current)return;
       const btn=addBtnRef.current.getBoundingClientRect();
       const container=contentRef.current.getBoundingClientRect();
-      setAddBtnAnchor({right:container.right-btn.right,top:btn.bottom-container.top+8});
+      // The arrowhead sits 8px in from the SVG box's own right edge (see the
+      // path's endpoint at x=54 of a 62-wide viewBox) — anchoring the box's
+      // right edge to the button's right EDGE therefore lands the arrowhead
+      // near that edge/corner, not centered on the button, which reads as
+      // pointing off at an angle rather than squarely at it. Anchoring to
+      // the button's horizontal CENTER instead fixes that.
+      const btnCenterX=(btn.left+btn.right)/2-container.left;
+      setAddBtnAnchor({right:(container.right-container.left)-btnCenterX-8,top:btn.bottom-container.top+8});
     };
     measure();
     window.addEventListener('resize',measure);
