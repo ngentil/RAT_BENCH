@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { subscribeWikiPresence } from '../../lib/wiki';
 import WikiHomePage from './WikiHomePage';
 import WikiEntryPage from './WikiEntryPage';
 import WikiHistoryPage from './WikiHistoryPage';
@@ -9,6 +10,7 @@ import WikiLeaderboard from './WikiLeaderboard';
 function WikiApp() {
   const [profile, setProfile] = useState(null);
   const [session, setSession] = useState(null);
+  const [onlineCount, setOnlineCount] = useState(null);
 
   const raw = window.location.pathname.replace(/^\/+/, "").replace(/\/+$/, "");
   // decode %20 etc. — encoded slugs must match the DB slug column
@@ -25,10 +27,16 @@ function WikiApp() {
     });
   }, []);
 
-  if (slug === "leaderboard") return <WikiLeaderboard />;
-  if (slug && sub === "history") return <WikiHistoryPage slug={slug} session={session} profile={profile} />;
-  if (slug) return <WikiEntryPage slug={slug} session={session} profile={profile} />;
-  return <WikiHomePage />;
+  // One presence subscription per real page load, tracked regardless of
+  // which wiki page it turns out to be (home/entry/history/leaderboard) —
+  // so "N online" reflects anyone actively viewing any wiki page, not just
+  // the home/search screen.
+  useEffect(() => subscribeWikiPresence(setOnlineCount), []);
+
+  if (slug === "leaderboard") return <WikiLeaderboard onlineCount={onlineCount} />;
+  if (slug && sub === "history") return <WikiHistoryPage slug={slug} session={session} profile={profile} onlineCount={onlineCount} />;
+  if (slug) return <WikiEntryPage slug={slug} session={session} profile={profile} onlineCount={onlineCount} />;
+  return <WikiHomePage onlineCount={onlineCount} />;
 }
 
 export default WikiApp;
