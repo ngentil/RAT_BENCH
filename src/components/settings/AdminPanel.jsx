@@ -298,9 +298,14 @@ function StatusBadge({ g }) {
   );
 }
 
+// Grants only ever issue the single paid tier now — there's nothing left to
+// pick between, so this is a plain email + issue button rather than a tier
+// picker. grant_upgrade's p_tier param still takes a string server-side, so
+// 'enthusiast' is passed explicitly rather than removed from the RPC call.
+const GRANT_TIER = 'enthusiast';
+
 function GrantsTab() {
   const [email, setEmail]   = useState('');
-  const [tier,  setTier]    = useState('business');
   const [busy,  setBusy]    = useState(false);
   const [msg,   setMsg]     = useState(null);
   const [grants, setGrants] = useState([]);
@@ -316,7 +321,7 @@ function GrantsTab() {
   const grant = async () => {
     if (!email.trim()) return;
     setBusy(true); setMsg(null);
-    const { data, error } = await supabase.rpc('grant_upgrade', { p_email: email.trim(), p_tier: tier });
+    const { data, error } = await supabase.rpc('grant_upgrade', { p_email: email.trim(), p_tier: GRANT_TIER });
     setBusy(false);
     if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
     setMsg({ ok: true, text: `Code ${data.code} issued to ${email.trim()}` });
@@ -334,26 +339,15 @@ function GrantsTab() {
   return (
     <div>
       <div style={{ background: '#08080f', border: '1px solid ' + ACC + '44', borderRadius: 2, padding: 14, marginBottom: 16 }}>
-        <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>Issue Upgrade</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, marginBottom: 10, alignItems: 'flex-end' }}>
-          <div style={col}>
-            <div style={lbl}>User Email</div>
-            <input style={inp} type="email" placeholder="user@example.com" value={email}
-              onChange={e => { setEmail(e.target.value); setMsg(null); }} onKeyDown={e => e.key === 'Enter' && grant()} />
-          </div>
-          <div style={col}>
-            <div style={lbl}>Tier</div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {['enthusiast','team','business'].map(t => (
-                <button key={t} onClick={() => setTier(t)} style={{ ...btnG, ...sm, textTransform: 'capitalize',
-                  ...(tier === t ? { color: TIER_COLOR[t], border: '1px solid ' + TIER_COLOR[t] } : {}) }}>{t}</button>
-              ))}
-            </div>
-          </div>
+        <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>Issue Membership</div>
+        <div style={col}>
+          <div style={lbl}>User Email</div>
+          <input style={inp} type="email" placeholder="user@example.com" value={email}
+            onChange={e => { setEmail(e.target.value); setMsg(null); }} onKeyDown={e => e.key === 'Enter' && grant()} />
         </div>
         <Msg m={msg} />
         <button onClick={grant} disabled={busy || !email.trim()} style={{ ...btnA, ...sm, opacity: busy || !email.trim() ? 0.5 : 1 }}>
-          {busy ? 'Issuing…' : 'Issue Upgrade'}
+          {busy ? 'Issuing…' : 'Issue Membership'}
         </button>
       </div>
 

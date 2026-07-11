@@ -5,7 +5,7 @@ import { updateProfile } from '../../lib/db';
 import { getMyContributionStats, getMyWikiPoints, setWikiLeaderboardOptIn } from '../../lib/wiki';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
 import { Tooltip } from '../ui/shared';
-const TIER_LABEL = { enthusiast:"Enthusiast", team:"Team", business:"Business" };
+const TIER_LABEL = { enthusiast:"Member", team:"Member", business:"Member" };
 
 function timeLeft(expiresAt) {
   const ms = new Date(expiresAt) - Date.now();

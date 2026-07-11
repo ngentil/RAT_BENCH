@@ -12,10 +12,13 @@ import { getMachineServiceStatus } from './lib/helpers';
 import { savePref, migrateLocalPreferences } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
 
+// One paid tier ("Member") replaced the old Enthusiast/Business split — all
+// three legacy tier values light up the same glow so existing subscribers on
+// any of them see identical treatment.
 const TIER_GLOW = {
-  enthusiast: { color: "#e8670a", label: "Enthusiast" },
-  team:       { color: "#0a8fe8", label: "Pro"        },
-  business:   { color: "#e8c20a", label: "Pro"        },
+  enthusiast: { color: "#e8670a", label: "Member" },
+  team:       { color: "#e8670a", label: "Member" },
+  business:   { color: "#e8670a", label: "Member" },
 };
 import AuthScreen from './components/auth/AuthScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
@@ -448,7 +451,7 @@ function App(){
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={machines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={machines} profile={profile}/>}</div>
+      <div style={{display:tab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={machines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/>}</div>
       <div style={{display:tab==="workshop"&&workshopTab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>

@@ -15,7 +15,7 @@ const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.
 function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,vehicles,equipment,tools,initialTab}){
   const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
   const tier = effectiveTier(profile, company);
-  const isTeam = tier === "business";
+  const isPaid = tier !== "free";
   const [tab,setTab]=useState(initialTab||"profile");
   const baseTabs=[
     {id:"profile",  label:"Profile"},
@@ -23,7 +23,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
     {id:"billing",  label:"Billing"},
     {id:"storage",  label:"Billing & Storage"},
     {id:"tabs",     label:"⇅ Tabs"},
-    ...(isTeam?[{id:"users",label:"👥 Users"}]:[]),
+    ...(isPaid?[{id:"users",label:"👥 Users"}]:[]),
   ];
   const tabs = applyTabOrder(baseTabs, profile?.tab_order?.settings).concat(
     isAdmin ? [{id:"admin",label:"⚙ Admin"}] : []
@@ -40,7 +40,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
       {tab==="billing"&&<BillingPage profile={profile} company={company} session={session}/>}
       {tab==="storage"&&<StorageSettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany}/>}
       {tab==="tabs"&&<TabOrderSettings profile={profile} setProfile={setProfile}/>}
-      {tab==="users"&&isTeam&&<UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("billing")}/>}
+      {tab==="users"&&isPaid&&<UsersTab company={company} session={session} profile={profile} setCompany={setCompany} onGoToBilling={()=>setTab("billing")}/>}
       {tab==="admin"&&isAdmin&&<AdminPanel/>}
     </div>
   );

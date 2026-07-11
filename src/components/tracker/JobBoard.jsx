@@ -978,7 +978,7 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   if (locked) {
     return (
       <div style={{ marginTop: 10 }}>
-        <UpgradeBanner text="Job timers require an Enthusiast subscription." onUpgrade={onGoToBilling} />
+        <UpgradeBanner text="Job timers require a Membership." onUpgrade={onGoToBilling} />
       </div>
     );
   }
@@ -1249,7 +1249,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
           {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
           {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={onUpdate} />}
           {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
-          {timerLocked && <UpgradeBanner text="Timer & parts log unlocks on Enthusiast." onUpgrade={onGoToBilling} marginBottom={0} />}
+          {timerLocked && <UpgradeBanner text="Timer & parts log unlocks with Membership." onUpgrade={onGoToBilling} marginBottom={0} />}
           {grandTotal > 0 && (
             <div style={{ marginTop: 10, padding: "8px 10px", background: "#0a0f0a", border: "1px solid #1e2e1e", borderRadius: 2, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>Cost Summary</span>

@@ -137,7 +137,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
   useEffect(() => {
     if (session?.user?.id) getConsumables().then(setConsumables).catch(() => {});
   }, [session?.user?.id]);
-  const canMultiUser=effectiveTier(profile,company)==="business";
+  const canMultiUser=effectiveTier(profile,company)!=="free";
   const [myRole,setMyRole]=useState(null);
   useEffect(()=>{
     if(!company?.id||!session?.user?.id) return;

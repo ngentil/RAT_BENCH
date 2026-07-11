@@ -29,7 +29,7 @@ function WikiTab({ session, profile, company, onGoToBilling }) {
 
   return (
     <div>
-      {isFree && <UpgradeBanner text="The wiki is free to read. Upgrade to Enthusiast to publish your own specs." onUpgrade={onGoToBilling} />}
+      {isFree && <UpgradeBanner text="The wiki is free to read. Become a Member to publish your own specs." onUpgrade={onGoToBilling} />}
       <WikiHomePage
         onSelect={slug => setCurrentSlug(slug)}
         onShowLeaderboard={() => setShowLeaderboard(true)}

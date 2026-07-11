@@ -51,7 +51,7 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
   const myMember = members.find(m => m.user_id === session?.user?.id);
   const isOwner = myMember?.role === 'owner';
   const tier = effectiveTier(profile, company);
-  const canManageUsers = tier === "business";
+  const canManageUsers = tier !== "free";
   const seats = seatLimit(profile, company);
   const atSeatLimit = seats > 0 && members.length >= seats;
 
@@ -68,7 +68,7 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
         <div style={{ fontSize: 28 }}>👥</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Team Management</div>
         <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Invite staff, assign roles, and manage access to your shop. Available on the Business plan.
+          Invite staff, assign roles, and manage access to your shop. Available to Members.
         </div>
         {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
       </div>

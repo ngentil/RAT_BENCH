@@ -189,7 +189,7 @@ function StorageSettings({ profile, setProfile, company, setCompany }) {
         <div style={{ ...secHd, marginBottom: 12 }}>Storage Policy</div>
         {!canAccessStorage ? (
           <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "16px 18px" }}>
-            <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Enthusiast Feature</div>
+            <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Member Feature</div>
             <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>
               Storage policy lets you track daily storage fees for machines left in your shop.<br />
               After a tier-defined free period, fees accumulate automatically. Machines overdue for pickup are flagged for sale.
