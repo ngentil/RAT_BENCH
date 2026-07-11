@@ -20,16 +20,20 @@ function corsHeaders(req: Request) {
   };
 }
 
-// PRICE_ENTHUSIAST_MONTHLY / PRICE_ENTHUSIAST_ANNUAL are the same single
+// PRICE_ENTHUSIAST_MONTHLY / PRICE_ENTHUSIAST_YEARLY are the same single
 // "Member" tier billed at a different cadence — see stripe-webhook for the
-// price→tier mapping. PRICE_PRO is kept allowlisted even though the app no
-// longer offers it in checkout, since create-portal-driven plan changes for
-// existing Business subscribers could still reference it.
+// price→tier mapping. These are independent Supabase secrets, not required
+// to match the client's Netlify env var names (which carry some leftover
+// naming from an older build — VITE_STRIPE_PRICE_BUSINESS is actually the
+// weekly price client-side, for instance). PRICE_PRO is kept allowlisted
+// even though the app no longer offers it in checkout, since
+// create-portal-driven plan changes for existing Business subscribers could
+// still reference it.
 const VALID_PRICE_IDS = new Set(
   [
     Deno.env.get("PRICE_ENTHUSIAST"),
     Deno.env.get("PRICE_ENTHUSIAST_MONTHLY"),
-    Deno.env.get("PRICE_ENTHUSIAST_ANNUAL"),
+    Deno.env.get("PRICE_ENTHUSIAST_YEARLY"),
     Deno.env.get("PRICE_PRO"),
   ].filter(Boolean)
 );
