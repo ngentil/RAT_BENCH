@@ -174,7 +174,7 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
           Track your billable hours and see what you're actually making per machine. Worth it once you're charging for your time.
         </div>
         <button onClick={onGoToBilling} style={{ ...btnA, ...sm, color: "#fff" }}>
-          Upgrade to Enthusiast →
+          Become a Member →
         </button>
       </div>
     );

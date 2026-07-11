@@ -206,7 +206,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
         <div style={{ fontSize: 28 }}>👤</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Clients</div>
         <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Link machines to clients, track work history per customer, and generate client reports. Available on the Enthusiast plan and above.
+          Link machines to clients, track work history per customer, and generate client reports. Available to Members.
         </div>
         {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
       </div>

@@ -12,10 +12,13 @@ import { getMachineServiceStatus } from './lib/helpers';
 import { savePref, migrateLocalPreferences } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
 
+// One paid tier ("Member") replaced the old Enthusiast/Business split — all
+// three legacy tier values light up the same glow so existing subscribers on
+// any of them see identical treatment.
 const TIER_GLOW = {
-  enthusiast: { color: "#e8670a", label: "Enthusiast" },
-  team:       { color: "#0a8fe8", label: "Pro"        },
-  business:   { color: "#e8c20a", label: "Pro"        },
+  enthusiast: { color: "#e8670a", label: "Member" },
+  team:       { color: "#e8670a", label: "Member" },
+  business:   { color: "#e8670a", label: "Member" },
 };
 import AuthScreen from './components/auth/AuthScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
