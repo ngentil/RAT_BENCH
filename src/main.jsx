@@ -11,6 +11,10 @@ import ErrorBoundary from './components/ui/ErrorBoundary';
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: import.meta.env.MODE,
+  // Set at build time from the deploy's git commit (see vite.config.js) so
+  // errors in Sentry can be grouped/filtered by which deploy introduced them
+  // — without this every error looks like it's from "unknown release".
+  release: import.meta.env.VITE_RELEASE || undefined,
   enabled: import.meta.env.PROD && !!import.meta.env.VITE_SENTRY_DSN,
   tracesSampleRate: 0.1,
   integrations: [Sentry.browserTracingIntegration()],

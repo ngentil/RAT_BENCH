@@ -36,10 +36,14 @@ function GlowBtn({ onClick, disabled, style, glow, children }) {
 // math, so there'd be no reason to ever pick it. $13.50/mo beats both that
 // napkin math AND the precise weekly-equivalent ($15.17); $145/yr is ~10% off
 // paying monthly all year ($162).
+// VITE_STRIPE_PRICE_BUSINESS is the actual live weekly price despite the
+// name — leftover from an older build's tier naming that was never cleaned
+// up. Kept as the primary source rather than renamed in Netlify, with a
+// couple of fallbacks for whenever that naming does get tidied up.
 const PERIODS = [
-  { id: "weekly",  label: "Weekly",  price: "$3.50",  per: "/wk", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_WEEKLY || import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST },
-  { id: "monthly", label: "Monthly", price: "$13.50", per: "/mo", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_MONTHLY },
-  { id: "annual",  label: "Annual",  price: "$145",   per: "/yr", priceId: import.meta.env.VITE_STRIPE_PRICE_MEMBER_ANNUAL, badge: "Save 10%" },
+  { id: "weekly",  label: "Weekly",  price: "$3.50",  per: "/wk", priceId: import.meta.env.VITE_STRIPE_PRICE_BUSINESS || import.meta.env.VITE_STRIPE_PRICE_MEMBER_WEEKLY || import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST },
+  { id: "monthly", label: "Monthly", price: "$13.50", per: "/mo", priceId: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_MONTHLY },
+  { id: "annual",  label: "Annual",  price: "$145",   per: "/yr", priceId: import.meta.env.VITE_STRIPE_PRICE_ENTHUSIAST_YEARLY, badge: "Save 10%" },
 ];
 
 // One paid tier covers everything — see the comment in lib/gates.js for why

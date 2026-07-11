@@ -1,7 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@13.11.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { initSentry } from "../_shared/sentry.ts";
 
+const Sentry = initSentry("create-checkout");
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" });
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -18,16 +20,20 @@ function corsHeaders(req: Request) {
   };
 }
 
-// PRICE_ENTHUSIAST_MONTHLY / PRICE_ENTHUSIAST_ANNUAL are the same single
+// PRICE_ENTHUSIAST_MONTHLY / PRICE_ENTHUSIAST_YEARLY are the same single
 // "Member" tier billed at a different cadence — see stripe-webhook for the
-// price→tier mapping. PRICE_PRO is kept allowlisted even though the app no
-// longer offers it in checkout, since create-portal-driven plan changes for
-// existing Business subscribers could still reference it.
+// price→tier mapping. These are independent Supabase secrets, not required
+// to match the client's Netlify env var names (which carry some leftover
+// naming from an older build — VITE_STRIPE_PRICE_BUSINESS is actually the
+// weekly price client-side, for instance). PRICE_PRO is kept allowlisted
+// even though the app no longer offers it in checkout, since
+// create-portal-driven plan changes for existing Business subscribers could
+// still reference it.
 const VALID_PRICE_IDS = new Set(
   [
     Deno.env.get("PRICE_ENTHUSIAST"),
     Deno.env.get("PRICE_ENTHUSIAST_MONTHLY"),
-    Deno.env.get("PRICE_ENTHUSIAST_ANNUAL"),
+    Deno.env.get("PRICE_ENTHUSIAST_YEARLY"),
     Deno.env.get("PRICE_PRO"),
   ].filter(Boolean)
 );
@@ -35,6 +41,7 @@ const VALID_PRICE_IDS = new Set(
 // ids would reach Stripe unchecked.
 if (VALID_PRICE_IDS.size === 0) {
   console.error("create-checkout: no PRICE_* env vars set — all requests will be rejected");
+  Sentry.captureMessage("create-checkout: no PRICE_* env vars set — all requests will be rejected", "error");
 }
 
 function isSafeUrl(url: string | undefined): boolean {
@@ -150,6 +157,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ url: session.url }), { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
   } catch (err) {
     console.error("create-checkout error:", err);
+    Sentry.captureException(err);
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: CORS });
   }
 });
