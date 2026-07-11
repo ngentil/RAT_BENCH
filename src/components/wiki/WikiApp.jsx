@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { subscribeWikiPresence } from '../../lib/wiki';
+import { subscribeSitePresence } from '../../lib/presence';
 import WikiHomePage from './WikiHomePage';
 import WikiEntryPage from './WikiEntryPage';
 import WikiHistoryPage from './WikiHistoryPage';
@@ -27,11 +27,11 @@ function WikiApp() {
     });
   }, []);
 
-  // One presence subscription per real page load, tracked regardless of
-  // which wiki page it turns out to be (home/entry/history/leaderboard) —
-  // so "N online" reflects anyone actively viewing any wiki page, not just
-  // the home/search screen.
-  useEffect(() => subscribeWikiPresence(setOnlineCount), []);
+  // One presence subscription per real page load, on the same shared channel
+  // the main app's top bar uses — so "N online" is a single site-wide count
+  // (public wiki visitors + logged-in app users together), not scoped to
+  // just this page.
+  useEffect(() => subscribeSitePresence(setOnlineCount), []);
 
   if (slug === "leaderboard") return <WikiLeaderboard onlineCount={onlineCount} />;
   if (slug && sub === "history") return <WikiHistoryPage slug={slug} session={session} profile={profile} onlineCount={onlineCount} />;

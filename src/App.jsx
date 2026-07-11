@@ -11,6 +11,7 @@ import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
 import { savePref, migrateLocalPreferences } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
+import { subscribeSitePresence } from './lib/presence';
 
 // One paid tier ("Member") replaced the old Enthusiast/Business split — all
 // three legacy tier values light up the same glow so existing subscribers on
@@ -71,6 +72,7 @@ function App(){
   const [announcements,setAnnouncements]=useState([]);
   const [dismissedAnns,setDismissedAnns]=useState([]);
   const [prefsSynced,setPrefsSynced]=useState(false);
+  const [onlineCount,setOnlineCount]=useState(null);
 
   const dismissAnn=(id)=>{
     const next=[...dismissedAnns,id];
@@ -199,6 +201,11 @@ function App(){
 
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'tab',tab); },[tab,prefsSynced,profile?.id]);
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'workshopTab',workshopTab); },[workshopTab,prefsSynced,profile?.id]);
+
+  // Site-wide "N online" — real Presence count, shared with the public wiki
+  // subdomain via the same channel, shown always in the top bar regardless
+  // of which tab is active.
+  useEffect(()=>subscribeSitePresence(setOnlineCount),[]);
 
   // Ref guard: setPrefsSynced(true) lands asynchronously, so a profile refresh
   // (e.g. the billing poll) mid-migration must not start a second migration or
@@ -401,7 +408,15 @@ function App(){
             ? <img src={company.logo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD}}/>
             : <span style={{fontSize:20}}>🐀</span>}
           <div>
-            <div style={{fontSize:17,fontWeight:700,color:ACC,letterSpacing:"0.04em",textTransform:"uppercase"}}>Rat Bench</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:17,fontWeight:700,color:ACC,letterSpacing:"0.04em",textTransform:"uppercase"}}>Rat Bench</span>
+              {onlineCount!=null&&(
+                <span style={{display:"flex",alignItems:"center",gap:5}} title="People currently using Rat Bench">
+                  <span className="live-dot" style={{width:6,height:6,borderRadius:"50%",background:GRN,display:"inline-block"}}/>
+                  <span style={{fontSize:9,color:MUT}}><span style={{color:GRN,fontWeight:700}}>{onlineCount}</span> online</span>
+                </span>
+              )}
+            </div>
             {company
               ? <div style={{fontSize:9,color:TXT,letterSpacing:"0.08em",textTransform:"uppercase",marginTop:1}}>{company.name}</div>
               : <div style={{fontSize:9,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:1}}>small engine & equipment repair</div>}

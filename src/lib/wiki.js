@@ -323,25 +323,6 @@ export async function getWikiStats() {
   return { entries: entries || 0, contributions: contributors || 0 };
 }
 
-// Live count of browsers currently on the wiki home/search screen, via a
-// Supabase Realtime Presence channel — a genuine concurrent-viewer count,
-// not a synthetic one. Each mount tracks itself under a fresh random key
-// (no persisted identity — just "a tab is here right now"); onCount fires
-// with the distinct-key count on every join/leave. Returns an unsubscribe.
-export function subscribeWikiPresence(onCount) {
-  const channel = supabase.channel('wiki-online', {
-    config: { presence: { key: crypto.randomUUID() } },
-  });
-  channel
-    .on('presence', { event: 'sync' }, () => {
-      onCount(Object.keys(channel.presenceState()).length);
-    })
-    .subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') await channel.track({ online_at: new Date().toISOString() });
-    });
-  return () => supabase.removeChannel(channel);
-}
-
 // Newest entries first — for a "recently added" strip.
 export async function getRecentWikiEntries(limit = 8) {
   const { data } = await supabase.from("wiki_entries")
