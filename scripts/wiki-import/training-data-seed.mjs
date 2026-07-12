@@ -904,6 +904,17 @@ const ENTRIES = [
     },
   },
   {
+    make:'Briggs & Stratton', model:'450 Series', type:'Lawnmower', source:SRC, editSummary:SUM,
+    specData:{
+      strokeType:'4-stroke', ccSize:'148cc', cylCount:'1',
+      coolingType:'Air-cooled', fuelSystem:'Carburettor',
+      plugType:'Champion RC12YC (cross-references to LM19/QJ19LM)', plugGap:'0.76mm (0.030in)',
+      idleRpm:'1750 RPM', wotRpm:'3060 RPM (rated speed — gross torque 6.1 Nm / 4.5 ft-lb at this speed)',
+      valveTrain:'OHV', boreDiameter:'65.1mm', starterType:'Recoil', weightKg:'9.0',
+      notes:'Not the same engine as the older 450E Series (127cc) also in this wiki — Briggs reused the "450" marketing name on a newer, larger-displacement (148cc) block, so treat them as separate engines even though the badge looks identical. Bore×stroke 65.1mm×44.5mm. Fuel tank: 0.9L. Oil: SAE 30 or 10W-30, sump capacity approx. 0.5–0.6L (fill to the dipstick/plug line, don\'t go by a fixed volume — overfilling is a common cause of smoking on these). Oil change: first 5 hrs, then every 25 hrs or once per season, whichever comes first. Air filter (foam or paper depending on production year): check every 25 hrs, clean/replace more often in dusty conditions. Ignition: Magnetron electronic (no points, nothing to gap on the ignition side). Valve clearance is NOT confirmed specifically for this model here — general single-cylinder B&S OHV family range is approx. 0.10–0.13mm (0.003–0.005in) intake and 0.13–0.18mm (0.005–0.007in) exhaust, but "450 Series" is a marketing badge that has covered more than one actual model/type/code number over its production run, and exact valve clearance and torque specs (flywheel nut, head bolts) vary by the specific numeric model/type/code stamped on the blower housing — always confirm against that exact number (via Briggs\' online model-number lookup) before doing valve or head work, rather than relying on the "450 Series" name alone. Common failure points reported for this class of engine: carburettor bowl/float sticking after ethanol-fuel storage (drain or use a stabiliser over winter), and recoil starter pawl/spring wear from repeated hard yanks on a flooded engine — check for spark and fuel delivery before assuming a starter fault.',
+    },
+  },
+  {
     make:'Briggs & Stratton', model:'500E Series', type:'Lawnmower', source:SRC, editSummary:SUM,
     specData:{
       strokeType:'4-stroke', ccSize:'140cc', cylCount:'1',
