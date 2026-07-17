@@ -19,13 +19,16 @@ export const TIERS = {
 };
 TIERS.team = TIERS.business;
 
-const TIER_RANK = { free: 0, enthusiast: 1, team: 1, business: 1 };
-
-// Resolve the effective tier — returns whichever of profile or company is higher
+// The paywall has been removed — Rat Bench is free for everyone. Every
+// account resolves to the "enthusiast"/Member tier (now just meaning "full
+// access", not "paid"), so every limit/feature check below — and every
+// isFree/canUse() check across the app, since they all route through this
+// function — resolves as unlocked without needing to touch each call site.
+// profile.tier / company.tier are left alone in the DB (harmless legacy
+// values, still written by the Stripe webhook for any pre-existing
+// subscriber) but are no longer read for gating.
 export function effectiveTier(profile, company) {
-  const p = profile?.tier || "free";
-  const c = company?.tier || "free";
-  return (TIER_RANK[p] ?? 0) >= (TIER_RANK[c] ?? 0) ? p : c;
+  return "enthusiast";
 }
 
 // Feature gate check — any paid tier (whichever legacy value it's stored as)
