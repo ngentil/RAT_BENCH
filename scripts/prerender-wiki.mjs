@@ -21,8 +21,8 @@ const WIKI_ORIGIN = 'https://wiki.ratbench.net';
 
 // Slugs that would shadow real app/SPA routes or build assets — never prerender.
 const RESERVED = new Set([
-  'index', 'terms', 'privacy', 'data-retention', 'm', 'assets', 'sw',
-  'registerSW', 'manifest', 'sitemap', 'robots', 'favicon', 'workbox',
+  'index', 'terms', 'privacy', 'data-retention', 'm', 'listing', 'marketplace',
+  'assets', 'sw', 'registerSW', 'manifest', 'sitemap', 'robots', 'favicon', 'workbox',
 ]);
 
 // Compact label map for the most useful spec fields (mirrors WIKI_FIELD_LABELS);

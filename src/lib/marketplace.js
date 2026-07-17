@@ -55,7 +55,12 @@ export async function getActiveListings({ type, query } = {}) {
   let q = supabase.from('marketplace_listings').select('*')
     .eq('status', 'active').order('created_at', { ascending: false });
   if (type) q = q.eq('type', type);
-  if (query?.trim()) q = q.ilike('title', `%${query.trim()}%`);
+  if (query?.trim()) {
+    const t = query.trim().replace(/[%_]/g, '\\$&');
+    // Same substring model as the Wiki's default search — title, description,
+    // and make/model so a query like "honda" or "gx390" both match.
+    q = q.or(`title.ilike.%${t}%,description.ilike.%${t}%,make.ilike.%${t}%,model.ilike.%${t}%`);
+  }
   const { data, error } = await q;
   if (error) throw error;
   return data || [];
@@ -66,6 +71,56 @@ export async function getListingById(listingId) {
     .select('*').eq('id', listingId).single();
   if (error) return null;
   return data;
+}
+
+// ── Public discovery (no auth required) ───────────────────────────────────────
+// Mirrors the Wiki's public-reader mechanics — active listings are already
+// readable by anon (marketplace_listings.sql's SELECT policy), this just adds
+// the "most viewed" / "recently added" / view-count pieces on top.
+
+// A single active listing by id, for the public /listing/:id page — same
+// query getListingById already runs; RLS already scopes it to active-only
+// for anon callers, no separate RPC needed.
+export async function getPublicListing(listingId) {
+  const { data, error } = await supabase.from('marketplace_listings')
+    .select('*').eq('id', listingId).eq('status', 'active').single();
+  if (error) return null;
+  return data;
+}
+
+// Newest active listings first — for a "recently added" strip.
+export async function getRecentListings(limit = 8) {
+  const { data, error } = await supabase.from('marketplace_listings')
+    .select('*').eq('status', 'active')
+    .order('created_at', { ascending: false }).limit(limit);
+  if (error) return [];
+  return data || [];
+}
+
+// Most-viewed active listings — for the default discovery view.
+export async function getMostViewedListings(limit = 20) {
+  const { data, error } = await supabase.from('marketplace_listings')
+    .select('*').eq('status', 'active')
+    .order('view_count', { ascending: false }).limit(limit);
+  if (error) return [];
+  return data || [];
+}
+
+// Headline stat for the discovery home — how many listings are live.
+export async function getMarketplaceStats() {
+  const { count } = await supabase.from('marketplace_listings')
+    .select('id', { count: 'exact', head: true }).eq('status', 'active');
+  return { listings: count || 0 };
+}
+
+// Real view count, deduped per browser session same as the Wiki's
+// incrementViewCount — the RPC itself is authenticated-only (see
+// marketplace_public_mechanics.sql), so anon/public viewers don't increment it.
+const _viewedThisSession = new Set();
+export async function incrementListingViews(listingId) {
+  if (_viewedThisSession.has(listingId)) return;
+  _viewedThisSession.add(listingId);
+  await supabase.rpc('increment_marketplace_listing_views', { listing_id: listingId });
 }
 
 export async function getMyListings(userId) {

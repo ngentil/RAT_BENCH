@@ -1,8 +1,11 @@
 [build]
   # `prerender` runs after `build` to emit static SEO HTML per wiki entry +
-  # sitemap.xml (scripts/prerender-wiki.mjs). It degrades gracefully — if the
-  # Supabase env vars are absent or the fetch fails, it logs and exits 0 so the
-  # SPA still deploys. Requires VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY in the
+  # sitemap.xml (scripts/prerender-wiki.mjs); `prerender:marketplace` does the
+  # same for active Marketplace listings, under dist/listing/ + its own
+  # sitemap-marketplace.xml (scripts/prerender-marketplace.mjs) so it doesn't
+  # clobber the wiki's sitemap.xml. Both degrade gracefully — if the Supabase
+  # env vars are absent or the fetch fails, they log and exit 0 so the SPA
+  # still deploys. Requires VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY in the
   # Netlify build environment (already set for the app build).
-  command = "npm run build && npm run prerender"
+  command = "npm run build && npm run prerender && npm run prerender:marketplace"
   publish = "dist"

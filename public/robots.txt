@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://wiki.ratbench.net/sitemap.xml
+Sitemap: https://ratbench.net/sitemap-marketplace.xml

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "prerender": "node scripts/prerender-wiki.mjs"
+    "prerender": "node scripts/prerender-wiki.mjs",
+    "prerender:marketplace": "node scripts/prerender-marketplace.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.55.0",
