@@ -37,6 +37,7 @@ function ListingTile({ listing, onClick }) {
           <span style={{ fontSize: 13, fontWeight: 700, color: ACC }}>{formatPrice(l.price) || "—"}</span>
           {l.location && <span style={{ fontSize: 8, color: MUT, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "50%" }}>{l.location}</span>}
         </div>
+        {l.view_count > 0 && <div style={{ fontSize: 8, color: MUT, marginTop: 3 }}>👁 {l.view_count}</div>}
       </div>
     </div>
   );

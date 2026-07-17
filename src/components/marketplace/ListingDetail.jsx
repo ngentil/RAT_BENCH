@@ -4,7 +4,7 @@ import { mIcon } from '../../lib/helpers';
 import { supabase } from '../../lib/supabase';
 import { effectiveTier } from '../../lib/gates';
 import {
-  getListingById, getOrCreateThread,
+  getListingById, getOrCreateThread, incrementListingViews,
   markListingSold, relistListing, removeListing,
 } from '../../lib/marketplace';
 import UpgradeBanner from '../ui/UpgradeBanner';
@@ -26,6 +26,7 @@ function ListingDetail({ listingId, profile, company, onGoToBilling, onBack, onO
     getListingById(listingId).then(async l => {
       if (cancelled) return;
       setListing(l);
+      if (l) incrementListingViews(l.id);
       if (l?.seller_id) {
         const { data } = await supabase.from('profiles').select('id,username,display_name').eq('id', l.seller_id).single();
         if (!cancelled) setSeller(data);
