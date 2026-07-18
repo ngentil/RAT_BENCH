@@ -55,7 +55,7 @@ function PlugLog({machines}){
       <div style={col}>
         <FL t="Machine" />
         {machines.length===0
-          ?<div style={{fontSize:10,color:MUT,padding:'24px 0',textAlign:'center'}}><div style={{fontSize:22,marginBottom:8}}>🔩</div>Add a machine in the Tracker tab first.</div>
+          ?<div style={{fontSize:10,color:MUT,padding:'24px 0',textAlign:'center'}}><div style={{fontSize:22,marginBottom:8}}>🔩</div>Add a machine in the Garage tab first.</div>
           :<select style={sel} value={selId} onChange={e=>{setSelId(e.target.value);setSaved(false);}}>
             <option value="">— Select machine —</option>
             {machines.map(m=><option key={m.id} value={m.id}>{mIcon(m.type)} {m.name}</option>)}

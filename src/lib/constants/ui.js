@@ -177,7 +177,7 @@ export const getExpandFields = (type, strokeType) => EXPAND_SECTIONS.filter(f=>{
 export const getTileFields = (type) => TILE_FIELDS.filter(f=>!f.types||f.types.includes(type));
 
 export const TABS = [
-  {id:"tracker",     label:"📋 Tracker"},
+  {id:"tracker",     label:"📋 Garage"},
   {id:"jobs",        label:"🗂 Jobs"},
   {id:"workshop",    label:"🔨 Workshop"},
   {id:"wiki",        label:"📖 Wiki"},

@@ -354,7 +354,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
           <div style={{fontSize:10,color:TXT,letterSpacing:"0.12em",textTransform:"uppercase",fontWeight:700,marginBottom:8,borderLeft:"2px solid "+ACC,paddingLeft:8}}>Machines</div>
           <AssetProvisioningPanel
             assets={(machines||[]).filter(m=>m.companyId===company?.id)}
-            emptyMsg="No org machines to provision. Add machines and tag them to this organisation from the Tracker tab."
+            emptyMsg="No org machines to provision. Add machines and tag them to this organisation from the Garage tab."
             company={company} session={session}
             getFn={getMachinePermissions}
             upsertFn={upsertMachinePermission}

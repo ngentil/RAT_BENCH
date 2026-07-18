@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, GRN, inp, btnA, btnG, sm } from '../../lib/styles';
-import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto } from '../../lib/wiki';
+import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto, setWikiCoverPhoto } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
 import { hl } from './wikiSearchHighlight';
 import { navClick } from '../../lib/helpers';
@@ -130,10 +130,26 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
     }
   };
 
+  // Cover photo — same "☆ Cover" picker idea as the Tracker's machine/part
+  // photos, but here it's an `is_cover` flag on the row (not array order)
+  // since the gallery is shared table rows, not one owner's array.
+  const handleSetCover = async (photoId) => {
+    try {
+      await setWikiCoverPhoto(photoId);
+      setPhotos(ps => ps.map(p => ({ ...p, is_cover: p.id === photoId })));
+    } catch (e) {
+      alert('Failed to set cover: ' + e.message);
+    }
+  };
+  const displayPhotos = [...photos].sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0));
+
   // ── Import to garage ───────────────────────────────────────────────────────
   // Old revisions (published before the strip-list was tightened) can still
   // contain the publisher's private photo URLs and job data — never copy those
-  // into the importer's machine.
+  // into the importer's machine. The wiki entry's own photo gallery (this
+  // page's `photos` state, from wiki_entry_photos) is separate from that spec
+  // field and isn't touched by this strip list — see below for how it's
+  // handled instead.
   const IMPORT_STRIP = [
     "id","userId","companyId","clientId","createdAt","updatedAt",
     "photos","iPPhotos","ePPhotos","jobPhotos",
@@ -151,12 +167,21 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
         const { gasketPhotos, purchaseLinks, ...carbRest } = specOnly.carbSpec;
         specOnly.carbSpec = carbRest;
       }
+      // Carry over photos YOU contributed to this wiki entry's gallery — never
+      // another contributor's, since those are photos of their own machine,
+      // not necessarily yours. If one of them is the entry's cover, keep it
+      // first so it becomes the new machine's cover too.
+      const myPhotos = photos
+        .filter(p => p.uploaded_by === profile?.id)
+        .sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0))
+        .map(p => p.url);
       await upsertMachine({
         name: [entry.make, entry.model].filter(Boolean).join(" ") || entry.type || "Imported Machine",
         make: entry.make,
         model: entry.model,
         type: typeof entry.type === "string" ? entry.type : "",
         ...specOnly,
+        photos: myPhotos,
       });
       setImportDone(true);
     } catch (e) {
@@ -280,9 +305,18 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
             <div style={{ fontSize: 9, color: MUT, fontStyle: "italic" }}>No photos yet{profile ? " — be the first to add one." : "."}</div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 8 }}>
-              {photos.map(p => (
+              {displayPhotos.map(p => (
                 <div key={p.id} style={{ position: "relative" }}>
-                  <img src={p.url} alt="" style={{ width: "100%", height: 84, objectFit: "cover", borderRadius: 2, border: "1px solid " + BRD, display: "block" }} />
+                  <img src={p.url} alt="" style={{ width: "100%", height: 84, objectFit: "cover", borderRadius: 2, border: p.is_cover ? "1px solid " + ACC + "88" : "1px solid " + BRD, display: "block" }} />
+                  {profile && (
+                    <button
+                      onClick={() => { if (!p.is_cover) handleSetCover(p.id); }}
+                      title={p.is_cover ? "Cover photo" : "Set as cover"}
+                      style={{ position: "absolute", top: 3, left: 3, background: "#000000aa", border: "none", color: p.is_cover ? ACC : TXT, fontSize: 9, fontWeight: 700, borderRadius: 2, padding: "2px 5px", cursor: p.is_cover ? "default" : "pointer", lineHeight: 1 }}
+                    >
+                      {p.is_cover ? "⭐" : "☆ Cover"}
+                    </button>
+                  )}
                   {profile && p.uploaded_by !== profile.id && (
                     <button
                       onClick={() => setReportMenuFor(reportMenuFor === p.id ? null : p.id)}

@@ -192,7 +192,7 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
           ))}
         </div>
       </div>
-      <TabGuide storageKey="rat_tut_revenue" variant="info" title="your revenue" lines={["log jobs with time + parts in Tracker","earnings flow here — filter by week · month · all"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_revenue",false)} />
+      <TabGuide storageKey="rat_tut_revenue" variant="info" title="your revenue" lines={["log jobs with time + parts in Garage","earnings flow here — filter by week · month · all"]} userId={profile?.id} initialDone={getPref(profile,"rat_tut_revenue",false)} />
 
       {period === "custom" && (
         <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
