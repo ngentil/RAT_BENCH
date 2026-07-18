@@ -8,6 +8,7 @@ import { getToolPermissions, upsertToolPermission, revokeToolPermission } from '
 import { getConsumables, getConsumablePermissions, upsertConsumablePermission, revokeConsumablePermission } from '../../lib/db/consumables';
 import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
 import { effectiveTier } from '../../lib/gates';
+import UsersTab from '../users/UsersTab';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
 // Generic provisioning panel — works for machines, vehicles, equipment, tools.
 // getFn   : async (assetId) => [{ user_id, can_edit, ... }]
@@ -325,11 +326,13 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
         </div>
       )}
 
-      {/* Team member management lives in the Users tab */}
+      {/* Team member management — used to be its own top-level Settings tab,
+          folded in here since it only ever makes sense in the context of an
+          org you're already viewing/editing */}
       {canMultiUser ? (
-        <div style={{...sec,padding:"12px 14px",background:"#0a0f0a",border:"1px solid #1a2a1a",borderRadius:2}}>
-          <div style={{fontSize:9,color:GRN,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:700,marginBottom:4}}>Team Management</div>
-          <div style={{fontSize:10,color:MUT,lineHeight:1.6}}>Invite codes, members, and role management have moved to the <span style={{color:TXT,fontWeight:700}}>Users</span> tab.</div>
+        <div style={{...sec,...secSep}}>
+          <div style={secHd}>Users</div>
+          <UsersTab company={company} session={session} profile={profile} setCompany={setCompany} embedded />
         </div>
       ) : (
         <div style={{...sec,opacity:0.6,pointerEvents:"none",position:"relative"}}>
