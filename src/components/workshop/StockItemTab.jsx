@@ -67,6 +67,10 @@ function qtyLabel(qty, minQty, maxQty) {
   return null;
 }
 
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // ── Spec chips ────────────────────────────────────────────────────────────────
 function SpecChips({ category, spec, typeConfig }) {
   const chips = ((typeConfig?.specs || CATEGORY_SPECS)[category] || []).filter(f => spec[f.key]);
@@ -91,15 +95,15 @@ function QRModal({ item, onClose }) {
   }, [text, item.name]);
   const print = () => {
     const w = window.open('', '_blank');
-    w.document.write(`<!DOCTYPE html><html><head><title>${item.name}</title>
+    w.document.write(`<!DOCTYPE html><html><head><title>${escHtml(item.name)}</title>
     <style>body{font-family:Arial,sans-serif;text-align:center;padding:40px;max-width:320px;margin:0 auto}
     img{width:200px;height:200px;display:block;margin:0 auto 16px}
     .name{font-size:16px;font-weight:700;margin-bottom:4px}.sub{font-size:12px;color:#666;margin-bottom:4px}
     @media print{button{display:none}}</style></head><body>
     ${dataUrl ? `<img src="${dataUrl}" alt="QR"/>` : ''}
-    <div class="name">${item.name}</div>
-    ${item.partNumber ? `<div class="sub">${item.partNumber}</div>` : ''}
-    ${item.brand ? `<div class="sub">${item.brand}</div>` : ''}
+    <div class="name">${escHtml(item.name)}</div>
+    ${item.partNumber ? `<div class="sub">${escHtml(item.partNumber)}</div>` : ''}
+    ${item.brand ? `<div class="sub">${escHtml(item.brand)}</div>` : ''}
     <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;background:#e8670a;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer">🖨️ Print</button>
     </body></html>`);
     w.document.close();
@@ -704,8 +708,8 @@ export default function StockItemTab({ tableType, label, machines, session, prof
     if (!w) return;
     w.document.write(`<!DOCTYPE html><html><head><title>Reorder List</title>
     <style>body{font-family:Arial,sans-serif;padding:32px;max-width:640px;margin:0 auto;font-size:13px}h1{font-size:18px;margin-bottom:16px}li{margin-bottom:8px;line-height:1.5}.dim{color:#777;font-size:11px}@media print{button{display:none}}</style></head>
-    <body><h1>Reorder List — ${label}</h1><ul>${lowItems.map(i =>
-      `<li><strong>${i.name}</strong>${i.partNumber ? ` <span class="dim">(${i.partNumber})</span>` : ''}<br><span class="dim">${[i.brand, i.supplier, `Stock: ${i.quantity || 0}${i.minQuantity != null ? ' / Min: ' + i.minQuantity : ''}`].filter(Boolean).join(' · ')}</span></li>`
+    <body><h1>Reorder List — ${escHtml(label)}</h1><ul>${lowItems.map(i =>
+      `<li><strong>${escHtml(i.name)}</strong>${i.partNumber ? ` <span class="dim">(${escHtml(i.partNumber)})</span>` : ''}<br><span class="dim">${[i.brand, i.supplier, `Stock: ${i.quantity || 0}${i.minQuantity != null ? ' / Min: ' + i.minQuantity : ''}`].filter(Boolean).map(escHtml).join(' · ')}</span></li>`
     ).join('')}</ul><br><button onclick="window.print()">🖨 Print</button></body></html>`);
     w.document.close();
   };
