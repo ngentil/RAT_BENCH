@@ -307,16 +307,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 8 }}>
               {displayPhotos.map(p => (
                 <div key={p.id} style={{ position: "relative" }}>
-                  <img src={p.url} alt="" style={{ width: "100%", height: 84, objectFit: "cover", borderRadius: 2, border: p.is_cover ? "1px solid " + ACC + "88" : "1px solid " + BRD, display: "block" }} />
-                  {profile && (
-                    <button
-                      onClick={() => { if (!p.is_cover) handleSetCover(p.id); }}
-                      title={p.is_cover ? "Cover photo" : "Set as cover"}
-                      style={{ position: "absolute", top: 3, left: 3, background: "#000000aa", border: "none", color: p.is_cover ? ACC : TXT, fontSize: 9, fontWeight: 700, borderRadius: 2, padding: "2px 5px", cursor: p.is_cover ? "default" : "pointer", lineHeight: 1 }}
-                    >
-                      {p.is_cover ? "⭐" : "☆ Cover"}
-                    </button>
-                  )}
+                  <img src={p.url} alt="" style={{ width: "100%", height: 84, objectFit: "cover", borderRadius: profile ? "2px 2px 0 0" : 2, border: p.is_cover ? "1px solid " + ACC + "88" : "1px solid " + BRD, borderBottom: profile ? "none" : undefined, display: "block" }} />
                   {profile && p.uploaded_by !== profile.id && (
                     <button
                       onClick={() => setReportMenuFor(reportMenuFor === p.id ? null : p.id)}
@@ -336,6 +327,15 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
                       ))}
                       <button onClick={() => setReportMenuFor(null)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: MUT, fontSize: 9, padding: "5px 6px", cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace" }}>Cancel</button>
                     </div>
+                  )}
+                  {profile && (
+                    <button
+                      onClick={() => { if (!p.is_cover) handleSetCover(p.id); }}
+                      title={p.is_cover ? "Cover photo" : "Set as cover"}
+                      style={{ width: "100%", minHeight: 34, background: p.is_cover ? ACC : "#1a1a1a", border: "1px solid " + (p.is_cover ? ACC : BRD), borderTop: "none", borderRadius: "0 0 2px 2px", cursor: p.is_cover ? "default" : "pointer", fontSize: 9, fontWeight: 700, color: p.is_cover ? "#000" : TXT, fontFamily: "'IBM Plex Mono',monospace", padding: 4 }}
+                    >
+                      {p.is_cover ? "★ Cover" : "☆ Set as Cover"}
+                    </button>
                   )}
                 </div>
               ))}

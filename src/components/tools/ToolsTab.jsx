@@ -228,14 +228,14 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
           {tool.photos?.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginTop: 10 }}>
               {tool.photos.map((p, i) => (
-                <div key={i} style={{ position: "relative" }}>
+                <div key={i}>
                   <img src={p} alt="" onClick={() => setPhotoIdx(i)}
-                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: 2, border: i === 0 ? "1px solid " + ACC + "88" : "1px solid #252525", cursor: "pointer", display: "block" }} />
+                    style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "2px 2px 0 0", border: i === 0 ? "1px solid " + ACC + "88" : "1px solid #252525", borderBottom: "none", cursor: "pointer", display: "block" }} />
                   <button
                     title={i === 0 ? "Cover photo" : "Set as cover"}
                     onClick={e => { e.stopPropagation(); if (i === 0) return; const reordered = [p, ...tool.photos.filter((_, j) => j !== i)]; onUpdate({ ...tool, photos: reordered }); }}
-                    style={{ position: "absolute", top: 2, left: 2, background: i === 0 ? ACC : "rgba(0,0,0,0.7)", border: "none", borderRadius: 2, cursor: i === 0 ? "default" : "pointer", fontSize: 8, padding: "1px 3px", color: i === 0 ? "#000" : MUT, lineHeight: 1 }}>
-                    {i === 0 ? "⭐" : "☆ Cover"}
+                    style={{ width: "100%", minHeight: 34, background: i === 0 ? ACC : "#1a1a1a", border: "1px solid " + (i === 0 ? ACC : "#252525"), borderTop: "none", borderRadius: "0 0 2px 2px", cursor: i === 0 ? "default" : "pointer", fontSize: 9, fontWeight: 700, padding: 4, color: i === 0 ? "#000" : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>
+                    {i === 0 ? "★ Cover" : "☆ Set as Cover"}
                   </button>
                 </div>
               ))}
