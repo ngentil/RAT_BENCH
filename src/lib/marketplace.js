@@ -52,15 +52,21 @@ export async function removeListing(listingId) {
 }
 
 export async function getActiveListings({ type, query } = {}) {
+  if (query?.trim()) {
+    // search_marketplace_listings (marketplace_search_rpc.sql) takes the raw
+    // query text as a bound SQL parameter rather than building a PostgREST
+    // .or() filter string client-side — that earlier approach interpolated
+    // user input directly into filter syntax where commas/parens are
+    // structural (condition separators/grouping), letting a crafted search
+    // string reshape the intended OR logic. Same substring model as the
+    // Wiki's default search — title, description, and make/model.
+    const { data, error } = await supabase.rpc('search_marketplace_listings', { q: query.trim(), lim: 200 });
+    if (error) throw error;
+    return type ? (data || []).filter(l => l.type === type) : (data || []);
+  }
   let q = supabase.from('marketplace_listings').select('*')
     .eq('status', 'active').order('created_at', { ascending: false });
   if (type) q = q.eq('type', type);
-  if (query?.trim()) {
-    const t = query.trim().replace(/[%_]/g, '\\$&');
-    // Same substring model as the Wiki's default search — title, description,
-    // and make/model so a query like "honda" or "gx390" both match.
-    q = q.or(`title.ilike.%${t}%,description.ilike.%${t}%,make.ilike.%${t}%,model.ilike.%${t}%`);
-  }
   const { data, error } = await q;
   if (error) throw error;
   return data || [];
