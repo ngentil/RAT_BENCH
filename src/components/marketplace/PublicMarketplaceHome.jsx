@@ -9,7 +9,7 @@ import ListingTile from './ListingTile';
 // tiles link through to /listing/:id (PublicListingPage). Selling and
 // messaging still need an account — same spam-prevention gate as before,
 // just no longer tied to payment.
-export default function PublicMarketplaceHome() {
+export default function PublicMarketplaceHome({ onNavigate }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [recent, setRecent] = useState([]);
@@ -42,7 +42,10 @@ export default function PublicMarketplaceHome() {
     <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, margin: "4px 0 10px" }}>{t}</div>
   );
 
-  const openListing = id => { window.location.href = `/listing/${id}`; };
+  // Pushes a real, shareable /listing/:id URL without a full page reload —
+  // pressing the phone/browser back button then just pops back to this list
+  // instead of re-fetching the whole page.
+  const openListing = id => onNavigate(`/listing/${id}`);
 
   const grid = (items) => (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, alignItems: "start", marginBottom: 18 }}>

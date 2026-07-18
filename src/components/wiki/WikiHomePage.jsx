@@ -3,6 +3,7 @@ import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
 import { searchWiki, getWikiStats, getRecentWikiEntries, tokenizeSearch, WIKI_FIELD_LABELS } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
 import { hl } from './wikiSearchHighlight';
+import { navClick } from '../../lib/helpers';
 
 // Handed off to the entry page so it can keep highlighting your search term
 // after you click through — sessionStorage covers the embedded (in-app) nav
@@ -37,7 +38,7 @@ function findSpecMatch(specData, tokens) {
   return null;
 }
 
-function WikiHomePage({ onSelect, embedded = false, profile, onShowLeaderboard, onlineCount }) {
+function WikiHomePage({ onSelect, embedded = false, profile, onShowLeaderboard, onlineCount, onNavigate }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [recent, setRecent] = useState([]);        // most-viewed default list
@@ -115,7 +116,7 @@ function WikiHomePage({ onSelect, embedded = false, profile, onShowLeaderboard, 
     if (embedded) {
       return <div key={e.id} onClick={() => { persistQuery(); onSelect(e.slug); }} style={{ marginBottom: 10 }}>{inner}</div>;
     }
-    return <a key={e.id} href={entryHref(e.slug)} onClick={persistQuery} style={{ display: "block", textDecoration: "none", marginBottom: 10 }}>{inner}</a>;
+    return <a key={e.id} href={entryHref(e.slug)} onClick={navClick(onNavigate, entryHref(e.slug), persistQuery)} style={{ display: "block", textDecoration: "none", marginBottom: 10 }}>{inner}</a>;
   };
 
   const searchBox = (
@@ -143,7 +144,7 @@ function WikiHomePage({ onSelect, embedded = false, profile, onShowLeaderboard, 
       </div>
       {embedded
         ? <button onClick={onShowLeaderboard} style={{ background: "none", border: "none", color: ACC, fontSize: 9, letterSpacing: "0.06em", cursor: "pointer", padding: 0, fontFamily: "'IBM Plex Mono',monospace" }}>🏆 Leaderboard</button>
-        : <a href="/leaderboard" style={{ color: ACC, fontSize: 9, letterSpacing: "0.06em", textDecoration: "none", fontFamily: "'IBM Plex Mono',monospace" }}>🏆 Leaderboard</a>}
+        : <a href="/leaderboard" onClick={navClick(onNavigate, "/leaderboard")} style={{ color: ACC, fontSize: 9, letterSpacing: "0.06em", textDecoration: "none", fontFamily: "'IBM Plex Mono',monospace" }}>🏆 Leaderboard</a>}
     </div>
   );
   // "Recently added" strip, shown only on the default (no-query) view.

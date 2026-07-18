@@ -3,6 +3,22 @@ import { DEFAULT_STORAGE_TIERS } from './storageTiers';
 import { parseLocalDate } from './dates';
 import { SPEC_SEARCH_FIELDS } from './constants/specSearchFields';
 // ── helpers ───────────────────────────────────────────────────────────────────
+
+// Progressively-enhanced internal link click: a plain left-click hands off to
+// the given client-side navigate() (pushState, no reload — same "back just
+// pops state" behaviour as MachineCard/Tracker's cardOpen pattern) instead of
+// the browser's real navigation; a modified click (ctrl/cmd/shift/middle) is
+// left alone so "open in new tab" still works normally. Pass the real onClick
+// handler too (e.g. persistQuery) if the link needs one regardless of path.
+export function navClick(onNavigate, path, onClick) {
+  return (e) => {
+    onClick?.(e);
+    if (!onNavigate || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    onNavigate(path);
+  };
+}
+
 export const uid  = () => crypto.randomUUID();
 export const nowL = () => { const n = new Date(); return new Date(n - n.getTimezoneOffset()*60000).toISOString().slice(0,16); };
 export const fmtDT = iso => {
