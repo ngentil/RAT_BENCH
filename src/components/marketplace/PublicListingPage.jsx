@@ -4,6 +4,7 @@ import { ACC, MUT, BRD, SURF, TXT, BG } from '../../lib/styles';
 import { mIcon } from '../../lib/helpers';
 import { getPublicListing, incrementListingViews } from '../../lib/marketplace';
 import { formatPrice } from './ListingTile';
+import { navClick } from '../../lib/helpers';
 
 const KIND_ICON = { part: "🔩", tool: "🔧", consumable: "📦", equipment: "⚙️" };
 
@@ -12,7 +13,7 @@ const KIND_ICON = { part: "🔩", tool: "🔧", consumable: "📦", equipment: "
 // no login required to view; messaging/buying still needs an account, same
 // as before the paywall came out — that gate was always about spam
 // prevention, not payment.
-export default function PublicListingPage({ listingId }) {
+export default function PublicListingPage({ listingId, onNavigate }) {
   const [listing, setListing] = useState(null);
   const [notFound, setNotFound] = useState(false);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -44,7 +45,7 @@ export default function PublicListingPage({ listingId }) {
         <div style={{ fontSize: 17, fontWeight: 700, color: ACC, letterSpacing: "0.04em", textTransform: "uppercase" }}>Rat Bench Marketplace</div>
         <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 1 }}>community for-sale listings</div>
       </div>
-      <a href="/marketplace" style={{ fontSize: 9, color: MUT, textDecoration: "none", letterSpacing: "0.06em" }}>← Browse</a>
+      <a href="/marketplace" onClick={navClick(onNavigate, "/marketplace")} style={{ fontSize: 9, color: MUT, textDecoration: "none", letterSpacing: "0.06em" }}>← Browse</a>
     </div>
   );
 
@@ -56,7 +57,7 @@ export default function PublicListingPage({ listingId }) {
           <div style={{ fontSize: 32 }}>🛒</div>
           <div style={{ fontSize: 13, color: TXT, fontWeight: 700 }}>Listing not found</div>
           <div style={{ fontSize: 10, color: MUT }}>It may have sold, been removed, or the link is wrong.</div>
-          <a href="/marketplace" style={{ fontSize: 10, color: ACC, textDecoration: "none", marginTop: 8 }}>← Browse the Marketplace</a>
+          <a href="/marketplace" onClick={navClick(onNavigate, "/marketplace")} style={{ fontSize: 10, color: ACC, textDecoration: "none", marginTop: 8 }}>← Browse the Marketplace</a>
         </div>
       </div>
     );

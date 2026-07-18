@@ -3,6 +3,7 @@ import { ACC, MUT, BRD, SURF, TXT, RED, BG, GRN, inp, btnA, btnG, sm } from '../
 import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
 import { hl } from './wikiSearchHighlight';
+import { navClick } from '../../lib/helpers';
 
 const LAST_QUERY_KEY = 'wikiSearchQuery';
 // Recover the search term that led here — sessionStorage for the embedded
@@ -15,7 +16,11 @@ function getIncomingSearchQuery(embedded) {
 
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
-export function WikiHeader({ title, subtitle, backHref, backLabel, onlineCount }) {
+// onNavigate is only meaningful for same-origin relative backHrefs (the wiki
+// home/entry/history/leaderboard pages all link to each other) — omit it
+// when backHref genuinely leaves the wiki subdomain (e.g. WikiHomePage's
+// "← App" link to the main app's own origin) so that stays a real navigation.
+export function WikiHeader({ title, subtitle, backHref, backLabel, onlineCount, onNavigate }) {
   return (
     <div style={{ background: SURF, borderBottom: "2px solid " + ACC, padding: "12px 18px", display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ fontSize: 20 }}>🐀</span>
@@ -29,12 +34,12 @@ export function WikiHeader({ title, subtitle, backHref, backLabel, onlineCount }
           <span style={{ fontSize: 9, color: MUT }}><span style={{ color: GRN, fontWeight: 700 }}>{onlineCount}</span> online</span>
         </div>
       )}
-      {backHref && <a href={backHref} style={{ fontSize: 9, color: MUT, textDecoration: "none", letterSpacing: "0.06em" }}>{backLabel || "← Back"}</a>}
+      {backHref && <a href={backHref} onClick={navClick(onNavigate, backHref)} style={{ fontSize: 9, color: MUT, textDecoration: "none", letterSpacing: "0.06em" }}>{backLabel || "← Back"}</a>}
     </div>
   );
 }
 
-function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlineCount }) {
+function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlineCount, onNavigate }) {
   const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
   const [entry, setEntry] = useState(null);
   const [revData, setRevData] = useState({});
@@ -173,7 +178,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
       <div style={{ fontSize: 11, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Entry not found.</div>
       {embedded
         ? <button onClick={onBack} style={{ ...btnG, ...sm }}>← Back to Wiki</button>
-        : <a href="/" style={{ fontSize: 10, color: ACC }}>← Back to wiki</a>}
+        : <a href="/" onClick={navClick(onNavigate, "/")} style={{ fontSize: 10, color: ACC }}>← Back to wiki</a>}
     </div>
   );
 
@@ -197,6 +202,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
           backHref="/"
           backLabel="← Wiki"
           onlineCount={onlineCount}
+          onNavigate={onNavigate}
         />
       )}
       <div style={{ maxWidth: embedded ? "none" : 680, margin: embedded ? 0 : "0 auto", padding: embedded ? "0 0 24px" : "24px 16px" }}>
@@ -218,7 +224,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {embedded
               ? <a href={`https://wiki.ratbench.net/${slug}/history`} target="_blank" rel="noreferrer" style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History ↗</a>
-              : <a href={"/" + slug + "/history"} style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History</a>
+              : <a href={"/" + slug + "/history"} onClick={navClick(onNavigate, "/" + slug + "/history")} style={{ fontSize: 9, color: MUT, textDecoration: "none", border: "1px solid " + BRD, padding: "4px 8px" }}>History</a>
             }
             {/* Import to garage */}
             {profile && !importDone && (
@@ -239,7 +245,9 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
                 onClick={async () => {
                   if (!confirm(`Delete wiki entry "${entry.make} ${entry.model}"? This cannot be undone.`)) return;
                   await deleteWikiEntry(entry.id);
-                  onBack ? onBack() : (window.location.href = '/');
+                  if (onBack) onBack();
+                  else if (onNavigate) onNavigate('/');
+                  else window.location.href = '/';
                 }}
                 style={{ fontSize: 9, color: RED, border: '1px solid ' + RED + '55', background: RED + '11', padding: '4px 8px', borderRadius: 2, cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}
               >🗑 Delete</button>

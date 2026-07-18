@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, BG, btnG, btnA, sm } from '../../lib/styles';
 import { getWikiEntryBySlug, getWikiRevisions, revertToRevision, WIKI_FIELD_LABELS, getVerificationsForRevisions, submitWikiVerification } from '../../lib/wiki';
 import { WikiHeader } from './WikiEntryPage';
+import { navClick } from '../../lib/helpers';
 
-function WikiHistoryPage({ slug, profile, onlineCount }) {
+function WikiHistoryPage({ slug, profile, onlineCount, onNavigate }) {
   const [revs, setRevs] = useState([]);
   const [entry, setEntry] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +76,7 @@ function WikiHistoryPage({ slug, profile, onlineCount }) {
   if (notFound) return (
     <div style={{ minHeight: "100vh", background: BG, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
       <div style={{ fontSize: 11, color: MUT, fontFamily: "'IBM Plex Mono',monospace" }}>Entry not found.</div>
-      <a href="/" style={{ fontSize: 10, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>← Back to wiki</a>
+      <a href="/" onClick={navClick(onNavigate, "/")} style={{ fontSize: 10, color: ACC, fontFamily: "'IBM Plex Mono',monospace" }}>← Back to wiki</a>
     </div>
   );
 
@@ -87,6 +88,7 @@ function WikiHistoryPage({ slug, profile, onlineCount }) {
         backHref={"/" + slug}
         backLabel="← Entry"
         onlineCount={onlineCount}
+        onNavigate={onNavigate}
       />
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px" }}>
         {revertOk && <div style={{ fontSize: 10, color: GRN, marginBottom: 12, padding: "8px 12px", background: "#0d1a0d", border: "1px solid #1a3a1a", borderRadius: 2 }}>{revertOk}</div>}
