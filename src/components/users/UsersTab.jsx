@@ -40,7 +40,10 @@ function RoleBadge({ role }) {
   );
 }
 
-export default function UsersTab({ company, session, profile, setCompany, onGoToBilling }) {
+// embedded: rendered inline inside CompanySettings.jsx (its own section
+// heading already says "Users") rather than as a standalone top-level tab —
+// suppresses this component's own heading and outer page padding.
+export default function UsersTab({ company, session, profile, setCompany, onGoToBilling, embedded = false }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -64,7 +67,7 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
 
   if (!canManageUsers) {
     return (
-      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
+      <div style={{ padding: embedded ? 0 : 16, flex: embedded ? "none" : 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
         <div style={{ fontSize: 28 }}>👥</div>
         <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Team Management</div>
         <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
@@ -77,8 +80,8 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
 
   if (!company) {
     return (
-      <div style={{ padding: 16 }}>
-        <SL t="Users" />
+      <div style={{ padding: embedded ? 0 : 16 }}>
+        {!embedded && <SL t="Users" />}
         <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>
           You're not part of an organisation yet. Create or join one in Settings → Company.
         </div>
@@ -122,9 +125,9 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
   const lbl = { fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 10 };
 
   return (
-    <div style={{ padding: 16, flex: 1 }}>
+    <div style={{ padding: embedded ? 0 : 16, flex: embedded ? "none" : 1 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <SL t="Users" />
+        {embedded ? <div /> : <SL t="Users" />}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em" }}>
             {loading ? "…" : `${members.length}${seats > 0 ? `/${seats}` : ""} seat${members.length !== 1 ? "s" : ""}`}
