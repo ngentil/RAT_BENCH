@@ -3,6 +3,7 @@ import { ACC, MUT, BRD, SURF, TXT, RED, BG, GRN, inp, btnA, btnG, sm } from '../
 import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto, setWikiCoverPhoto } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
 import { hl } from './wikiSearchHighlight';
+import PhotoViewer from '../ui/PhotoViewer';
 import { navClick } from '../../lib/helpers';
 
 const LAST_QUERY_KEY = 'wikiSearchQuery';
@@ -52,6 +53,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [reportMenuFor, setReportMenuFor] = useState(null);
   const [reportMsg, setReportMsg] = useState(null);
+  const [viewingPhoto, setViewingPhoto] = useState(null);
 
   // Admin field editing
   const [editingField, setEditingField] = useState(null);
@@ -307,7 +309,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 8 }}>
               {displayPhotos.map(p => (
                 <div key={p.id} style={{ position: "relative" }}>
-                  <img src={p.url} alt="" style={{ width: "100%", height: 84, objectFit: "cover", borderRadius: profile ? "2px 2px 0 0" : 2, border: p.is_cover ? "1px solid " + ACC + "88" : "1px solid " + BRD, borderBottom: profile ? "none" : undefined, display: "block" }} />
+                  <img src={p.url} alt="" onClick={() => setViewingPhoto(p)} style={{ width: "100%", height: 84, objectFit: "cover", borderRadius: profile ? "2px 2px 0 0" : 2, border: p.is_cover ? "1px solid " + ACC + "88" : "1px solid " + BRD, borderBottom: profile ? "none" : undefined, cursor: "zoom-in", display: "block" }} />
                   {profile && p.uploaded_by !== profile.id && (
                     <button
                       onClick={() => setReportMenuFor(reportMenuFor === p.id ? null : p.id)}
@@ -348,6 +350,15 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
             <div style={{ fontSize: 8, color: MUT, marginTop: 6, lineHeight: 1.5, opacity: 0.8 }}>
               Real photos only, of the actual machine you're working on — AI-generated or stock images get removed and cost the uploader points.
             </div>
+          )}
+
+          {viewingPhoto && (
+            <PhotoViewer
+              src={viewingPhoto.url}
+              onClose={() => setViewingPhoto(null)}
+              isCover={viewingPhoto.is_cover}
+              onSetCover={profile ? () => { handleSetCover(viewingPhoto.id); setViewingPhoto(p => ({ ...p, is_cover: true })); } : undefined}
+            />
           )}
         </div>
 

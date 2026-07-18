@@ -339,6 +339,11 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
           onClick={() => setPhotoIdx(null)}>
           <img src={tool.photos[photoIdx]} alt="" style={{ maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 2 }}
             onClick={e => e.stopPropagation()} />
+          <button
+            onClick={e => { e.stopPropagation(); if (photoIdx === 0) return; const reordered = [tool.photos[photoIdx], ...tool.photos.filter((_, j) => j !== photoIdx)]; onUpdate({ ...tool, photos: reordered }); setPhotoIdx(0); }}
+            style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", background: photoIdx === 0 ? ACC : "rgba(255,255,255,0.15)", border: "2px solid " + (photoIdx === 0 ? ACC : "rgba(255,255,255,0.5)"), color: photoIdx === 0 ? "#000" : "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em", borderRadius: 999, padding: "10px 20px", cursor: photoIdx === 0 ? "default" : "pointer", fontFamily: "'IBM Plex Mono',monospace" }}>
+            {photoIdx === 0 ? "★ Cover Photo" : "☆ Set as Cover"}
+          </button>
         </div>
       )}
     </div>
