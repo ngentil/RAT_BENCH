@@ -3,13 +3,16 @@
 // and shows a "Press back again to exit" toast before allowing navigation away.
 //
 // States we push/recognise:
-//   { appSentinel: true } — guard marker pushed at app start
-//   { photoOpen: true }   — PhotoViewer
-//   { cardOpen: <id> }    — MachineCard (and other expandable cards)
+//   { appSentinel: true }          — guard marker pushed at app start
+//   { photoOpen: true }            — PhotoViewer
+//   { cardOpen: <id> }             — MachineCard (and other expandable cards)
+//   { trackerTileOpen: <id> }      — Tracker's full-screen machine tile
+//   { wikiEntryOpen: <slug> }      — WikiTab's embedded entry view
+//   { marketplaceListingOpen: <id> } — MarketplaceTab's embedded listing view
 //
 // Call installBackGuard() once, before ReactDOM.render.
 
-const KNOWN = ['photoOpen', 'cardOpen', 'appSentinel'];
+const KNOWN = ['photoOpen', 'cardOpen', 'appSentinel', 'trackerTileOpen', 'wikiEntryOpen', 'marketplaceListingOpen'];
 const isKnown = s => s != null && KNOWN.some(k => k in s);
 
 let warned = false;

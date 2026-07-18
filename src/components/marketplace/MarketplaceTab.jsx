@@ -51,6 +51,28 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling }) {
     setThreadId(null);
   };
 
+  // Phone/browser back button closes an open listing back to Browse in one
+  // press, instead of falling through to the app-level "press back again to
+  // exit" guard — same pushState/popstate trick Tracker.jsx's tileOpen and
+  // MachineCard.jsx's cardOpen already use for a machine tile.
+  useEffect(() => {
+    if (view !== "listing" || !listingId) return;
+    history.pushState({ marketplaceListingOpen: listingId }, '');
+    const onPop = e => {
+      if (e.state?.marketplaceListingOpen === listingId) return;
+      navTo("browse");
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [view, listingId]);
+
+  // Consumes the history entry we pushed above rather than leaving it
+  // stranded (which would otherwise take a second back press later).
+  const closeListing = () => {
+    if (history.state?.marketplaceListingOpen === listingId) history.back();
+    else navTo("browse");
+  };
+
   return (
     <div style={{ padding: "4px 0" }}>
       <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
@@ -88,7 +110,7 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling }) {
           profile={profile}
           company={company}
           onGoToBilling={onGoToBilling}
-          onBack={() => navTo("browse")}
+          onBack={closeListing}
           onOpenThread={openThread}
         />
       )}
