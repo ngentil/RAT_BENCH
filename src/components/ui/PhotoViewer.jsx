@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
+import { ACC } from '../../lib/styles';
 
-export default function PhotoViewer({ src, onClose }) {
+export default function PhotoViewer({ src, onClose, isCover, onSetCover }) {
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
@@ -53,6 +54,24 @@ export default function PhotoViewer({ src, onClose }) {
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '95vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 2, userSelect: 'none' }}
       />
+      {onSetCover && (
+        <button
+          onClick={e => { e.stopPropagation(); if (!isCover) onSetCover(); }}
+          style={{
+            position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+            background: isCover ? ACC : 'rgba(255,255,255,0.15)',
+            border: '2px solid ' + (isCover ? ACC : 'rgba(255,255,255,0.5)'),
+            color: isCover ? '#000' : '#fff',
+            fontSize: 13, fontWeight: 700, letterSpacing: '0.04em',
+            borderRadius: 999, padding: '10px 20px',
+            cursor: isCover ? 'default' : 'pointer',
+            fontFamily: "'IBM Plex Mono',monospace",
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          {isCover ? '★ Cover Photo' : '☆ Set as Cover'}
+        </button>
+      )}
     </div>
   );
 }

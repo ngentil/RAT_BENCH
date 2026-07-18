@@ -11,6 +11,7 @@ import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty
 import { deletePhoto } from '../../lib/storage';
 import LoadoutSection from '../ui/LoadoutSection';
 import PhotoAdder from '../ui/PhotoAdder';
+import PhotoViewer from '../ui/PhotoViewer';
 import AssetTile from '../ui/AssetTile';
 import {
   CONSUMABLE_CATEGORIES, CATEGORY_GROUPS, CATEGORY_ICON, CATEGORY_COLOR,
@@ -345,6 +346,7 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
   const [adjErr, setAdjErr] = useState('');
   const [setMode, setSetMode] = useState(false);
   const [setVal, setSetVal] = useState('');
+  const [photoIdx, setPhotoIdx] = useState(null);
 
   const tc2 = typeConfig || { icon: CATEGORY_ICON, color: CATEGORY_COLOR };
   const catColor = tc2.color[item.category] || MUT;
@@ -409,7 +411,7 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4, marginTop: 10 }}>
               {item.photos.map((p, i) => (
                 <div key={i}>
-                  <img src={p} alt="" style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: '2px 2px 0 0', border: i === 0 ? `1px solid ${ACC}88` : '1px solid #252525', borderBottom: 'none', display: 'block' }} />
+                  <img src={p} alt="" onClick={e => { e.stopPropagation(); setPhotoIdx(i); }} style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: '2px 2px 0 0', border: i === 0 ? `1px solid ${ACC}88` : '1px solid #252525', borderBottom: 'none', cursor: 'zoom-in', display: 'block' }} />
                   <button title={i === 0 ? 'Cover photo' : 'Set as cover'}
                     onClick={e => { e.stopPropagation(); if (i === 0 || !onUpdate) return; onUpdate({ ...item, photos: [p, ...item.photos.filter((_, j) => j !== i)] }); }}
                     style={{ width: '100%', minHeight: 34, background: i === 0 ? ACC : '#1a1a1a', border: `1px solid ${i === 0 ? ACC : '#252525'}`, borderTop: 'none', borderRadius: '0 0 2px 2px', cursor: i === 0 ? 'default' : 'pointer', fontSize: 9, fontWeight: 700, padding: 4, color: i === 0 ? '#000' : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>
@@ -507,6 +509,14 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
             </div>
           )}
         </div>
+      )}
+      {photoIdx !== null && (
+        <PhotoViewer
+          src={item.photos[photoIdx]}
+          onClose={() => setPhotoIdx(null)}
+          isCover={photoIdx === 0}
+          onSetCover={onUpdate ? () => { const reordered = [item.photos[photoIdx], ...item.photos.filter((_, j) => j !== photoIdx)]; onUpdate({ ...item, photos: reordered }); setPhotoIdx(0); } : undefined}
+        />
       )}
     </div>
   );
