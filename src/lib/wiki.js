@@ -495,6 +495,12 @@ export async function reportWikiPhoto(photoId, reason) {
   return data;
 }
 
+export async function setWikiCoverPhoto(photoId) {
+  const { data, error } = await supabase.rpc("set_wiki_cover_photo", { p_photo_id: photoId });
+  if (error) throw error;
+  return data;
+}
+
 // ── Points ───────────────────────────────────────────────────────────────────
 // Never surfaced as an error to the user — points are a bonus layer on top of
 // an action that has already succeeded (the entry/revision is already saved),

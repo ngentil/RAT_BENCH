@@ -1378,7 +1378,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
         <div style={{ textAlign: "center", padding: "40px 24px" }}>
           <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
           <div style={{ fontSize: 12, color: ACC, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>No machines yet</div>
-          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Add machines from the Tracker tab, then manage their jobs, parts, and timers here.</div>
+          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Add machines from the Garage tab, then manage their jobs, parts, and timers here.</div>
         </div>
       )}
       {machines.length > 0 && (

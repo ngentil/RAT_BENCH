@@ -11,7 +11,7 @@ import MachineTile from '../machine/MachineTile';
 // quantity step; Machines/Tools/Equipment are one-of-a-kind physical items —
 // a listing sells the whole thing, no quantity involved.
 const KINDS = [
-  { id: 'machine',    label: '📋 Machine',    sub: 'From your Tracker' },
+  { id: 'machine',    label: '📋 Machine',    sub: 'From your Garage' },
   { id: 'part',       label: '🔩 Part',       sub: 'Surplus stock' },
   { id: 'tool',       label: '🔧 Tool',       sub: 'A physical tool' },
   { id: 'consumable', label: '📦 Consumable', sub: 'Surplus stock' },
@@ -135,7 +135,7 @@ function SellForm({ machines, profile, onCreated, onCancel }) {
         </div>
         {kind === 'machine' ? (
           machines.length === 0
-            ? <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>No machines in your Tracker yet.</div>
+            ? <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: '24px 0' }}>No machines in your Garage yet.</div>
             : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8, alignItems: 'start', marginBottom: 12 }}>
                 {machines.map(m => <MachineTile key={m.id} machine={m} onClick={() => pickItem(m)} />)}
