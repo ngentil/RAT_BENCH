@@ -235,7 +235,6 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
       )}
 
       {filtered.map(({ machine, items }) => {
-        const hasAlert = items.some(i => i.overdue || i.dueSoon);
         const totalHrs = totalLoggedHours(machine);
         return (
           <div key={machine.id} style={{ background: SURF, border: "1px solid " + (items.some(i=>i.overdue) ? RED+"44" : items.some(i=>i.dueSoon) ? ORANGE+"44" : BRD), borderLeft: "3px solid " + (items.some(i=>i.overdue) ? RED : items.some(i=>i.dueSoon) ? ORANGE : GRN), borderRadius: 2, padding: "12px 14px", marginBottom: 10, overflow: "hidden" }}>
@@ -257,7 +256,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
                 )}
                 <button
                   onClick={() => setServicingId(machine.id)}
-                  style={{ ...btnA, ...sm, fontSize: 8, background: hasAlert ? undefined : "#1a2a1a", borderColor: hasAlert ? undefined : GRN + "55" }}
+                  style={{ ...btnA, ...sm, fontSize: 8 }}
                 >
                   ✓ Mark Serviced
                 </button>

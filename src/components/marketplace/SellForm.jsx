@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ACC, MUT, BRD, SURF, TXT, RED, btnA, btnG, inp, txa, col, dvdr } from '../../lib/styles';
+import { ACC, MUT, BRD, SURF, TXT, RED, btnA, btnG, inp, txa, col, dvdr, sm } from '../../lib/styles';
 import { createListing } from '../../lib/marketplace';
 import { getInventory } from '../../lib/db/inventory';
 import { getConsumables } from '../../lib/db/consumables';
@@ -60,6 +60,42 @@ function SellForm({ machines, profile, onCreated, onCancel }) {
   const [qty, setQty] = useState('1');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState(null);
+
+  // Suburb-level only — never the street address. Nominatim's reverse
+  // geocode returns a full address; we deliberately read only the
+  // suburb/town + state fields off it and discard everything else
+  // (road, house_number, postcode) before it ever reaches state.
+  const useMyLocation = () => {
+    if (!navigator.geolocation) { setLocError("Your browser doesn't support location."); return; }
+    setLocating(true); setLocError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`,
+            { headers: { Accept: 'application/json' } }
+          );
+          const data = await res.json();
+          const a = data.address || {};
+          const suburb = a.suburb || a.neighbourhood || a.city_district || a.town || a.village || a.city;
+          if (!suburb) throw new Error("Couldn't work out your suburb from that location.");
+          setLocation([suburb, a.state_district || a.state].filter(Boolean).join(', '));
+        } catch (e) {
+          setLocError(e.message || "Couldn't look up your location.");
+        } finally {
+          setLocating(false);
+        }
+      },
+      (err) => {
+        setLocating(false);
+        setLocError(err.code === err.PERMISSION_DENIED ? "Location permission denied." : "Couldn't get your location.");
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  };
 
   useEffect(() => {
     if (!kind || kind === 'machine') return;
@@ -186,8 +222,15 @@ function SellForm({ machines, profile, onCreated, onCancel }) {
       </div>
 
       <div style={col}>
-        <label style={{ fontSize: 9, color: MUT, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Location (optional)</label>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <label style={{ fontSize: 9, color: MUT, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Location (optional)</label>
+          <button type="button" onClick={useMyLocation} disabled={locating} style={{ ...btnG, ...sm, fontSize: 9, padding: '3px 8px' }}>
+            {locating ? 'Locating…' : '📍 Use my location'}
+          </button>
+        </div>
         <input value={location} onChange={e => setLocation(e.target.value)} style={inp} placeholder="e.g. Brisbane, QLD" maxLength={80} />
+        <div style={{ fontSize: 8, color: MUT, marginTop: 4 }}>Only your nearest suburb is used — never your street address.</div>
+        {locError && <div style={{ fontSize: 9, color: RED, marginTop: 4 }}>{locError}</div>}
       </div>
 
       <div style={col}>
