@@ -40,7 +40,7 @@ export function WikiHeader({ title, subtitle, backHref, backLabel, onlineCount, 
   );
 }
 
-function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlineCount, onNavigate }) {
+function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlineCount, onNavigate, setMachines }) {
   const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
   const [entry, setEntry] = useState(null);
   const [revData, setRevData] = useState({});
@@ -191,14 +191,21 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
         .filter(p => p.uploaded_by === profile?.id)
         .sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0))
         .map(p => p.url);
-      await upsertMachine({
+      // Pre-generate the id (same pattern MachineForm/Tracker.jsx's addM use
+      // for a brand-new machine) so we already have the full row in hand to
+      // drop straight into the app's machines state — no refetch/refresh
+      // needed for it to show up in the Garage immediately.
+      const newMachine = {
+        id: crypto.randomUUID(),
         name: [entry.make, entry.model].filter(Boolean).join(" ") || entry.type || "Imported Machine",
         make: entry.make,
         model: entry.model,
         type: typeof entry.type === "string" ? entry.type : "",
         ...specOnly,
         photos: myPhotos,
-      });
+      };
+      await upsertMachine(newMachine);
+      setMachines?.(prev => [newMachine, ...prev]);
       setImportDone(true);
     } catch (e) {
       alert('Import failed: ' + e.message);
