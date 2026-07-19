@@ -177,21 +177,21 @@ export const getExpandFields = (type, strokeType) => EXPAND_SECTIONS.filter(f=>{
 export const getTileFields = (type) => TILE_FIELDS.filter(f=>!f.types||f.types.includes(type));
 
 export const TABS = [
-  {id:"tracker",     label:"📋 Garage"},
-  {id:"jobs",        label:"🗂 Jobs"},
-  {id:"workshop",    label:"🔨 Workshop"},
-  {id:"wiki",        label:"📖 Wiki"},
-  {id:"marketplace", label:"🛒 Market"},
+  {id:"tracker",     label:"Garage"},
+  {id:"jobs",        label:"Jobs"},
+  {id:"workshop",    label:"Workshop"},
+  {id:"wiki",        label:"Wiki"},
+  {id:"marketplace", label:"Market"},
 ];
 
 export const WORKSHOP_TABS = [
-  {id:"reminders",   label:"🔔 Remind"},
-  {id:"parts",       label:"🔩 Parts"},
-  {id:"consumables", label:"📦 Consumables"},
-  {id:"tools",       label:"🔧 Tools"},
-  {id:"equipment",   label:"⚙️ Equipment"},
-  {id:"vehicles",    label:"🚗 Vehicles"},
-  {id:"clients",     label:"👤 Clients"},
-  {id:"revenue",     label:"📊 Revenue", enthusiastOnly:true},
+  {id:"reminders",   label:"Remind"},
+  {id:"parts",       label:"Parts"},
+  {id:"consumables", label:"Consumables"},
+  {id:"tools",       label:"Tools"},
+  {id:"equipment",   label:"Equipment"},
+  {id:"vehicles",    label:"Vehicles"},
+  {id:"clients",     label:"Clients"},
+  {id:"revenue",     label:"Revenue", enthusiastOnly:true},
 ];
 

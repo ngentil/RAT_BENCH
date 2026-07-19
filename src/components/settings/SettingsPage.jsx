@@ -19,10 +19,10 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
     {id:"profile",  label:"Profile"},
     {id:"company",  label:"Company / Org"},
     {id:"storage",  label:"Billing & Storage"},
-    {id:"tabs",     label:"⇅ Tabs"},
+    {id:"tabs",     label:"Tabs"},
   ];
   const tabs = applyTabOrder(baseTabs, profile?.tab_order?.settings).concat(
-    isAdmin ? [{id:"admin",label:"⚙ Admin"}] : []
+    isAdmin ? [{id:"admin",label:"Admin"}] : []
   );
   return(
     <div style={{padding:16,flex:1,maxWidth:560,margin:"0 auto",width:"100%"}}>
