@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, GRN, inp, btnA, btnG, sm } from '../../lib/styles';
-import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto, setWikiCoverPhoto } from '../../lib/wiki';
+import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto, setWikiCoverPhoto, deleteWikiPhoto } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
 import { hl } from './wikiSearchHighlight';
 import PhotoViewer from '../ui/PhotoViewer';
@@ -144,6 +144,20 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
     }
   };
   const displayPhotos = [...photos].sort((a, b) => (b.is_cover ? 1 : 0) - (a.is_cover ? 1 : 0));
+
+  // Admin-only: delete a photo outright, bypassing the 3-report auto-hide
+  // flow — for a bad/broken/inappropriate photo an admin spots directly,
+  // rather than waiting on community reports.
+  const handleAdminDeletePhoto = async (photo) => {
+    if (!confirm('Permanently delete this photo? This cannot be undone.')) return;
+    try {
+      await deleteWikiPhoto(photo.id, photo.url);
+      setPhotos(ps => ps.filter(p => p.id !== photo.id));
+      if (viewingPhoto?.id === photo.id) setViewingPhoto(null);
+    } catch (e) {
+      alert('Delete failed: ' + e.message);
+    }
+  };
 
   // ── Import to garage ───────────────────────────────────────────────────────
   // Old revisions (published before the strip-list was tightened) can still
@@ -311,6 +325,13 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
               {displayPhotos.map(p => (
                 <div key={p.id} style={{ position: "relative" }}>
                   <img src={p.url} alt="" onClick={() => setViewingPhoto(p)} style={{ width: "100%", height: 84, objectFit: "cover", borderRadius: profile ? "2px 2px 0 0" : 2, border: p.is_cover ? "1px solid " + ACC + "88" : "1px solid " + BRD, borderBottom: profile ? "none" : undefined, cursor: "zoom-in", display: "block" }} />
+                  {isAdmin && (
+                    <button
+                      onClick={ev => { ev.stopPropagation(); handleAdminDeletePhoto(p); }}
+                      title="Admin: delete this photo permanently"
+                      style={{ position: "absolute", top: 3, left: 3, background: "#000000aa", border: "none", color: RED, fontSize: 10, borderRadius: 2, padding: "2px 5px", cursor: "pointer", lineHeight: 1 }}
+                    >🗑</button>
+                  )}
                   {profile && p.uploaded_by !== profile.id && (
                     <button
                       onClick={() => setReportMenuFor(reportMenuFor === p.id ? null : p.id)}
