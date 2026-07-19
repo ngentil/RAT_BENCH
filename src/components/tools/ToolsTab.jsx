@@ -349,7 +349,7 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
   );
 }
 
-export default function ToolsTab({ session, profile, company }) {
+export default function ToolsTab({ session, profile, company, refreshKey }) {
   const userId = session?.user?.id;
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -377,18 +377,19 @@ export default function ToolsTab({ session, profile, company }) {
       .then(ts => { if (alive) { setTools(ts); setLoading(false); } })
       .catch(() => { if (alive) { setErr("Failed to load tools. Refresh to try again."); setLoading(false); } });
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, refreshKey]);
 
-  const totalValue  = useMemo(() => tools.reduce((s, t) => s + (parseFloat(t.purchasePrice) || 0), 0), [tools]);
-  const loanedCount = useMemo(() => tools.filter(t => t.loanedTo).length, [tools]);
+  const activeTools = useMemo(() => tools.filter(t => !t.soldAt), [tools]);
+  const totalValue  = useMemo(() => activeTools.reduce((s, t) => s + (parseFloat(t.purchasePrice) || 0), 0), [activeTools]);
+  const loanedCount = useMemo(() => activeTools.filter(t => t.loanedTo).length, [activeTools]);
 
   const activeCats = useMemo(() => {
-    const seen = new Set(tools.map(t => t.category).filter(Boolean));
+    const seen = new Set(activeTools.map(t => t.category).filter(Boolean));
     return TOOL_CATEGORIES.filter(c => seen.has(c));
-  }, [tools]);
+  }, [activeTools]);
 
   const filtered = useMemo(() => {
-    let r = tools;
+    let r = activeTools;
     if (showLoaned) r = r.filter(t => t.loanedTo);
     if (catFilter) r = r.filter(t => t.category === catFilter);
     if (search.trim()) {
@@ -401,7 +402,7 @@ export default function ToolsTab({ session, profile, company }) {
       );
     }
     return r;
-  }, [tools, search, catFilter, showLoaned]);
+  }, [activeTools, search, catFilter, showLoaned]);
 
   const sorted = useMemo(() => {
     if (!sortBy) return filtered;
@@ -452,7 +453,7 @@ export default function ToolsTab({ session, profile, company }) {
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🔧 Tools</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
-            {tools.length} tool{tools.length !== 1 ? 's' : ''}
+            {activeTools.length} tool{activeTools.length !== 1 ? 's' : ''}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -467,7 +468,7 @@ export default function ToolsTab({ session, profile, company }) {
         </div>
       </div>
 
-      {tools.length > 0 && (
+      {activeTools.length > 0 && (
         <div style={{ display: "flex", gap: 20, marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid #1a1a1a" }}>
           {[
             { label: "Total value", value: fmtMoney(totalValue), col: GRN, show: totalValue > 0 },
@@ -481,7 +482,7 @@ export default function ToolsTab({ session, profile, company }) {
         </div>
       )}
 
-      {tools.length > 0 && (
+      {activeTools.length > 0 && (
         <input style={{ ...inp, marginBottom: 8, fontSize: 11 }} placeholder="Search tools…" value={search} onChange={e => setSearch(e.target.value)} />
       )}
 
@@ -505,10 +506,10 @@ export default function ToolsTab({ session, profile, company }) {
       {err && <div style={{ fontSize: 10, color: RED, padding: "12px 0", textAlign: "center" }}>{err}</div>}
       {loading && <div style={{ fontSize: 10, color: MUT, padding: "24px 0", textAlign: "center" }}>Loading…</div>}
 
-      {!loading && tools.length === 0 && (
+      {!loading && activeTools.length === 0 && (
         <Empty icon="🔧" t="No tools yet" sub="Add your first tool — power tools, hand tools, specialty gear, anything in your workshop." />
       )}
-      {!loading && tools.length > 0 && sorted.length === 0 && (
+      {!loading && activeTools.length > 0 && sorted.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>No tools match your filter.</div>
       )}
 

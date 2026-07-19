@@ -9,7 +9,6 @@ import {
 import { formatPrice } from './ListingTile';
 
 const KIND_ICON = { part: "🔩", tool: "🔧", consumable: "📦", equipment: "⚙️" };
-const STOCK_KINDS = new Set(['part', 'consumable']);
 
 function ListingDetail({ listingId, profile, company, onGoToBilling, onBack, onOpenThread }) {
   const [listing, setListing] = useState(null);
@@ -103,7 +102,7 @@ function ListingDetail({ listingId, profile, company, onGoToBilling, onBack, onO
           {error && <div style={{ fontSize: 10, color: RED, marginBottom: 8 }}>{error}</div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {listing.status === "active" && <button disabled={busy} onClick={() => runStatusChange(markListingSold)} style={btnA}>Mark Sold</button>}
-            {listing.status === "sold" && !STOCK_KINDS.has(listing.item_kind) && <button disabled={busy} onClick={() => runStatusChange(relistListing)} style={btnG}>Relist</button>}
+            {listing.status === "sold" && <button disabled={busy} onClick={() => runStatusChange(relistListing)} style={btnG}>Relist</button>}
             {listing.status !== "removed" && <button disabled={busy} onClick={() => runStatusChange(removeListing)} style={{ ...btnG, color: RED, borderColor: "#3a1a1a" }}>Remove</button>}
           </div>
         </div>

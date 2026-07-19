@@ -21,6 +21,7 @@ function toDb(t) {
     notes:            t.notes           || null,
     photos:           t.photos          || [],
     service_log:      t.serviceLog      || [],
+    sold_at:          t.soldAt          || null,
     updated_at:       new Date().toISOString(),
   };
 }
@@ -44,6 +45,7 @@ function fromDb(r) {
     notes:           r.notes,
     photos:          r.photos          || [],
     serviceLog:      r.service_log     || [],
+    soldAt:          r.sold_at         || null,
     createdAt:       r.created_at,
     updatedAt:       r.updated_at,
   };
