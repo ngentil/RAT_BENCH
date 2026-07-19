@@ -258,6 +258,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
               <button
                 onClick={doImport}
                 disabled={importing}
+                className="btn-tactile"
                 style={{ ...btnA, ...sm, fontSize: 9, opacity: importing ? 0.6 : 1 }}
               >
                 {importing ? "Adding…" : "＋ Add to Garage"}
@@ -334,7 +335,8 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
                     <button
                       onClick={() => { if (!p.is_cover) handleSetCover(p.id); }}
                       title={p.is_cover ? "Cover photo" : "Set as cover"}
-                      style={{ width: "100%", minHeight: 34, background: p.is_cover ? ACC : "#1a1a1a", border: "1px solid " + (p.is_cover ? ACC : BRD), borderTop: "none", borderRadius: "0 0 2px 2px", cursor: p.is_cover ? "default" : "pointer", fontSize: 9, fontWeight: 700, color: p.is_cover ? "#000" : TXT, fontFamily: "'IBM Plex Mono',monospace", padding: 4 }}
+                      className={"cover-bar-tactile" + (p.is_cover ? " on" : "")}
+                      style={{ width: "100%", minHeight: 34, background: p.is_cover ? "#120c06" : "#1a1a1a", border: "1px solid " + (p.is_cover ? ACC + "66" : BRD), borderTop: "none", borderRadius: "0 0 2px 2px", cursor: p.is_cover ? "default" : "pointer", fontSize: 9, fontWeight: 700, color: p.is_cover ? ACC : TXT, fontFamily: "'IBM Plex Mono',monospace", padding: 4 }}
                     >
                       {p.is_cover ? "★ Cover" : "☆ Set as Cover"}
                     </button>

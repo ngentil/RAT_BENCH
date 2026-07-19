@@ -4,7 +4,11 @@ export const BG="#0e0e0e",SURF="#161616",BRD="#252525",BRD2="#1e1e1e",
 export const inp  = {background:"#0a0a0a",border:"1px solid "+BRD,color:TXT,fontFamily:"'IBM Plex Mono',monospace",fontSize:12,padding:"8px 10px",borderRadius:2,width:"100%",outline:"none",boxSizing:"border-box"};
 export const sel  = {...inp};
 export const txa  = {...inp,resize:"vertical",minHeight:60,lineHeight:1.5};
-export const btnA = {background:ACC,color:"#fff",fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"8px 14px",borderRadius:2,cursor:"pointer",border:"none"};
+// Raised-bezel look (permanence pass): a gradient + paired inset highlight/
+// shade instead of a flat fill, so it reads as a domed switch rather than a
+// printed rectangle. The matching :active sink (`.btn-tactile` in index.css)
+// is opt-in via className since inline styles can't express :active.
+export const btnA = {background:"linear-gradient(180deg, #ff8a2e, "+ACC+" 45%, #c85405)",color:"#1a0a00",fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"8px 14px",borderRadius:2,cursor:"pointer",border:"none",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.35), 0 2px 0 #7a3400, 0 2px 2px rgba(0,0,0,0.4)",position:"relative",top:0};
 export const btnG = {background:"none",border:"1px solid "+BRD,color:MUT,fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"8px 14px",borderRadius:2,cursor:"pointer"};
 export const btnD = {background:"none",border:"1px solid #3a1a1a",color:"#884040",fontFamily:"'IBM Plex Mono',monospace",fontSize:10,padding:"3px 8px",borderRadius:2,cursor:"pointer"};
 export const sm   = {padding:"5px 10px",fontSize:10};

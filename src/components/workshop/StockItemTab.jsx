@@ -413,8 +413,9 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
                 <div key={i}>
                   <img src={p} alt="" onClick={e => { e.stopPropagation(); setPhotoIdx(i); }} style={{ width: '100%', height: 72, objectFit: 'cover', borderRadius: '2px 2px 0 0', border: i === 0 ? `1px solid ${ACC}88` : '1px solid #252525', borderBottom: 'none', cursor: 'zoom-in', display: 'block' }} />
                   <button title={i === 0 ? 'Cover photo' : 'Set as cover'}
+                    className={'cover-bar-tactile' + (i === 0 ? ' on' : '')}
                     onClick={e => { e.stopPropagation(); if (i === 0 || !onUpdate) return; onUpdate({ ...item, photos: [p, ...item.photos.filter((_, j) => j !== i)] }); }}
-                    style={{ width: '100%', minHeight: 34, background: i === 0 ? ACC : '#1a1a1a', border: `1px solid ${i === 0 ? ACC : '#252525'}`, borderTop: 'none', borderRadius: '0 0 2px 2px', cursor: i === 0 ? 'default' : 'pointer', fontSize: 9, fontWeight: 700, padding: 4, color: i === 0 ? '#000' : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>
+                    style={{ width: '100%', minHeight: 34, background: i === 0 ? '#120c06' : '#1a1a1a', border: `1px solid ${i === 0 ? ACC + '66' : '#252525'}`, borderTop: 'none', borderRadius: '0 0 2px 2px', cursor: i === 0 ? 'default' : 'pointer', fontSize: 9, fontWeight: 700, padding: 4, color: i === 0 ? ACC : MUT, fontFamily: "'IBM Plex Mono',monospace" }}>
                     {i === 0 ? '★ Cover' : '☆ Set as Cover'}
                   </button>
                 </div>
