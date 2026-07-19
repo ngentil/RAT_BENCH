@@ -377,7 +377,7 @@ function App(){
             t.id==="jobs"&&timerRunning?{n:"▶",c:GRN}:
             null;
           return (
-          <button key={t.id} onClick={()=>setTab(t.id)} className={"tab-btn tab-btn-rocker"+(active?" on":"")} style={{flexShrink:0,padding:"10px 12px 13px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?"#191410":"none",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
+          <button key={t.id} onClick={()=>setTab(t.id)} className={"tab-btn tab-btn-rocker"+(active?" on":"")} style={{flex:"1 1 0",minWidth:0,padding:"10px 8px 13px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?"#191410":"none",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textAlign:"center",position:"relative"}}>
             {t.label}
             <span className="lamp" />
             {badge&&<span style={{position:"absolute",top:4,right:2,fontSize:9,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
