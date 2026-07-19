@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
-import UpgradeBanner from '../ui/UpgradeBanner';
 import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
-import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
 import { deletePhoto } from '../../lib/storage';
 import { fmtDate, fmtMoney } from '../../lib/helpers';
@@ -351,7 +349,7 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
   );
 }
 
-export default function ToolsTab({ session, profile, company, onGoToBilling }) {
+export default function ToolsTab({ session, profile, company }) {
   const userId = session?.user?.id;
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -370,9 +368,6 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
   const setSortByP = v => { setSortBy(v); savePref(profile?.id, 'toolsSort', v ?? null); };
   const setColsP = c => { setCols(c); savePref(profile?.id, 'toolsCols', c); setViewP('grid'); };
 
-  const isFree  = effectiveTier(profile, company) === "free";
-  const limit   = assetLimit('tools', profile, company);
-  const atLimit = atAssetLimit('tools', tools.length, profile, company);
 
   useEffect(() => {
     if (!userId) return;
@@ -453,14 +448,11 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      {atLimit && <UpgradeBanner text={`You're at the ${limit}-tool limit on the free plan.`} onUpgrade={onGoToBilling} />}
-
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🔧 Tools</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {tools.length} tool{tools.length !== 1 ? 's' : ''}
-            {isFree && <span style={{ marginLeft: 8, color: atLimit ? RED : MUT }}>· {tools.length}/{limit} (free limit)</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -468,9 +460,7 @@ export default function ToolsTab({ session, profile, company, onGoToBilling }) {
           <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36, alignSelf: 'stretch' }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
           <button
             onClick={() => setFormTool({})}
-            disabled={atLimit}
-            style={{ ...btnA, opacity: atLimit ? 0.4 : 1, minHeight: 44, display: 'flex', alignItems: 'center' }}
-            title={atLimit ? `Upgrade to add more than ${limit} tools` : undefined}
+            style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}
           >
             + Add
           </button>

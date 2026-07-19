@@ -4,8 +4,6 @@ import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm
 import { FL, Empty } from '../ui/shared';
 import { parseNum } from '../../lib/helpers';
 import { getPref, savePref } from '../../lib/db/preferences';
-import { effectiveTier } from '../../lib/gates';
-import UpgradeBanner from '../ui/UpgradeBanner';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
 import { deletePhoto } from '../../lib/storage';
@@ -560,10 +558,6 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const setSortByP = v => { setSortBy(v); savePref(profile?.id, `${tableType}Sort`, v ?? null); };
   const setColsP   = c => { setCols(c);  savePref(profile?.id, `${tableType}Cols`, c); setViewP('grid'); };
 
-  const isFree  = effectiveTier(profile, company) === 'free';
-  const FREE_LIMIT = 5;
-  const atLimit = isFree && items.length >= FREE_LIMIT;
-
   // ── Load ────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     if (!userId) return;
@@ -702,9 +696,6 @@ export default function StockItemTab({ tableType, label, machines, session, prof
     });
   }, [filtered, sortBy]);
 
-  const capped = isFree ? sorted.slice(0, FREE_LIMIT) : sorted;
-  const hiddenCount = isFree ? Math.max(0, sorted.length - FREE_LIMIT) : 0;
-
   const icon = tableType === 'part' ? '🔩' : '📦';
   const noun = tableType === 'part' ? 'Part' : 'Consumable';
 
@@ -736,7 +727,6 @@ export default function StockItemTab({ tableType, label, machines, session, prof
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {items.length} item{items.length !== 1 ? 's' : ''}
             {lowCount > 0 && <span style={{ color: ORANGE, marginLeft: 8 }}>· {lowCount} low stock</span>}
-            {isFree && <span style={{ marginLeft: 8 }}>· {items.length}/{FREE_LIMIT} (free limit)</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -749,9 +739,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
           <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36, alignSelf: 'stretch' }}>
             {view === 'list' ? '☰' : `⊞${cols}`}
           </button>
-          {!atLimit && (
-            <button onClick={() => setFormItem({})} style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}>+ Add</button>
-          )}
+          <button onClick={() => setFormItem({})} style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}>+ Add</button>
         </div>
       </div>
 
@@ -798,8 +786,6 @@ export default function StockItemTab({ tableType, label, machines, session, prof
         </div>
       )}
 
-      {isFree && items.length >= FREE_LIMIT && <UpgradeBanner text={`You're at the ${FREE_LIMIT}-${label.toLowerCase()} limit on the free plan.`} onUpgrade={onGoToBilling} marginBottom={12} />}
-
       {/* Loading / empty */}
       {loading && <div style={{ fontSize: 10, color: MUT, padding: '24px 0', textAlign: 'center' }}>Loading…</div>}
       {!loading && items.length === 0 && <Empty icon={icon} t={`No ${label.toLowerCase()} yet`} sub={`Track your ${label.toLowerCase()} — add items to monitor stock levels, pricing, and usage.`} />}
@@ -809,7 +795,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
       {view === 'grid' ? (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
-            {capped.map(item => (
+            {sorted.map(item => (
               <AssetTile
                 key={item.id}
                 photo={item.photos?.[0]}
@@ -823,7 +809,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
             ))}
           </div>
           {tileOpen && (() => {
-            const item = capped.find(x => x.id === tileOpen);
+            const item = sorted.find(x => x.id === tileOpen);
             return item ? (
               <div style={{ position: 'fixed', inset: 0, background: '#000a', zIndex: 200, overflowY: 'auto' }}
                 onClick={e => { if (e.target === e.currentTarget) setTileOpen(null); }}>
@@ -844,7 +830,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
           })()}
         </>
       ) : (
-        capped.map(item => (
+        sorted.map(item => (
           <StockCard
             key={item.id} item={item} tableType={tableType} typeConfig={typeConfig}
             isShared={false}
@@ -857,8 +843,6 @@ export default function StockItemTab({ tableType, label, machines, session, prof
           />
         ))
       )}
-
-      {hiddenCount > 0 && <UpgradeBanner text={`+${hiddenCount} more ${label.toLowerCase()} hidden — upgrade for unlimited`} onUpgrade={onGoToBilling} marginBottom={10} />}
 
       <div style={{ marginTop: 8, fontSize: 9, color: MUT, lineHeight: 1.7 }}>
         Stock is adjusted automatically when items are used on a job. Buy price = your cost, Sell price = what you charge.

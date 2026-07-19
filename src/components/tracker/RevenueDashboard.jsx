@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, btnA, btnG, sm } from '../../lib/styles';
 import { SL } from '../ui/shared';
 import TabGuide from '../ui/TabGuide';
-import { canUse, effectiveTier } from '../../lib/gates';
 import { getPref } from '../../lib/db/preferences';
 import { mIcon, getClosedBookingFee } from '../../lib/helpers';
 import { parseLocalDate, endOfLocalDay } from '../../lib/dates';
@@ -46,20 +45,18 @@ function fmtHrs(secs) {
 
 const PERIODS = [["week","This Week"], ["month","This Month"], ["all","All Time"], ["custom","Custom"]];
 
-export default function RevenueDashboard({ machines, company, profile, onGoToBilling }) {
+export default function RevenueDashboard({ machines, company, profile }) {
   const [period, setPeriod] = useState("month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [closedBookings, setClosedBookings] = useState([]);
 
-  const tier = effectiveTier(profile, company);
-  const isFree = tier === "free";
-  const storagePolicyEnabled = canUse('storage_policy', profile, company) && !!(profile?.storage_policy_enabled);
+  const storagePolicyEnabled = !!(profile?.storage_policy_enabled);
 
   useEffect(() => {
-    if (!storagePolicyEnabled || isFree) return;
+    if (!storagePolicyEnabled) return;
     getClosedBookings().then(bs => setClosedBookings(bs || []));
-  }, [storagePolicyEnabled, isFree]);
+  }, [storagePolicyEnabled]);
 
   const allEntries = useMemo(() =>
     machines.flatMap(m =>
@@ -83,9 +80,8 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
   const now = new Date(nowTick);
 
   const filtered = useMemo(() => {
-    if (isFree) return [];
     return allEntries.filter(e => inPeriod(e.completedAt, period, customFrom, customTo, now));
-  }, [allEntries, period, customFrom, customTo, isFree, nowTick]);
+  }, [allEntries, period, customFrom, customTo, nowTick]);
 
   const rate       = parseFloat(company?.hourly_rate) || 0;
   const taxRate    = parseFloat(company?.tax_rate) || 0;
@@ -95,7 +91,6 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
   const labourRev  = totalHrs * rate;
 
   const { partsRev, partsCost } = useMemo(() => {
-    if (isFree) return { partsRev: 0, partsCost: 0 };
     let rev = 0, cost = 0;
     machines.forEach(m => {
       (m.parts || []).forEach(p => {
@@ -109,12 +104,12 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
       });
     });
     return { partsRev: rev, partsCost: cost };
-  }, [machines, period, customFrom, customTo, isFree, nowTick]);
+  }, [machines, period, customFrom, customTo, nowTick]);
 
   const filteredBookings = useMemo(() => {
-    if (isFree || !storagePolicyEnabled) return [];
+    if (!storagePolicyEnabled) return [];
     return closedBookings.filter(b => inPeriod(b.collected_at, period, customFrom, customTo, now));
-  }, [closedBookings, period, customFrom, customTo, isFree, storagePolicyEnabled, nowTick]);
+  }, [closedBookings, period, customFrom, customTo, storagePolicyEnabled, nowTick]);
 
   // Same tiers the customer was actually charged with — not the defaults
   const activeTiers = useMemo(() => getTiers(profile?.storage_tiers), [profile?.storage_tiers]);
@@ -135,7 +130,6 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
   const grossProfit  = labourRev + partsRev + storageRev - partsCost;
 
   const byMachine = useMemo(() => {
-    if (isFree) return [];
     const map = {};
     for (const e of filtered) {
       if (!map[e.machineId]) map[e.machineId] = { name: e.machineName, type: e.machineType, secs: 0, sessions: 0, storageRev: 0 };
@@ -151,34 +145,18 @@ export default function RevenueDashboard({ machines, company, profile, onGoToBil
       }
     }
     return Object.values(map).sort((a, b) => b.secs - a.secs);
-  }, [filtered, isFree, storageByMachineId, machines]);
+  }, [filtered, storageByMachineId, machines]);
 
   const byDow = useMemo(() => {
-    if (isFree) return [0,0,0,0,0,0,0];
     const days = [0,0,0,0,0,0,0];
     for (const e of filtered) {
       days[new Date(e.completedAt).getDay()] += (e.seconds || 0);
     }
     return days;
-  }, [filtered, isFree]);
+  }, [filtered]);
   const maxDow = Math.max(...byDow, 1);
 
   const lbl = { fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 8 };
-
-  if (isFree) {
-    return (
-      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>📊</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Revenue Dashboard</div>
-        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Track your billable hours and see what you're actually making per machine. Worth it once you're charging for your time.
-        </div>
-        <button onClick={onGoToBilling} style={{ ...btnA, ...sm, color: "#fff" }}>
-          Become a Member →
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>

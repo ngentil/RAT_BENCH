@@ -160,6 +160,9 @@ $$;
 GRANT EXECUTE ON FUNCTION update_wiki_rev_pointer(uuid, uuid) TO authenticated;
 
 -- ── 6. grant_upgrade: validate tier strings ──────────────────────────────────
+-- REMOVED — see supabase/remove_tier_system.sql. grant_upgrade has no
+-- remaining caller (the AdminPanel Grants tab was deleted); re-running this
+-- section would recreate an orphaned function.
 
 CREATE OR REPLACE FUNCTION grant_upgrade(p_email text, p_tier text)
 RETURNS jsonb

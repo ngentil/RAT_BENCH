@@ -8,7 +8,6 @@ import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '
 import { mIcon, fmtDT, getMachineServiceStatus, getStorageStatus, findMachineSpecMatch } from '../../lib/helpers';
 import { hl } from '../wiki/wikiSearchHighlight';
 import { WikiTrackerModal } from '../wiki/WikiModals';
-import { canUse, effectiveTier } from '../../lib/gates';
 import { getTiers, TIER_NAMES } from '../../lib/storageTiers';
 import { getActiveBooking, createBooking, collectMachine, updateBooking } from '../../lib/db/bookings';
 import { deletePhoto } from '../../lib/storage';
@@ -69,7 +68,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
     return ()=>{alive=false;};
   },[open,m.id]);
 
-  const storagePolicyEnabled = canUse('storage_policy',profile,company) && !!(profile?.storage_policy_enabled);
+  const storagePolicyEnabled = !!(profile?.storage_policy_enabled);
 
   useEffect(()=>{
     if(!storagePolicyEnabled) return;
@@ -587,7 +586,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
           <div style={{padding:"0 10px 14px",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
             {withGuide("all specs\n& intervals",<button style={_jEdit} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>)}
             {withGuide("export\nspec sheet",<button style={_jPdf} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>)}
-            {!isGuest&&effectiveTier(profile,company)!=="free"&&m.make&&m.model&&<button style={_jWiki} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
+            {!isGuest&&m.make&&m.model&&<button style={_jWiki} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
             {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}

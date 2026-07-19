@@ -8,7 +8,6 @@ import { fmtPressure, fmtSpeed, fmtLength, fmtVolume, fmtSmallVolume, fmtSpring,
 import PhotoAdder from '../ui/PhotoAdder';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { lookupWikiEntry, getWikiMakes, getWikiModels } from '../../lib/wiki';
-import { effectiveTier } from '../../lib/gates';
 import { getPref, savePref } from '../../lib/db/preferences';
 
 function WikiAutocomplete({ value, onChange, fetchSuggestions, placeholder, style }) {
@@ -3148,7 +3147,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
         </div>
         <div style={{...mdlF,gap:8,justifyContent:"stretch"}}>
           <button style={{...btnG,flex:1,minHeight:52,fontSize:13}} onClick={onClose}>Cancel</button>
-          {!isGuest&&effectiveTier(profile,company)!=="free"&&existing&&profile&&make&&model&&<button style={{...btnG,flex:1,minHeight:52,fontSize:13}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
+          {!isGuest&&existing&&profile&&make&&model&&<button style={{...btnG,flex:1,minHeight:52,fontSize:13}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
           <button style={{...btnA,flex:1,minHeight:52,fontSize:13,fontWeight:700}} onClick={save}>{existing?"Save Changes":"Add Machine"}</button>
         </div>
       </div>

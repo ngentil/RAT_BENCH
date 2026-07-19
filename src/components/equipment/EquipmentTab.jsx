@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import UpgradeBanner from '../ui/UpgradeBanner';
 import { SL, FL, Empty } from '../ui/shared';
 import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
-import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
 import { deletePhoto } from '../../lib/storage';
 import { fmtDate } from '../../lib/helpers';
@@ -274,7 +272,7 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
   );
 }
 
-export default function EquipmentTab({ equipment, setEquipment, session, profile, company, onGoToBilling }) {
+export default function EquipmentTab({ equipment, setEquipment, session, profile, company }) {
   const [loading, setLoading] = useState(!equipment?.length);
   const [err, setErr] = useState('');
   const [formItem, setFormItem] = useState(null);
@@ -291,9 +289,6 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
   const setSortByP = v => { setSortBy(v); savePref(profile?.id, 'equipmentSort', v ?? null); };
   const setColsP = c => { setCols(c); savePref(profile?.id, 'equipmentCols', c); setViewP('grid'); };
 
-  const isFree  = effectiveTier(profile, company) === 'free';
-  const limit   = assetLimit('equipment', profile, company);
-  const atLimit = atAssetLimit('equipment', equipment?.length ?? 0, profile, company);
 
   useEffect(() => {
     let alive = true;
@@ -365,14 +360,11 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      {atLimit && <UpgradeBanner text={`You're at the ${limit}-item equipment limit on the free plan.`} onUpgrade={onGoToBilling} />}
-
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>⚙️ Equipment</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {(equipment || []).length} item{(equipment || []).length !== 1 ? 's' : ''}
-            {isFree && <span style={{ marginLeft: 8, color: atLimit ? RED : MUT }}>· {(equipment || []).length}/{limit} (free limit)</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -380,9 +372,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
           <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36, alignSelf: 'stretch' }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
           <button
             onClick={() => setFormItem({})}
-            disabled={atLimit}
-            style={{ ...btnA, opacity: atLimit ? 0.4 : 1, minHeight: 44, display: 'flex', alignItems: 'center' }}
-            title={atLimit ? `Upgrade to add more than ${limit} equipment items` : undefined}
+            style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}
           >
             + Add
           </button>

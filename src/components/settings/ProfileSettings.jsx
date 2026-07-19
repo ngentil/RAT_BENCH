@@ -5,15 +5,6 @@ import { updateProfile } from '../../lib/db';
 import { getMyContributionStats, getMyWikiPoints, setWikiLeaderboardOptIn } from '../../lib/wiki';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
 import { Tooltip } from '../ui/shared';
-const TIER_LABEL = { enthusiast:"Member", team:"Member", business:"Member" };
-
-function timeLeft(expiresAt) {
-  const ms = new Date(expiresAt) - Date.now();
-  if (ms <= 0) return null;
-  const h = Math.floor(ms / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
 
 function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}){
   const [displayName,setDisplayName]=useState(profile?.display_name||"");
@@ -26,8 +17,6 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
   const [showUpgrade,setShowUpgrade]=useState(false);
   const [curPw,setCurPw]=useState(""),   [newPw,setNewPw]=useState(""),   [confPw,setConfPw]=useState("");
   const [pwErr,setPwErr]=useState(""),   [pwSaved,setPwSaved]=useState(false),   [pwBusy,setPwBusy]=useState(false);
-  const [applyBusy,setApplyBusy]=useState(false);
-  const [applyMsg,setApplyMsg]=useState(null);
   const [contrib,setContrib]=useState(null);
   const [wikiPoints,setWikiPoints]=useState(0);
   const [leaderboardOptIn,setLeaderboardOptIn]=useState(!!profile?.wiki_leaderboard_opt_in);
@@ -51,20 +40,6 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
       setLeaderboardOptIn(!next); // revert on failure
     }
     setOptInSaving(false);
-  };
-
-  const pendingValid = profile?.pending_code && profile?.pending_code_expires_at
-    && new Date(profile.pending_code_expires_at) > new Date();
-  const remaining = pendingValid ? timeLeft(profile.pending_code_expires_at) : null;
-
-  const activateUpgrade = async () => {
-    setApplyBusy(true); setApplyMsg(null);
-    const { data, error } = await supabase.rpc("apply_pending_upgrade");
-    setApplyBusy(false);
-    if (error || data?.error) { setApplyMsg({ ok:false, text: error?.message||data?.error }); return; }
-    const { data:p } = await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-    if (p) setProfile(p);
-    setApplyMsg({ ok:true, text:`You're now on the ${TIER_LABEL[data.tier]||data.tier} plan!` });
   };
 
   const saveProfile=async()=>{
@@ -98,24 +73,6 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
         <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>Create an account to keep your machines and sign back in any time.</div>
         <button onClick={()=>setShowUpgrade(true)} style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}}>Create Account</button>
       </div>}
-      {pendingValid&&(
-        <div style={{marginBottom:20,background:"#08100a",border:"1px solid "+GRN+"55",borderRadius:2,padding:16}}>
-          <div style={{fontSize:9,color:GRN,letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:700,marginBottom:8}}>Pending Plan Upgrade</div>
-          <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,color:TXT,fontWeight:700,letterSpacing:"0.08em",marginBottom:8}}>
-            {profile.pending_code}
-          </div>
-          <div style={{fontSize:10,color:MUT,marginBottom:12,lineHeight:1.6}}>
-            Grants access to the <span style={{color:GRN,fontWeight:700}}>{TIER_LABEL[profile.pending_tier]||profile.pending_tier}</span> plan.{" "}
-            {remaining?<>Expires in <span style={{color:TXT}}>{remaining}</span>.</>:<span style={{color:RED}}>Expired.</span>}
-          </div>
-          {applyMsg&&<div style={{fontSize:10,color:applyMsg.ok?GRN:RED,marginBottom:10}}>{applyMsg.ok?"✓ ":"✗ "}{applyMsg.text}</div>}
-          {!applyMsg?.ok&&remaining&&(
-            <button onClick={activateUpgrade} disabled={applyBusy} style={{...btnA,...sm,background:"#1a6a2a",borderColor:"#1a6a2a",opacity:applyBusy?0.6:1}}>
-              {applyBusy?"Activating…":"Activate Upgrade"}
-            </button>
-          )}
-        </div>
-      )}
       <div style={sec}>
         <div style={secHd}>Profile</div>
         <div style={{...col,marginBottom:10}}><div style={lbl}>Display Name</div><input style={inp} value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="e.g. Jane Smith"/></div>

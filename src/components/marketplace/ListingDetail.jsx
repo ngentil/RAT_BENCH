@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, btnA, btnG, dvdr } from '../../lib/styles';
 import { mIcon } from '../../lib/helpers';
 import { supabase } from '../../lib/supabase';
-import { effectiveTier } from '../../lib/gates';
 import {
   getListingById, getOrCreateThread, incrementListingViews,
   markListingSold, relistListing, removeListing,
 } from '../../lib/marketplace';
-import UpgradeBanner from '../ui/UpgradeBanner';
 import { formatPrice } from './ListingTile';
 
 const KIND_ICON = { part: "🔩", tool: "🔧", consumable: "📦", equipment: "⚙️" };
@@ -38,7 +36,6 @@ function ListingDetail({ listingId, profile, company, onGoToBilling, onBack, onO
   if (!listing) return <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>Loading…</div>;
 
   const isMine = listing.seller_id === profile.id;
-  const isFree = effectiveTier(profile, company) === "free";
   const sellerName = seller?.username || seller?.display_name || "Seller";
   const photos = listing.photos || [];
 
@@ -116,8 +113,6 @@ function ListingDetail({ listingId, profile, company, onGoToBilling, onBack, onO
           {error && <div style={{ fontSize: 10, color: RED, marginBottom: 8 }}>{error}</div>}
           {listing.status !== "active" ? (
             <div style={{ fontSize: 10, color: MUT }}>This listing is no longer available.</div>
-          ) : isFree ? (
-            <UpgradeBanner text="Become a Member to message sellers — it keeps the Marketplace free of spam outreach." onUpgrade={onGoToBilling} marginBottom={0} />
           ) : (
             <button disabled={messaging} onClick={handleMessage} style={btnA}>{messaging ? "Starting…" : "💬 Message Seller"}</button>
           )}

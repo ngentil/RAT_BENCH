@@ -3,7 +3,6 @@ import { supabase } from '../../lib/supabase';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { SCOL } from '../../lib/constants';
-import { atMachineLimit, machineLimit } from '../../lib/gates';
 import { getPref, savePref } from '../../lib/db/preferences';
 import MachineTile from '../machine/MachineTile';
 import MachineRow from '../machine/MachineRow';
@@ -279,11 +278,6 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
             ? <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>3 machine guest limit</span>
                 <button style={{...btnA,...sm,background:"#1a7a3a",borderColor:"#1a7a3a"}} onClick={()=>setShowUpgrade(true)}>Create a free account →</button>
-              </div>
-            : !isGuest&&atMachineLimit(machines.length,profile,company)
-            ? <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:9,color:MUT,letterSpacing:"0.06em"}}>{machineLimit(profile,company)} machines — nice work</span>
-                <button style={{...btnA}} onClick={onGoToBilling}>Go unlimited →</button>
               </div>
             : <button ref={addBtnRef} style={{...btnA, minHeight:44, display:"flex", alignItems:"center"}} onClick={()=>setShowAdd(true)}>+ Add</button>}
         </div>

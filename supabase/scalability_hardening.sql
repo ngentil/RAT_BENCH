@@ -68,6 +68,11 @@ CREATE INDEX IF NOT EXISTS idx_consumables_user_id    ON consumables(user_id);
 -- ── 3. Machine limit enforcement (DB level) ───────────────────
 -- Enforces the free-tier 10-machine cap at the database layer so
 -- client-side gates.js cannot be bypassed via direct API calls.
+--
+-- REMOVED — see supabase/remove_tier_system.sql. gates.js and the paid
+-- tier it gated no longer exist; do not re-run this section, it would
+-- recreate trg_machine_limit and start blocking new accounts again. The
+-- separate guest cap below (section 4) is untouched and still wanted.
 
 CREATE OR REPLACE FUNCTION enforce_machine_limit()
 RETURNS TRIGGER AS $$

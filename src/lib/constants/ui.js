@@ -192,6 +192,6 @@ export const WORKSHOP_TABS = [
   {id:"equipment",   label:"Equipment"},
   {id:"vehicles",    label:"Vehicles"},
   {id:"clients",     label:"Clients"},
-  {id:"revenue",     label:"Revenue", enthusiastOnly:true},
+  {id:"revenue",     label:"Revenue"},
 ];
 

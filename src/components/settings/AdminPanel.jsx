@@ -3,14 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { deleteUserPhotos } from '../../lib/storage';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } from '../../lib/styles';
 
-const TIER_COLOR  = { free: MUT, enthusiast: '#e8670a', business: '#e8c20a' };
-const ALL_TIERS   = ['free', 'enthusiast', 'business'];
-// Display-only — the stored tier value is still literally 'enthusiast'/
-// 'business' in the DB (and that's what every RPC call below still sends),
-// this just avoids showing that raw legacy string to an admin who only
-// knows the tier as "Member" everywhere else in the app.
-const TIER_LABEL  = { free: 'Free', enthusiast: 'Member', business: 'Member', team: 'Member' };
-const ADMIN_TABS  = ['Overview', 'Users', 'Grants', 'Flags', 'Wiki Reports', 'Announcements', 'Audit'];
+const ADMIN_TABS  = ['Overview', 'Users', 'Flags', 'Wiki Reports', 'Announcements', 'Audit'];
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
 const lbl  = { fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 };
@@ -19,14 +12,6 @@ const card = { background: SURF, border: '1px solid ' + BRD, borderRadius: 2, pa
 function Msg({ m }) {
   if (!m) return null;
   return <div style={{ fontSize: 10, color: m.ok ? GRN : RED, marginBottom: 10 }}>{m.ok ? '✓ ' : '✗ '}{m.text}</div>;
-}
-
-function TierBadge({ tier }) {
-  const t = tier || 'free';
-  return (
-    <span style={{ fontSize: 7, fontWeight: 700, color: TIER_COLOR[t], border: '1px solid ' + TIER_COLOR[t] + '55',
-      padding: '1px 5px', borderRadius: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t}</span>
-  );
 }
 
 // ─── Overview ────────────────────────────────────────────────────────────────
@@ -63,7 +48,6 @@ function OverviewTab() {
   if (loading) return <div style={{ fontSize: 10, color: MUT, padding: 32, textAlign: 'center' }}>Loading…</div>;
   if (!stats)  return null;
 
-  const byTier        = stats.by_tier         || {};
   const byType        = stats.machines_by_type || {};
   const signupsByDay  = stats.signups_by_day   || [];
   const typeKeys      = Object.keys(byType).sort((a, b) => byType[b] - byType[a]);
@@ -129,38 +113,6 @@ function OverviewTab() {
         </>
       )}
 
-      {/* ── Grants ── */}
-      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Grants</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 20 }}>
-        {[
-          ['Pending',   stats.grants_pending,  '#e8870a'],
-          ['Redeemed',  stats.grants_redeemed, GRN],
-        ].map(([label, value, color]) => (
-          <div key={label} style={{ ...card, borderTop: '2px solid ' + color, boxShadow: '0 0 10px ' + color + '14' }}>
-            <div style={{ fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1, letterSpacing: '-0.02em' }}>{value ?? '—'}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Users by Tier ── */}
-      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>Users by Tier</div>
-      {ALL_TIERS.map(t => {
-        const count = byTier[t] || 0;
-        const pct   = stats.total_users > 0 ? count / stats.total_users : 0;
-        return (
-          <div key={t} style={{ marginBottom: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-              <span style={{ fontSize: 10, color: TIER_COLOR[t], textTransform: 'capitalize', fontWeight: 700 }}>{t}</span>
-              <span style={{ fontSize: 10, color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>{count}</span>
-            </div>
-            <div style={{ height: 4, background: '#1a1a1a', borderRadius: 2 }}>
-              <div style={{ height: '100%', background: TIER_COLOR[t], borderRadius: 2, width: (pct * 100) + '%', transition: 'width 0.4s', boxShadow: '0 0 6px ' + TIER_COLOR[t] + '55' }} />
-            </div>
-          </div>
-        );
-      })}
-
     </div>
   );
 }
@@ -185,17 +137,8 @@ function UsersTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const setTier = async (email, tier) => {
-    setBusy(email); setMsg(null);
-    const { data, error } = await supabase.rpc('admin_set_tier', { p_email: email, p_tier: tier });
-    setBusy(null);
-    if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
-    setMsg({ ok: true, text: `${email} set to ${tier}` });
-    load(search);
-  };
-
   const deactivate = async (email) => {
-    if (!confirm(`Deactivate ${email}?\n\nThis resets them to free tier.`)) return;
+    if (!confirm(`Deactivate ${email}?`)) return;
     setBusy(email); setMsg(null);
     const { data, error } = await supabase.rpc('admin_deactivate_user', { p_email: email });
     setBusy(null);
@@ -245,7 +188,6 @@ function UsersTab() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                 <span style={{ fontSize: 11, color: TXT, fontWeight: 700 }}>{u.display_name || u.username || '—'}</span>
-                <TierBadge tier={u.tier} />
               </div>
               <div style={{ fontSize: 9, color: MUT, marginBottom: 3 }}>{u.email}</div>
               <div style={{ fontSize: 8, color: '#333' }}>
@@ -255,14 +197,6 @@ function UsersTab() {
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0, alignItems: 'flex-end' }}>
-              <select
-                style={{ ...inp, fontSize: 9, padding: '3px 6px', width: 'auto' }}
-                value={u.tier || 'free'}
-                onChange={e => setTier(u.email, e.target.value)}
-                disabled={busy === u.email}
-              >
-                {ALL_TIERS.map(t => <option key={t} value={t}>{TIER_LABEL[t] || t}</option>)}
-              </select>
               <button onClick={() => deactivate(u.email)} disabled={!!busy}
                 style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1 }}>
                 Deactivate
@@ -282,108 +216,6 @@ function UsersTab() {
       {!loading && !loadError && users.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No users found.</div>
       )}
-    </div>
-  );
-}
-
-// ─── Grants ──────────────────────────────────────────────────────────────────
-
-function statusOf(g) {
-  if (g.redeemed_at) return 'redeemed';
-  if (new Date(g.expires_at) < new Date()) return 'expired';
-  return 'pending';
-}
-
-function StatusBadge({ g }) {
-  const s = statusOf(g);
-  const c = s === 'redeemed' ? GRN : s === 'pending' ? ACC : MUT;
-  return (
-    <span style={{ fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-      color: c, border: '1px solid ' + c + '55', padding: '1px 5px', borderRadius: 2 }}>{s}</span>
-  );
-}
-
-// Grants only ever issue the single paid tier now — there's nothing left to
-// pick between, so this is a plain email + issue button rather than a tier
-// picker. grant_upgrade's p_tier param still takes a string server-side, so
-// 'enthusiast' is passed explicitly rather than removed from the RPC call.
-const GRANT_TIER = 'enthusiast';
-
-function GrantsTab() {
-  const [email, setEmail]   = useState('');
-  const [busy,  setBusy]    = useState(false);
-  const [msg,   setMsg]     = useState(null);
-  const [grants, setGrants] = useState([]);
-  const [revoking, setRevoking] = useState(null);
-
-  const load = async () => {
-    const { data } = await supabase.from('upgrade_grants').select('*').order('created_at', { ascending: false }).limit(100);
-    if (data) setGrants(data);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const grant = async () => {
-    if (!email.trim()) return;
-    setBusy(true); setMsg(null);
-    const { data, error } = await supabase.rpc('grant_upgrade', { p_email: email.trim(), p_tier: GRANT_TIER });
-    setBusy(false);
-    if (error || data?.error) { setMsg({ ok: false, text: error?.message || data?.error }); return; }
-    setMsg({ ok: true, text: `Code ${data.code} issued to ${email.trim()}` });
-    setEmail('');
-    load();
-  };
-
-  const revoke = async (g) => {
-    setRevoking(g.id);
-    await supabase.rpc('revoke_upgrade', { p_email: g.email });
-    setRevoking(null);
-    load();
-  };
-
-  return (
-    <div>
-      <div style={{ background: '#08080f', border: '1px solid ' + ACC + '44', borderRadius: 2, padding: 14, marginBottom: 16 }}>
-        <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 12 }}>Issue Membership</div>
-        <div style={col}>
-          <div style={lbl}>User Email</div>
-          <input style={inp} type="email" placeholder="user@example.com" value={email}
-            onChange={e => { setEmail(e.target.value); setMsg(null); }} onKeyDown={e => e.key === 'Enter' && grant()} />
-        </div>
-        <Msg m={msg} />
-        <button onClick={grant} disabled={busy || !email.trim()} style={{ ...btnA, ...sm, opacity: busy || !email.trim() ? 0.5 : 1 }}>
-          {busy ? 'Issuing…' : 'Issue Membership'}
-        </button>
-      </div>
-
-      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Grants Log</div>
-      {grants.length === 0 && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No grants yet.</div>}
-      {grants.map(g => {
-        const s = statusOf(g);
-        return (
-          <div key={g.id} style={{ ...card, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: TXT, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700 }}>{g.code}</span>
-                <StatusBadge g={g} />
-              </div>
-              <div style={{ fontSize: 9, color: MUT }}>
-                {g.email}
-                <span style={{ color: TIER_COLOR[g.tier] || ACC, marginLeft: 6, textTransform: 'capitalize' }}>{g.tier}</span>
-                <span style={{ marginLeft: 8 }}>
-                  {s === 'redeemed' ? `redeemed ${new Date(g.redeemed_at).toLocaleDateString()}`
-                    : s === 'pending' ? `expires ${new Date(g.expires_at).toLocaleString()}`
-                    : `expired ${new Date(g.expires_at).toLocaleDateString()}`}
-                </span>
-              </div>
-            </div>
-            {s === 'pending' && (
-              <button onClick={() => revoke(g)} disabled={revoking === g.id}
-                style={{ ...btnD, fontSize: 8, opacity: revoking === g.id ? 0.5 : 1 }}>Revoke</button>
-            )}
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -522,7 +354,7 @@ function WikiReportsTab() {
 
 // ─── Announcements ───────────────────────────────────────────────────────────
 
-const EMPTY_ANN = { message: '', tier_filter: 'all', expires_at: '', link_url: '', link_label: '' };
+const EMPTY_ANN = { message: '', expires_at: '', link_url: '', link_label: '' };
 
 function AnnouncementsTab() {
   const [list,   setList]   = useState([]);
@@ -541,7 +373,6 @@ function AnnouncementsTab() {
     if (!form.message.trim()) return;
     await supabase.from('announcements').insert({
       message:     form.message.trim(),
-      tier_filter: form.tier_filter,
       expires_at:  form.expires_at || null,
       link_url:    form.link_url || null,
       link_label:  form.link_label || null,
@@ -568,8 +399,7 @@ function AnnouncementsTab() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 10, color: a.active ? TXT : MUT, lineHeight: 1.5, marginBottom: 4 }}>{a.message}</div>
             <div style={{ fontSize: 8, color: MUT }}>
-              {a.tier_filter === 'all' ? 'All users' : a.tier_filter}
-              {a.expires_at && <> · Expires {new Date(a.expires_at).toLocaleDateString()}</>}
+              {a.expires_at && <>Expires {new Date(a.expires_at).toLocaleDateString()}</>}
               {a.link_url   && <> · <span style={{ color: ACC }}>{a.link_label || a.link_url}</span></>}
             </div>
           </div>
@@ -589,13 +419,6 @@ function AnnouncementsTab() {
             <textarea style={{ ...inp, minHeight: 60, resize: 'vertical', lineHeight: 1.5 }} value={form.message} onChange={set('message')} autoFocus />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-            <div>
-              <div style={lbl}>Show to</div>
-              <select style={inp} value={form.tier_filter} onChange={set('tier_filter')}>
-                <option value="all">All users</option>
-                {ALL_TIERS.map(t => <option key={t} value={t}>{TIER_LABEL[t] || t}</option>)}
-              </select>
-            </div>
             <div><div style={lbl}>Expires (optional)</div><input style={inp} type="datetime-local" value={form.expires_at} onChange={set('expires_at')} /></div>
             <div><div style={lbl}>Link URL (optional)</div><input style={inp} placeholder="https://…" value={form.link_url} onChange={set('link_url')} /></div>
             <div><div style={lbl}>Link Label</div><input style={inp} placeholder="Learn more" value={form.link_label} onChange={set('link_label')} /></div>
@@ -668,7 +491,6 @@ export default function AdminPanel() {
       </div>
       {tab === 'Overview'      && <OverviewTab />}
       {tab === 'Users'         && <UsersTab />}
-      {tab === 'Grants'        && <GrantsTab />}
       {tab === 'Flags'         && <FlagsTab />}
       {tab === 'Wiki Reports'  && <WikiReportsTab />}
       {tab === 'Announcements' && <AnnouncementsTab />}

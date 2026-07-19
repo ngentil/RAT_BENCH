@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, sel, txa, btnA, btnG, btnD, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import UpgradeBanner from '../ui/UpgradeBanner';
 import { SL, FL, Empty } from '../ui/shared';
 import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
-import { effectiveTier, atAssetLimit, assetLimit } from '../../lib/gates';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
 import { deletePhoto } from '../../lib/storage';
 import { getAssignedTo, assignAsset, unassignAsset } from '../../lib/db/assetAssignments';
@@ -248,7 +246,7 @@ function VehicleMemberSection({ vehicle, company, isShared }) {
   );
 }
 
-function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, company, isFree }) {
+function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, company }) {
   const [open, setOpen] = useState(false);
   const [showSvc, setShowSvc] = useState(false);
   const [editSvc, setEditSvc] = useState(null);
@@ -399,7 +397,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
             ))}
           </div>
 
-          <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} maxItems={isFree ? 5 : Infinity} />
+          <LoadoutSection parentType="vehicle" parentId={vehicle.id} parentName={vehicle.name} isShared={isShared} maxItems={Infinity} />
           <VehicleMemberSection vehicle={vehicle} company={company} isShared={isShared} />
 
 
@@ -432,7 +430,7 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
   );
 }
 
-export default function VehiclesTab({ vehicles, setVehicles, session, profile, company, onGoToBilling }) {
+export default function VehiclesTab({ vehicles, setVehicles, session, profile, company }) {
   const [loading, setLoading]   = useState(!vehicles?.length);
   const [formVehicle, setFormVehicle] = useState(null);
   const [search, setSearch]     = useState('');
@@ -449,9 +447,6 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   const setSortByP = v => { setSortBy(v); savePref(profile?.id, 'vehiclesSort', v ?? null); };
   const setColsP = c => { setCols(c); savePref(profile?.id, 'vehiclesCols', c); setViewP('grid'); };
 
-  const isFree  = effectiveTier(profile, company) === 'free';
-  const limit   = assetLimit('vehicles', profile, company);
-  const atLimit = atAssetLimit('vehicles', vehicles?.length ?? 0, profile, company);
 
   useEffect(() => {
     let alive = true;
@@ -528,14 +523,11 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
 
   return (
     <div style={{ padding: 16, flex: 1 }}>
-      {atLimit && <UpgradeBanner text={`You're at the ${limit}-vehicle limit on the free plan.`} onUpgrade={onGoToBilling} />}
-
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: TXT, letterSpacing: '0.06em' }}>🚗 Vehicles</div>
           <div style={{ fontSize: 9, color: MUT, marginTop: 2 }}>
             {(vehicles || []).length} vehicle{(vehicles || []).length !== 1 ? 's' : ''}
-            {isFree && <span style={{ marginLeft: 8, color: atLimit ? RED : MUT }}>· {(vehicles || []).length}/{limit} (free limit)</span>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -543,9 +535,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
           <button onClick={() => { if (view === 'list') { setColsP(2); } else if (cols < 4) { setColsP(cols + 1); } else { setViewP('list'); } }} style={{ ...btnG, minWidth: 36, alignSelf: 'stretch' }}>{view === 'list' ? '☰' : `⊞${cols}`}</button>
           <button
             onClick={() => setFormVehicle({})}
-            disabled={atLimit}
-            style={{ ...btnA, opacity: atLimit ? 0.4 : 1, minHeight: 44, display: 'flex', alignItems: 'center' }}
-            title={atLimit ? `Upgrade to add more than ${limit} vehicles` : undefined}
+            style={{ ...btnA, minHeight: 44, display: 'flex', alignItems: 'center' }}
           >
             + Add
           </button>
@@ -606,7 +596,6 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
                     isShared={v.userId !== userId}
                     units={units}
                     company={company}
-                    isFree={isFree}
                     onEdit={() => { setFormVehicle(v); setTileOpen(null); }}
                     onDelete={() => { remove(v.id); setTileOpen(null); }}
                     onUpdate={update}
@@ -625,7 +614,6 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
             isShared={v.userId !== userId}
             units={units}
             company={company}
-            isFree={isFree}
             onEdit={() => setFormVehicle(v)}
             onDelete={() => remove(v.id)}
             onUpdate={update}

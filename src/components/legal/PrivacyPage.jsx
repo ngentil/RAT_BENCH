@@ -28,10 +28,9 @@ export default function PrivacyPage({ onClose }) {
         <P><span style={{ color: '#aaa' }}>Profile data:</span> Company name, ABN, hourly rate, and other business details you optionally provide in Settings.</P>
         <P><span style={{ color: '#aaa' }}>Workshop data:</span> Machines, jobs, time logs, parts, clients, vehicles, tools, and equipment records you create.</P>
         <P><span style={{ color: '#aaa' }}>Error data:</span> We collect crash reports and error logs via Sentry to diagnose and fix bugs. These may include browser type, app state at the time of the error, and your user ID.</P>
-        <P><span style={{ color: '#aaa' }}>Payment data:</span> Billing is handled entirely by Stripe. We do not store your card details.</P>
 
         <H>2. How We Use Your Information</H>
-        <P>We use your information to: provide and operate the Service; process payments; send essential service communications (e.g. billing, security); diagnose errors and fix bugs; and improve the Service based on usage patterns.</P>
+        <P>We use your information to: provide and operate the Service; send essential service communications (e.g. security); diagnose errors and fix bugs; and improve the Service based on usage patterns.</P>
         <P>We do not sell, rent, or trade your personal information to third parties.</P>
 
         <H>3. Data Storage</H>
@@ -39,7 +38,7 @@ export default function PrivacyPage({ onClose }) {
         <P>All data is encrypted in transit (TLS) and at rest.</P>
 
         <H>4. Data Sharing</H>
-        <P>We share your data only with: (a) Supabase, for database and authentication hosting; (b) Stripe, for payment processing; (c) Sentry, for error tracking; (d) as required by law or to protect our legal rights.</P>
+        <P>We share your data only with: (a) Supabase, for database and authentication hosting; (b) Sentry, for error tracking; (c) as required by law or to protect our legal rights.</P>
 
         <H>5. Data Retention</H>
         <P>We retain your data for as long as your account is active. If you delete your account, we retain your data for 30 days before permanent deletion. See our Data Retention Policy for full details.</P>
