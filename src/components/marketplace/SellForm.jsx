@@ -67,8 +67,10 @@ function SellForm({ machines, profile, onCreated, onCancel }) {
     const loaders = {
       part: () => getInventory(profile.id),
       consumable: getConsumables,
-      tool: getTools,
-      equipment: getEquipment,
+      // Already-sold tools/equipment are listed (and hidden) via the Sold
+      // Items tab's Relist action, not a brand-new listing here.
+      tool: () => getTools().then(ts => ts.filter(t => !t.soldAt)),
+      equipment: () => getEquipment().then(es => es.filter(e => !e.soldAt)),
     };
     loaders[kind]().then(data => { setItems(data); setLoadingItems(false); });
   }, [kind, profile.id]);

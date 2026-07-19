@@ -72,7 +72,11 @@ function GuideStep2({ onSkip }) {
   );
 }
 
-function Tracker({machines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear}){
+function Tracker({machines:allMachines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear}){
+  // Sold machines stay in the shared machines[] state (so relisting from the
+  // Sold Items tab can instantly clear their soldAt flag) but drop out of the
+  // active Garage view here.
+  const machines=useMemo(()=>allMachines.filter(m=>!m.soldAt),[allMachines]);
   const [showAdd,setShowAdd]=useState(false);
   const [prefill,setPrefill]=useState(null);
   const [showUpgrade,setShowUpgrade]=useState(false);
@@ -209,7 +213,10 @@ function Tracker({machines,setMachines,company,profile,setProfile,clients,isGues
     const reordered=[...machines];
     const [moved]=reordered.splice(dragIdx,1);
     reordered.splice(idx,0,moved);
-    setMachines(reordered);
+    // machines here is the active-only view — merge back any sold machines
+    // (kept out of this list) so reordering the Garage doesn't drop them
+    // from shared state.
+    setMachines(prev=>[...reordered,...prev.filter(m=>m.soldAt)]);
     setDragIdx(null);setDragOver(null);
   };
   const onDragEnd=()=>{setDragIdx(null);setDragOver(null);};

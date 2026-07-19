@@ -182,6 +182,7 @@ export const TABS = [
   {id:"workshop",    label:"Workshop"},
   {id:"wiki",        label:"Wiki"},
   {id:"marketplace", label:"Market"},
+  {id:"sold",        label:"Sold"},
 ];
 
 export const WORKSHOP_TABS = [

@@ -305,7 +305,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
   }, [equipment]);
 
   const filtered = useMemo(() => {
-    let r = equipment || [];
+    let r = (equipment || []).filter(e => !e.soldAt);
     if (typeFilter) r = r.filter(e => e.type === typeFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
