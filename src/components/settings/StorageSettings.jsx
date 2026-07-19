@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, inp, btnA, btnG, sm } from '../../lib/styles';
-import { canUse } from '../../lib/gates';
 import { DEFAULT_STORAGE_TIERS, TIER_NAMES } from '../../lib/storageTiers';
 import { updateCompany } from '../../lib/db';
 import { parseNum } from '../../lib/helpers';
@@ -37,8 +36,6 @@ const lbl = { fontSize: 9, color: MUT, letterSpacing: "0.12em", textTransform: "
 const col = { display: "flex", flexDirection: "column" };
 
 function StorageSettings({ profile, setProfile, company, setCompany }) {
-  const canAccessStorage = canUse('storage_policy', profile, company);
-
   // Storage toggle
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -102,7 +99,6 @@ function StorageSettings({ profile, setProfile, company, setCompany }) {
   };
 
   const toggle = async () => {
-    if (!canAccessStorage) return;
     setSaving(true); setErr("");
     const next = !enabled;
     const { error } = await supabase
@@ -187,16 +183,7 @@ function StorageSettings({ profile, setProfile, company, setCompany }) {
       {/* ── Storage Policy ── */}
       <div style={{ paddingTop: 20, borderTop: "1px solid #1a1a1a" }}>
         <div style={{ ...secHd, marginBottom: 12 }}>Storage Policy</div>
-        {!canAccessStorage ? (
-          <div style={{ background: "#0a1a0a", border: "1px solid #1a3a1a", borderRadius: 2, padding: "16px 18px" }}>
-            <div style={{ fontSize: 9, color: GRN, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, marginBottom: 6 }}>Member Feature</div>
-            <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>
-              Storage policy lets you track daily storage fees for machines left in your shop.<br />
-              After a tier-defined free period, fees accumulate automatically. Machines overdue for pickup are flagged for sale.
-            </div>
-          </div>
-        ) : (
-          <>
+        <>
             <div style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: "14px 16px", marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
@@ -260,7 +247,6 @@ function StorageSettings({ profile, setProfile, company, setCompany }) {
               Custom tier requires manual fee entry. Machines past the escalation day are flagged <span style={{ color: RED }}>for sale</span> in service reminders.
             </div>
           </>
-        )}
       </div>
     </div>
   );

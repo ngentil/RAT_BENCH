@@ -7,20 +7,10 @@ import { getEquipment } from './lib/db/equipment';
 import { getTools } from './lib/db/tools';
 import { fromDb } from './lib/db/transforms';
 import { TABS, WORKSHOP_TABS } from './lib/constants';
-import { effectiveTier } from './lib/gates';
 import { getMachineServiceStatus } from './lib/helpers';
 import { savePref, migrateLocalPreferences } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
 import { subscribeSitePresence } from './lib/presence';
-
-// One paid tier ("Member") replaced the old Enthusiast/Business split — all
-// three legacy tier values light up the same glow so existing subscribers on
-// any of them see identical treatment.
-const TIER_GLOW = {
-  enthusiast: { color: "#e8670a", label: "Member" },
-  team:       { color: "#e8670a", label: "Member" },
-  business:   { color: "#e8670a", label: "Member" },
-};
 import AuthScreen from './components/auth/AuthScreen';
 import PasswordResetScreen from './components/auth/PasswordResetScreen';
 import TermsPage from './components/legal/TermsPage';
@@ -60,10 +50,6 @@ function App(){
   const [profileChecked,setProfileChecked]=useState(false);
   const [passwordReset,setPasswordReset]=useState(false);
   const [company,setCompany]=useState(null);
-  const [billingBanner,setBillingBanner]=useState(()=>{
-    const p=new URLSearchParams(window.location.search);
-    return p.get("billing")||null;
-  });
   const [templateMachineId,setTemplateMachineId]=useState(()=>{
     const p=new URLSearchParams(window.location.search);
     return p.get("template")||null;
@@ -188,9 +174,8 @@ function App(){
     (async()=>{
       try {
         if (!profileData) return;
-        const userTier = effectiveTier(profileData, companyData);
         const{data:anns}=await supabase.from("announcements").select("*")
-          .eq("active",true).or(`tier_filter.eq.all,tier_filter.eq.${userTier}`);
+          .eq("active",true);
         if(anns){
           const dismissed=profileData?.preferences?.dismissedAnns||[];
           setAnnouncements(anns.filter(a=>!dismissed.includes(a.id)&&(!a.expires_at||new Date(a.expires_at)>new Date())));
@@ -231,12 +216,9 @@ function App(){
     }
     const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings"]));
     if(!validTopIds.has(tab)) setTab("tracker");
-    const tier=effectiveTier(profile,company);
-    const wsDef=WORKSHOP_TABS.find(t=>t.id===workshopTab);
-    if(wsDef?.enthusiastOnly&&tier==="free") setWorkshopTab("parts");
     const wsVis=profile?.tab_order?.workshop_visible;
     if(Array.isArray(wsVis)&&!wsVis.includes(workshopTab)){
-      const first=wsVis.find(id=>WORKSHOP_TABS.some(t=>t.id===id&&!(t.enthusiastOnly&&tier==="free")));
+      const first=wsVis.find(id=>WORKSHOP_TABS.some(t=>t.id===id));
       if(first) setWorkshopTab(first);
     }
   },[profile,company]);
@@ -266,33 +248,12 @@ function App(){
   },[]);
 
   useEffect(()=>{
-    if(billingBanner){
-      const url=new URL(window.location.href);
-      url.searchParams.delete("billing");
-      window.history.replaceState({},"",url.toString());
-    }
-  },[billingBanner]);
-
-  useEffect(()=>{
     if(templateMachineId){
       const url=new URL(window.location.href);
       url.searchParams.delete("template");
       window.history.replaceState({},"",url.toString());
     }
   },[]);
-
-  // Poll for tier update after billing success — only once session is loaded
-  useEffect(()=>{
-    if(billingBanner!=="success"||!session?.user?.id) return;
-    let attempts=0;
-    const poll=setInterval(async()=>{
-      attempts++;
-      const {data:p}=await supabase.rpc("get_my_profile").single();
-      if(p) setProfile(p);
-      if(attempts>=8) clearInterval(poll);
-    },2000);
-    return ()=>clearInterval(poll);
-  },[billingBanner,session?.user?.id]);
 
   // Realtime sync — machines updated by other org members propagate here
   useEffect(()=>{
@@ -358,16 +319,13 @@ function App(){
     );
   }
 
-  const tier=effectiveTier(profile,company);
   const goToBilling=()=>{ setSettingsTab("billing"); setTab("settings"); };
-  const tierGlow = TIER_GLOW[tier];
   const overdueCount = machines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = machines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
   const timerRunning = machines.some(m => (m.jobTimers || []).some(t => t.status === "running"));
   const savedWorkshopVisible = profile?.tab_order?.workshop_visible;
   const visibleWorkshopTabs = applyTabOrder(
     WORKSHOP_TABS.filter(t=>{
-      if(t.enthusiastOnly&&tier==="free") return false;
       if(savedWorkshopVisible&&!savedWorkshopVisible.includes(t.id)) return false;
       return true;
     }),
@@ -378,31 +336,13 @@ function App(){
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
-      {billingBanner==="success"&&(
-        <div style={{background:"#0a1a0a",color:"#00ff66",fontSize:11,fontWeight:700,letterSpacing:"0.12em",textAlign:"center",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 0 24px #00ff6688, 0 0 6px #00ff6644",borderBottom:"1px solid #00ff6655"}}>
-          <span style={{textShadow:"0 0 12px #00ff66, 0 0 4px #00ff66"}}>You're in. Welcome to the crew. 🐀</span>
-          <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:"#00ff66",fontSize:13,lineHeight:1,opacity:0.7}}>✕</button>
-        </div>
-      )}
-      {billingBanner==="cancelled"&&(
-        <div style={{background:"#333",color:MUT,fontSize:10,letterSpacing:"0.08em",textAlign:"center",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-          <span>Checkout cancelled — no charge was made.</span>
-          <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:12,lineHeight:1}}>✕</button>
-        </div>
-      )}
-      {billingBanner==="managed"&&(
-        <div style={{background:"#1a1a1a",color:MUT,fontSize:10,letterSpacing:"0.08em",textAlign:"center",padding:"8px 16px",display:"flex",alignItems:"center",justifyContent:"center",gap:10,borderBottom:"1px solid #333"}}>
-          <span>Billing updated. Changes may take a moment to reflect.</span>
-          <button onClick={()=>setBillingBanner(null)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:12,lineHeight:1}}>✕</button>
-        </div>
-      )}
       {announcements.map(a=>(
         <div key={a.id} style={{background:"#0d0d18",borderBottom:"1px solid "+ACC+"44",color:TXT,fontSize:10,padding:"8px 16px",display:"flex",alignItems:"center",gap:10,lineHeight:1.5}}>
           <span style={{flex:1}}>{a.message}{a.link_url&&<>{" "}<a href={a.link_url} target="_blank" rel="noreferrer" style={{color:ACC,textDecoration:"none",fontWeight:700}}>{a.link_label||"Learn more"} →</a></>}</span>
           <button onClick={()=>dismissAnn(a.id)} style={{background:"none",border:"none",cursor:"pointer",color:MUT,fontSize:13,lineHeight:1,flexShrink:0}}>✕</button>
         </div>
       ))}
-      <div style={{background:SURF,borderBottom:`3px solid ${tierGlow?.color||ACC}`,boxShadow:tierGlow?`0 2px 8px ${tierGlow.color}99, 0 4px 24px ${tierGlow.color}55`:"none",padding:"12px 18px",display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:10}}>
+      <div style={{background:SURF,borderBottom:"3px solid "+ACC,padding:"12px 18px",display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:10}}>
         <a href="/" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
           {company?.logo
             ? <img src={company.logo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD}}/>
@@ -412,7 +352,6 @@ function App(){
             {company
               ? <div style={{fontSize:9,color:TXT,letterSpacing:"0.08em",textTransform:"uppercase",marginTop:1}}>{company.name}</div>
               : <div style={{fontSize:9,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:1}}>small engine & equipment repair</div>}
-            {tierGlow&&<div style={{fontSize:10,fontWeight:700,letterSpacing:"0.14em",textTransform:"uppercase",marginTop:2,color:tierGlow.color,textShadow:`0 0 8px ${tierGlow.color}`}}>{tierGlow.label}</div>}
           </div>
         </a>
         <div style={{display:"flex",alignItems:"center",gap:8}}>

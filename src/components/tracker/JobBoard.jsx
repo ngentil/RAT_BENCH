@@ -12,8 +12,6 @@ import { mIcon } from '../../lib/helpers';
 import { parseLocalDate, isOverdueLocal } from '../../lib/dates';
 import { toastError } from '../../lib/toast';
 import StatusBadge from '../ui/StatusBadge';
-import { effectiveTier } from '../../lib/gates';
-import UpgradeBanner from '../ui/UpgradeBanner';
 import MachineTile from '../machine/MachineTile';
 import MachineRow from '../machine/MachineRow';
 import MachinePhotoRow from '../machine/MachinePhotoRow';
@@ -813,7 +811,7 @@ function PartsSection({ machine, onUpdate, userId }) {
   );
 }
 
-function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
+function JobTimer({ machine, onUpdate }) {
   const t = machine.jobTimers?.[0] || { duration: 0, elapsed: 0, startedAt: null, status: "idle", jobLabel: "" };
 
   const getElapsed = () => {
@@ -974,14 +972,6 @@ function JobTimer({ machine, onUpdate, locked, onGoToBilling }) {
   const pct = t.duration > 0 ? remaining / t.duration : 1;
   const isExpired = t.duration > 0 && display >= t.duration && t.status === "running";
   const glowColor = t.status === "done" ? GRN : pct > 0.5 ? GRN : pct > 0.2 ? ORANGE : RED;
-
-  if (locked) {
-    return (
-      <div style={{ marginTop: 10 }}>
-        <UpgradeBanner text="Job timers require a Membership." onUpgrade={onGoToBilling} />
-      </div>
-    );
-  }
 
   // Legacy "done" state — show log + reset prompt
   if (t.status === "done") {
@@ -1148,7 +1138,7 @@ const STATUS_COLOR = {
   "Complete": MUT,
 };
 
-function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, onGoToBilling, initialOpen, hideCollapse, onClose }) {
+function JobCard({ m, status, clientMap, clients, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, initialOpen, hideCollapse, onClose }) {
   const [open, setOpen] = useState(!!initialOpen);
   const [jobGuide, setJobGuide] = useState(() => !getPref(profile, "rat_tut_job_card", false));
   const dismissJobGuide = () => { setJobGuide(false); savePref(profile?.id, "rat_tut_job_card", true); };
@@ -1166,7 +1156,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
   const grandTotal  = partsTotal + (labourTotal || 0);
 
   return (
-    <div style={{ background: "#0d0d0d", border: "1px solid " + (timerLocked ? "#1a1a1a" : "#252525"), borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden", opacity: timerLocked ? 0.65 : 1 }}>
+    <div style={{ background: "#0d0d0d", border: "1px solid #252525", borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden" }}>
       {/* Collapsed header — poster style */}
       <div onClick={() => !hideCollapse && setOpen(o => !o)} style={{ cursor: hideCollapse ? "default" : "pointer", userSelect: "none" }}>
 
@@ -1186,7 +1176,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
             {m.photos?.[0] && <span style={{ fontSize: 24, flexShrink: 0, marginTop: 2, lineHeight: 1 }}>{mIcon(m.type)}</span>}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
-                <div className={isRunning ? "loading-rat" : undefined} style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, color: timerLocked ? MUT : TXT, lineHeight: 1.25 }}>
+                <div className={isRunning ? "loading-rat" : undefined} style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, color: TXT, lineHeight: 1.25 }}>
                   {m.name}
                   {isRunning && <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: GRN, boxShadow: "0 0 6px " + GRN, marginLeft: 7, verticalAlign: "middle" }} />}
                 </div>
@@ -1246,10 +1236,9 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
             try { await upsertMachine(u); }
             catch (e) { console.error("notes save:", e); onUpdate(m); toastError("Notes didn't save — check connection"); }
           }} />
-          {!timerLocked && <JobTimer machine={m} onUpdate={onUpdate} locked={false} onGoToBilling={onGoToBilling} />}
-          {!timerLocked && <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={onUpdate} />}
-          {!partsLocked && <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />}
-          {timerLocked && <UpgradeBanner text="Timer & parts log unlocks with Membership." onUpgrade={onGoToBilling} marginBottom={0} />}
+          <JobTimer machine={m} onUpdate={onUpdate} />
+          <TimeLogSection machine={m} company={company} clients={clients} userId={session?.user?.id} onUpdate={onUpdate} />
+          <PartsSection machine={m} onUpdate={onUpdate} userId={session?.user?.id} />
           {grandTotal > 0 && (
             <div style={{ marginTop: 10, padding: "8px 10px", background: "#0a0f0a", border: "1px solid #1e2e1e", borderRadius: 2, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <span style={{ fontSize: 8, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>Cost Summary</span>
@@ -1282,10 +1271,7 @@ function JobCard({ m, status, timerLocked, partsLocked, clientMap, clients, comp
   );
 }
 
-function JobBoard({ machines, setMachines, profile, company, session, clients, onGoToBilling }) {
-  const tier = effectiveTier(profile, company);
-  const isFree = tier === "free";
-  const FREE_LIMIT = 3;
+function JobBoard({ machines, setMachines, profile, company, session, clients }) {
   const [jobSearch, setJobSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [view, setView] = useState(() => getPref(profile, "jobsView", "photo"));
@@ -1332,14 +1318,6 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
     catch (e) { console.error("updateRage:", e); toastError("Rating didn't save — check connection"); }
   };
   const groups = STATUSES.map(s => ({ status: s, items: visibleMachines.filter(m => (m.status || "Active") === s) }));
-
-  const orderedAll = groups.flatMap(g => g.items);
-  const cappedIds = isFree ? new Set(orderedAll.slice(0, FREE_LIMIT).map(m => m.id)) : null;
-  const freeIdxMap = isFree ? Object.fromEntries(orderedAll.slice(0, FREE_LIMIT).map((m, i) => [m.id, i])) : {};
-  const cappedGroups = isFree
-    ? groups.map(g => ({ ...g, items: g.items.filter(m => cappedIds.has(m.id)) }))
-    : groups;
-  const hiddenCount = isFree ? Math.max(0, orderedAll.length - FREE_LIMIT) : 0;
 
   const totalHrsAll  = machines.reduce((s, m) => s + (m.timeLog||[]).reduce((a,e)=>a+(e.seconds||0),0)/3600, 0);
   const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
@@ -1402,12 +1380,9 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           </div>
         </div>
       )}
-      {isFree && machines.length > 0 && (
-        <UpgradeBanner label="Free Plan" text={`Showing ${Math.min(machines.length, FREE_LIMIT)} of ${machines.length} machines. First machine has full timer & parts access.`} onUpgrade={onGoToBilling} />
-      )}
       {(() => {
         const Comp = view === "grid" ? MachineTile : view === "compact" ? MachineRow : MachinePhotoRow;
-        return cappedGroups.map(({ status, items }) => items.length === 0 ? null : (
+        return groups.map(({ status, items }) => items.length === 0 ? null : (
           <div key={status} style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <StatusBadge status={status} />
@@ -1422,19 +1397,16 @@ function JobBoard({ machines, setMachines, profile, company, session, clients, o
           </div>
         ));
       })()}
-      {hiddenCount > 0 && <UpgradeBanner text={`+${hiddenCount} more machine${hiddenCount !== 1 ? "s" : ""} hidden — upgrade to see all jobs`} onUpgrade={onGoToBilling} marginBottom={8} />}
       {jobTileOpen && (() => {
         const m = machines.find(x => x.id === jobTileOpen);
         if (!m) return null;
-        const freeIdx = isFree ? (freeIdxMap[m.id] ?? 0) : -1;
-        const locked = isFree && freeIdx > 0;
         return (
           <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, overflowY: "auto" }}>
             <div style={{ maxWidth: 640, margin: "0 auto", padding: "8px 8px 0" }}>
-              <JobCard m={m} status={m.status || "Active"} timerLocked={locked} partsLocked={locked}
+              <JobCard m={m} status={m.status || "Active"}
                 clientMap={clientMap} clients={clients} company={company} session={session} profile={profile}
                 onUpdate={updateM} onUpdateStatus={updateStatus} onUpdateRage={updateRage}
-                onGoToBilling={onGoToBilling} initialOpen hideCollapse onClose={closeJobTile} />
+                initialOpen hideCollapse onClose={closeJobTile} />
             </div>
           </div>
         );

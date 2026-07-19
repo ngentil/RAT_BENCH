@@ -2,6 +2,11 @@
 -- grant_upgrade and revoke_upgrade are admin-only.
 -- apply_pending_upgrade is called by the user from ProfileSettings.
 --
+-- REMOVED — see supabase/remove_tier_system.sql. The paid-tier system (and
+-- every UI path that called these three functions) was deleted; do not
+-- re-run this file, it would recreate them as orphaned dead code. Kept only
+-- as a historical record of what the grant/redeem flow used to do.
+--
 -- Run in Supabase SQL Editor.
 
 CREATE TABLE IF NOT EXISTS upgrade_grants (

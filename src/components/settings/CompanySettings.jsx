@@ -7,7 +7,6 @@ import { getEquipmentPermissions, upsertEquipmentPermission, revokeEquipmentPerm
 import { getToolPermissions, upsertToolPermission, revokeToolPermission } from '../../lib/db/tools';
 import { getConsumables, getConsumablePermissions, upsertConsumablePermission, revokeConsumablePermission } from '../../lib/db/consumables';
 import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
-import { effectiveTier } from '../../lib/gates';
 import UsersTab from '../users/UsersTab';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
 // Generic provisioning panel — works for machines, vehicles, equipment, tools.
@@ -138,7 +137,6 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
   useEffect(() => {
     if (session?.user?.id) getConsumables().then(setConsumables).catch(() => {});
   }, [session?.user?.id]);
-  const canMultiUser=effectiveTier(profile,company)!=="free";
   const [myRole,setMyRole]=useState(null);
   useEffect(()=>{
     if(!company?.id||!session?.user?.id) return;
@@ -147,7 +145,7 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
   },[company?.id,session?.user?.id]);
   const isOwner=myRole==="owner";
   const isAdmin=isOwner; // kept for backward compat in JSX below
-  const canProvision=canMultiUser&&(isOwner||myRole==="admin");
+  const canProvision=isOwner||myRole==="admin";
   const [mode,setMode]=useState("view"); // view|create|join
   const [err,setErr]=useState("");
   const [saving,setSaving]=useState(false);
@@ -329,21 +327,10 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
       {/* Team member management — used to be its own top-level Settings tab,
           folded in here since it only ever makes sense in the context of an
           org you're already viewing/editing */}
-      {canMultiUser ? (
-        <div style={{...sec,...secSep}}>
-          <div style={secHd}>Users</div>
-          <UsersTab company={company} session={session} profile={profile} setCompany={setCompany} embedded />
-        </div>
-      ) : (
-        <div style={{...sec,opacity:0.6,pointerEvents:"none",position:"relative"}}>
-          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",zIndex:1,pointerEvents:"all",flexDirection:"column",gap:6}}>
-            <span style={{fontSize:16}}>🔒</span>
-            <span style={{fontSize:9,color:MUT,letterSpacing:"0.08em"}}>Team plan required for multi-user features</span>
-          </div>
-          <div style={{...secHd,marginBottom:10}}>Invite Code & Members</div>
-          <div style={{height:60}}/>
-        </div>
-      )}
+      <div style={{...sec,...secSep}}>
+        <div style={secHd}>Users</div>
+        <UsersTab company={company} session={session} profile={profile} setCompany={setCompany} embedded />
+      </div>
 
       {/* Asset provisioning */}
       {canProvision && (

@@ -4,9 +4,7 @@ import { SL, FL } from '../ui/shared';
 import { mIcon, getStorageStatus } from '../../lib/helpers';
 import { daysSinceLocal } from '../../lib/dates';
 import { toastError } from '../../lib/toast';
-import UpgradeBanner from '../ui/UpgradeBanner';
 import { upsertMachine } from '../../lib/db';
-import { canUse, effectiveTier } from '../../lib/gates';
 import { getAllActiveBookings } from '../../lib/db/bookings';
 import { getConsumables } from '../../lib/db/consumables';
 import { CATEGORY_ICON } from '../../lib/consumableTypes';
@@ -110,14 +108,13 @@ function ServiceModal({ machine, onSave, onClose }) {
   );
 }
 
-export default function ServiceReminders({ machines, setMachines, profile, company, onGoToBilling }) {
+export default function ServiceReminders({ machines, setMachines, profile, company }) {
   const [filter,      setFilter]      = useState("all");
   const [servicingId, setServicingId] = useState(null);
   const [activeBookings, setActiveBookings] = useState([]);
   const [consumables,   setConsumables]   = useState([]);
 
-  const isFree = effectiveTier(profile, company) === "free";
-  const storagePolicyEnabled = canUse('storage_policy', profile, company) && !!(profile?.storage_policy_enabled);
+  const storagePolicyEnabled = !!(profile?.storage_policy_enabled);
 
   useEffect(() => {
     if (!storagePolicyEnabled) return;
@@ -176,11 +173,6 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
     if (filter === "due_soon") return machineData.filter(({ items }) => items.some(i => i.dueSoon || i.overdue));
     return machineData;
   }, [machineData, filter]);
-
-  // Free tier: 1 machine, 1 reminder item
-  const cappedFiltered = isFree ? filtered.slice(0, 1).map(d => ({ ...d, items: d.items.slice(0, 1) })) : filtered;
-  const hiddenMachines = isFree ? Math.max(0, filtered.length - 1) : 0;
-  const hiddenItems    = isFree && filtered[0] ? Math.max(0, filtered[0].items.length - 1) : 0;
 
   const machineOverdueCount = machineData.filter(({ items }) => items.some(i => i.overdue)).length;
   const machineDueSoonCount = machineData.filter(({ items }) => items.some(i => i.dueSoon)).length;
@@ -242,9 +234,7 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
         </div>
       )}
 
-      {isFree && machineData.length > 0 && <UpgradeBanner text="Upgrade to track service reminders across all your machines." onUpgrade={onGoToBilling} />}
-
-      {cappedFiltered.map(({ machine, items }) => {
+      {filtered.map(({ machine, items }) => {
         const hasAlert = items.some(i => i.overdue || i.dueSoon);
         const totalHrs = totalLoggedHours(machine);
         return (
@@ -299,13 +289,9 @@ export default function ServiceReminders({ machines, setMachines, profile, compa
                 </div>
               );
             })}
-
-            {hiddenItems > 0 && <UpgradeBanner text={`+${hiddenItems} more interval${hiddenItems !== 1 ? "s" : ""} — upgrade to see all`} onUpgrade={onGoToBilling} marginBottom={0} />}
           </div>
         );
       })}
-
-      {hiddenMachines > 0 && <UpgradeBanner text={`+${hiddenMachines} more machine${hiddenMachines !== 1 ? "s" : ""} with service reminders`} onUpgrade={onGoToBilling} marginBottom={10} />}
 
       {filtered.length === 0 && machineData.length > 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "24px 0" }}>No machines match this filter.</div>

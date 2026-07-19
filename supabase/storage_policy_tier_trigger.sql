@@ -3,6 +3,10 @@
 -- on profiles, so any authenticated user could call supabase.from('profiles')
 -- .update({storage_policy_enabled: true}) directly to bypass the free-tier gate.
 -- This trigger rejects the update at the DB level if the user's current tier is free.
+--
+-- REMOVED — see supabase/remove_tier_system.sql. There's no paid tier left
+-- to gate this behind; do not re-run this file, it would recreate the
+-- trigger and start blocking storage-policy toggles again.
 -- Run in Supabase SQL Editor.
 
 CREATE OR REPLACE FUNCTION enforce_storage_policy_tier()

@@ -27,14 +27,12 @@ export default function DataRetentionPage({ onClose }) {
         <P>We collect and store the following data when you use Rat Bench:</P>
         <P>— Account data: email address, username, account type, country (if provided during signup).</P>
         <P>— Workshop data: machines, service records, job timers, parts and inventory, clients, vehicles, equipment, tools, consumables, and any notes or photos you upload.</P>
-        <P>— Payment data: subscription tier and billing status. Full payment details (card numbers, etc.) are stored only by Stripe and never by us.</P>
         <P>— Usage data: timestamps of when records were created or modified. We do not collect analytics, browsing behaviour, or device fingerprints.</P>
 
         <H>2. How Long We Keep It</H>
         <P>Active accounts: all workshop data is retained for as long as your account is active.</P>
         <P>After account deletion: we retain your data for 30 days in case of accidental deletion, then permanently delete it from our primary database.</P>
-        <P>Database backups: Supabase (our database provider) retains automated backups for up to 7 days on the free tier and up to 30 days on paid plans. These are used for disaster recovery only and are purged on their own schedule.</P>
-        <P>Payment records: Stripe retains transaction history as required by financial regulations (typically 7 years). We have no control over Stripe's retention periods.</P>
+        <P>Database backups: Supabase (our database provider) retains automated backups on their own schedule, used for disaster recovery only.</P>
         <P>Anonymous/guest sessions: guest data is retained for 30 days of inactivity, then purged automatically.</P>
 
         <H>3. Deletion Requests</H>
@@ -48,7 +46,6 @@ export default function DataRetentionPage({ onClose }) {
         <H>5. Third-Party Processors</H>
         <P>Your data passes through the following third-party processors:</P>
         <P>— Supabase (database and authentication hosting) — workshop data stored in AWS infrastructure.</P>
-        <P>— Stripe (payment processing) — subject to Stripe's own retention policies (typically 7 years for financial records).</P>
         <P>— Sentry (error tracking) — error reports retained for 90 days by default.</P>
         <P>— Netlify (frontend hosting) — serves the application only; does not have access to your workshop data.</P>
 

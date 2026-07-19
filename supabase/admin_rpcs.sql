@@ -56,6 +56,8 @@ END;
 $$;
 
 -- ─── admin_set_tier ──────────────────────────────────────────────────────────
+-- REMOVED — see supabase/remove_tier_system.sql. No paid tier left to set;
+-- AdminPanel's tier picker was deleted. Do not re-run this section.
 
 DROP FUNCTION IF EXISTS admin_set_tier(text, text);
 

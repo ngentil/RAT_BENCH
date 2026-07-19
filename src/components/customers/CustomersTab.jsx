@@ -8,7 +8,6 @@ import { toastError } from '../../lib/toast';
 import { getPref } from '../../lib/db/preferences';
 import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
 import { deletePhoto } from '../../lib/storage';
-import { effectiveTier, canUse } from '../../lib/gates';
 import { getActiveBooking } from '../../lib/db/bookings';
 import PhotoAdder from '../ui/PhotoAdder';
 
@@ -122,8 +121,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   const [search, setSearch] = useState("");
   const [err, setErr] = useState("");
 
-  const isFree = effectiveTier(profile, company) === "free";
-  const storagePolicyEnabled = canUse('storage_policy', profile, company) && !!(profile?.storage_policy_enabled);
+  const storagePolicyEnabled = !!(profile?.storage_policy_enabled);
 
   const openNew = () => { setForm(EMPTY_FORM); setErr(""); setEditing("new"); };
   const openEdit = (c) => { setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "", photos: c.photos || [] }); setErr(""); setEditing(c); };
@@ -190,7 +188,6 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   };
 
   const filtered = useMemo(() => {
-    if (isFree) return [];
     if (!search.trim()) return clients;
     const q = search.toLowerCase();
     return clients.filter(c =>
@@ -198,20 +195,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
       (c.email || "").toLowerCase().includes(q) ||
       (c.phone || "").includes(q)
     );
-  }, [clients, search, isFree]);
-
-  if (isFree) {
-    return (
-      <div style={{ padding: 16, flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>👤</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Clients</div>
-        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Link machines to clients, track work history per customer, and generate client reports. Available to Members.
-        </div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
-      </div>
-    );
-  }
+  }, [clients, search]);
 
   const getLinked = (clientId) => machines.filter(m => m.clientId === clientId);
   const unlinked = machines.filter(m => !m.clientId);

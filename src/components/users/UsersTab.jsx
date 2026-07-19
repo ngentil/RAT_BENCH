@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { getCompanyMembers, removeMember, regenerateInviteCode, updateMemberRole } from '../../lib/db';
 import { SL } from '../ui/shared';
-import { effectiveTier, seatLimit } from '../../lib/gates';
 
 const ROLES = ["admin", "technician", "viewer"];
 
@@ -43,7 +42,7 @@ function RoleBadge({ role }) {
 // embedded: rendered inline inside CompanySettings.jsx (its own section
 // heading already says "Users") rather than as a standalone top-level tab —
 // suppresses this component's own heading and outer page padding.
-export default function UsersTab({ company, session, profile, setCompany, onGoToBilling, embedded = false }) {
+export default function UsersTab({ company, session, profile, setCompany, embedded = false }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -53,30 +52,13 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
 
   const myMember = members.find(m => m.user_id === session?.user?.id);
   const isOwner = myMember?.role === 'owner';
-  const tier = effectiveTier(profile, company);
-  const canManageUsers = tier !== "free";
-  const seats = seatLimit(profile, company);
-  const atSeatLimit = seats > 0 && members.length >= seats;
 
   useEffect(() => {
-    if (!company || !canManageUsers) return;
+    if (!company) return;
     getCompanyMembers(company.id)
       .then(setMembers)
       .finally(() => setLoading(false));
-  }, [company?.id, canManageUsers]);
-
-  if (!canManageUsers) {
-    return (
-      <div style={{ padding: embedded ? 0 : 16, flex: embedded ? "none" : 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>👥</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>Team Management</div>
-        <div style={{ fontSize: 10, color: MUT, maxWidth: 280, lineHeight: 1.7 }}>
-          Invite staff, assign roles, and manage access to your shop. Available to Members.
-        </div>
-        {onGoToBilling && <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>View Plans</button>}
-      </div>
-    );
-  }
+  }, [company?.id]);
 
   if (!company) {
     return (
@@ -130,15 +112,12 @@ export default function UsersTab({ company, session, profile, setCompany, onGoTo
         {embedded ? <div /> : <SL t="Users" />}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em" }}>
-            {loading ? "…" : `${members.length}${seats > 0 ? `/${seats}` : ""} seat${members.length !== 1 ? "s" : ""}`}
+            {loading ? "…" : `${members.length} seat${members.length !== 1 ? "s" : ""}`}
           </span>
-          {isOwner && !atSeatLimit && (
+          {isOwner && (
             <button onClick={() => setShowInvite(x => !x)} style={{ ...btnA, ...sm }}>
               {showInvite ? "✕ Close" : "+ Invite Member"}
             </button>
-          )}
-          {isOwner && atSeatLimit && (
-            <button onClick={onGoToBilling} style={{ ...btnA, ...sm }}>+ Add Seats</button>
           )}
         </div>
       </div>
