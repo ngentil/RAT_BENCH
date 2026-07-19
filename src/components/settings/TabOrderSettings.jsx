@@ -11,8 +11,8 @@ const SETTINGS_TABS = [
   { id: 'company',  label: 'Company / Org' },
   { id: 'billing',  label: 'Billing' },
   { id: 'storage',  label: 'Storage' },
-  { id: 'tabs',     label: '⇅ Tabs' },
-  { id: 'users',    label: '👥 Users' },
+  { id: 'tabs',     label: 'Tabs' },
+  { id: 'users',    label: 'Users' },
 ];
 
 function ReorderList({ items, setItems }) {
