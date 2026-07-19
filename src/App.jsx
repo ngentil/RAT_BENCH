@@ -429,7 +429,7 @@ function App(){
           {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:10}}>⚙️</button>}
         </div>
       </div>
-      <div className="tab-bar" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
+      <div className="tab-bar tab-bar-rocker" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
         {mainTabsToShow.map(t=>{
           const active=tab===t.id;
           const badge=
@@ -438,15 +438,16 @@ function App(){
             t.id==="jobs"&&timerRunning?{n:"▶",c:GRN}:
             null;
           return (
-          <button key={t.id} onClick={()=>setTab(t.id)} className="tab-btn" style={{flexShrink:0,padding:"10px 12px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?ACC+"1a":"none",borderBottom:active?"3px solid "+ACC:"3px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
+          <button key={t.id} onClick={()=>setTab(t.id)} className={"tab-btn tab-btn-rocker"+(active?" on":"")} style={{flexShrink:0,padding:"10px 12px 13px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?"#191410":"none",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
             {t.label}
+            <span className="lamp" />
             {badge&&<span style={{position:"absolute",top:4,right:2,fontSize:9,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
           </button>
           );
         })}
       </div>
       {tab==="workshop"&&(
-        <div style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
+        <div className="tab-bar-rocker" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
           {visibleWorkshopTabs.map(t=>{
             const active=workshopTab===t.id;
             const badge=
@@ -454,8 +455,9 @@ function App(){
               t.id==="reminders"&&dueSoonCount>0?{n:dueSoonCount,c:"#e8870a"}:
               null;
             return (
-            <button key={t.id} onClick={()=>setWorkshopTab(t.id)} style={{flexShrink:0,padding:"8px 12px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?ACC+"1a":"none",borderBottom:active?"3px solid "+ACC:"3px solid transparent",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
+            <button key={t.id} onClick={()=>setWorkshopTab(t.id)} className={"tab-btn-rocker"+(active?" on":"")} style={{flexShrink:0,padding:"8px 12px 11px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?"#191410":"none",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
               {t.label}
+              <span className="lamp" />
               {badge&&<span style={{position:"absolute",top:2,right:2,fontSize:9,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
             </button>
             );
