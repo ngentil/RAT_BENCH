@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { escapeLike } from './helpers';
-import { uploadPhoto } from './storage';
+import { uploadPhoto, deletePhoto } from './storage';
 
 // ── Slug ──────────────────────────────────────────────────────────────────────
 export function makeSlug(make, model) {
@@ -499,6 +499,17 @@ export async function setWikiCoverPhoto(photoId) {
   const { data, error } = await supabase.rpc("set_wiki_cover_photo", { p_photo_id: photoId });
   if (error) throw error;
   return data;
+}
+
+// RLS already permits an admin (is_admin_user()) or a photo's own uploader
+// to delete it — this just isn't exposed as a direct action anywhere in the
+// UI yet outside the 3-report auto-hide flow. Deletes the DB row first, then
+// best-effort removes the underlying storage file, so a storage hiccup never
+// leaves an orphaned DB row pointing at a file that's still there.
+export async function deleteWikiPhoto(photoId, url) {
+  const { error } = await supabase.from("wiki_entry_photos").delete().eq("id", photoId);
+  if (error) throw error;
+  await deletePhoto(url);
 }
 
 // ── Points ───────────────────────────────────────────────────────────────────
