@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import WikiHomePage from './WikiHomePage';
 import WikiEntryPage from './WikiEntryPage';
 import WikiLeaderboard from './WikiLeaderboard';
-function WikiTab({ session, profile, company }) {
+function WikiTab({ session, profile, company, setMachines }) {
   const [currentSlug, setCurrentSlug] = useState(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
@@ -45,6 +45,7 @@ function WikiTab({ session, profile, company }) {
         profile={profile}
         onBack={closeEntry}
         embedded
+        setMachines={setMachines}
       />
     );
   }
