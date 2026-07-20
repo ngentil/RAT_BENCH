@@ -7,15 +7,17 @@ import SellForm from './SellForm';
 import MyListings from './MyListings';
 import MarketplaceInbox from './MarketplaceInbox';
 import ThreadView from './ThreadView';
+import SoldItemsTab from '../soldItems/SoldItemsTab';
 
 const NAV = [
   { id: "browse", label: "Browse" },
   { id: "sell",   label: "Sell" },
   { id: "mine",   label: "My Listings" },
   { id: "inbox",  label: "Messages" },
+  { id: "sold",   label: "Sold" },
 ];
 
-function MarketplaceTab({ machines, profile, company, onGoToBilling }) {
+function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines, setEquipment, onToolRelisted }) {
   const [view, setView] = useState("browse");
   const [listingId, setListingId] = useState(null);
   const [threadId, setThreadId] = useState(null);
@@ -131,6 +133,10 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling }) {
           onBack={() => navTo("inbox")}
           onListingSelect={openListing}
         />
+      )}
+
+      {view === "sold" && (
+        <SoldItemsTab profile={profile} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={onToolRelisted} />
       )}
     </div>
   );

@@ -30,7 +30,6 @@ import ToolsTab from './components/tools/ToolsTab';
 import VehiclesTab from './components/vehicles/VehiclesTab';
 import EquipmentTab from './components/equipment/EquipmentTab';
 import ConsumablesTab from './components/consumables/ConsumablesTab';
-import SoldItemsTab from './components/soldItems/SoldItemsTab';
 
 
 function App(){
@@ -410,7 +409,7 @@ function App(){
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={activeMachines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/>}</div>
+      <div style={{display:tab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)}/>}</div>
       <div style={{display:tab==="workshop"&&workshopTab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
@@ -419,7 +418,6 @@ function App(){
       <div style={{display:tab==="workshop"&&workshopTab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="sold"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<SoldItemsTab profile={profile} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)}/>}</div>
       {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools} initialTab={settingsTab}/>}
     </div>
   );
