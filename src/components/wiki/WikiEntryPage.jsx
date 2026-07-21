@@ -279,7 +279,6 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
               <button
                 onClick={doImport}
                 disabled={importing}
-                className="btn-tactile"
                 style={{ ...btnA, ...sm, fontSize: 9, opacity: importing ? 0.6 : 1 }}
               >
                 {importing ? "Adding…" : "＋ Add to Garage"}
