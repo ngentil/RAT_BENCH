@@ -4,11 +4,12 @@ export const BG="#0e0e0e",SURF="#161616",BRD="#252525",BRD2="#1e1e1e",
 export const inp  = {background:"#0a0a0a",border:"1px solid "+BRD,color:TXT,fontFamily:"'IBM Plex Mono',monospace",fontSize:12,padding:"8px 10px",borderRadius:2,width:"100%",outline:"none",boxSizing:"border-box"};
 export const sel  = {...inp};
 export const txa  = {...inp,resize:"vertical",minHeight:60,lineHeight:1.5};
-// Raised-bezel look (permanence pass): a gradient + paired inset highlight/
-// shade instead of a flat fill, so it reads as a domed switch rather than a
-// printed rectangle. The matching :active sink (`.btn-tactile` in index.css)
-// is opt-in via className since inline styles can't express :active.
-export const btnA = {background:"linear-gradient(180deg, #ff8a2e, "+ACC+" 45%, #c85405)",color:"#1a0a00",fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"8px 14px",borderRadius:2,cursor:"pointer",border:"none",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 3px rgba(0,0,0,0.35), 0 2px 0 #7a3400, 0 2px 2px rgba(0,0,0,0.4)",position:"relative",top:0};
+// Bakelite look: a domed radial gradient + inset gloss/shade instead of a
+// flat fill, with a thick "skirt" shadow underneath for real physical mass —
+// reads as molded plastic rather than a printed rectangle. The mechanical
+// press (sink + darken) is the global button:active rule in index.css, so
+// every button using this gets it automatically, no opt-in className needed.
+export const btnA = {background:"radial-gradient(circle at 30% 22%, #8a3a2a, #5a1f14 62%, #3a1108 100%)",color:"#f0d9c8",fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"8px 14px",borderRadius:4,cursor:"pointer",border:"none",boxShadow:"inset 0 2px 1px rgba(255,255,255,0.16), inset 0 -3px 6px rgba(0,0,0,0.5), 0 3px 0 #2a0d06, 0 5px 6px rgba(0,0,0,0.5)",position:"relative",top:0};
 export const btnG = {background:"none",border:"1px solid "+BRD,color:MUT,fontFamily:"'IBM Plex Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",padding:"8px 14px",borderRadius:2,cursor:"pointer"};
 export const btnD = {background:"none",border:"1px solid #3a1a1a",color:"#884040",fontFamily:"'IBM Plex Mono',monospace",fontSize:10,padding:"3px 8px",borderRadius:2,cursor:"pointer"};
 export const sm   = {padding:"5px 10px",fontSize:10};
