@@ -59,6 +59,12 @@ const esc = s => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+// JSON.stringify doesn't escape "<", so a spec value containing the literal
+// text "</script>" would otherwise prematurely close the script tag it's
+// embedded in — this is user-supplied data (wiki spec values), so it's a
+// real injection vector, not just tidiness.
+const jsonLdScript = obj => JSON.stringify(obj).replace(/</g, '\\u003c');
+
 // Build the head-meta + #root content and splice into the built index.html.
 export function buildEntryHtml(template, entry) {
   const { slug, make, model, type, data = {} } = entry;
@@ -81,6 +87,17 @@ export function buildEntryHtml(template, entry) {
     + `Community-maintained specs and repair reference on Rat Bench.`;
   const descClamped = desc.length > 300 ? desc.slice(0, 297) + '…' : desc;
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: `${titleName}${type ? ` ${type}` : ''} — Specs & Repair Reference`,
+    description: descClamped,
+    url: canonical,
+    mainEntityOfPage: canonical,
+    isPartOf: { '@type': 'WebSite', name: 'Rat Bench Wiki', url: WIKI_ORIGIN + '/' },
+    publisher: { '@type': 'Organization', name: 'Rat Bench' },
+  };
+
   const head = `
     <title>${esc(pageTitle)}</title>
     <meta name="description" content="${esc(descClamped)}" />
@@ -92,7 +109,8 @@ export function buildEntryHtml(template, entry) {
     <meta property="og:url" content="${esc(canonical)}" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="${esc(titleName)} — Rat Bench Wiki" />
-    <meta name="twitter:description" content="${esc(descClamped)}" />`;
+    <meta name="twitter:description" content="${esc(descClamped)}" />
+    <script type="application/ld+json">${jsonLdScript(jsonLd)}</script>`;
 
   const rootContent = `<article class="seo-prerender">
       <h1>${esc(titleName)}</h1>
@@ -104,6 +122,10 @@ export function buildEntryHtml(template, entry) {
   // Splice: replace <title>, inject meta before </head>, fill #root.
   let html = template
     .replace(/<title>[\s\S]*?<\/title>/, '') // drop the generic title
+    // Strip the homepage-only description/canonical/OG/JSON-LD block (see the
+    // HOMEPAGE-SEO markers in index.html) — it's only correct for "/" and
+    // would otherwise sit duplicated alongside this entry's own tags below.
+    .replace(/<!-- HOMEPAGE-SEO:START[\s\S]*?HOMEPAGE-SEO:END -->/, '')
     .replace('</head>', `${head}\n  </head>`)
     .replace(/<div id="root">\s*<\/div>/, `<div id="root">${rootContent}</div>`);
   return html;

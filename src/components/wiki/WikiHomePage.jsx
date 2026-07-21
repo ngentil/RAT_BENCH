@@ -54,6 +54,7 @@ function WikiHomePage({ onSelect, embedded = false, profile, onShowLeaderboard, 
     searchWiki("").then(r => setRecent(r || []));
     getRecentWikiEntries(6).then(r => setRecentlyAdded(r || []));
     getWikiStats().then(setStats);
+    if (!embedded) document.title = "Small Engine & Machine Wiki — Specs & Repair Reference | Rat Bench";
   }, []);
 
   useEffect(() => {

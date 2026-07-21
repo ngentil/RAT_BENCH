@@ -19,10 +19,21 @@ import { join } from 'node:path';
 
 const DIST = 'dist';
 const SITE_ORIGIN = 'https://ratbench.net';
+// Nothing in the app currently tracks a currency (company.currency is read
+// in a couple of invoicing spots but never actually set anywhere in the UI),
+// so there's no reliable per-listing signal to pull from — default to USD,
+// override via env var if the real target currency differs.
+const CURRENCY = process.env.MARKETPLACE_CURRENCY || 'USD';
 
 const esc = s => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+// JSON.stringify doesn't escape "<", so a listing title/description
+// containing the literal text "</script>" would otherwise prematurely close
+// the script tag it's embedded in — this is user-supplied data, so it's a
+// real injection vector, not just tidiness.
+const jsonLdScript = obj => JSON.stringify(obj).replace(/</g, '\\u003c');
 
 function formatPrice(price) {
   if (price == null) return null;
@@ -41,6 +52,24 @@ export function buildListingHtml(template, listing) {
   const desc = `${title} — ${priceLabel}${descBits ? `. ${descBits}` : ''}. For sale on Rat Bench, a community marketplace for workshop machines, parts, and tools.`;
   const descClamped = desc.length > 300 ? desc.slice(0, 297) + '…' : desc;
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: title,
+    description: descClamped,
+    url: canonical,
+    ...(photo ? { image: photo } : {}),
+    ...(price != null ? {
+      offers: {
+        '@type': 'Offer',
+        url: canonical,
+        priceCurrency: CURRENCY,
+        price: Number(price),
+        availability: 'https://schema.org/InStock',
+      },
+    } : {}),
+  };
+
   const head = `
     <title>${esc(pageTitle)}</title>
     <meta name="description" content="${esc(descClamped)}" />
@@ -53,7 +82,8 @@ export function buildListingHtml(template, listing) {
     ${photo ? `<meta property="og:image" content="${esc(photo)}" />` : ''}
     <meta name="twitter:card" content="${photo ? 'summary_large_image' : 'summary'}" />
     <meta name="twitter:title" content="${esc(title)} — Rat Bench Marketplace" />
-    <meta name="twitter:description" content="${esc(descClamped)}" />`;
+    <meta name="twitter:description" content="${esc(descClamped)}" />
+    <script type="application/ld+json">${jsonLdScript(jsonLd)}</script>`;
 
   const rootContent = `<article class="seo-prerender">
       <h1>${esc(title)}</h1>
@@ -65,13 +95,20 @@ export function buildListingHtml(template, listing) {
 
   let html = template
     .replace(/<title>[\s\S]*?<\/title>/, '')
+    // Strip the homepage-only description/canonical/OG/JSON-LD block (see the
+    // HOMEPAGE-SEO markers in index.html) — it's only correct for "/" and
+    // would otherwise sit duplicated alongside this listing's own tags below.
+    .replace(/<!-- HOMEPAGE-SEO:START[\s\S]*?HOMEPAGE-SEO:END -->/, '')
     .replace('</head>', `${head}\n  </head>`)
     .replace(/<div id="root">\s*<\/div>/, `<div id="root">${rootContent}</div>`);
   return html;
 }
 
 function xmlSitemap(listings) {
-  const urls = [SITE_ORIGIN + '/marketplace', ...listings.map(l => `${SITE_ORIGIN}/listing/${l.id}`)]
+  // The homepage/login screen lives at this same origin, so it belongs in
+  // this sitemap too — there's no separate sitemap for the main domain's
+  // marketing pages, only this one and the wiki subdomain's.
+  const urls = [SITE_ORIGIN + '/', SITE_ORIGIN + '/marketplace', ...listings.map(l => `${SITE_ORIGIN}/listing/${l.id}`)]
     .map(u => `  <url><loc>${esc(u)}</loc></url>`).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
