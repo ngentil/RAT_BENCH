@@ -81,7 +81,8 @@ button:active { opacity: 0.65; transform: scale(0.95); }
 .tab-btn-rocker .lamp {
   position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%);
   width: 5px; height: 5px; border-radius: 50%;
-  background: #1a1a1a; box-shadow: 0 0 0 1px #5a5a5a;
+  background: radial-gradient(circle at 35% 30%, #2a2118, #141414 70%);
+  box-shadow: 0 0 0 1px #6b5433, inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .tab-btn-rocker.on .lamp {
   background: radial-gradient(circle at 40% 35%, #ff5a3c, #c73a2e 65%);
