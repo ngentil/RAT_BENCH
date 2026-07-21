@@ -4,7 +4,38 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <title>Rat Bench — If You've Got a Shed, This Is For You</title>
+    <!-- HOMEPAGE-SEO:START — scripts/prerender-wiki.mjs and prerender-marketplace.mjs
+         strip everything between these two markers before splicing in their own
+         per-entry/per-listing description/canonical/OG/JSON-LD, so this block
+         (which is only correct for the bare "/" homepage) never leaks duplicate,
+         conflicting tags onto a prerendered content page. -->
     <meta name="description" content="The only digital workbench built specifically for garage mechanics, small engine enthusiasts, and weekend wrenchers." />
+    <link rel="canonical" href="https://ratbench.net/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Rat Bench" />
+    <meta property="og:title" content="Rat Bench — If You've Got a Shed, This Is For You" />
+    <meta property="og:description" content="The only digital workbench built specifically for garage mechanics, small engine enthusiasts, and weekend wrenchers." />
+    <meta property="og:url" content="https://ratbench.net/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Rat Bench — If You've Got a Shed, This Is For You" />
+    <meta name="twitter:description" content="The only digital workbench built specifically for garage mechanics, small engine enthusiasts, and weekend wrenchers." />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Rat Bench",
+      "url": "https://ratbench.net/"
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Rat Bench",
+      "url": "https://ratbench.net/"
+    }
+    </script>
+    <!-- HOMEPAGE-SEO:END -->
     <!-- Early connection to Supabase and font host — browser starts handshake before JS runs -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

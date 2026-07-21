@@ -21,6 +21,7 @@ export default function PublicMarketplaceHome({ onNavigate }) {
     getRecentListings(6).then(setRecent);
     getMostViewedListings(20).then(setMostViewed);
     getMarketplaceStats().then(setStats);
+    document.title = "Workshop Marketplace — Machines, Parts & Tools for Sale | Rat Bench";
   }, []);
 
   useEffect(() => {
