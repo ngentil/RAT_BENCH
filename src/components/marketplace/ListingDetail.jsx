@@ -7,6 +7,7 @@ import {
   markListingSold, relistListing, removeListing,
 } from '../../lib/marketplace';
 import { formatPrice } from './ListingTile';
+import ConfirmDeleteListingModal from './ConfirmDeleteListingModal';
 
 const KIND_ICON = { part: "🔩", tool: "🔧", consumable: "📦", equipment: "⚙️" };
 
@@ -17,6 +18,7 @@ function ListingDetail({ listingId, profile, company, onGoToBilling, onBack, onO
   const [messaging, setMessaging] = useState(false);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,8 +104,9 @@ function ListingDetail({ listingId, profile, company, onGoToBilling, onBack, onO
           {error && <div style={{ fontSize: 10, color: RED, marginBottom: 8 }}>{error}</div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {listing.status === "active" && <button disabled={busy} onClick={() => runStatusChange(markListingSold)} style={btnA}>Mark Sold</button>}
-            {listing.status === "sold" && <button disabled={busy} onClick={() => runStatusChange(relistListing)} style={btnG}>Relist</button>}
+            {(listing.status === "sold" || listing.status === "removed") && <button disabled={busy} onClick={() => runStatusChange(relistListing)} style={btnG}>Relist</button>}
             {listing.status !== "removed" && <button disabled={busy} onClick={() => runStatusChange(removeListing)} style={{ ...btnG, color: RED, borderColor: "#3a1a1a" }}>Remove</button>}
+            {listing.status === "removed" && <button disabled={busy} onClick={() => setShowDeleteConfirm(true)} style={{ ...btnG, color: RED, borderColor: "#3a1a1a" }}>🗑 Delete Permanently</button>}
           </div>
         </div>
       ) : (
@@ -116,6 +119,14 @@ function ListingDetail({ listingId, profile, company, onGoToBilling, onBack, onO
             <button disabled={messaging} onClick={handleMessage} style={btnA}>{messaging ? "Starting…" : "💬 Message Seller"}</button>
           )}
         </div>
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmDeleteListingModal
+          listing={listing}
+          onClose={() => setShowDeleteConfirm(false)}
+          onDeleted={onBack}
+        />
       )}
     </div>
   );

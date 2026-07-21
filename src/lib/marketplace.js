@@ -51,6 +51,27 @@ export async function removeListing(listingId) {
   return updateListing(listingId, { status: 'removed' });
 }
 
+// Real count of conversations tied to a listing — used to show the seller
+// exactly what a permanent delete would take with it before they confirm.
+// RLS already scopes marketplace_threads to rows where the caller is the
+// buyer or seller, so no extra filtering is needed here.
+export async function getListingThreadCount(listingId) {
+  const { count, error } = await supabase.from('marketplace_threads')
+    .select('id', { count: 'exact', head: true }).eq('listing_id', listingId);
+  if (error) return 0;
+  return count || 0;
+}
+
+// Hard delete — only ever offered for an already-removed listing. Cascades
+// at the database level (marketplace_threads/marketplace_messages are both
+// ON DELETE CASCADE off marketplace_listings) so this also permanently wipes
+// every conversation and message tied to it; that's surfaced to the seller
+// as a disclaimer before they confirm, not hidden.
+export async function deleteListingPermanently(listingId) {
+  const { error } = await supabase.from('marketplace_listings').delete().eq('id', listingId);
+  if (error) throw error;
+}
+
 export async function getActiveListings({ type, query } = {}) {
   if (query?.trim()) {
     // search_marketplace_listings (marketplace_search_rpc.sql) takes the raw
