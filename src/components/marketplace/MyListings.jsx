@@ -10,7 +10,7 @@ function MyListings({ profile, onSelect, refreshKey }) {
   useEffect(() => {
     let cancelled = false;
     getMyListings(profile.id).then(data => {
-      if (!cancelled) { setListings(data); setLoading(false); }
+      if (!cancelled) { setListings((data || []).filter(l => l.status === 'active')); setLoading(false); }
     });
     return () => { cancelled = true; };
   }, [profile.id, refreshKey]);
@@ -21,7 +21,7 @@ function MyListings({ profile, onSelect, refreshKey }) {
     return (
       <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "32px 0" }}>
         <div style={{ fontSize: 22, marginBottom: 10 }}>🛒</div>
-        You haven't listed anything yet.
+        Nothing active yet — list something to see it here.
       </div>
     );
   }

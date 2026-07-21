@@ -8,13 +8,15 @@ import MyListings from './MyListings';
 import MarketplaceInbox from './MarketplaceInbox';
 import ThreadView from './ThreadView';
 import SoldItemsTab from '../soldItems/SoldItemsTab';
+import RemovedListingsTab from './RemovedListingsTab';
 
 const NAV = [
-  { id: "browse", label: "Browse" },
-  { id: "sell",   label: "Sell" },
-  { id: "mine",   label: "My Listings" },
-  { id: "inbox",  label: "Messages" },
-  { id: "sold",   label: "Sold" },
+  { id: "browse",  label: "Browse" },
+  { id: "sell",    label: "Sell" },
+  { id: "mine",    label: "Active Listings" },
+  { id: "inbox",   label: "Messages" },
+  { id: "sold",    label: "Sold" },
+  { id: "removed", label: "Removed" },
 ];
 
 function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines, setEquipment, onToolRelisted }) {
@@ -137,6 +139,10 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines
 
       {view === "sold" && (
         <SoldItemsTab profile={profile} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={onToolRelisted} />
+      )}
+
+      {view === "removed" && (
+        <RemovedListingsTab profile={profile} onSelect={openListing} />
       )}
     </div>
   );
