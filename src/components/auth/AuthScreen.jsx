@@ -88,13 +88,11 @@ function AuthScreen(){
       <div style={{flex:1,background:"#111",borderRight:"1px solid #1e1e1e",padding:"60px 48px",flexDirection:"column",justifyContent:"center",display:"none"}} className="auth-left">
         <div style={{fontSize:28,marginBottom:16}}>🐀</div>
         <div style={{fontSize:22,fontWeight:700,color:ACC,letterSpacing:"0.04em",textTransform:"uppercase",marginBottom:6,lineHeight:1.3}}>Rat Bench</div>
-        <div style={{fontSize:10,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginBottom:40}}>small engine & equipment repair</div>
-        <div style={{fontSize:20,fontWeight:700,color:TXT,lineHeight:1.5,marginBottom:16}}>
-          Log every machine.<br/>
-          Find every spec.<br/>
-          Never forget a torque<br/>value again.
+        <div style={{fontSize:20,fontWeight:700,color:TXT,lineHeight:1.4,marginBottom:14}}>
+          If you've got a shed,<br/>this is for you!
         </div>
-        <div style={{fontSize:10,color:MUT,lineHeight:1.8,marginTop:8}}>
+        <div style={{fontSize:11,color:MUT,lineHeight:1.7,maxWidth:320}}>
+          The only digital workbench built specifically for garage mechanics, small engine enthusiasts, and weekend wrenchers.
         </div>
         <div style={{marginTop:48,display:"flex",flexDirection:"column",gap:12}}>
           {["Track full engine specs, fasteners & torque values","Service history with photo logging","Spec search across your entire inventory"].map((f,i)=>(
@@ -113,9 +111,11 @@ function AuthScreen(){
           <div style={{textAlign:"center",marginBottom:32}}>
             <div style={{fontSize:36,marginBottom:8}}>🐀</div>
             <div style={{fontSize:16,fontWeight:700,color:ACC,letterSpacing:"0.06em",textTransform:"uppercase"}}>Rat Bench</div>
-            <div style={{fontSize:10,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:4}}>small engine & equipment repair</div>
-            <div style={{fontSize:12,color:"#666",marginTop:16,lineHeight:1.6}}>
-              Log every machine. Find every spec.<br/>Never forget a torque value again.
+            <div style={{fontSize:13,fontWeight:700,color:TXT,marginTop:14,lineHeight:1.4}}>
+              If you've got a shed, this is for you!
+            </div>
+            <div style={{fontSize:11,color:"#666",marginTop:8,lineHeight:1.6}}>
+              The only digital workbench built specifically for garage mechanics, small engine enthusiasts, and weekend wrenchers.
             </div>
           </div>
 
