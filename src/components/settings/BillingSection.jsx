@@ -19,13 +19,49 @@ function formatMoney(amount, currency) {
 
 // Every non-owner member of the org uses one paid seat — the owner's own
 // membership never counts, matching join_company_by_invite()'s server-side
-// rule (see supabase/company_billing.sql).
-function SeatStepper({ value, onChange, min }) {
+// rule (see supabase/company_billing.sql). A typed number + quick +N chips
+// let an owner jump straight to e.g. 10 or 30 seats instead of clicking a
+// +/- stepper that many times — the +/- stays for one-off nudges.
+function SeatStepper({ value, onChange, min, quickAdds }) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => { setText(String(value)); }, [value]);
+
+  const commit = () => {
+    const n = parseInt(text, 10);
+    const clamped = Math.max(min, Number.isFinite(n) ? n : min);
+    setText(String(clamped));
+    if (clamped !== value) onChange(clamped);
+  };
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <button type="button" onClick={() => onChange(Math.max(min, value - 1))} disabled={value <= min} style={{ ...btnG, ...sm, opacity: value <= min ? 0.4 : 1 }}>−</button>
-      <div style={{ fontSize: 18, fontWeight: 700, color: TXT, minWidth: 32, textAlign: 'center', fontFamily: "'IBM Plex Mono',monospace" }}>{value}</div>
-      <button type="button" onClick={() => onChange(value + 1)} style={{ ...btnG, ...sm }}>+</button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button type="button" onClick={() => onChange(Math.max(min, value - 1))} disabled={value <= min} style={{ ...btnG, ...sm, opacity: value <= min ? 0.4 : 1 }}>−</button>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={min}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
+          style={{
+            width: 56, textAlign: 'center', fontSize: 18, fontWeight: 700, color: TXT,
+            fontFamily: "'IBM Plex Mono',monospace", background: '#0d0d0d', border: '1px solid #333',
+            borderRadius: 2, padding: '4px 2px',
+          }}
+        />
+        <button type="button" onClick={() => onChange(value + 1)} style={{ ...btnG, ...sm }}>+</button>
+      </div>
+      {quickAdds?.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {quickAdds.map(n => (
+            <button key={n} type="button" onClick={() => onChange(value + n)} style={{ ...btnG, ...sm, fontSize: 8, padding: '3px 8px' }}>
+              +{n}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -196,7 +232,7 @@ function BillingSection({ company, setCompany }) {
           <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Set Up Billing</div>
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 9, color: MUT, marginBottom: 6 }}>How many additional seats do you need?</div>
-            <SeatStepper value={pendingSeats} onChange={setPendingSeats} min={Math.max(1, seatsInUse)} />
+            <SeatStepper value={pendingSeats} onChange={setPendingSeats} min={Math.max(1, seatsInUse)} quickAdds={[5, 10, 30]} />
           </div>
           <PaymentSetup company={company} seats={pendingSeats}
             onDone={() => { setShowSetup(false); setCompany(prev => ({ ...prev, paid_seats: pendingSeats, subscription_status: 'active' })); }}
@@ -227,10 +263,20 @@ function BillingSection({ company, setCompany }) {
             <button onClick={openSetup} style={{ ...btnA, ...sm }}>Set Up Billing</button>
           ) : (
             <>
+              {(company.paid_seats || 0) > seatsInUse && (
+                <div style={{ fontSize: 10, color: TXT, marginBottom: 12, background: RED + '11', border: '1px solid ' + RED + '33', borderRadius: 2, padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                  <span>
+                    {company.paid_seats - seatsInUse} unused paid seat{company.paid_seats - seatsInUse !== 1 ? 's' : ''} — likely people who've left. Drop them to save ${(company.paid_seats - seatsInUse) * 10}/mo.
+                  </span>
+                  <button type="button" onClick={() => setSeatDraft(seatsInUse)} style={{ ...btnG, ...sm, fontSize: 8, color: RED, border: '1px solid ' + RED + '55' }}>
+                    Drop to {seatsInUse}
+                  </button>
+                </div>
+              )}
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 9, color: MUT, marginBottom: 6 }}>Change seat count</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <SeatStepper value={seatDraft} onChange={setSeatDraft} min={seatsInUse} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <SeatStepper value={seatDraft} onChange={setSeatDraft} min={seatsInUse} quickAdds={[5, 10]} />
                   <button onClick={saveSeats} disabled={saving || seatDraft === company.paid_seats} style={{ ...btnA, ...sm, opacity: saving || seatDraft === company.paid_seats ? 0.5 : 1 }}>
                     {saving ? 'Saving…' : 'Update Seats'}
                   </button>
