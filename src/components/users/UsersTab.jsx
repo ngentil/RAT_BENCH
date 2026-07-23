@@ -49,6 +49,8 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
   const [err, setErr] = useState("");
   const [updatingRole, setUpdatingRole] = useState(null);
   const [showInvite, setShowInvite] = useState(false);
+  const [selected, setSelected] = useState(() => new Set());
+  const [bulkRemoving, setBulkRemoving] = useState(false);
 
   const myMember = members.find(m => m.user_id === session?.user?.id);
   const isOwner = myMember?.role === 'owner';
@@ -98,7 +100,44 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
     try {
       await removeMember(company.id, userId);
       setMembers(prev => prev.filter(m => m.user_id !== userId));
+      setSelected(prev => { if (!prev.has(userId)) return prev; const next = new Set(prev); next.delete(userId); return next; });
     } catch (e) { setErr(e.message); }
+  };
+
+  // Removable = anyone but the owner and myself (mirrors rpc_remove_member's
+  // own guard). Selecting several people who've left and removing them in
+  // one shot — rather than one confirm dialog per person — is what actually
+  // gets unused paid seats freed up; see the "unused paid seats" hint in
+  // BillingSection, which reads straight off this same members list.
+  const selectableIds = members.filter(m => m.role !== 'owner' && m.user_id !== session?.user?.id).map(m => m.user_id);
+  const allSelected = selectableIds.length > 0 && selectableIds.every(id => selected.has(id));
+
+  const toggleSelect = (userId) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(userId) ? next.delete(userId) : next.add(userId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => setSelected(allSelected ? new Set() : new Set(selectableIds));
+
+  const handleBulkRemove = async () => {
+    const ids = Array.from(selected);
+    if (!ids.length) return;
+    const names = ids.map(id => {
+      const m = members.find(mm => mm.user_id === id);
+      return m?.profile?.display_name || m?.profile?.username || 'this member';
+    });
+    if (!confirm(`Remove ${ids.length} member${ids.length !== 1 ? 's' : ''} from the organisation?\n\n${names.join(', ')}`)) return;
+    setBulkRemoving(true);
+    setErr('');
+    const results = await Promise.allSettled(ids.map(id => removeMember(company.id, id)));
+    const failedIds = ids.filter((id, i) => results[i].status === 'rejected');
+    setMembers(prev => prev.filter(m => !ids.includes(m.user_id) || failedIds.includes(m.user_id)));
+    setSelected(new Set(failedIds));
+    if (failedIds.length) setErr(`Couldn't remove ${failedIds.length} member${failedIds.length !== 1 ? 's' : ''} — try again.`);
+    setBulkRemoving(false);
   };
 
   const handleRoleChange = async (userId, role) => {
@@ -170,7 +209,26 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
 
       {/* Members list */}
       <div>
-        <div style={lbl}>Members</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <div style={lbl}>Members</div>
+          {isOwner && selectableIds.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9, color: MUT, cursor: "pointer" }}>
+                <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+                Select all
+              </label>
+              {selected.size > 0 && (
+                <button
+                  onClick={handleBulkRemove}
+                  disabled={bulkRemoving}
+                  style={{ ...btnG, ...sm, color: RED, border: "1px solid " + RED + "55", opacity: bulkRemoving ? 0.6 : 1 }}
+                >
+                  {bulkRemoving ? "Removing…" : `Remove ${selected.size} selected`}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         {loading && <div style={{ fontSize: 10, color: MUT }}>Loading…</div>}
         {!loading && members.map(m => {
           const displayName = m.profile?.display_name || m.profile?.username || m.user_id.slice(0, 8);
@@ -184,6 +242,18 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
               padding: "10px 0 10px 8px", borderBottom: "1px solid " + BRD,
               borderLeft: "2px solid " + roleColor + "55",
             }}>
+              {isOwner && (
+                isMemberOwner || isMe
+                  ? <div style={{ width: 14, flexShrink: 0 }} />
+                  : (
+                    <input
+                      type="checkbox"
+                      checked={selected.has(m.user_id)}
+                      onChange={() => toggleSelect(m.user_id)}
+                      style={{ width: 14, height: 14, flexShrink: 0, cursor: "pointer" }}
+                    />
+                  )
+              )}
               <Avatar name={displayName} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
