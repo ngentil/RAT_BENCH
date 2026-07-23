@@ -53,6 +53,14 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
   const myMember = members.find(m => m.user_id === session?.user?.id);
   const isOwner = myMember?.role === 'owner';
 
+  // Every non-owner member uses one paid seat — matches join_company_by_invite()'s
+  // server-side rule (supabase/company_billing.sql), which is what actually
+  // enforces this; this is purely a heads-up so the owner isn't surprised by
+  // a "no seats available" error after already sharing the code.
+  const paidSeatsInUse = members.filter(m => m.role !== 'owner').length;
+  const paidSeatsTotal = company.paid_seats || 0;
+  const seatsAvailable = paidSeatsTotal - paidSeatsInUse;
+
   useEffect(() => {
     if (!company) return;
     getCompanyMembers(company.id)
@@ -112,7 +120,7 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
         {embedded ? <div /> : <SL t="Users" />}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em" }}>
-            {loading ? "…" : `${members.length} seat${members.length !== 1 ? "s" : ""}`}
+            {loading ? "…" : `${members.length} member${members.length !== 1 ? "s" : ""} · ${paidSeatsInUse}/${paidSeatsTotal} paid seats`}
           </span>
           {isOwner && (
             <button onClick={() => setShowInvite(x => !x)} style={{ ...btnA, ...sm }}>
@@ -134,6 +142,11 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
             Share this code with your team member. They enter it in{" "}
             <span style={{ color: TXT }}>Settings → Company → Join with Code</span>.
           </div>
+          {seatsAvailable <= 0 && (
+            <div style={{ fontSize: 10, color: RED, marginBottom: 12, lineHeight: 1.6, background: RED + "11", border: "1px solid " + RED + "44", borderRadius: 2, padding: "8px 10px" }}>
+              No paid seats available ({paidSeatsInUse}/{paidSeatsTotal} in use) — anyone joining with this code will be turned away until you add more seats in Billing below.
+            </div>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{
               fontSize: 22, fontWeight: 700, letterSpacing: "0.25em", color: TXT,
