@@ -8,6 +8,7 @@ import { getToolPermissions, upsertToolPermission, revokeToolPermission } from '
 import { getConsumables, getConsumablePermissions, upsertConsumablePermission, revokeConsumablePermission } from '../../lib/db/consumables';
 import { COUNTRIES, COUNTRY_CONFIG, DEFAULT_COUNTRY_CONFIG } from '../../lib/constants/countries';
 import UsersTab from '../users/UsersTab';
+import BillingSection from './BillingSection';
 const INDUSTRIES = ["Small Engine Repair","Automotive","Marine / Watercraft","Agricultural / Farm Equipment","Construction / Earthmoving","Lawn & Garden","Motorcycle / Powersports","EV / Electric","Mining","Forestry","General Mechanical","Other"];
 // Generic provisioning panel — works for machines, vehicles, equipment, tools.
 // getFn   : async (assetId) => [{ user_id, can_edit, ... }]
@@ -331,6 +332,17 @@ function CompanySettings({profile,setProfile,company,setCompany,session,machines
         <div style={secHd}>Users</div>
         <UsersTab company={company} session={session} profile={profile} setCompany={setCompany} embedded />
       </div>
+
+      {/* Billing — owner only. Your own seat is always free; every other
+          member uses one paid seat. Kept in-app (Stripe Elements, not a
+          redirect to Stripe Checkout or the hosted Billing Portal) so it
+          doesn't feel like leaving Rat Bench mid-flow. */}
+      {isOwner && (
+        <div style={{...sec,...secSep}}>
+          <div style={secHd}>Billing</div>
+          <BillingSection company={company} setCompany={setCompany} />
+        </div>
+      )}
 
       {/* Asset provisioning */}
       {canProvision && (
