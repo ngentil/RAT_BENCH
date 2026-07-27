@@ -31,7 +31,7 @@ function MachinePhotoRow({ machine: m, onClick, clientName, searchQuery, searchT
           </div>}
         {m.type&&!typeBadgeActive&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
         <div style={{display:"flex",gap:4,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
-          <StatusBadge status={m.status||"Active"} compact/>
+          <StatusBadge status={m.status||"Active"} compact padding="2px 6px"/>
           {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
             if(k==="status") return null;
             const tc=m.tileColors||{};
