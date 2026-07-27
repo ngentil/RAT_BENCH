@@ -121,7 +121,7 @@ export const BADGE_PALETTE = [
 
 export const TILE_COLOR_DEFAULTS = {
   status:"auto", strokeType:"auto", rage:"auto",
-  ccSize:7, compression:1, plugType:2, plugGap:2,
+  type:4, ccSize:7, compression:1, plugType:2, plugGap:2,
   idleRpm:6, wotRpm:6, starterType:7, fuelSystem:1,
   cBrand:0, cModel:0, driveType:1, chainPitch:1,
   tyreFront:7, tyreRear:7, battVoltage:5, pumpPsi:3,
