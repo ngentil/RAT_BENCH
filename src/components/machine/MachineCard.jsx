@@ -39,6 +39,10 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const [bookErr,setBookErr]=useState("");
   const [confirmDelete,setConfirmDelete]=useState(false);
   const m=machine;
+  // The plain-text type caption below and the "Type:" tile badge both show
+  // m.type — only show the caption when the badge isn't already covering it,
+  // so type doesn't render twice (badge is on by default via DEFAULT_TILE).
+  const typeBadgeActive=(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).includes("type");
   // Notify parent when card opens so the above-card guide arrow can hide
   useEffect(()=>{if(open&&showGuide)onCardOpened?.();},[open,showGuide]);
   const withGuide=(desc,el)=>showGuide?(
@@ -338,7 +342,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
                   {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
                   {m.source&&<span style={{color:"#444"}}> · {hl(m.source,searchTokens)}</span>}
                 </div>}
-              {m.type&&<div style={{fontSize:9,color:"#555",marginTop:2,letterSpacing:"0.06em",textTransform:"uppercase"}}>{hl(m.type,searchTokens)}</div>}
+              {m.type&&!typeBadgeActive&&<div style={{fontSize:9,color:"#555",marginTop:2,letterSpacing:"0.06em",textTransform:"uppercase"}}>{hl(m.type,searchTokens)}</div>}
             </div>
           </div>
 

@@ -10,6 +10,9 @@ function MachinePhotoRow({ machine: m, onClick, clientName, searchQuery, searchT
   const timerRunning = (m.jobTimers||[]).some(t=>t.status==="running");
   const hrs = (m.timeLog||[]).reduce((s,e)=>s+(e.seconds||0),0)/3600;
   const specMatch = findMachineSpecMatch(m, searchQuery);
+  // The plain-text type caption below and the "Type:" tile badge both show
+  // m.type — only show the caption when the badge isn't already covering it.
+  const typeBadgeActive=(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).includes("type");
   return (
     <div onClick={onClick} style={{background:SURF,borderBottom:"1px solid "+BRD,padding:"10px 12px",cursor:"pointer",display:"flex",alignItems:"flex-start",gap:10,userSelect:"none"}}>
       <div style={{width:64,height:64,flexShrink:0,borderRadius:3,overflow:"hidden",border:"1px solid "+BRD,background:"#111",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -26,7 +29,7 @@ function MachinePhotoRow({ machine: m, onClick, clientName, searchQuery, searchT
           <div style={{fontSize:10,color:MUT,marginTop:2}}>
             {hl([m.make,m.model,m.year].filter(Boolean).join(" · "),searchTokens)}
           </div>}
-        {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
+        {m.type&&!typeBadgeActive&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
         <div style={{display:"flex",gap:4,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
           <StatusBadge status={m.status||"Active"} compact/>
           {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
