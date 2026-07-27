@@ -25,7 +25,7 @@ function MachineRow({ machine: m, onClick, clientName, searchQuery, searchTokens
           </div>}
         {m.type&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
         <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap",alignItems:"center"}}>
-          <StatusBadge status={m.status||"Active"}/>
+          <StatusBadge status={m.status||"Active"} compact/>
           {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
             if(k==="status") return null;
             const tc=m.tileColors||{};

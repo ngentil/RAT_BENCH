@@ -34,7 +34,7 @@ export const TILE_FIELDS = [
   {k:"source",       l:"Source",              s:"",          types:null},
   {k:"rage",         l:"Rage rating ☠️",       s:"",          types:null},
 ];
-export const DEFAULT_TILE = ["status","strokeType","ccSize"];
+export const DEFAULT_TILE = ["status","type"];
 
 export const ALL_BADGE_FIELDS = [
   {k:"status",        l:"Status",              s:"",         section:"General",   auto:true},
