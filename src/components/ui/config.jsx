@@ -64,7 +64,7 @@ export function TileConfig({machine, onSave, onClose}){
           </div>
           <div style={{display:"flex",gap:6,marginBottom:14}}>
             <button style={{...btnG,...sm}} onClick={()=>setFields(availableFields.map(f=>f.k))}>All</button>
-            <button style={{...btnG,...sm}} onClick={()=>setFields(["status","strokeType"])}>Reset</button>
+            <button style={{...btnG,...sm}} onClick={()=>setFields([...DEFAULT_TILE])}>Reset</button>
           </div>
           {sections.map(section=>(
             <div key={section} style={{marginBottom:10}}>
