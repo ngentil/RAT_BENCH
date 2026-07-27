@@ -1,5 +1,6 @@
 export const MACHINE_TYPES = [
   {icon:"🪚",label:"Chainsaw"},{icon:"🌿",label:"Trimmer"},{icon:"💨",label:"Blower"},
+  {icon:"🌀",label:"Vacuum"},
   {icon:"🔫",label:"Pressure Washer"},{icon:"✂️",label:"Hedge Trimmer"},
   {icon:"🔧",label:"Multi-Tool"},{icon:"🌿",label:"Lawnmower"},{icon:"🚜",label:"Ride-on Mower"},
   {icon:"⚡",label:"Generator"},{icon:"🏍️",label:"Motorcycle"},{icon:"🛵",label:"Scooter"},
@@ -16,6 +17,7 @@ export const TYPE_PH = {
   "Chainsaw":            {name:"e.g. Stihl MS250",        make:"e.g. Stihl",      model:"e.g. MS250",       desc:"e.g. Condition on arrival, chain brake issue"},
   "Trimmer":             {name:"e.g. Echo SRM-220BE",     make:"e.g. Echo",       model:"e.g. SRM-220BE",   desc:"e.g. Condition on arrival, runs on full choke"},
   "Blower":              {name:"e.g. Husqvarna 125B",     make:"e.g. Husqvarna",  model:"e.g. 125B",        desc:"e.g. Condition on arrival, no start"},
+  "Vacuum":              {name:"e.g. Echo ES-255",        make:"e.g. Echo",       model:"e.g. ES-255",      desc:"e.g. Condition on arrival, vac mode won't engage"},
   "Pressure Washer":     {name:"e.g. Full Boar 3200PSI",  make:"e.g. Full Boar",  model:"e.g. 3200PSI",     desc:"e.g. Condition on arrival, pump issue"},
   "Hedge Trimmer":       {name:"e.g. Echo HC-152",        make:"e.g. Echo",       model:"e.g. HC-152",      desc:"e.g. Condition on arrival, blade damage"},
   "Multi-Tool":          {name:"e.g. Ferrex PMF3300",     make:"e.g. Ferrex",     model:"e.g. PMF3300",     desc:"e.g. Condition on arrival, fault description"},
@@ -46,7 +48,7 @@ export const TYPE_PH = {
 };
 export const getPH = (t,f) => (TYPE_PH[t]||TYPE_PH["Custom"])[f];
 
-export const HANDHELD    = ["Chainsaw","Trimmer","Blower","Hedge Trimmer","Multi-Tool"];
+export const HANDHELD    = ["Chainsaw","Trimmer","Blower","Vacuum","Hedge Trimmer","Multi-Tool"];
 export const WHEELED     = ["Lawnmower","Ride-on Mower"];
 export const MOTO        = ["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC","Snowmobile"];
 export const RC_HOBBY    = ["RC / Hobby Engine"];
