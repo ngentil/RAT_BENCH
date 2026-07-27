@@ -38,6 +38,7 @@ export const DEFAULT_TILE = ["status","strokeType","ccSize"];
 
 export const ALL_BADGE_FIELDS = [
   {k:"status",        l:"Status",              s:"",         section:"General",   auto:true},
+  {k:"type",          l:"Machine Type",        s:"Type:",    section:"General",   auto:true},
   {k:"strokeType",    l:"Engine Type",         s:"",         section:"General",   auto:true},
   {k:"rage",          l:"Rage Rating",         s:"",         section:"General",   auto:true},
   {k:"year",          l:"Year",                s:"",         section:"General"},
