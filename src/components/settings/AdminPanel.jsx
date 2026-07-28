@@ -299,8 +299,8 @@ function UsersTab() {
               </div>
               <div style={{ fontSize: 9, color: MUT, marginBottom: 3 }}>{u.email}</div>
               <div style={{ fontSize: 8, color: '#333' }}>
-                Joined {new Date(u.created_at).toLocaleDateString()}
-                {u.last_sign_in_at && <> · Last seen {new Date(u.last_sign_in_at).toLocaleDateString()}</>}
+                <span style={{ color: GRN }}>Joined {new Date(u.created_at).toLocaleDateString()}</span>
+                {u.last_sign_in_at && <> · <span style={{ color: RED }}>Last seen {new Date(u.last_sign_in_at).toLocaleDateString()}</span></>}
                 {u.machine_count > 0 && <> · {u.machine_count} machine{u.machine_count !== 1 ? 's' : ''}</>}
               </div>
             </div>
