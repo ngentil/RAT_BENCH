@@ -411,6 +411,11 @@ function WikiReportsTab() {
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
 
+  const [docs, setDocs] = useState([]);
+  const [docReports, setDocReports] = useState({}); // document_id -> unresolved report rows
+  const [docBusy, setDocBusy] = useState(null);
+  const [docMsg, setDocMsg] = useState(null);
+
   const load = async () => {
     const { data: hidden } = await supabase.from('wiki_entry_photos').select('*').eq('status', 'hidden').order('created_at');
     setPhotos(hidden || []);
@@ -425,7 +430,21 @@ function WikiReportsTab() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const loadDocs = async () => {
+    const { data: hidden } = await supabase.from('wiki_entry_documents').select('*').eq('status', 'hidden').order('created_at');
+    setDocs(hidden || []);
+    if (hidden?.length) {
+      const { data: reps } = await supabase.from('wiki_document_reports').select('*')
+        .in('document_id', hidden.map(d => d.id)).eq('resolved', false);
+      const byDoc = {};
+      (reps || []).forEach(r => { (byDoc[r.document_id] ||= []).push(r); });
+      setDocReports(byDoc);
+    } else {
+      setDocReports({});
+    }
+  };
+
+  useEffect(() => { load(); loadDocs(); }, []);
 
   const resolve = async (photoId, outcome) => {
     setBusy(photoId); setMsg(null);
@@ -436,8 +455,18 @@ function WikiReportsTab() {
     load();
   };
 
+  const resolveDoc = async (documentId, outcome) => {
+    setDocBusy(documentId); setDocMsg(null);
+    const { error } = await supabase.rpc('resolve_wiki_document_report', { p_document_id: documentId, p_outcome: outcome });
+    setDocBusy(null);
+    if (error) { setDocMsg({ ok: false, text: error.message }); return; }
+    setDocMsg({ ok: true, text: outcome === 'removed' ? 'Document removed — reporters credited +1 each.' : 'Document cleared — no penalty for reporters.' });
+    loadDocs();
+  };
+
   return (
     <div>
+      <div style={{ fontSize: 9, fontWeight: 700, color: MUT, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Photos</div>
       <Msg m={msg} />
       {photos.length === 0 && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No flagged photos.</div>}
       {photos.map(p => {
@@ -451,6 +480,28 @@ function WikiReportsTab() {
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button onClick={() => resolve(p.id, 'removed')} disabled={busy === p.id} style={{ ...btnD, fontSize: 9, opacity: busy === p.id ? 0.5 : 1 }}>Remove Photo</button>
                 <button onClick={() => resolve(p.id, 'cleared')} disabled={busy === p.id} style={{ ...btnG, ...sm, fontSize: 9, opacity: busy === p.id ? 0.5 : 1 }}>Clear (False Report)</button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      <div style={{ fontSize: 9, fontWeight: 700, color: MUT, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '20px 0 8px' }}>Documents</div>
+      <Msg m={docMsg} />
+      {docs.length === 0 && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No flagged documents.</div>}
+      {docs.map(d => {
+        const reps = docReports[d.id] || [];
+        return (
+          <div key={d.id} style={{ ...card, marginBottom: 10, display: 'flex', gap: 12 }}>
+            <div style={{ width: 90, height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 28, borderRadius: 2, border: '1px solid ' + BRD, flexShrink: 0, background: '#0a0a0a' }}>📄</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, color: TXT, marginBottom: 4, wordBreak: 'break-all' }}>{d.filename}</div>
+              <div style={{ fontSize: 9, color: MUT, marginBottom: 4 }}>{reps.length} report{reps.length !== 1 ? 's' : ''}</div>
+              <div style={{ fontSize: 9, color: TXT, marginBottom: 8 }}>{reps.map(r => r.reason.replace(/_/g, ' ')).join(', ') || '—'}</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button onClick={() => resolveDoc(d.id, 'removed')} disabled={docBusy === d.id} style={{ ...btnD, fontSize: 9, opacity: docBusy === d.id ? 0.5 : 1 }}>Remove Document</button>
+                <button onClick={() => resolveDoc(d.id, 'cleared')} disabled={docBusy === d.id} style={{ ...btnG, ...sm, fontSize: 9, opacity: docBusy === d.id ? 0.5 : 1 }}>Clear (False Report)</button>
               </div>
             </div>
           </div>

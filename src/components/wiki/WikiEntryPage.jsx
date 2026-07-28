@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, RED, BG, GRN, inp, btnA, btnG, sm } from '../../lib/styles';
-import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto, setWikiCoverPhoto, deleteWikiPhoto } from '../../lib/wiki';
+import { WIKI_FIELD_LABELS, getWikiEntryBySlug, saveWikiFieldEdit, incrementViewCount, deleteWikiEntry, getEntryContributorCount, tokenizeSearch, awardWikiEditPoints, getWikiEntryPhotos, uploadWikiPhoto, reportWikiPhoto, setWikiCoverPhoto, deleteWikiPhoto, getWikiEntryDocuments, uploadWikiDocument, reportWikiDocument, deleteWikiDocument } from '../../lib/wiki';
 import { upsertMachine } from '../../lib/db/machines';
 import { hl } from './wikiSearchHighlight';
 import PhotoViewer from '../ui/PhotoViewer';
@@ -55,6 +55,12 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
   const [reportMsg, setReportMsg] = useState(null);
   const [viewingPhoto, setViewingPhoto] = useState(null);
 
+  // Documents (manuals / spec sheets)
+  const [docs, setDocs] = useState([]);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [docReportMenuFor, setDocReportMenuFor] = useState(null);
+  const [docReportMsg, setDocReportMsg] = useState(null);
+
   // Admin field editing
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -78,6 +84,7 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
         incrementViewCount(e.id);
         getEntryContributorCount(e.id).then(n => { if (alive) setContributors(n); });
         getWikiEntryPhotos(e.id).then(p => { if (alive) setPhotos(p); });
+        getWikiEntryDocuments(e.id).then(d => { if (alive) setDocs(d); });
         if (!embedded) document.title = `${e.make} ${e.model} — Rat Bench Wiki`;
       }
       setLoading(false);
@@ -154,6 +161,45 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
       await deleteWikiPhoto(photo.id, photo.url);
       setPhotos(ps => ps.filter(p => p.id !== photo.id));
       if (viewingPhoto?.id === photo.id) setViewingPhoto(null);
+    } catch (e) {
+      alert('Delete failed: ' + e.message);
+    }
+  };
+
+  // ── Documents ──────────────────────────────────────────────────────────────
+  const handleDocUpload = async (ev) => {
+    const file = ev.target.files?.[0];
+    ev.target.value = ""; // allow re-selecting the same file next time
+    if (!file || !profile) return;
+    setUploadingDoc(true);
+    try {
+      const doc = await uploadWikiDocument(entry.id, file, profile.id);
+      setDocs(d => [doc, ...d]);
+    } catch (e) {
+      alert('Upload failed: ' + e.message);
+    }
+    setUploadingDoc(false);
+  };
+
+  const submitDocReport = async (documentId, reason) => {
+    setDocReportMenuFor(null);
+    try {
+      const res = await reportWikiDocument(documentId, reason);
+      if (res.hidden) setDocs(d => d.filter(doc => doc.id !== documentId));
+      setDocReportMsg('Reported — thanks for keeping the wiki accurate.');
+      setTimeout(() => setDocReportMsg(null), 3000);
+    } catch (e) {
+      alert('Report failed: ' + e.message);
+    }
+  };
+
+  // Admin-only: delete a document outright, bypassing the 3-report auto-hide
+  // flow — same rationale as handleAdminDeletePhoto.
+  const handleAdminDeleteDoc = async (doc) => {
+    if (!confirm('Permanently delete this document? This cannot be undone.')) return;
+    try {
+      await deleteWikiDocument(doc.id, doc.url);
+      setDocs(d => d.filter(x => x.id !== doc.id));
     } catch (e) {
       alert('Delete failed: ' + e.message);
     }
@@ -389,6 +435,63 @@ function WikiEntryPage({ slug, session, profile, onBack, embedded = false, onlin
               onSetCover={profile ? () => { handleSetCover(viewingPhoto.id); setViewingPhoto(p => ({ ...p, is_cover: true })); } : undefined}
             />
           )}
+        </div>
+
+        {/* Documents — manuals / spec sheets */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ fontSize: 9, color: ACC, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>
+              Manuals &amp; Spec Sheets{docs.length > 0 && ` (${docs.length})`}
+            </div>
+            {profile && (
+              <label style={{ ...btnG, ...sm, fontSize: 9, cursor: uploadingDoc ? "default" : "pointer", opacity: uploadingDoc ? 0.6 : 1 }}>
+                {uploadingDoc ? "Uploading…" : "+ Add PDF"}
+                <input type="file" accept="application/pdf" style={{ display: "none" }} disabled={uploadingDoc} onChange={handleDocUpload} />
+              </label>
+            )}
+          </div>
+
+          {docs.length === 0 ? (
+            <div style={{ fontSize: 9, color: MUT, fontStyle: "italic" }}>No documents yet{profile ? " — be the first to add a manual or spec sheet." : "."}</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
+              {docs.map(d => (
+                <div key={d.id} style={{ position: "relative", border: "1px solid " + BRD, borderRadius: 2, padding: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                  <a href={d.url} target="_blank" rel="noreferrer" style={{ fontSize: 22, textDecoration: "none", flexShrink: 0 }} title="Open in a new tab">📄</a>
+                  <a href={d.url} target="_blank" rel="noreferrer" style={{ fontSize: 9, color: TXT, textDecoration: "none", wordBreak: "break-all", flex: 1, minWidth: 0 }}>{d.filename}</a>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleAdminDeleteDoc(d)}
+                      title="Admin: delete this document permanently"
+                      style={{ background: "none", border: "none", color: RED, fontSize: 10, borderRadius: 2, padding: "2px 5px", cursor: "pointer", lineHeight: 1, flexShrink: 0 }}
+                    >🗑</button>
+                  )}
+                  {profile && d.uploaded_by !== profile.id && (
+                    <button
+                      onClick={() => setDocReportMenuFor(docReportMenuFor === d.id ? null : d.id)}
+                      title="Report this document"
+                      style={{ background: "none", border: "none", color: MUT, fontSize: 10, borderRadius: 2, padding: "2px 5px", cursor: "pointer", lineHeight: 1, flexShrink: 0 }}
+                    >⚑</button>
+                  )}
+                  {docReportMenuFor === d.id && (
+                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, zIndex: 20, background: SURF, border: "1px solid " + BRD, borderRadius: 2, padding: 6, minWidth: 140, boxShadow: "0 4px 12px #0009" }}>
+                      {[
+                        ["wrong_document", "Wrong document"],
+                        ["outdated", "Outdated"],
+                        ["copyright", "Copyright issue"],
+                        ["spam", "Spam"],
+                      ].map(([val, label]) => (
+                        <button key={val} onClick={() => submitDocReport(d.id, val)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: TXT, fontSize: 9, padding: "5px 6px", cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace" }}>{label}</button>
+                      ))}
+                      <button onClick={() => setDocReportMenuFor(null)} style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", color: MUT, fontSize: 9, padding: "5px 6px", cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace" }}>Cancel</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {docReportMsg && <div style={{ fontSize: 9, color: ACC, marginTop: 6 }}>{docReportMsg}</div>}
         </div>
 
         {fields.length === 0 && (
