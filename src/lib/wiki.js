@@ -64,6 +64,10 @@ export const WIKI_FIELD_LABELS = {
   coolantCapacity:    "Coolant Capacity (L)",
   thermostatTemp:     "Thermostat Temp (°C)",
 
+  // Engine Oil
+  oilType:            "Engine Oil Type",
+  oilCapacity:        "Engine Oil Capacity (L)",
+
   // Turbo
   turboFitted:        "Forced Induction",
   turboType:          "Turbo Type",

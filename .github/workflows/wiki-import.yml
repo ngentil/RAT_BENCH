@@ -20,6 +20,7 @@ on:
           - training-data-9-clones
           - training-data-10-rc2stroke
           - training-data-11-outboards
+          - training-data-12-baumr
           - training-data-holzfforma
           - nhtsa-motorcycle
           - nhtsa-all
@@ -94,6 +95,9 @@ jobs:
               ;;
             training-data-11-outboards)
               node scripts/wiki-import/training-data-seed-11.mjs $DRY $LIMIT_ARG
+              ;;
+            training-data-12-baumr)
+              node scripts/wiki-import/training-data-seed-12-baumr.mjs $DRY $LIMIT_ARG
               ;;
             training-data-holzfforma)
               node scripts/wiki-import/training-data-seed-holzfforma.mjs $DRY $LIMIT_ARG
