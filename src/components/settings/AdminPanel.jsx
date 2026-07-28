@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { deleteUserPhotos } from '../../lib/storage';
+import { listActivity, subscribeToActivity } from '../../lib/activityLog';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, btnA, btnG, btnD, sm, col } from '../../lib/styles';
 
-const ADMIN_TABS  = ['Overview', 'Users', 'Flags', 'Wiki Reports', 'Announcements', 'Audit'];
+const ADMIN_TABS  = ['Overview', 'Users', 'Flags', 'Wiki Reports', 'Announcements', 'Audit', 'Live Log'];
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
 const lbl  = { fontSize: 8, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 };
@@ -578,6 +579,119 @@ function AuditTab() {
   );
 }
 
+// ─── Live Log ─────────────────────────────────────────────────────────────────
+// A dmesg-style feed of "every action, by anyone": every create/update/delete
+// across the app's main data tables (via the generic trigger in
+// supabase/activity_log.sql) plus Supabase Auth's own login/logout/signup
+// events, merged into one Realtime-subscribable table. Two modes: Live
+// (default — auto-updating, last 24h) and Browse (pick any day + free-text
+// search across retained history).
+
+const ACTION_PREFIXES = ['', 'auth', 'machines', 'vehicles', 'equipment', 'tools', 'consumables', 'wiki_entries', 'wiki_revisions', 'services', 'machine_bookings', 'company_members', 'marketplace_listings', 'clients'];
+
+function activityColor(action) {
+  if (!action) return MUT;
+  if (action.startsWith('auth.'))     return ACC;
+  if (action.endsWith('.delete'))     return RED;
+  if (action.endsWith('.update'))     return '#4a9eff';
+  if (action.endsWith('.insert'))     return GRN;
+  return MUT;
+}
+
+function ActivityRow({ a }) {
+  const color = activityColor(a.action);
+  return (
+    <div style={{ padding: '7px 0', borderBottom: '1px solid ' + BRD, display: 'flex', alignItems: 'center', gap: 10, fontFamily: "'IBM Plex Mono',monospace" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ fontSize: 9, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{a.action}</span>
+        {a.actor_email && <span style={{ fontSize: 9, color: TXT, marginLeft: 8 }}>{a.actor_email}</span>}
+        {a.detail && <span style={{ fontSize: 9, color: MUT, marginLeft: 6 }}>→ {a.detail}</span>}
+      </div>
+      <div style={{ fontSize: 8, color: MUT, flexShrink: 0 }}>{new Date(a.created_at).toLocaleString()}</div>
+    </div>
+  );
+}
+
+function LiveLogTab() {
+  const [mode, setMode] = useState('live'); // 'live' | 'browse'
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Browse-mode filters
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [search, setSearch] = useState('');
+  const [action, setAction] = useState('');
+
+  const MAX_LIVE_ROWS = 300;
+
+  // Live mode: seed with the last 24h, then prepend anything new as it's
+  // written. RLS on activity_log gates the Realtime subscription itself, so
+  // this simply never receives rows if somehow rendered for a non-admin.
+  useEffect(() => {
+    if (mode !== 'live') return;
+    let alive = true;
+    setLoading(true); setError(null);
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    listActivity({ since, limit: MAX_LIVE_ROWS })
+      .then(rows => { if (alive) setEntries(rows); })
+      .catch(e => { if (alive) setError(e.message); })
+      .finally(() => { if (alive) setLoading(false); });
+
+    const unsubscribe = subscribeToActivity(row => {
+      setEntries(prev => [row, ...prev].slice(0, MAX_LIVE_ROWS));
+    });
+    return () => { alive = false; unsubscribe(); };
+  }, [mode]);
+
+  const runBrowseSearch = useCallback(() => {
+    setLoading(true); setError(null);
+    const since = new Date(date + 'T00:00:00').toISOString();
+    const until = new Date(new Date(date + 'T00:00:00').getTime() + 24 * 60 * 60 * 1000).toISOString();
+    listActivity({ since, until, search, action, limit: 500 })
+      .then(setEntries)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [date, search, action]);
+
+  useEffect(() => { if (mode === 'browse') runBrowseSearch(); }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <button onClick={() => setMode('live')} style={{ ...btnG, ...sm, ...(mode === 'live' ? { color: ACC, borderColor: ACC } : {}) }}>
+          {mode === 'live' && <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: GRN, boxShadow: '0 0 6px ' + GRN, marginRight: 6, verticalAlign: 'middle' }} />}
+          Live
+        </button>
+        <button onClick={() => setMode('browse')} style={{ ...btnG, ...sm, ...(mode === 'browse' ? { color: ACC, borderColor: ACC } : {}) }}>
+          Browse / Search
+        </button>
+      </div>
+
+      {mode === 'browse' && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ ...inp, width: 150 }} />
+          <select value={action} onChange={e => setAction(e.target.value)} style={{ ...inp, width: 160 }}>
+            {ACTION_PREFIXES.map(p => <option key={p} value={p}>{p === '' ? 'All actions' : p}</option>)}
+          </select>
+          <input style={{ ...inp, flex: 1, minWidth: 160 }} placeholder="Search actor, detail, action…" value={search}
+            onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key === 'Enter' && runBrowseSearch()} />
+          <button onClick={runBrowseSearch} style={{ ...btnG, ...sm }}>Search</button>
+        </div>
+      )}
+
+      <Msg m={error ? { ok: false, text: error } : null} />
+      {loading && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 20 }}>Loading…</div>}
+      {!loading && entries.length === 0 && (
+        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>
+          {mode === 'live' ? 'No activity in the last 24 hours.' : 'No activity found for this day.'}
+        </div>
+      )}
+      {!loading && entries.map(a => <ActivityRow key={a.id} a={a} />)}
+    </div>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPanel() {
@@ -602,6 +716,7 @@ export default function AdminPanel() {
       {tab === 'Wiki Reports'  && <WikiReportsTab />}
       {tab === 'Announcements' && <AnnouncementsTab />}
       {tab === 'Audit'         && <AuditTab />}
+      {tab === 'Live Log'      && <LiveLogTab />}
     </div>
   );
 }
