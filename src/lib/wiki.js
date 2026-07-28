@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { escapeLike } from './helpers';
-import { uploadPhoto, deletePhoto } from './storage';
+import { uploadPhoto, deletePhoto, uploadDocument, deleteDocument } from './storage';
 
 // ── Slug ──────────────────────────────────────────────────────────────────────
 export function makeSlug(make, model) {
@@ -510,6 +510,48 @@ export async function deleteWikiPhoto(photoId, url) {
   const { error } = await supabase.from("wiki_entry_photos").delete().eq("id", photoId);
   if (error) throw error;
   await deletePhoto(url);
+}
+
+// ── Documents ────────────────────────────────────────────────────────────────
+// PDF manuals/spec sheets per entry — same shape as photos (own table, own
+// moderation state) but a separate bucket since PDFs aren't images.
+
+export async function getWikiEntryDocuments(entryId) {
+  const { data, error } = await supabase.from("wiki_entry_documents")
+    .select("*").eq("entry_id", entryId).eq("status", "live")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function uploadWikiDocument(entryId, file, userId, docType = 'manual') {
+  const url = await uploadDocument(file);
+  const { data, error } = await supabase.from("wiki_entry_documents")
+    .insert({ entry_id: entryId, uploaded_by: userId, url, filename: file.name, file_size: file.size, doc_type: docType })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function reportWikiDocument(documentId, reason) {
+  const { data, error } = await supabase.rpc("report_wiki_document", { p_document_id: documentId, p_reason: reason });
+  if (error) throw error;
+  return data;
+}
+
+export async function resolveWikiDocumentReport(documentId, outcome) {
+  const { data, error } = await supabase.rpc("resolve_wiki_document_report", { p_document_id: documentId, p_outcome: outcome });
+  if (error) throw error;
+  return data;
+}
+
+// Deletes the DB row first, then best-effort removes the underlying storage
+// file, so a storage hiccup never leaves an orphaned DB row pointing at a
+// file that's still there.
+export async function deleteWikiDocument(documentId, url) {
+  const { error } = await supabase.from("wiki_entry_documents").delete().eq("id", documentId);
+  if (error) throw error;
+  await deleteDocument(url);
 }
 
 // ── Points ───────────────────────────────────────────────────────────────────

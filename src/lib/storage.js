@@ -57,6 +57,46 @@ export const deletePhoto = async (url) => {
   }
 };
 
+const DOCS_BUCKET = 'documents';
+const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024; // matches the bucket's file_size_limit
+
+// Unlike uploadPhoto, documents are uploaded as-is — no canvas re-encode
+// (that trick is image-only), so the size/mime checks happen up front
+// instead of after a resize.
+export const uploadDocument = async (file) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  if (file.type !== 'application/pdf') throw new Error('Only PDF files are supported');
+  if (file.size > MAX_DOCUMENT_BYTES) throw new Error('File too large — max 25MB');
+  const path = `${user.id}/${crypto.randomUUID()}.pdf`;
+  const { error } = await supabase.storage.from(DOCS_BUCKET).upload(path, file, {
+    contentType: 'application/pdf',
+    upsert: false,
+  });
+  if (error) throw error;
+  return supabase.storage.from(DOCS_BUCKET).getPublicUrl(path).data.publicUrl;
+};
+
+// Best-effort cleanup — resolves to a success boolean, never throws.
+export const deleteDocument = async (url) => {
+  if (!url || !url.startsWith('https://')) return false;
+  const marker = `/object/public/${DOCS_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return false;
+  const path = url.slice(idx + marker.length);
+  try {
+    const { error } = await supabase.storage.from(DOCS_BUCKET).remove([path]);
+    if (error) {
+      console.warn('deleteDocument: remove failed', path, error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('deleteDocument: remove failed', path, e);
+    return false;
+  }
+};
+
 export const deleteUserPhotos = async (userId) => {
   const limit = 1000;
   for (;;) {
