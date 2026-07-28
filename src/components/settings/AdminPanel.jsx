@@ -119,13 +119,25 @@ function OverviewTab() {
 
 // ─── Users ───────────────────────────────────────────────────────────────────
 
+// Bigger, well-separated action buttons + bulk selection — the original
+// tiny (fontSize 7, padding "2px 7px") stacked buttons were easy to mis-tap
+// on a phone, especially Del Wiki vs the adjacent Delete. Deactivate/Del Wiki
+// now sit in a 2-column row at a real tap-target size; Delete gets its own
+// full-width row below a divider so the most destructive action is spatially
+// isolated from the other two, mirroring the pattern already used for the
+// full-width Delete button on machine cards (MachineCard.jsx).
+const rowBtn  = { fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '10px 8px', borderRadius: 3, cursor: 'pointer', minHeight: 40, border: '1px solid #3a1a1a', background: 'none', color: '#884040' };
+const delBtn  = { ...rowBtn, minHeight: 44, background: '#2a0a0a', borderColor: RED, color: RED, fontSize: 11 };
+
 function UsersTab() {
   const [search, setSearch]     = useState('');
   const [users,  setUsers]      = useState([]);
   const [loading, setLoading]   = useState(false);
   const [busy,   setBusy]       = useState(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [msg,    setMsg]        = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const [selected, setSelected] = useState(() => new Set());
 
   const load = useCallback(async (q = '') => {
     setLoading(true);
@@ -171,6 +183,72 @@ function UsersTab() {
     load(search);
   };
 
+  // Admin accounts are never selectable for bulk actions — deleteUser()
+  // already refuses to delete them one at a time; excluding them from
+  // selection entirely means a "Select all" can never sweep one in.
+  const selectableUsers = users.filter(u => !ADMIN_EMAILS.includes(u.email));
+  const allSelected = selectableUsers.length > 0 && selectableUsers.every(u => selected.has(u.id));
+  const toggleSelect = id => setSelected(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  const toggleSelectAll = () => setSelected(allSelected ? new Set() : new Set(selectableUsers.map(u => u.id)));
+  const selectedUsers = users.filter(u => selected.has(u.id));
+
+  const runBulk = async (targets, fn) => {
+    const results = [];
+    for (const u of targets) {
+      try { results.push({ u, ...(await fn(u)) }); }
+      catch (e) { results.push({ u, ok: false, err: e.message }); }
+    }
+    return results;
+  };
+
+  const bulkDeactivate = async () => {
+    const targets = selectedUsers;
+    if (!targets.length) return;
+    if (!confirm(`Deactivate ${targets.length} user${targets.length !== 1 ? 's' : ''}?`)) return;
+    setBulkBusy(true); setMsg(null);
+    const results = await runBulk(targets, async u => {
+      const { data, error } = await supabase.rpc('admin_deactivate_user', { p_email: u.email });
+      return { ok: !error && !data?.error, err: error?.message || data?.error };
+    });
+    const failed = results.filter(r => !r.ok).length;
+    setMsg({ ok: failed === 0, text: failed === 0 ? `${targets.length} user${targets.length !== 1 ? 's' : ''} deactivated` : `${failed} of ${targets.length} failed to deactivate` });
+    setBulkBusy(false); setSelected(new Set()); load(search);
+  };
+
+  const bulkDeleteWiki = async () => {
+    const targets = selectedUsers;
+    if (!targets.length) return;
+    if (!confirm(`Delete all wiki entries by ${targets.length} user${targets.length !== 1 ? 's' : ''}?\n\nThis permanently removes all wiki content they authored.\n\nThis CANNOT be undone.`)) return;
+    setBulkBusy(true); setMsg(null);
+    const results = await runBulk(targets, async u => {
+      const { data, error } = await supabase.rpc('admin_delete_user_wiki', { p_user_id: u.id });
+      return { ok: !error && !data?.error, err: error?.message || data?.error, deleted: data?.deleted };
+    });
+    const failed = results.filter(r => !r.ok).length;
+    const totalDeleted = results.reduce((s, r) => s + (r.deleted || 0), 0);
+    setMsg({ ok: failed === 0, text: failed === 0 ? `${totalDeleted} wiki ${totalDeleted === 1 ? 'entry' : 'entries'} deleted across ${targets.length} user${targets.length !== 1 ? 's' : ''}` : `${failed} of ${targets.length} failed` });
+    setBulkBusy(false); setSelected(new Set());
+  };
+
+  const bulkDeleteUsers = async () => {
+    const targets = selectedUsers;
+    if (!targets.length) return;
+    if (!confirm(`PERMANENTLY DELETE ${targets.length} user${targets.length !== 1 ? 's' : ''}?\n\nThis deletes their Supabase accounts and ALL their workshop data — machines, clients, parts, vehicles, tools, everything.\n\nThis CANNOT be undone.`)) return;
+    if (!confirm(`Second confirmation: delete ${targets.length} user${targets.length !== 1 ? 's' : ''} forever?`)) return;
+    setBulkBusy(true); setMsg(null);
+    const results = await runBulk(targets, async u => {
+      const { data, error } = await supabase.rpc('admin_delete_user', { p_user_id: u.id });
+      if (error || data?.error) return { ok: false, err: error?.message || data?.error };
+      await deleteUserPhotos(u.id);
+      return { ok: true };
+    });
+    const failed = results.filter(r => !r.ok).length;
+    setMsg({ ok: failed === 0, text: failed === 0 ? `${targets.length} user${targets.length !== 1 ? 's' : ''} permanently deleted` : `${failed} of ${targets.length} failed to delete` });
+    setBulkBusy(false); setSelected(new Set()); load(search);
+  };
+
+  const anyBusy = !!busy || bulkBusy;
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
@@ -181,10 +259,39 @@ function UsersTab() {
       </div>
       <Msg m={msg} />
       <Msg m={loadError ? { ok: false, text: loadError } : null} />
+
+      {selectableUsers.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, color: MUT, cursor: 'pointer', minHeight: 32 }}>
+            <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} style={{ width: 18, height: 18, cursor: 'pointer' }} />
+            Select all ({selectableUsers.length})
+          </label>
+          {selected.size > 0 && (
+            <>
+              <button onClick={bulkDeactivate} disabled={anyBusy} style={{ ...rowBtn, minHeight: 34, padding: '7px 12px', opacity: anyBusy ? 0.5 : 1 }}>
+                Deactivate ({selected.size})
+              </button>
+              <button onClick={bulkDeleteWiki} disabled={anyBusy} style={{ ...rowBtn, minHeight: 34, padding: '7px 12px', color: '#e8870a', borderColor: '#e8870a55', opacity: anyBusy ? 0.5 : 1 }}>
+                Del Wiki ({selected.size})
+              </button>
+              <button onClick={bulkDeleteUsers} disabled={anyBusy} style={{ ...delBtn, minHeight: 34, padding: '7px 12px', fontSize: 10, opacity: anyBusy ? 0.5 : 1 }}>
+                Delete ({selected.size})
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {loading && <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 20 }}>Loading…</div>}
-      {users.map(u => (
-        <div key={u.id} style={{ ...card, marginBottom: 8 }}>
+      {users.map(u => {
+        const isProtected = ADMIN_EMAILS.includes(u.email);
+        return (
+        <div key={u.id} style={{ ...card, marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            {!isProtected && (
+              <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSelect(u.id)}
+                style={{ width: 20, height: 20, marginTop: 2, flexShrink: 0, cursor: 'pointer' }} />
+            )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                 <span style={{ fontSize: 11, color: TXT, fontWeight: 700 }}>{u.display_name || u.username || '—'}</span>
@@ -196,23 +303,23 @@ function UsersTab() {
                 {u.machine_count > 0 && <> · {u.machine_count} machine{u.machine_count !== 1 ? 's' : ''}</>}
               </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0, alignItems: 'flex-end' }}>
-              <button onClick={() => deactivate(u.email)} disabled={!!busy}
-                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1 }}>
-                Deactivate
-              </button>
-              <button onClick={() => deleteWiki(u)} disabled={!!busy}
-                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1, color: '#e8870a', borderColor: '#e8870a55' }}>
-                Del Wiki
-              </button>
-              <button onClick={() => deleteUser(u)} disabled={!!busy}
-                style={{ ...btnD, fontSize: 7, padding: '2px 7px', opacity: busy ? 0.5 : 1, background: '#2a0a0a', borderColor: RED, color: RED }}>
-                Delete
-              </button>
-            </div>
           </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+            <button onClick={() => deactivate(u.email)} disabled={anyBusy} style={{ ...rowBtn, opacity: anyBusy ? 0.5 : 1 }}>
+              Deactivate
+            </button>
+            <button onClick={() => deleteWiki(u)} disabled={anyBusy}
+              style={{ ...rowBtn, color: '#e8870a', borderColor: '#e8870a55', opacity: anyBusy ? 0.5 : 1 }}>
+              Del Wiki
+            </button>
+          </div>
+          <button onClick={() => deleteUser(u)} disabled={anyBusy}
+            style={{ ...delBtn, width: '100%', marginTop: 10, opacity: anyBusy ? 0.5 : 1 }}>
+            Delete
+          </button>
         </div>
-      ))}
+        );
+      })}
       {!loading && !loadError && users.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No users found.</div>
       )}
