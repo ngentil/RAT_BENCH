@@ -42,7 +42,7 @@ export function TileConfig({machine, onSave, onClose}){
   const setColor = (k,idx) => setColors(prev=>({...prev,[k]:idx}));
   const getColorIdx = k => colors[k]!==undefined ? colors[k] : 0;
   const save = () => onSave({...machine, tileFields: fields, tileColors: colors});
-  const autoFields = ["status","strokeType","rage"];
+  const autoFields = ["strokeType","rage"];
 
   const curatedFields = ALL_BADGE_FIELDS.filter(f => {
     if(f.auto) return true;

@@ -68,7 +68,7 @@ export async function updateMemberRole(companyId, userId, role) {
 // denied for table profiles", even though the UPDATE itself would have
 // succeeded. Keep this list in sync with the GRANT SELECT column list in
 // supabase/org_and_profiles_rls.sql / wiki_leaderboard.sql.
-const PROFILE_SAFE_COLUMNS = "id, display_name, username, units, default_status, tab_order, preferences, storage_policy_enabled, storage_tiers, tier, company_id, created_at, wiki_leaderboard_opt_in";
+const PROFILE_SAFE_COLUMNS = "id, display_name, username, units, tab_order, preferences, storage_policy_enabled, storage_tiers, tier, company_id, created_at, wiki_leaderboard_opt_in";
 
 export async function updateProfile(userId, fields) {
   const { data, error } = await supabase.from("profiles").update(fields).eq("id", userId).select(PROFILE_SAFE_COLUMNS).single();

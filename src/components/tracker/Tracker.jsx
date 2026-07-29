@@ -2,8 +2,8 @@ import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffe
 import { supabase } from '../../lib/supabase';
 import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
-import { SCOL } from '../../lib/constants';
 import { getPref, savePref } from '../../lib/db/preferences';
+import { getAllActiveBookings } from '../../lib/db/bookings';
 import MachineTile from '../machine/MachineTile';
 import MachineRow from '../machine/MachineRow';
 import MachinePhotoRow from '../machine/MachinePhotoRow';
@@ -72,11 +72,26 @@ function GuideStep2({ onSkip }) {
   );
 }
 
-function Tracker({machines:allMachines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear}){
+function Tracker({machines:allMachines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear,active}){
+  // Bulk-fetched (not per-machine) — a machine currently on the Bench or
+  // booked into Storage lives in that tab instead, the same way a sold
+  // machine lives in Sold Items. Refetches on every activation rather than
+  // just once on mount: like every other main tab this stays mounted
+  // (display:none) for the whole session, so a mount-only fetch would go
+  // stale the moment a machine is collected from the Storage tab instead of
+  // from here.
+  const [bookedIds,setBookedIds]=useState(()=>new Set());
+  useEffect(()=>{
+    if(!active) return;
+    let alive=true;
+    getAllActiveBookings().then(rows=>{if(alive)setBookedIds(new Set(rows.map(b=>b.machine_id)));});
+    return ()=>{alive=false;};
+  },[active]);
   // Sold machines stay in the shared machines[] state (so relisting from the
   // Sold Items tab can instantly clear their soldAt flag) but drop out of the
-  // active Garage view here.
-  const machines=useMemo(()=>allMachines.filter(m=>!m.soldAt),[allMachines]);
+  // active Garage view here — same for a machine currently on the Bench or in
+  // Storage, which live in their own tabs instead.
+  const machines=useMemo(()=>allMachines.filter(m=>!m.soldAt&&!m.onBench&&!bookedIds.has(m.id)),[allMachines,bookedIds]);
   const [showAdd,setShowAdd]=useState(false);
   const [prefill,setPrefill]=useState(null);
   const [showUpgrade,setShowUpgrade]=useState(false);
@@ -109,7 +124,6 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
     if(history.state?.trackerTileOpen===tileOpen) history.back();
     else setTileOpen(null);
   };
-  const [statusFilter,setStatusFilter]=useState(null);
   const [search,setSearch]=useState("");
   const [tutDone,setTutDone]=useState(()=>getPref(profile,'rat_tut',false));
   const [tutCardOpened,setTutCardOpened]=useState(false);
@@ -148,7 +162,6 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
   const SORT_OPTS=[
     {k:"name_az",l:"Name A → Z"},
     {k:"name_za",l:"Name Z → A"},
-    {k:"status",l:"Status"},
     {k:"type",l:"Machine Type"},
     {k:"due",l:"Due Date (Soonest)"},
     {k:"newest",l:"Date Added (Newest)"},
@@ -164,11 +177,9 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
   // Same tokenizer the wiki search uses (a single plain substring), and the
   // exact same hl() highlight component, so matches render identically.
   const searchTokens=tokenizeSearch(search);
-  const filtered=statusFilter?searched.filter(m=>(m.status||"Active")===statusFilter):searched;
-  const sorted=sortBy?[...filtered].sort((a,b)=>{
+  const sorted=sortBy?[...searched].sort((a,b)=>{
     if(sortBy==="name_az") return (a.name||"").localeCompare(b.name||"");
     if(sortBy==="name_za") return (b.name||"").localeCompare(a.name||"");
-    if(sortBy==="status"){const o=["Active","Queued","Complete"];return o.indexOf(a.status||"Active")-o.indexOf(b.status||"Active");}
     if(sortBy==="type") return (a.type||"").localeCompare(b.type||"");
     if(sortBy==="due"){
       const ad=a.dueDate?new Date(a.dueDate).getTime():Infinity;
@@ -180,7 +191,7 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
     if(sortBy==="rage_hi") return (b.rage||0)-(a.rage||0);
     if(sortBy==="rage_lo") return (a.rage||0)-(b.rage||0);
     return 0;
-  }):filtered;
+  }):searched;
 
 
   const addM=async m=>{
@@ -196,6 +207,14 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
     try{
       await upsertMachine(m);
       setMachines(prev=>prev.map(x=>x.id===m.id?m:x));
+    }catch(e){alert("Save failed: "+e.message);}
+  };
+  const moveToBench=async m=>{
+    const u={...m,onBench:true};
+    try{
+      await upsertMachine(u);
+      setMachines(prev=>prev.map(x=>x.id===m.id?u:x));
+      setTileOpen(null);
     }catch(e){alert("Save failed: "+e.message);}
   };
   const deleteM=async m=>{
@@ -265,14 +284,6 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
         </div>
       )}
       <input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search name, make, model, or any spec (e.g. plug gap, tyre size)…" value={search} onChange={e=>setSearch(e.target.value)} />
-      {machines.length>1&&<div style={{display:"flex",gap:0,marginBottom:10}}>
-        {[null,"Active","Queued","Complete"].map((s,i,arr)=>{
-          const count=s?searched.filter(m=>(m.status||"Active")===s).length:searched.length;
-          const active=statusFilter===s;
-          const c=s?SCOL[s]:MUT;
-          return <button key={s||"all"} onClick={()=>setStatusFilter(statusFilter===s&&s!==null?null:s)} style={{fontSize:10,letterSpacing:"0.08em",fontWeight:700,textTransform:"uppercase",padding:"3px 8px",borderRadius:i===0?"2px 0 0 2px":i===arr.length-1?"0 2px 2px 0":0,cursor:"pointer",fontFamily:"'IBM Plex Mono',monospace",border:"1px solid "+(active?c+"55":"#252525"),borderRight:i<arr.length-1?"none":undefined,background:active?c+"18":"transparent",color:active?c:c+"66"}}>{s||"All"} {count}</button>;
-        })}
-      </div>}
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:8,marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",rowGap:6}}>
           <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,whiteSpace:"nowrap"}}>Machines</span>
@@ -299,7 +310,7 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
       {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
         <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto",overscrollBehavior:"contain"}}>
           <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
-            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse onClose={closeTile} searchQuery={searchQuery} searchTokens={searchTokens}/>
+            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse onClose={closeTile} searchQuery={searchQuery} searchTokens={searchTokens} onMoveToBench={moveToBench} onBookIn={id=>setBookedIds(prev=>new Set(prev).add(id))} onCollect={id=>setBookedIds(prev=>{const n=new Set(prev);n.delete(id);return n;})}/>
           </div>
         </div>
       ):null;})()}

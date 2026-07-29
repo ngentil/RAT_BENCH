@@ -28,9 +28,8 @@ function MachineRow({ machine: m, onClick, clientName, searchQuery, searchTokens
           </div>}
         {m.type&&!typeBadgeActive&&<div style={{fontSize:8,color:"#555",letterSpacing:"0.06em",textTransform:"uppercase",marginTop:1}}>{hl(m.type,searchTokens)}</div>}
         <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap",alignItems:"center"}}>
-          <StatusBadge status={m.status||"Active"} compact padding="2px 6px"/>
+          <StatusBadge complete={m.complete} compact padding="2px 6px"/>
           {(m.tileFields&&m.tileFields.length>0?m.tileFields:DEFAULT_TILE).map(k=>{
-            if(k==="status") return null;
             const tc=m.tileColors||{};
             const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
             const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
