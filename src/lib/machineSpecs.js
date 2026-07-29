@@ -54,6 +54,28 @@ export function getMachineSpecEntries(m) {
     m.cBrand&&{label:"Carb Brand",value:m.cBrand},
     m.cType&&{label:"Carb Type",value:m.cType},
     m.cModel&&{label:"Carb Model",value:m.cModel},
+    // Detailed carb/gasket-kit spec (MachineForm's separate "Carburettor
+    // Spec" section, distinct from the plain cBrand/cType/cModel fields
+    // above) — previously had no rendering anywhere at all, not just no
+    // picker entry, since it was never added to this array in the first
+    // place (unlike chipperSpec/stumpGrinderSpec below, which were).
+    // Labeled distinctly from the plain "Carb Brand"/"Carb Model" fields
+    // above — those are a general carb note, this is the dedicated
+    // gasket-kit sourcing form, and a machine can have both filled in.
+    m.carbSpec?.brand&&{label:"Carb Kit Brand",value:m.carbSpec.brand==="Clone"?`Clone (${m.carbSpec.cloneBrand||"?"} → ${m.carbSpec.cloneDerivative||"?"})`:m.carbSpec.brand},
+    m.carbSpec?.oemPartNo&&{label:"Carb OEM Part No.",value:m.carbSpec.oemPartNo},
+    m.carbSpec?.clonePartNo&&{label:"Carb Clone Part No.",value:m.carbSpec.clonePartNo},
+    m.carbSpec?.repairKitPartNo&&{label:"Carb Repair Kit Part No.",value:m.carbSpec.repairKitPartNo},
+    m.carbSpec?.thickness&&{label:"Carb Gasket Thickness",value:m.carbSpec.thickness+" mm"},
+    m.carbSpec?.boltSpacing&&{label:"Carb Bolt Spacing",value:m.carbSpec.boltSpacing+" mm"},
+    m.carbSpec?.throatDiameter&&{label:"Carb Throat Diameter",value:"⌀"+m.carbSpec.throatDiameter+" mm"},
+    m.carbSpec?.engravings&&{label:"Carb Engravings",value:m.carbSpec.engravings},
+    m.carbSpec?.needlePumpValveDiameter&&{label:"Needle/Pump Valve Diameter",value:m.carbSpec.needlePumpValveDiameter+" mm"},
+    m.carbSpec?.needleValveLength&&{label:"Needle Valve Length",value:m.carbSpec.needleValveLength+" mm"},
+    m.carbSpec?.fuelInletBarbDiameter&&{label:"Fuel Inlet Barb Diameter",value:m.carbSpec.fuelInletBarbDiameter+" mm"},
+    m.carbSpec?.fuelOutletBarbDiameter&&{label:"Fuel Outlet Barb Diameter",value:m.carbSpec.fuelOutletBarbDiameter+" mm"},
+    m.carbSpec?.fuelBulbDiameter&&{label:"Fuel Bulb Diameter",value:m.carbSpec.fuelBulbDiameter+" mm"},
+    m.carbSpec?.throttleCableDia&&{label:"Throttle Cable Diameter",value:m.carbSpec.throttleCableDia+" mm"},
     m.ecuModel&&{label:"ECU",value:m.ecuModel},
     m.tbDiameter&&{label:"Throttle Body",value:m.tbDiameter+" mm"},
     m.injectorCount&&{label:"Injectors",value:m.injectorCount+(m.injectorFlow?" · "+m.injectorFlow+" cc/min":"")},
