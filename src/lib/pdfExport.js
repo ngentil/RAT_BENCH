@@ -119,7 +119,7 @@ export function exportMachinePDF(m, svcs, opts){
 
   if(iS('basic')){
     addSection("Basic Info");
-    sf('basic','status','Status',m.status);sf('basic','year','Year',m.year);sf('basic','source','Source',m.source);
+    sf('basic','year','Year',m.year);sf('basic','source','Source',m.source);
     sf('basic','colour','Colour',m.colour);sf('basic','bodyType','Body Type',m.bodyType);sf('basic','driveConfig','Drive Config',m.driveConfig);
     if(iF('basic','desc')&&m.desc)addField("Description",m.desc);
   }

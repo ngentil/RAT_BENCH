@@ -3,7 +3,7 @@ import PhotoViewer from '../ui/PhotoViewer';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
 import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, inp, btnA, btnG, btnD, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
+import { MACHINE_TYPES, DEFAULT_TILE, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
 import { mIcon, fmtDT, getMachineServiceStatus, getStorageStatus, findMachineSpecMatch } from '../../lib/helpers';
 import { getMachineSpecEntries, humanizeKey, DEFAULT_EXPAND } from '../../lib/machineSpecs';
@@ -15,9 +15,8 @@ import { deletePhoto } from '../../lib/storage';
 import { toastError } from '../../lib/toast';
 const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
-import StatusBadge from '../ui/StatusBadge';
 import MachineForm from './MachineForm';
-function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse,onClose,searchQuery,searchTokens}){
+function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse,onClose,searchQuery,searchTokens,onMoveToBench,onBookIn,onCollect}){
   const [open,setOpen]=useState(!!initialOpen);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -34,7 +33,9 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const [booking,setBooking]=useState(null);
   const [bookingLoaded,setBookingLoaded]=useState(false);
   const [showBookIn,setShowBookIn]=useState(false);
-  const [bookForm,setBookForm]=useState({storageTier:"Bench",receivedAt:"",storageEnabled:true,storageFeeOverride:"",notes:""});
+  // storageEnabled defaults OFF — booking a machine in for storage shouldn't
+  // silently start a daily charge unless you deliberately opt in per visit.
+  const [bookForm,setBookForm]=useState({storageTier:"Bench",receivedAt:"",storageEnabled:false,storageFeeOverride:"",notes:""});
   const [bookSaving,setBookSaving]=useState(false);
   const [copied,setCopied]=useState(false);
   const [bookErr,setBookErr]=useState("");
@@ -115,7 +116,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
         notes: bookForm.notes || undefined,
       });
       setBooking(b); setShowBookIn(false);
-      setBookForm({storageTier:"Bench",receivedAt:"",storageEnabled:true,storageFeeOverride:"",notes:""});
+      setBookForm({storageTier:"Bench",receivedAt:"",storageEnabled:false,storageFeeOverride:"",notes:""});
+      onBookIn?.(m.id);
     } catch(e){ setBookErr(e.message); }
     setBookSaving(false);
   };
@@ -125,6 +127,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
     try {
       await collectMachine(booking.id);
       setBooking(null); setBookingLoaded(false);
+      onCollect?.(m.id);
     } catch(e){
       console.error("collectMachine:",e);
       toastError("Couldn't mark as collected — check connection");
@@ -279,7 +282,6 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               const colIdx=tc[k]!==undefined?tc[k]:(TILE_COLOR_DEFAULTS[k]!==undefined&&TILE_COLOR_DEFAULTS[k]!=="auto"?TILE_COLOR_DEFAULTS[k]:0);
               const [cbg,cbrd,ctxt]=BADGE_PALETTE[colIdx]||BADGE_PALETTE[0];
               const bStyle={fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:cbg,color:ctxt,border:"1px solid "+cbrd,whiteSpace:"nowrap"};
-              if(k==="status"){const S=["Active","Queued","Complete"];const cur=m.status||"Active";const next=S[(S.indexOf(cur)+1)%S.length];return <StatusBadge key="status" status={cur} compact onClick={ev=>{ev.stopPropagation();const u={...m,status:next};upsertMachine(u).then(()=>onUpdate(u)).catch(()=>{});}} title={`Click to set ${next}`} />;};
               if(k==="strokeType"&&m.strokeType) return <span key="st" style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,fontFamily:"'IBM Plex Mono',monospace",background:m.strokeType==="4-stroke"?"#0e1a2a":m.strokeType==="Diesel"?"#0e200e":"#1a0e00",color:m.strokeType==="4-stroke"?"#3a7bd5":m.strokeType==="Diesel"?"#3d9e50":"#e8670a",border:"1px solid "+(m.strokeType==="4-stroke"?"#3a7bd555":m.strokeType==="Diesel"?"#3d9e5055":"#e8670a55"),whiteSpace:"nowrap"}}>{m.strokeType==="4-stroke"?"4T":m.strokeType==="Diesel"?"DSL":"2T"}</span>;
               if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:10,letterSpacing:-2}}>{"☠️".repeat(m.rage)}</span>;
               const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
@@ -299,6 +301,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               if(!field&&m[k]&&typeof m[k]!=="object"){const lbl=humanizeKey(k).split(" ").slice(0,2).join(" ");return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,14)}</span>;}
               return null;
             })}
+            {m.complete&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:GRN+"22",color:GRN,border:"1px solid "+GRN+"44",whiteSpace:"nowrap"}}>✓ READY FOR PICKUP</span>}
             {svcStatus.overdue&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap"}}>SERVICE</span>}
             {!svcStatus.overdue&&svcStatus.dueSoon&&<span style={{fontSize:9,fontWeight:700,letterSpacing:"0.08em",padding:"3px 8px",borderRadius:3,background:"#e8870a22",color:"#e8870a",border:"1px solid #e8870a44",whiteSpace:"nowrap"}}>DUE SOON</span>}
             {storagePolicyEnabled&&storageStatus?.active&&(storageStatus.escalated?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:RED+"22",color:RED,border:"1px solid "+RED+"44",whiteSpace:"nowrap",boxShadow:"0 0 6px "+RED+"44"}}>⚠ FOR SALE</span>:storageStatus.freeDaysLeft>0?<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:GRN+"15",color:GRN,border:"1px solid "+GRN+"33",whiteSpace:"nowrap"}}>{storageStatus.freeDaysLeft}d free</span>:<span style={{fontSize:8,fontWeight:700,letterSpacing:"0.08em",padding:"2px 7px",borderRadius:3,background:ACC+"18",color:ACC,border:"1px solid "+ACC+"44",whiteSpace:"nowrap"}}>${storageStatus.accrued.toFixed(0)}</span>)}
@@ -507,6 +510,13 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             )}
           </div>
           );})()}
+          {onMoveToBench&&(
+            <div style={{padding:"0 14px 12px"}}>
+              <button style={{width:"100%",background:"none",border:"1px solid "+ACC+"55",borderRadius:3,padding:"14px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:ACC,fontSize:12}} onClick={ev=>{ev.stopPropagation();onMoveToBench(m);}}>
+                <span style={{fontSize:20}}>🔧</span> Move to Bench
+              </button>
+            </div>
+          )}
           {storagePolicyEnabled&&(
             <div style={{padding:"0 14px 12px"}}>
               <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8,marginBottom:10}}><SL t="Storage" /></div>

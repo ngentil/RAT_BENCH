@@ -24,6 +24,7 @@ import MarketplaceTab from './components/marketplace/MarketplaceTab';
 import UsersTab from './components/users/UsersTab';
 import ServiceReminders from './components/tracker/ServiceReminders';
 import RevenueDashboard from './components/tracker/RevenueDashboard';
+import StorageTab from './components/tracker/StorageTab';
 import CustomersTab from './components/customers/CustomersTab';
 import PartsTab from './components/tracker/PartsTab';
 import ToolsTab from './components/tools/ToolsTab';
@@ -225,7 +226,7 @@ function App(){
     if(!prefsSynced&&!prefsSyncStartedRef.current){
       prefsSyncStartedRef.current=true;
       const prefs=profile.preferences||{};
-      const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue","reminders"]);
+      const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue","reminders","storage"]);
       if(prefs.tab&&prefs.tab!=="users"){
         // Reminders used to be its own top-level tab — route old saved prefs
         // straight to its new home instead of the last-used workshop sub-tab.
@@ -345,6 +346,11 @@ function App(){
 
   const goToBilling=()=>{ setSettingsTab("billing"); setTab("settings"); };
   const activeMachines = machines.filter(m => !m.soldAt);
+  // A machine can't be moved onto the Bench while it's still booked into
+  // Storage (that button only ever shows on a Garage card, and Garage
+  // already excludes booked machines) — so onBench alone is a safe filter
+  // here without also needing this component to know about bookings.
+  const benchMachines = activeMachines.filter(m => m.onBench);
   const overdueCount = activeMachines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = activeMachines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
   const timerRunning = activeMachines.some(m => (m.jobTimers || []).some(t => t.status === "running"));
@@ -429,8 +435,8 @@ function App(){
         </div>
       )}
 
-      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)}/></div>
-      <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={activeMachines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)} active={tab==="tracker"}/></div>
+      <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={benchMachines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)}/>}</div>
       <div style={{display:tab==="workshop"&&workshopTab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
@@ -441,6 +447,7 @@ function App(){
       <div style={{display:tab==="workshop"&&workshopTab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="storage"?"contents":"none"}}><StorageTab machines={machines} setMachines={setMachines} profile={profile} company={company} active={tab==="workshop"&&workshopTab==="storage"} onGoToBilling={()=>goToBilling("unknown")}/></div>
       {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools} initialTab={settingsTab}/>}
     </div>
   );

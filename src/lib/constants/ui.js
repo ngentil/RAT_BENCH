@@ -1,7 +1,6 @@
-export const DEFAULT_TILE = ["status","type","ccSize"];
+export const DEFAULT_TILE = ["type","ccSize"];
 
 export const ALL_BADGE_FIELDS = [
-  {k:"status",        l:"Status",              s:"",         section:"General",   auto:true},
   {k:"type",          l:"Machine Type",        s:"Type:",    section:"General",   auto:true},
   {k:"strokeType",    l:"Engine Type",         s:"",         section:"General",   auto:true},
   {k:"rage",          l:"Rage Rating",         s:"",         section:"General",   auto:true},
@@ -93,9 +92,12 @@ export const TILE_COLOR_DEFAULTS = {
   bladeType:7, source:7,
 };
 
+// "jobs" keeps its id so nobody's saved tab_order/last-tab preference breaks —
+// only the label and position change (Bench now leads, ahead of Garage,
+// since it replaces the old "Active" status as the actively-worked view).
 export const TABS = [
+  {id:"jobs",        label:"Bench"},
   {id:"tracker",     label:"Garage"},
-  {id:"jobs",        label:"Jobs"},
   {id:"workshop",    label:"Workshop"},
   {id:"wiki",        label:"Wiki"},
   {id:"marketplace", label:"Market"},
@@ -108,6 +110,7 @@ export const WORKSHOP_TABS = [
   {id:"tools",       label:"Tools"},
   {id:"equipment",   label:"Equipment"},
   {id:"vehicles",    label:"Vehicles"},
+  {id:"storage",     label:"Storage"},
   {id:"clients",     label:"Clients"},
   {id:"revenue",     label:"Revenue"},
 ];

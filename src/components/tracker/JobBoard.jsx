@@ -6,12 +6,10 @@ import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
 import { generateInvoicePDF } from '../../lib/invoicePdf';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
-import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
 import { SL, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
 import { parseLocalDate, isOverdueLocal } from '../../lib/dates';
 import { toastError } from '../../lib/toast';
-import StatusBadge from '../ui/StatusBadge';
 import MachineTile from '../machine/MachineTile';
 import MachineRow from '../machine/MachineRow';
 import MachinePhotoRow from '../machine/MachinePhotoRow';
@@ -724,7 +722,8 @@ function JobTimer({ machine, onUpdate }) {
     }] : [];
     const ok = await persistLog({
       ...machine,
-      status: "Complete",
+      complete: true,
+      onBench: false,
       timeLog: [...(machine.timeLog || []), ...newEntries],
       jobTimers: [],
     }, "Couldn't finish job — check connection");
@@ -912,13 +911,7 @@ function MachineNotes({ machine, onSave }) {
   );
 }
 
-const STATUS_COLOR = {
-  "Active": ACC,
-  "Queued": GRN,
-  "Complete": MUT,
-};
-
-function JobCard({ m, status, clientMap, clients, company, session, profile, onUpdate, onUpdateStatus, onUpdateRage, initialOpen, hideCollapse, onClose }) {
+function JobCard({ m, clientMap, clients, company, session, profile, onUpdate, onMarkComplete, onUpdateRage, initialOpen, hideCollapse, onClose }) {
   const [open, setOpen] = useState(!!initialOpen);
   const [jobGuide, setJobGuide] = useState(() => !getPref(profile, "rat_tut_job_card", false));
   const dismissJobGuide = () => { setJobGuide(false); savePref(profile?.id, "rat_tut_job_card", true); };
@@ -936,7 +929,7 @@ function JobCard({ m, status, clientMap, clients, company, session, profile, onU
   const grandTotal  = partsTotal + (labourTotal || 0);
 
   return (
-    <div style={{ background: "#0d0d0d", border: "1px solid #252525", borderLeft: "3px solid " + (STATUS_COLOR[status] || MUT), borderRadius: 2, marginBottom: 5, overflow: "hidden" }}>
+    <div style={{ background: "#0d0d0d", border: "1px solid #252525", borderLeft: "3px solid " + (m.complete ? GRN : ACC), borderRadius: 2, marginBottom: 5, overflow: "hidden" }}>
       {/* Collapsed header — poster style */}
       <div onClick={() => !hideCollapse && setOpen(o => !o)} style={{ cursor: hideCollapse ? "default" : "pointer", userSelect: "none" }}>
 
@@ -1005,7 +998,7 @@ function JobCard({ m, status, clientMap, clients, company, session, profile, onU
                 <span style={{ color: TXT }}>✏ Notes</span> — save job notes for this machine<br/>
                 <span style={{ color: TXT }}>Timer</span> — countdown, count up, or log time manually<br/>
                 <span style={{ color: TXT }}>Parts</span> — add stock items used on this job<br/>
-                <span style={{ color: TXT }}>Status buttons</span> — move the job between Active · Queued · Complete
+                <span style={{ color: TXT }}>Mark Complete</span> — finish the job and send the machine back to Garage
               </div>
               <button onClick={dismissJobGuide} style={{ marginTop: 8, background: "none", border: "none", color: "#444", fontSize: 8, cursor: "pointer", padding: 0, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "0.05em" }}>got it</button>
             </div>
@@ -1030,11 +1023,12 @@ function JobCard({ m, status, clientMap, clients, company, session, profile, onU
           )}
           <Divider />
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {STATUSES.filter(s => s !== status).map(s => (
-              <button key={s} onClick={() => onUpdateStatus(m, s)} style={{ flex: 1, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "14px 10px", borderRadius: 3, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: SBG_[s], color: SCOL[s], border: "1px solid " + SCOL[s] + "55" }}>
-                → {s}
-              </button>
-            ))}
+            <button onClick={() => onMarkComplete(m, true)} style={{ flex: 2, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "14px 10px", borderRadius: 3, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: GRN + "18", color: GRN, border: "1px solid " + GRN + "55" }}>
+              ✓ Mark Complete &amp; Return to Garage
+            </button>
+            <button onClick={() => onMarkComplete(m, false)} style={{ flex: 1, fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", padding: "14px 10px", borderRadius: 3, cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace", background: "transparent", color: MUT, border: "1px solid " + BRD }}>
+              ← Back to Garage
+            </button>
           </div>
           {onClose && (
             <button onClick={ev => { ev.stopPropagation(); onClose(); }} style={{ width: "100%", marginTop: 8, padding: "9px 14px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace", background: "transparent", border: "1px solid " + BRD, color: MUT, cursor: "pointer" }}>✕ Close</button>
@@ -1053,7 +1047,6 @@ function JobCard({ m, status, clientMap, clients, company, session, profile, onU
 
 function JobBoard({ machines, setMachines, profile, company, session, clients }) {
   const [jobSearch, setJobSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [view, setView] = useState(() => getPref(profile, "jobsView", "photo"));
   const setViewP = v => { setView(v); savePref(profile?.id, "jobsView", v); };
   const [jobTileOpen, setJobTileOpen] = useState(null);
@@ -1074,30 +1067,30 @@ function JobBoard({ machines, setMachines, profile, company, session, clients })
   const clientMap = useMemo(() => Object.fromEntries((clients||[]).map(c => [c.id, c.name])), [clients]);
 
   const visibleMachines = useMemo(() => {
-    let list = machines;
-    if (statusFilter) list = list.filter(m => (m.status || "Active") === statusFilter);
-    if (!jobSearch.trim()) return list;
+    if (!jobSearch.trim()) return machines;
     const q = jobSearch.toLowerCase();
-    return list.filter(m =>
+    return machines.filter(m =>
       (m.name||"").toLowerCase().includes(q) ||
       (m.make||"").toLowerCase().includes(q) ||
       (m.model||"").toLowerCase().includes(q) ||
       (m.clientId && (clientMap[m.clientId]||"").toLowerCase().includes(q))
     );
-  }, [machines, jobSearch, statusFilter, clientMap]);
+  }, [machines, jobSearch, clientMap]);
 
   const updateM = (updated) => setMachines(prev => prev.map(x => x.id === updated.id ? updated : x));
-  const updateStatus = async (m, status) => {
-    const u = { ...m, status };
+  // complete=true finishes the job (badge rides back to Garage with it);
+  // complete=false just abandons the Bench without marking anything done —
+  // either way the machine leaves this list since onBench flips off.
+  const markComplete = async (m, complete) => {
+    const u = { ...m, complete, onBench: false };
     try { await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); }
-    catch (e) { console.error("updateStatus:", e); toastError("Status didn't save — check connection"); }
+    catch (e) { console.error("markComplete:", e); toastError("Couldn't update — check connection"); }
   };
   const updateRage = async (m, rage) => {
     const u = { ...m, rage };
     try { await upsertMachine(u); setMachines(prev => prev.map(x => x.id === m.id ? u : x)); }
     catch (e) { console.error("updateRage:", e); toastError("Rating didn't save — check connection"); }
   };
-  const groups = STATUSES.map(s => ({ status: s, items: visibleMachines.filter(m => (m.status || "Active") === s) }));
 
   const totalHrsAll  = machines.reduce((s, m) => s + (m.timeLog||[]).reduce((a,e)=>a+(e.seconds||0),0)/3600, 0);
   const totalRevAll  = machines.reduce((s, m) => s + (m.parts||[]).reduce((a,p)=>a+(parseFloat(p.sellPrice)||0)*(Number(p.qty)||1),0), 0);
@@ -1108,7 +1101,7 @@ function JobBoard({ machines, setMachines, profile, company, session, clients })
   return (
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <SL t="Job Board" />
+        <SL t="Bench" />
         {machines.length > 0 && (
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <button onClick={() => setViewP(view === "grid" ? "compact" : view === "compact" ? "photo" : "grid")} style={{ ...btnG, ...sm, minWidth: 30, color: ACC }} title={view === "grid" ? "Compact list" : view === "compact" ? "Photo list" : "Grid view"}>{view === "grid" ? "≡" : view === "compact" ? "▣" : "☰"}</button>
@@ -1135,47 +1128,24 @@ function JobBoard({ machines, setMachines, profile, company, session, clients })
       {machines.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 24px" }}>
           <div style={{ fontSize: 32, marginBottom: 10 }}>📋</div>
-          <div style={{ fontSize: 12, color: ACC, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>No machines yet</div>
-          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Add machines from the Garage tab, then manage their jobs, parts, and timers here.</div>
+          <div style={{ fontSize: 12, color: ACC, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Nothing on the Bench</div>
+          <div style={{ fontSize: 10, color: MUT, lineHeight: 1.6 }}>Move a machine here from the Garage tab when you start working on it — timers, parts, and invoicing all live here while it's on the Bench.</div>
         </div>
       )}
       {machines.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <input style={{ ...inp, marginBottom: 8, fontSize: 11 }} placeholder="Filter by machine name, make, or client…" value={jobSearch} onChange={e => setJobSearch(e.target.value)} />
-          <div style={{ display: "flex", gap: 0 }}>
-            {["", ...STATUSES].map((s, i, arr) => {
-              const isActive = statusFilter === s;
-              return (
-                <button key={s || "all"} onClick={() => setStatusFilter(s)} style={{ ...btnG, ...sm,
-                  borderRadius: i === 0 ? "2px 0 0 2px" : i === arr.length - 1 ? "0 2px 2px 0" : "0",
-                  borderRight: i < arr.length - 1 ? "none" : undefined,
-                  background: isActive ? (s ? STATUS_COLOR[s] + "22" : ACC + "18") : "none",
-                  color: isActive ? (s ? STATUS_COLOR[s] : ACC) : MUT,
-                  boxShadow: isActive ? ("inset 0 0 0 1px " + (s ? STATUS_COLOR[s] + "99" : ACC)) : "none",
-                }}>
-                  {s || "All"}
-                </button>
-              );
-            })}
-          </div>
+          <input style={{ ...inp, fontSize: 11 }} placeholder="Filter by machine name, make, or client…" value={jobSearch} onChange={e => setJobSearch(e.target.value)} />
         </div>
       )}
       {(() => {
         const Comp = view === "grid" ? MachineTile : view === "compact" ? MachineRow : MachinePhotoRow;
-        return groups.map(({ status, items }) => items.length === 0 ? null : (
-          <div key={status} style={{ marginBottom: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <StatusBadge status={status} />
-              <span style={{ fontSize: 9, color: ACC, letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700 }}>{status}</span>
-              <span style={{ fontSize: 9, color: MUT }}>{items.length} machine{items.length !== 1 ? "s" : ""}</span>
-            </div>
-            <div style={view === "grid" ? { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 } : { borderTop: "1px solid " + BRD, borderRadius: 3, overflow: "hidden" }}>
-              {items.map(m => (
-                <Comp key={m.id} machine={m} onClick={() => setJobTileOpen(m.id)} clientName={m.clientId ? clientMap[m.clientId] : null} />
-              ))}
-            </div>
+        return (
+          <div style={view === "grid" ? { display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 } : { borderTop: "1px solid " + BRD, borderRadius: 3, overflow: "hidden" }}>
+            {visibleMachines.map(m => (
+              <Comp key={m.id} machine={m} onClick={() => setJobTileOpen(m.id)} clientName={m.clientId ? clientMap[m.clientId] : null} />
+            ))}
           </div>
-        ));
+        );
       })()}
       {jobTileOpen && (() => {
         const m = machines.find(x => x.id === jobTileOpen);
@@ -1183,9 +1153,9 @@ function JobBoard({ machines, setMachines, profile, company, session, clients })
         return (
           <div style={{ position: "fixed", inset: 0, background: "#000", zIndex: 200, overflowY: "auto" }}>
             <div style={{ maxWidth: 640, margin: "0 auto", padding: "8px 8px 0" }}>
-              <JobCard m={m} status={m.status || "Active"}
+              <JobCard m={m}
                 clientMap={clientMap} clients={clients} company={company} session={session} profile={profile}
-                onUpdate={updateM} onUpdateStatus={updateStatus} onUpdateRage={updateRage}
+                onUpdate={updateM} onMarkComplete={markComplete} onUpdateRage={updateRage}
                 initialOpen hideCollapse onClose={closeJobTile} />
             </div>
           </div>

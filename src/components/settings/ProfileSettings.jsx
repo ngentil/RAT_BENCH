@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, TXT, GRN, RED, inp, sel, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
+import { ACC, MUT, BRD, TXT, GRN, RED, inp, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
 import { updateProfile } from '../../lib/db';
 import { getMyContributionStats, getMyWikiPoints, setWikiLeaderboardOptIn } from '../../lib/wiki';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
@@ -9,7 +9,6 @@ import { Tooltip } from '../ui/shared';
 function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}){
   const [displayName,setDisplayName]=useState(profile?.display_name||"");
   const [units,setUnits]=useState(profile?.units||"metric");
-  const [defaultStatus,setDefaultStatus]=useState(profile?.default_status||"Active");
   const [saving,setSaving]=useState(false);
   const [saved,setSaved]=useState(false);
   const [err,setErr]=useState("");
@@ -45,7 +44,7 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
   const saveProfile=async()=>{
     setSaving(true);setErr("");setSaved(false);
     try{
-      const p=await updateProfile(session.user.id,{display_name:displayName.trim()||null,units,default_status:defaultStatus});
+      const p=await updateProfile(session.user.id,{display_name:displayName.trim()||null,units});
       setProfile(prev=>({...prev,...p}));setSaved(true);setTimeout(()=>setSaved(false),2500);
     }catch(e){setErr(e.message||"Save failed");}
     setSaving(false);
@@ -85,14 +84,6 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
           <div style={{display:"flex",gap:6}}>
             {["metric","imperial"].map(u=><button key={u} onClick={()=>setUnits(u)} style={{...btnG,...sm,...(units===u?{background:ACC,color:"#fff",border:"1px solid "+ACC}:{})}}>{u.charAt(0).toUpperCase()+u.slice(1)}</button>)}
           </div>
-        </div>
-        <div style={{...col,marginBottom:12}}>
-          <Tooltip text="New machines are pre-set to this status when added — Active, Queued (waiting on parts) or Complete">
-            <div style={lbl}>Default Machine Status</div>
-          </Tooltip>
-          <select style={sel} value={defaultStatus} onChange={e=>setDefaultStatus(e.target.value)}>
-            {["Active","Queued","Complete"].map(s=><option key={s}>{s}</option>)}
-          </select>
         </div>
         {err&&<div style={{fontSize:10,color:RED,marginBottom:10}}>{err}</div>}
         {saved&&<div style={{fontSize:10,color:GRN,marginBottom:10}}>✓ Saved</div>}
