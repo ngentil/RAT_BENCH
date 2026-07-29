@@ -3,10 +3,10 @@ import PhotoViewer from '../ui/PhotoViewer';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
 import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, inp, btnA, btnG, btnD, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
-import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, DEFAULT_EXPAND, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
+import { MACHINE_TYPES, SCOL, SBG_, DEFAULT_TILE, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
 import { mIcon, fmtDT, getMachineServiceStatus, getStorageStatus, findMachineSpecMatch } from '../../lib/helpers';
-import { getMachineSpecEntries, SPEC_LABEL_TO_SECTION, humanizeKey } from '../../lib/machineSpecs';
+import { getMachineSpecEntries, humanizeKey, DEFAULT_EXPAND } from '../../lib/machineSpecs';
 import { hl } from '../wiki/wikiSearchHighlight';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { getTiers, TIER_NAMES } from '../../lib/storageTiers';
@@ -320,16 +320,11 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             const ef = m.expandFields&&m.expandFields.length>0 ? m.expandFields : DEFAULT_EXPAND;
             const show = k => ef.includes(k);
             const hiddenSpecFields = new Set(m.hiddenSpecFields||[]);
-            // Filter specs based on expandFields (coarse bucket toggles, for
-            // the ~40 labels SPEC_LABEL_TO_SECTION covers) and hiddenSpecFields
-            // (an explicit per-field hide list — see ExpandConfig's "Other
-            // Specs" section, which is how anything NOT in that bucket map
-            // gets an actual working toggle instead of being permanently shown).
-            const visibleSpecs = specs.filter(s=>{
-              if (hiddenSpecFields.has(s.label)) return false;
-              const fk = SPEC_LABEL_TO_SECTION[s.label];
-              return fk ? show(fk) : true;
-            });
+            // Every scalar spec field is individually toggled via
+            // hiddenSpecFields now (see ExpandConfig) — no coarse bucket
+            // layer, so a field's visibility can never drift out of sync
+            // with what the picker actually offers.
+            const visibleSpecs = specs.filter(s=>!hiddenSpecFields.has(s.label));
             return <>
               {show("photos")&&m.photos?.length>0&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Photos" /></div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginTop:4}}>{m.photos.map((p,i)=><div key={i}><img src={p} alt="" onClick={()=>setFullImg({src:p,idx:i})} style={{width:"100%",height:80,objectFit:"cover",borderRadius:"2px 2px 0 0",border:i===0?"1px solid "+ACC+"88":"1px solid "+BRD,borderBottom:"none",cursor:"zoom-in",display:"block"}} /><button title={i===0?"Cover photo":"Set as cover"} className={"cover-bar-tactile"+(i===0?" on":"")} onClick={ev=>{ev.stopPropagation();if(i===0)return;const r=[p,...m.photos.filter((_,j)=>j!==i)];onUpdate({...m,photos:r});}} style={{width:"100%",minHeight:34,background:i===0?"#120c06":"#1a1a1a",border:"1px solid "+(i===0?ACC+"66":BRD),borderTop:"none",borderRadius:"0 0 2px 2px",cursor:i===0?"default":"pointer",fontSize:9,fontWeight:700,color:i===0?ACC:MUT,fontFamily:"'IBM Plex Mono',monospace",padding:4}}>{i===0?"★ Cover":"☆ Set as Cover"}</button></div>)}</div></div>}
               {show("desc")&&m.desc&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Description" /></div><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.desc}</div></div>}
@@ -365,6 +360,82 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
                       <div style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{loc}</div>
                       <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1.6}}>{parts.length?parts.join(" · "):"No specs"}</div>
                       {l.notes&&<div style={{fontSize:10,color:MUT,marginTop:2}}>{l.notes}</div>}
+                    </div>;
+                  })}
+                </div>
+              </div>}
+              {show("bearings")&&m.bearings?.length>0&&<div style={{padding:"12px 14px 0"}}>
+                <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Bearings" /></div>
+                <div style={{marginTop:6}}>
+                  {m.bearings.map((b,idx)=>{
+                    const loc=b.location==="Other"?(b.locationOther||"Other"):(b.location||"—");
+                    const parts=[b.type,b.partNo,b.clearance?b.clearance+"mm clearance":null,b.preload?b.preload+"Nm preload":null].filter(Boolean);
+                    return <div key={b.id||idx} style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"8px 10px",marginBottom:5}}>
+                      <div style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{loc}</div>
+                      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1.6}}>{parts.length?parts.join(" · "):"No specs"}</div>
+                      {b.notes&&<div style={{fontSize:10,color:MUT,marginTop:2}}>{b.notes}</div>}
+                    </div>;
+                  })}
+                </div>
+              </div>}
+              {show("belts")&&m.belts?.length>0&&<div style={{padding:"12px 14px 0"}}>
+                <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Belts" /></div>
+                <div style={{marginTop:6}}>
+                  {m.belts.map((b,idx)=>{
+                    const parts=[b.beltType,b.beltCount?b.beltCount+" belt"+(b.beltCount!=="1"?"s":""):null,b.beltPartNo||null,b.beltWidth&&b.beltLength?b.beltWidth+"×"+b.beltLength+"mm":b.beltWidth?b.beltWidth+"mm wide":b.beltLength?b.beltLength+"mm long":null].filter(Boolean);
+                    return <div key={b.id||idx} style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"8px 10px",marginBottom:5}}>
+                      {b.beltFunction&&<div style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{b.beltFunction}</div>}
+                      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1.6}}>{parts.length?parts.join(" · "):"No specs"}</div>
+                      {b.beltNotes&&<div style={{fontSize:10,color:MUT,marginTop:2}}>{b.beltNotes}</div>}
+                    </div>;
+                  })}
+                </div>
+              </div>}
+              {show("batteries")&&m.batteries?.length>0&&<div style={{padding:"12px 14px 0"}}>
+                <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Batteries" /></div>
+                <div style={{marginTop:6}}>
+                  {m.batteries.map((b,idx)=>{
+                    const parts=[b.battType,b.voltage,b.cca?b.cca+" CCA":null,b.ah?b.ah+" Ah":null,b.dimensions].filter(Boolean);
+                    return <div key={b.id||idx} style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"8px 10px",marginBottom:5}}>
+                      {b.label&&<div style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{b.label}</div>}
+                      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1.6}}>{parts.length?parts.join(" · "):"No specs"}</div>
+                    </div>;
+                  })}
+                </div>
+              </div>}
+              {show("fuseBoxes")&&m.fuseBoxes?.length>0&&<div style={{padding:"12px 14px 0"}}>
+                <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Fuse Boxes" /></div>
+                <div style={{marginTop:6}}>
+                  {m.fuseBoxes.map((box,idx)=>(
+                    <div key={box.id||idx} style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"8px 10px",marginBottom:5}}>
+                      <div style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{box.label||"Fuse Box"}{box.location?" · "+box.location:""}</div>
+                      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1.6}}>{(box.fuses||[]).length?box.fuses.map((f,i)=>(f.amperage||"?")+"A"+(f.circuit?" "+f.circuit:"")).join(" · "):"No fuses logged"}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>}
+              {show("hydRams")&&m.hydRams?.length>0&&<div style={{padding:"12px 14px 0"}}>
+                <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Hydraulic Rams" /></div>
+                <div style={{marginTop:6}}>
+                  {m.hydRams.map((r,idx)=>{
+                    const loc=r.location==="Other"?(r.locationOther||"Other"):(r.location||"—");
+                    const parts=[r.bore?r.bore+"mm bore":null,r.rod?r.rod+"mm rod":null,r.stroke?r.stroke+"mm stroke":null,r.collapsed?r.collapsed+"mm collapsed":null,r.sealKit?"Seal: "+r.sealKit:null].filter(Boolean);
+                    return <div key={r.id||idx} style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"8px 10px",marginBottom:5}}>
+                      <div style={{fontSize:8,color:ACC,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:3}}>{loc}</div>
+                      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1.6}}>{parts.length?parts.join(" · "):"No specs"}</div>
+                      {r.notes&&<div style={{fontSize:10,color:MUT,marginTop:2}}>{r.notes}</div>}
+                    </div>;
+                  })}
+                </div>
+              </div>}
+              {show("attachments")&&m.attachments?.length>0&&<div style={{padding:"12px 14px 0"}}>
+                <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Attachments" /></div>
+                <div style={{marginTop:6}}>
+                  {m.attachments.map((a,idx)=>{
+                    const parts=[a.attachType==="Other"?a.attachTypeOther:a.attachType,a.sizeSpec,a.weight?a.weight+"kg":null].filter(Boolean);
+                    return <div key={a.id||idx} style={{background:"#0d0d0d",border:"1px solid #252525",borderRadius:2,padding:"8px 10px",marginBottom:5}}>
+                      <div style={{fontSize:11,color:TXT,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1.6}}>{parts.length?parts.join(" · "):"No specs"}</div>
+                      {a.notes&&<div style={{fontSize:10,color:MUT,marginTop:2}}>{a.notes}</div>}
                     </div>;
                   })}
                 </div>

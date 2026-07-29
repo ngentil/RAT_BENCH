@@ -1,39 +1,3 @@
-export const TILE_FIELDS = [
-  {k:"status",       l:"Status badge",        s:"",          types:null},
-  {k:"strokeType",   l:"2T / 4T badge",       s:"",          types:null},
-  {k:"year",         l:"Year",                s:"",          types:null},
-  {k:"ccSize",       l:"CC size",             s:"",          types:null},
-  {k:"compression",  l:"Compression",         s:"Comp:",     types:null},
-  {k:"plugType",     l:"Spark plug type",     s:"Plug:",     types:null},
-  {k:"plugGap",      l:"Plug gap",            s:"Gap:",      types:null},
-  {k:"idleRpm",      l:"Idle RPM",            s:"Idle:",     types:null},
-  {k:"wotRpm",       l:"WOT RPM",             s:"WOT:",      types:null},
-  {k:"starterType",  l:"Starter",             s:"Start:",    types:null},
-  {k:"fuelSystem",   l:"Fuel system",         s:"Fuel:",     types:null},
-  {k:"cBrand",       l:"Carb brand",          s:"Carb:",     types:null},
-  {k:"cModel",       l:"Carb model",          s:"",          types:null},
-  {k:"driveType",    l:"Drive type",          s:"Drive:",    types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC","Ride-on Mower"]},
-  {k:"chainPitch",   l:"Chain pitch",         s:"Chain:",    types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart"]},
-  {k:"tyreFront",    l:"Front tyre",          s:"F-tyre:",   types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Ride-on Mower","Lawnmower"]},
-  {k:"tyreRear",     l:"Rear tyre",           s:"R-tyre:",   types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Ride-on Mower","Lawnmower"]},
-  {k:"battVoltage",  l:"Battery voltage",     s:"Batt:",     types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Generator"]},
-  {k:"pumpPsi",      l:"Pump PSI",            s:"PSI:",      types:["Pressure Washer"]},
-  {k:"pumpBrand",    l:"Pump brand",          s:"Pump:",     types:["Pressure Washer"]},
-  {k:"genWatts",     l:"Generator watts",     s:"Watts:",    types:["Generator"]},
-  {k:"genVoltage",   l:"Generator voltage",   s:"V:",        types:["Generator"]},
-  {k:"deckSize",     l:"Deck size",           s:"Deck:",     types:["Lawnmower","Ride-on Mower"]},
-  {k:"bladeType",    l:"Blade type",          s:"Blade:",    types:["Lawnmower","Ride-on Mower"]},
-  {k:"colour",       l:"Colour",              s:"",          types:["Vehicle","Motorcycle","Scooter","Moped","Quad Bike"]},
-  {k:"bodyType",     l:"Body Type",           s:"",          types:["Vehicle","Motorcycle","Scooter","Moped"]},
-  {k:"driveConfig",  l:"Drive Config",        s:"Drive:",    types:["Vehicle"]},
-  {k:"obShaftLength",    l:"Shaft length",        s:"Shaft:",    types:["Outboard Motor"]},
-  {k:"obPropPitch",     l:"Prop pitch",          s:"Pitch:",    types:["Outboard Motor"]},
-  {k:"obPropDiameter",  l:"Prop diameter",       s:"Prop:",     types:["Outboard Motor"]},
-  {k:"obGearRatio",     l:"Gear ratio",          s:"Ratio:",    types:["Outboard Motor"]},
-  {k:"obAnodeMaterial", l:"Anode material",      s:"Anode:",    types:["Outboard Motor"]},
-  {k:"source",       l:"Source",              s:"",          types:null},
-  {k:"rage",         l:"Rage rating ☠️",       s:"",          types:null},
-];
 export const DEFAULT_TILE = ["status","type","ccSize"];
 
 export const ALL_BADGE_FIELDS = [
@@ -128,54 +92,6 @@ export const TILE_COLOR_DEFAULTS = {
   pumpBrand:7, genWatts:5, genVoltage:5, deckSize:7,
   bladeType:7, source:7,
 };
-
-export const EXPAND_SECTIONS = [
-  {k:"photos",       l:"Photos",                     types:null},
-  {k:"desc",         l:"Description",                types:null},
-  {k:"strokeType",   l:"Engine Type",                types:null},
-  {k:"cylCount",     l:"Cylinder Count",             types:null},
-  {k:"ccSize",       l:"CC Size / Rating",           types:null},
-  {k:"compression",  l:"Compression",                types:null},
-  {k:"plugType",     l:"Spark / Glow Plug Type",     types:null},
-  {k:"plugGap",      l:"Plug Gap / Glow Resistance", types:null},
-  {k:"coilType",     l:"Coil Type",                  types:null},
-  {k:"primaryOhms",  l:"Coil Resistance",            types:null},
-  {k:"starterType",  l:"Starter System",             types:null},
-  {k:"ropeDiameter", l:"Starter Rope",               types:null},
-  {k:"rBoltN",       l:"Recoil Bolts",               types:null},
-  {k:"valveTrain",   l:"Valve Train",                types:["4-stroke"]},
-  {k:"intakeValveClear",l:"Valve Clearances",        types:["4-stroke"]},
-  {k:"iValveFace",   l:"Intake Valve Dims",          types:["4-stroke"]},
-  {k:"eValveFace",   l:"Exhaust Valve Dims",         types:["4-stroke"]},
-  {k:"springFreeLen",l:"Valve Springs",              types:["4-stroke"]},
-  {k:"fasteners",    l:"Fastener Specs",             types:null},
-  {k:"iPW",          l:"Port Dimensions",            types:null},
-  {k:"pulseLoc",     l:"Pulse Port",                 types:["2-stroke"]},
-  {k:"boreDiameter", l:"Cylinder Bore",              types:null},
-  {k:"ptoDiameter",  l:"PTO / Output Shaft",         types:null},
-  {k:"fuelSystem",   l:"Fuel System",                types:null},
-  {k:"cBrand",       l:"Carb Details",               types:null},
-  {k:"ecuModel",     l:"ECU / EFI Details",          types:null},
-  {k:"tpsSensor",    l:"Sensors",                    types:null},
-  {k:"driveType",    l:"Drivetrain",                 types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC","Ride-on Mower"]},
-  {k:"forkType",     l:"Suspension",                 types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC"]},
-  {k:"frontBrake",   l:"Brakes",                     types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Ride-on Mower"]},
-  {k:"tyreFront",    l:"Tyres",                      types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Ride-on Mower","Lawnmower"]},
-  {k:"battVoltage",  l:"Electrics",                  types:["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Generator"]},
-  {k:"pumpBrand",    l:"Pump Details",               types:["Pressure Washer"]},
-  {k:"genWatts",     l:"Generator Output",           types:["Generator"]},
-  {k:"deckSize",     l:"Blade / Deck",               types:["Lawnmower","Ride-on Mower"]},
-  {k:"lighting",     l:"Lighting",                   types:null},
-  {k:"notes",        l:"Notes",                      types:null},
-  {k:"parts",        l:"Parts Used",                 types:null},
-  {k:"serviceHistory",l:"Service History",           types:null},
-];
-export const DEFAULT_EXPAND = EXPAND_SECTIONS.map(f=>f.k);
-export const getExpandFields = (type, strokeType) => EXPAND_SECTIONS.filter(f=>{
-  if(!f.types) return true;
-  return f.types.includes(type)||f.types.includes(strokeType);
-});
-export const getTileFields = (type) => TILE_FIELDS.filter(f=>!f.types||f.types.includes(type));
 
 export const TABS = [
   {id:"tracker",     label:"Garage"},
