@@ -4,7 +4,7 @@ import { getPref, savePref } from '../../lib/db/preferences';
 import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
-import { getNextInvoiceNumber } from '../../lib/db/invoices';
+import { generateInvoicePDF } from '../../lib/invoicePdf';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { STATUSES, SCOL, SBG_ } from '../../lib/constants';
 import { SL, SkullRating, Divider } from '../ui/shared';
@@ -89,228 +89,8 @@ function fmtDuration(secs) {
   return `${s}s`;
 }
 
-function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function safeImgSrc(url) {
-  const s = String(url || '');
-  return (s.startsWith('data:image/') || /^https?:\/\//.test(s)) ? escHtml(s) : '';
-}
-
-const round2 = n => Math.round(n * 100) / 100;
 // Explicit qty 0 means 0 (returned/credited item) — only missing qty defaults to 1
 const qtyOf = p => (p.qty == null || p.qty === '') ? 1 : (Number(p.qty) || 0);
-
-async function exportInvoice(machine, company, clients, userId, docType = 'invoice', onUpdate) {
-  const allLog   = machine.timeLog || [];
-  const allParts = machine.parts   || [];
-  // Sessions/parts already invoiced must not be billed again. (Cycle a
-  // session's or part's status chip back to "Logged" to deliberately re-issue.)
-  const log   = allLog.filter(e => (e.billStatus || 'logged') !== 'invoiced');
-  const parts = allParts.filter(p => (p.billStatus || 'logged') !== 'invoiced');
-  if (!log.length && !parts.length) {
-    if (allLog.length || allParts.length) alert('Everything here is already invoiced. Tap a session\'s or part\'s status chip to set it back to Logged if you need to re-issue.');
-    return;
-  }
-
-  // Open window synchronously during user interaction to avoid popup blocker
-  const win = window.open('', '_blank');
-  if (!win) { alert('Please allow popups to export.'); return; }
-
-  const client = machine.clientId ? (clients||[]).find(c => c.id === machine.clientId) : null;
-
-  // parseFloat + isFinite so a configured rate of 0 is honoured (not "unset")
-  const rateRaw  = parseFloat(company?.hourly_rate);
-  const rate     = Number.isFinite(rateRaw) ? rateRaw : null;
-  const taxRaw   = parseFloat(company?.tax_rate);
-  const taxRate  = Number.isFinite(taxRaw) ? taxRaw : null;
-  const taxLabel = company?.tax_label   || 'Tax';
-  const co       = company || {};
-
-  const totalSecs      = log.reduce((s, e) => s + (e.seconds || 0), 0);
-  // Round each line to cents and sum the rounded lines — printed rows must
-  // add up to the printed subtotals/total exactly.
-  const labourAmounts  = log.map(e => rate !== null ? round2(((e.seconds || 0) / 3600) * rate) : null);
-  const labourSubtotal = rate !== null ? round2(labourAmounts.reduce((s, a) => s + a, 0)) : null;
-  const partAmounts    = parts.map(p => round2((parseFloat(p.sellPrice) || 0) * qtyOf(p)));
-  const partsSubtotal  = round2(partAmounts.reduce((s, a) => s + a, 0));
-  const subtotal       = labourSubtotal !== null ? round2(labourSubtotal + partsSubtotal) : (partsSubtotal > 0 ? partsSubtotal : null);
-  const tax            = subtotal !== null && taxRate ? round2(subtotal * taxRate / 100) : null;
-  const total          = subtotal !== null ? round2(subtotal + (tax || 0)) : null;
-  const fmt$           = n => `$${(n || 0).toFixed(2)}`;
-
-  const isQuote  = docType === 'quote';
-  const docLabel = isQuote ? 'QUOTE' : 'INVOICE';
-  const docRef   = isQuote
-    ? `QT-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase().slice(-5)}`
-    : await getNextInvoiceNumber(userId);
-
-  const coAddress  = [co.address, co.city, co.state, co.postcode, co.country].filter(Boolean).join(', ');
-  const coContact  = [co.abn ? `ABN ${co.abn}` : null, co.phone, co.email].filter(Boolean).join('  ·  ');
-  const machineSub = [machine.year, machine.make, machine.model, machine.serial ? `S/N ${machine.serial}` : null].filter(Boolean).join(' · ');
-
-  const clientHtml = client ? `
-    <div class="bill-to">
-      <div class="bill-to-label">Bill To</div>
-      <div class="bill-to-name">${escHtml(client.name)}</div>
-      ${client.company  ? `<div class="bill-to-line">${escHtml(client.company)}</div>`  : ''}
-      ${client.email    ? `<div class="bill-to-line">${escHtml(client.email)}</div>`    : ''}
-      ${client.phone    ? `<div class="bill-to-line">${escHtml(client.phone)}</div>`    : ''}
-      ${client.address  ? `<div class="bill-to-line">${escHtml(client.address)}</div>` : ''}
-    </div>` : '';
-
-  const labourRows = log.map((e, i) => {
-    const hrs    = (e.seconds || 0) / 3600;
-    const amount = labourAmounts[i];
-    const label  = e.jobLabel && e.jobLabel !== 'Job' ? e.jobLabel.slice(0, 80) : 'General work';
-    const notes  = e.sessionNotes ? `<div style="font-size:11px;color:#777;margin-top:2px">${escHtml(e.sessionNotes)}</div>` : '';
-    return `<tr>
-      <td>${escHtml(label)}${notes}</td>
-      <td class="num">${fmtDuration(e.seconds || 0)} <span class="dim">(${hrs.toFixed(2)} hrs)</span></td>
-      <td class="num">${rate !== null ? `$${rate.toFixed(2)}/hr` : '—'}</td>
-      <td class="num">${amount !== null ? fmt$(amount) : '—'}</td>
-    </tr>`;
-  }).join('');
-
-  const partsRows = parts.map((p, i) => {
-    const sell = parseFloat(p.sellPrice) || 0;
-    const qty  = qtyOf(p);
-    return `<tr>
-      <td>${escHtml(p.name)}${p.brand      ? ` <span class="dim">${escHtml(p.brand)}</span>`      : ''}
-          ${p.partNumber ? ` <span class="dim">${escHtml(p.partNumber)}</span>` : ''}</td>
-      <td class="num">${qty}</td>
-      <td class="num">${sell > 0 ? fmt$(sell) : '—'}</td>
-      <td class="num">${sell > 0 ? fmt$(partAmounts[i]) : '—'}</td>
-    </tr>`;
-  }).join('');
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>${docLabel} — ${escHtml(machine.name)}</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;background:#fff;color:#111;padding:48px;max-width:820px;margin:0 auto;font-size:13px;line-height:1.5}
-.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;gap:32px}
-.co-side{flex:1}
-.co-logo{width:56px;height:56px;object-fit:cover;border-radius:3px;margin-bottom:10px;display:block}
-.co-name{font-size:18px;font-weight:700;margin-bottom:4px}
-.co-sub{font-size:11px;color:#666;line-height:1.8}
-.doc-side{text-align:right;flex-shrink:0}
-.doc-type{font-size:44px;font-weight:900;color:#e8670a;letter-spacing:-0.02em;line-height:1;margin-bottom:10px}
-.doc-meta{font-size:11px;color:#555;line-height:2}
-.doc-meta strong{color:#111}
-.divider{border:none;border-top:2px solid #111;margin:24px 0}
-.mid{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;gap:24px}
-.bill-to{flex:1}
-.bill-to-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#999;margin-bottom:6px}
-.bill-to-name{font-size:14px;font-weight:700;margin-bottom:3px}
-.bill-to-line{font-size:12px;color:#555}
-.machine-side{text-align:right}
-.machine-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#999;margin-bottom:6px}
-.machine-name{font-size:14px;font-weight:700;margin-bottom:3px}
-.machine-sub{font-size:11px;color:#777}
-.section-head{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#555;margin:28px 0 10px}
-table{width:100%;border-collapse:collapse;margin-bottom:4px}
-th{background:#f7f7f7;padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:#555;border-bottom:2px solid #e0e0e0;text-align:left}
-th.num,td.num{text-align:right}
-td{padding:9px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;vertical-align:top}
-.dim{color:#aaa;font-size:10px}
-.totals-wrap{display:flex;justify-content:flex-end;margin-top:16px}
-.totals{width:260px}
-.totals td{padding:6px 12px;font-size:12px;border:none;color:#555}
-.totals .grand td{font-size:15px;font-weight:700;color:#111;border-top:2px solid #111;padding-top:10px;margin-top:4px}
-.footer-note{margin-top:16px;font-size:11px;color:#aaa;text-align:right}
-.footer{margin-top:48px;padding-top:16px;border-top:1px solid #eee;font-size:10px;color:#ccc;text-align:center}
-.print-btn{position:fixed;bottom:24px;right:24px;background:#e8670a;color:#fff;border:none;padding:12px 22px;font-size:13px;font-weight:700;border-radius:4px;cursor:pointer;box-shadow:0 4px 16px rgba(232,103,10,0.3)}
-@media print{.print-btn{display:none}body{padding:20px}}
-</style>
-</head>
-<body>
-
-<div class="top">
-  <div class="co-side">
-    ${co.logo && safeImgSrc(co.logo) ? `<img class="co-logo" src="${safeImgSrc(co.logo)}" alt=""/>` : ''}
-    <div class="co-name">${escHtml(co.name || 'My Business')}</div>
-    ${co.trading_name ? `<div class="co-sub" style="margin-bottom:2px">${escHtml(co.trading_name)}</div>` : ''}
-    <div class="co-sub">
-      ${coContact  ? escHtml(coContact)  + '<br/>' : ''}
-      ${coAddress  ? escHtml(coAddress)            : ''}
-    </div>
-  </div>
-  <div class="doc-side">
-    <div class="doc-type">${docLabel}</div>
-    <div class="doc-meta">
-      <strong>${escHtml(docRef)}</strong><br/>
-      ${isQuote ? 'Date' : 'Invoice Date'}: ${new Date().toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' })}<br/>
-      ${isQuote ? '' : `Due: On receipt`}
-    </div>
-  </div>
-</div>
-
-<hr class="divider"/>
-
-<div class="mid">
-  ${clientHtml || '<div></div>'}
-  <div class="machine-side">
-    <div class="machine-label">${isQuote ? 'For' : 'Re'}</div>
-    <div class="machine-name">${escHtml(machine.name)}</div>
-    ${machineSub ? `<div class="machine-sub">${escHtml(machineSub)}</div>` : ''}
-  </div>
-</div>
-
-${log.length ? `
-<div class="section-head">Labour</div>
-<table>
-  <thead><tr><th>Description</th><th>Duration</th><th>Rate</th><th class="num">Amount</th></tr></thead>
-  <tbody>${labourRows}</tbody>
-</table>` : ''}
-
-${parts.length ? `
-<div class="section-head">Parts &amp; Materials</div>
-<table>
-  <thead><tr><th>Part</th><th class="num">Qty</th><th class="num">Unit Price</th><th class="num">Amount</th></tr></thead>
-  <tbody>${partsRows}</tbody>
-</table>` : ''}
-
-<div class="totals-wrap">
-  <table class="totals">
-    <tbody>
-      ${labourSubtotal !== null ? `<tr><td>Labour</td><td style="text-align:right">${fmt$(labourSubtotal)}</td></tr>` : ''}
-      ${partsSubtotal  > 0      ? `<tr><td>Parts</td><td style="text-align:right">${fmt$(partsSubtotal)}</td></tr>`  : ''}
-      ${tax !== null            ? `<tr><td>${escHtml(taxLabel)} (${taxRate}%)</td><td style="text-align:right">${fmt$(tax)}</td></tr>` : ''}
-      <tr class="grand"><td>${total !== null ? 'Total' : 'Total Time'}</td><td style="text-align:right">${total !== null ? fmt$(total) : fmtDuration(totalSecs)}</td></tr>
-    </tbody>
-  </table>
-</div>
-
-${!rate ? '<div class="footer-note">Set a Labour Rate in Settings → Company to calculate amounts.</div>' : ''}
-<div class="footer">Generated by Rat Bench · ratbench.net</div>
-<button class="print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
-</body>
-</html>`;
-
-  win.document.write(html);
-  win.document.close();
-
-  // Mark the billed sessions/parts so the next invoice doesn't re-charge them.
-  if (!isQuote && onUpdate) {
-    const billedSessions = new Set(log.map(e => e.id));
-    const billedParts    = new Set(parts.map(p => p.id));
-    const updated = {
-      ...machine,
-      timeLog: allLog.map(e => billedSessions.has(e.id) ? { ...e, billStatus: 'invoiced' } : e),
-      parts:   allParts.map(p => billedParts.has(p.id)   ? { ...p, billStatus: 'invoiced' } : p),
-    };
-    onUpdate(updated);
-    try { await upsertMachine(updated); }
-    catch (err) {
-      console.error('mark invoiced:', err);
-      toastError("Invoice created, but couldn't mark sessions/parts as invoiced — check connection");
-    }
-  }
-}
 
 const timerSel = {
   width: "100%", background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 3,
@@ -397,8 +177,8 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
         ) : (
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em", flex: 1 }}>Parts only — no time logged</span>
         )}
-        <button onClick={() => exportInvoice(machine, company, clients, userId, 'quote', onUpdate)} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Quote</button>
-        <button onClick={() => exportInvoice(machine, company, clients, userId, 'invoice', onUpdate)} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Invoice</button>
+        <button onClick={() => generateInvoicePDF(machine, company, clients, userId, 'quote', onUpdate)} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Quote</button>
+        <button onClick={() => generateInvoicePDF(machine, company, clients, userId, 'invoice', onUpdate)} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Invoice</button>
       </div>
       {expanded && log.length > 0 && (
         <div style={{ marginTop: 8 }}>

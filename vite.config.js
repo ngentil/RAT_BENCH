@@ -36,6 +36,12 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered manually in main.jsx with a no-op onNeedReload — the
+      // default auto-injected script forces window.location.reload() the
+      // instant a new deployed version's service worker activates, even
+      // mid-session (e.g. with a machine card open), which reads as an
+      // unexplained "the app just reloaded on me."
+      injectRegister: false,
       workbox: {
         // Cache JS/CSS/font chunks — not API responses
         globPatterns: ['**/*.{js,css,woff2}'],
