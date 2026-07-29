@@ -241,10 +241,13 @@ function App(){
     }
     const validTopIds=new Set(TABS.map(t=>t.id).concat(["settings"]));
     if(!validTopIds.has(tab)) setTab("tracker");
-    const wsVis=profile?.tab_order?.workshop_visible;
-    if(Array.isArray(wsVis)&&!wsVis.includes(workshopTab)){
-      const first=wsVis.find(id=>WORKSHOP_TABS.some(t=>t.id===id));
-      if(first) setWorkshopTab(first);
+    // Only the new workshop_hidden field is authoritative here — see the
+    // matching comment on visibleWorkshopTabs below for why deriving a
+    // hidden-list from the old workshop_visible whitelist can't work.
+    const wsHidden=profile?.tab_order?.workshop_hidden;
+    if(Array.isArray(wsHidden)&&wsHidden.includes(workshopTab)){
+      const first=WORKSHOP_TABS.find(t=>!wsHidden.includes(t.id));
+      if(first) setWorkshopTab(first.id);
     }
   },[profile,company]);
 
@@ -354,12 +357,23 @@ function App(){
   const overdueCount = activeMachines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = activeMachines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
   const timerRunning = activeMachines.some(m => (m.jobTimers || []).some(t => t.status === "running"));
-  const savedWorkshopVisible = profile?.tab_order?.workshop_visible;
+  // Hidden-list semantics, not a visible-whitelist — a whitelist hides every
+  // future Workshop tab forever for any account that ever saved tab
+  // visibility before that tab existed (exactly what happened to Storage:
+  // profile.tab_order.workshop_visible from before this tab shipped simply
+  // never mentions it, so under the old "show only what's listed" filter it
+  // stayed invisible even though nothing about adding it was wrong).
+  // The old workshop_visible field is deliberately NOT consulted here even
+  // as a fallback — a "not in this old list" tab is indistinguishable from
+  // "deliberately hidden" and "didn't exist yet" with no way to tell them
+  // apart, so trying to derive a hidden-list from it just reproduces the
+  // same bug under a new name. Accounts with only a legacy workshop_visible
+  // value get every Workshop tab shown until they revisit Settings → Tabs,
+  // which then saves workshop_hidden and makes their choices authoritative
+  // again — a one-time reset of a cosmetic preference, not data loss.
+  const savedWorkshopHidden = profile?.tab_order?.workshop_hidden;
   const visibleWorkshopTabs = applyTabOrder(
-    WORKSHOP_TABS.filter(t=>{
-      if(savedWorkshopVisible&&!savedWorkshopVisible.includes(t.id)) return false;
-      return true;
-    }),
+    WORKSHOP_TABS.filter(t=>!savedWorkshopHidden?.includes(t.id)),
     profile?.tab_order?.workshop
   );
   const orderedMainTabs = applyTabOrder(TABS, profile?.tab_order?.main);
