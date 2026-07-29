@@ -25,6 +25,7 @@ import UsersTab from './components/users/UsersTab';
 import ServiceReminders from './components/tracker/ServiceReminders';
 import RevenueDashboard from './components/tracker/RevenueDashboard';
 import StorageTab from './components/tracker/StorageTab';
+import CollectedTab from './components/tracker/CollectedTab';
 import CustomersTab from './components/customers/CustomersTab';
 import PartsTab from './components/tracker/PartsTab';
 import ToolsTab from './components/tools/ToolsTab';
@@ -226,7 +227,7 @@ function App(){
     if(!prefsSynced&&!prefsSyncStartedRef.current){
       prefsSyncStartedRef.current=true;
       const prefs=profile.preferences||{};
-      const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue","reminders","storage"]);
+      const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue","reminders","storage","collected"]);
       if(prefs.tab&&prefs.tab!=="users"){
         // Reminders used to be its own top-level tab — route old saved prefs
         // straight to its new home instead of the last-used workshop sub-tab.
@@ -350,10 +351,12 @@ function App(){
   const goToBilling=()=>{ setSettingsTab("billing"); setTab("settings"); };
   const activeMachines = machines.filter(m => !m.soldAt);
   // onBench alone is a safe filter here (no need for this component to also
-  // know about bookings) because MoveToStoragePanel — reachable from both
-  // Garage and Bench — always clears onBench as part of writing a new
-  // booking, so a machine can never end up flagged onBench while also
-  // actively booked into Storage, regardless of which card sent it there.
+  // know about bookings/collections) because MoveToStoragePanel — reachable
+  // from both Garage and Bench — always clears onBench as part of writing a
+  // new booking, and a machine only ever reaches Collected via Storage
+  // (where onBench is already false) — so a machine can never end up
+  // flagged onBench while also actively booked into Storage or Collected,
+  // regardless of which card sent it there.
   const benchMachines = activeMachines.filter(m => m.onBench);
   const overdueCount = activeMachines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = activeMachines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;
@@ -463,6 +466,7 @@ function App(){
       <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="storage"?"contents":"none"}}><StorageTab machines={machines} setMachines={setMachines} profile={profile} company={company} active={tab==="workshop"&&workshopTab==="storage"} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="collected"?"contents":"none"}}><CollectedTab machines={machines} setMachines={setMachines} active={tab==="workshop"&&workshopTab==="collected"}/></div>
       {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools} initialTab={settingsTab}/>}
     </div>
   );
