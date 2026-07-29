@@ -522,8 +522,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8,marginBottom:10}}><SL t="Storage" /></div>
               {!booking&&!showBookIn&&(
                 <button style={{width:"100%",background:"none",border:"1px solid "+BRD,borderRadius:3,padding:"16px 14px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:12,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:MUT,fontSize:12,minHeight:56}} onClick={ev=>{ev.stopPropagation();const now=new Date();const pad=n=>String(n).padStart(2,"0");setBookForm(f=>({...f,receivedAt:now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+"T"+pad(now.getHours())+":"+pad(now.getMinutes())}));setShowBookIn(true);}}>
-                  <span style={{fontSize:28,lineHeight:1}}>📥</span>
-                  Book In
+                  <span style={{fontSize:28,lineHeight:1}}>🗄️</span>
+                  Move to Storage
                 </button>
               )}
               {showBookIn&&(
@@ -557,7 +557,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
                   {bookErr&&<div style={{fontSize:9,color:RED,marginBottom:10}}>{bookErr}</div>}
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
                     <button style={{...btnA,width:"100%",padding:"14px",fontSize:12,minHeight:50,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={doBookIn} disabled={bookSaving}>
-                      <span style={{fontSize:20}}>📥</span>{bookSaving?"Saving…":"Book In"}
+                      <span style={{fontSize:20}}>🗄️</span>{bookSaving?"Saving…":"Move to Storage"}
                     </button>
                     <button style={{...btnG,width:"100%",padding:"12px",fontSize:11,minHeight:44}} onClick={()=>{setShowBookIn(false);setBookErr("");}}>Cancel</button>
                   </div>

@@ -189,7 +189,7 @@ function StorageSettings({ profile, setProfile, company, setCompany }) {
                 <div>
                   <div style={{ fontSize: 11, color: TXT, fontWeight: 700, marginBottom: 3 }}>Enable Storage Policy</div>
                   <div style={{ fontSize: 9, color: MUT, lineHeight: 1.6, maxWidth: 320 }}>
-                    When enabled, a "Book In" button appears on each machine card. Storage fees accumulate after the tier's free period.
+                    When enabled, a "Move to Storage" button appears on each machine card. Storage fees accumulate after the tier's free period.
                   </div>
                 </div>
                 <Toggle checked={enabled} onChange={toggle} disabled={saving} />
