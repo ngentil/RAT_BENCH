@@ -111,8 +111,8 @@ function StorageTab({ machines, setMachines, profile, company, active }) {
         const { m, storageStatus, labourOwed, partsOwed, storageOwed, totalOwed, value, exceeds } = row;
         return (
           <div key={m.id} style={{ background: SURF, border: "1px solid " + (exceeds ? RED + "55" : BRD), borderRadius: 3, padding: "12px 14px", marginBottom: 10 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: "1 1 160px" }}>
                 <span style={{ fontSize: 22, flexShrink: 0 }}>{mIcon(m.type)}</span>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: TXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name}</div>
@@ -122,7 +122,7 @@ function StorageTab({ machines, setMachines, profile, company, active }) {
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginLeft: "auto" }}>
                 <button style={{ ...btnG, ...sm }} onClick={() => doCollect(row, false)} title="Move back to Garage">← Garage</button>
                 <button style={{ ...btnA, ...sm }} onClick={() => doCollect(row, true)} title="Move straight onto the Bench">🔧 Bench</button>
                 <button style={{ ...btnG, ...sm, color: ACC, borderColor: ACC + "55" }} onClick={() => { setCollectFormRow(row.b.id); setCollectForm(emptyCollectForm); }} title="Customer has taken the machine">📦 Collected</button>
