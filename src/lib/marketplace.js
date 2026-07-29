@@ -177,18 +177,23 @@ export async function getMyThreads(userId) {
   const listingIds = [...new Set(threads.map(t => t.listing_id))];
   const otherIds = [...new Set(threads.map(t => t.buyer_id === userId ? t.seller_id : t.buyer_id))];
 
-  const [{ data: listings }, { data: profiles }, { data: lastMessages }] = await Promise.all([
+  // One capped (limit 1) query per thread rather than pulling every message
+  // ever exchanged across every thread just to find each thread's newest —
+  // stays cheap and correct regardless of how long any single conversation
+  // has gotten.
+  const [{ data: listings }, { data: profiles }, lastMessagePairs] = await Promise.all([
     supabase.from('marketplace_listings').select('*').in('id', listingIds),
     supabase.from('profiles').select('id,username,display_name').in('id', otherIds),
-    supabase.from('marketplace_messages').select('*')
-      .in('thread_id', threads.map(t => t.id))
-      .order('created_at', { ascending: false }),
+    Promise.all(threads.map(t =>
+      supabase.from('marketplace_messages').select('*')
+        .eq('thread_id', t.id).order('created_at', { ascending: false }).limit(1).maybeSingle()
+        .then(({ data }) => [t.id, data])
+    )),
   ]);
 
   const listingById = Object.fromEntries((listings || []).map(l => [l.id, l]));
   const profileById = Object.fromEntries((profiles || []).map(p => [p.id, p]));
-  const lastMessageByThread = {};
-  (lastMessages || []).forEach(m => { lastMessageByThread[m.thread_id] ||= m; });
+  const lastMessageByThread = Object.fromEntries(lastMessagePairs.filter(([, m]) => m));
 
   return threads
     .map(t => {
@@ -255,23 +260,30 @@ export async function getMyUnreadCount() {
 }
 
 // Realtime — new messages in a thread, mirroring App.jsx's machines-sync channel.
-export function subscribeToThread(threadId, onMessage) {
+// onStatusChange (optional) receives the raw Supabase channel status string
+// ('SUBSCRIBED'/'CLOSED'/'CHANNEL_ERROR'/'TIMED_OUT') — the client library
+// auto-reconnects the underlying websocket, so 'SUBSCRIBED' fires again after
+// a reconnect too; callers use this to re-fetch and close the gap of any
+// INSERT events missed while the channel was down (Realtime delivery is
+// best-effort, not guaranteed).
+export function subscribeToThread(threadId, onMessage, onStatusChange) {
   const channel = supabase
     .channel(`marketplace-thread-${threadId}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'marketplace_messages', filter: `thread_id=eq.${threadId}` },
       (payload) => onMessage(payload.new))
-    .subscribe();
+    .subscribe((status) => onStatusChange?.(status));
   return () => supabase.removeChannel(channel);
 }
 
 // Realtime — any new message addressed to this user, across all threads, for
 // the inbox unread badge. Cheaper than filtering server-side on both buyer/
 // seller id (Realtime filters support one column), so it listens broadly and
-// lets the caller re-fetch the unread count on every event.
-export function subscribeToMyMessages(userId, onChange) {
+// lets the caller re-fetch the unread count on every event. onStatusChange —
+// see subscribeToThread's doc above.
+export function subscribeToMyMessages(userId, onChange, onStatusChange) {
   const channel = supabase
     .channel(`marketplace-inbox-${userId}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'marketplace_messages' }, onChange)
-    .subscribe();
+    .subscribe((status) => onStatusChange?.(status));
   return () => supabase.removeChannel(channel);
 }

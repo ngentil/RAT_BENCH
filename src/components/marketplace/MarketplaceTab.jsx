@@ -30,8 +30,19 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines
 
   useEffect(() => {
     refreshUnread();
-    const unsubscribe = subscribeToMyMessages(profile.id, refreshUnread);
-    return unsubscribe;
+    const unsubscribe = subscribeToMyMessages(
+      profile.id, refreshUnread,
+      // Re-check on every (re)subscribe, not just on a live INSERT event —
+      // covers both the initial fetch/subscribe race and any badge drift
+      // left by a dropped-then-restored websocket missing an event.
+      (status) => { if (status === 'SUBSCRIBED') refreshUnread(); },
+    );
+    // Safety-net poll: Realtime is best-effort, and a fully blocked
+    // websocket (firewall, etc.) never reaches 'SUBSCRIBED' at all, so the
+    // reconnect refetch above can't cover that case — this bounds the
+    // badge's worst-case staleness to one poll interval instead of forever.
+    const pollId = setInterval(refreshUnread, 20000);
+    return () => { unsubscribe(); clearInterval(pollId); };
   }, [profile.id]);
 
   // Re-check unread whenever a thread is closed — the recipient's own read
