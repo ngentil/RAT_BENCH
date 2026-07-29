@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
 import { ACC, MUT, TXT, btnA, btnG, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { ALL_SECTIONS, ALL_BADGE_FIELDS, BADGE_PALETTE, DEFAULT_TILE } from '../../lib/constants';
+import { getMachineSpecEntries, SPEC_LABEL_TO_SECTION, humanizeKey } from '../../lib/machineSpecs';
+
+// Structural/internal machine keys that are never spec data — never offer
+// these as tile badges or layout toggles no matter what value they hold.
+const NON_SPEC_KEYS = new Set([
+  "id","userId","companyId","clientId","createdAt","updatedAt","name","make","model",
+  "tileFields","tileColors","expandFields","hiddenSpecFields",
+  "photos","iPPhotos","ePPhotos","jobPhotos","services","parts","timeLog","jobTimers",
+  "dueDate","lastServiceDate","lastServiceOdo","lastServiceNotes",
+  "notes","desc","lighting","fasteners","belts","hydRams",
+  "chipperSpec","stumpGrinderSpec","carbSpec",
+  "submittedToWiki","wikiMachineId","status","strokeType","rage","type",
+]);
 
 export function SectionPicker({selected, onSave, onClose}){
   const [secs,setSecs]=useState(selected!==null&&selected!==undefined?selected:[...ALL_SECTIONS]);
@@ -42,7 +55,22 @@ export function TileConfig({machine, onSave, onClose}){
   const getColorIdx = k => colors[k]!==undefined ? colors[k] : 0;
   const save = () => onSave({...machine, tileFields: fields, tileColors: colors});
   const autoFields = ["status","strokeType","rage"];
-  const availableFields = ALL_BADGE_FIELDS.filter(f => {
+  // Any machine key with a real scalar value that ALL_BADGE_FIELDS doesn't
+  // already know about becomes a selectable badge too, bucketed under
+  // "Other" — previously a field only became tile-able once someone
+  // remembered to add it to that curated list, so real data (e.g. Outboard
+  // Motor specs) could be logged and still be impossible to pick as a badge.
+  const knownKeys = new Set(ALL_BADGE_FIELDS.map(f => f.k));
+  const dynamicFields = Object.keys(machine)
+    .filter(k => !knownKeys.has(k) && !NON_SPEC_KEYS.has(k))
+    .filter(k => {
+      const val = machine[k];
+      if (val == null || val === "") return false;
+      if (typeof val === "object") return false; // arrays/nested spec objects aren't single-badge-able
+      return true;
+    })
+    .map(k => ({ k, l: humanizeKey(k), s: "", section: "Other" }));
+  const availableFields = [...ALL_BADGE_FIELDS, ...dynamicFields].filter(f => {
     if(f.auto) return true;
     const val = machine[f.k];
     if(!val) return false;
@@ -151,7 +179,24 @@ export function ExpandConfig({machine, onSave, onClose}){
     : available.map(f=>f.k);
   const [fields, setFields] = useState(current);
   const toggle = k => setFields(prev => prev.includes(k) ? prev.filter(f=>f!==k) : [...prev,k]);
-  const save = () => onSave({...machine, expandFields: fields});
+
+  // Every logged spec label that the coarse bucket toggles above have no
+  // entry for at all (SPEC_LABEL_TO_SECTION only maps ~40 of them) — these
+  // used to always render unconditionally with no way to hide them; now
+  // they get a real per-field toggle here instead, backed by a separate
+  // hiddenSpecFields list so it's purely additive and doesn't disturb the
+  // existing expandFields bucket data at all.
+  const otherLabels = getMachineSpecEntries(machine)
+    .map(s => s.label)
+    .filter(label => !SPEC_LABEL_TO_SECTION[label]);
+  const [hidden, setHidden] = useState(new Set(machine.hiddenSpecFields||[]));
+  const toggleHidden = label => setHidden(prev => {
+    const next = new Set(prev);
+    next.has(label) ? next.delete(label) : next.add(label);
+    return next;
+  });
+
+  const save = () => onSave({...machine, expandFields: fields, hiddenSpecFields: [...hidden]});
   return (
     <div style={ovly} onClick={onClose}>
       <div style={{...mdl,maxHeight:"80vh"}} onClick={ev=>ev.stopPropagation()}>
@@ -174,6 +219,21 @@ export function ExpandConfig({machine, onSave, onClose}){
             </label>
           ))}
           {available.length===0&&<div style={{fontSize:10,color:MUT,textAlign:"center",padding:"20px 0"}}>No data logged yet.</div>}
+
+          {otherLabels.length>0&&(
+            <div style={{marginTop:14}}>
+              <div style={{fontSize:10,color:ACC,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:6,paddingBottom:4,borderBottom:"1px solid #1a1a1a"}}>Other Specs</div>
+              <div style={{fontSize:9,color:MUT,marginBottom:8,lineHeight:1.6}}>
+                Individual fields not covered by a section above — shown by default, uncheck to hide.
+              </div>
+              {otherLabels.map(label=>(
+                <label key={label} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px solid #111",cursor:"pointer"}}>
+                  <input type="checkbox" checked={!hidden.has(label)} onChange={()=>toggleHidden(label)} style={{accentColor:ACC,width:14,height:14,flexShrink:0}} />
+                  <span style={{fontSize:10,color:hidden.has(label)?MUT:TXT,fontFamily:"'IBM Plex Mono',monospace"}}>{label}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
         <div style={mdlF}>
           <button style={btnG} onClick={onClose}>Cancel</button>
