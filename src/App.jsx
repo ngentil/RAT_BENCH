@@ -44,6 +44,13 @@ function App(){
   const [initializing,setInitializing]=useState(true);
   const [error,setError]=useState(null);
   const initializedRef=useRef(false);
+  // Which user's data is currently loaded — lets loadForSession tell "the
+  // same session just got re-affirmed" (e.g. Supabase's auth client refires
+  // SIGNED_IN whenever the tab regains visibility, even with an unchanged
+  // session) apart from an actual new sign-in, without relying on
+  // initializedRef alone (which, once true, stays true across a sign-out ->
+  // different-user sign-in in the same tab).
+  const loadedUserIdRef=useRef(null);
   const [session,setSession]=useState(null);
   const [authChecked,setAuthChecked]=useState(false);
   const [profile,setProfile]=useState(null);
@@ -79,10 +86,25 @@ function App(){
       setPrefsSynced(false);prefsSyncStartedRef.current=false;
       setAuthChecked(true);setProfileChecked(true);setInitializing(false);
       initializedRef.current=true;
+      loadedUserIdRef.current=null;
       return;
     }
+    // Only a genuinely new session (first load, or a different user than
+    // whatever's already loaded) should block the UI with the spinner (see
+    // comment above) — but setProfileChecked(false) ran unconditionally, so
+    // every subsequent SIGNED_IN event flipped it back to false regardless.
+    // Supabase's auth client fires SIGNED_IN again whenever the tab regains
+    // visibility, even with an unchanged session, so simply switching apps
+    // and back was enough to re-trip the render guard below and remount the
+    // whole tree — closing any open machine card (Tracker's tileOpen is
+    // local state) and reading as an unwanted "refresh" even though no
+    // actual reload ever happened. Comparing against loadedUserIdRef (rather
+    // than just `first`) still blocks correctly for a real sign-out ->
+    // different-user sign-in in the same tab, since initializedRef alone
+    // stays true forever after the very first load.
+    const isNewSession = first || loadedUserIdRef.current!==session.user.id;
     setSession(session);
-    setProfileChecked(false);
+    if(isNewSession) setProfileChecked(false);
 
     // profileData/companyData declared here so they're in scope for the announcements fetch below
     let profileData = null;
@@ -122,6 +144,7 @@ function App(){
     } catch(e){ if(first){ setProfile(null); setError("Could not load your profile. Please refresh the page."); } }
     setProfileChecked(true);
     setAuthChecked(true);
+    loadedUserIdRef.current=session.user.id;
 
     // All five data loads run in parallel — was sequential (up to ~2.5s), now ~one RTT
     const [msR, csR, vsR, eqR, tsR] = await Promise.allSettled([
