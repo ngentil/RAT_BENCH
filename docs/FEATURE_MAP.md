@@ -195,7 +195,7 @@ Stripe
 | Global enable toggle (`profiles.storage_policy_enabled`) | ✅ | profiles — run supabase/storage_policy_tier_trigger.sql; BEFORE UPDATE trigger rejects writes to storage_policy_enabled or storage_tiers if the profile's current tier is free (prevents free-tier bypass via direct API call) | Free |
 | Storage tiers (Bench/Small/Medium/Large/Extra Large/Custom) | ✅ | storageTiers.js DEFAULT_STORAGE_TIERS | Free |
 | Configurable tier rates (freeDays/dailyRate/escalateDays/minFee) | ✅ | profiles.storage_tiers JSONB, getTiers(), StorageSettings inline edit — server-side tier enforced by trg_storage_policy_tier trigger | Free |
-| Book In — create a booking with tier + received date; touch-friendly: full-width 56px button with large 📥 emoji, single-column form with 48px inputs, 22px checkbox with full-row tap target, stacked action buttons | ✅ | machine_bookings, MachineCard | Free |
+| Move to Storage (was "Book In" — renamed + 📥→🗄️ for clarity once machines could also move to a Bench) — create a booking with tier + received date; touch-friendly: full-width 56px button with large 🗄️ emoji, single-column form with 48px inputs, 22px checkbox with full-row tap target, stacked action buttons | ✅ | machine_bookings, MachineCard | Free |
 | Per-visit storage toggle (charge/pause billing) | ✅ | machine_bookings.storage_enabled | Free |
 | Mark Collected — close booking, stop accrual | ✅ | collectMachine(), MachineCard | Free |
 | Tile badge: free days remaining (green) | ✅ | getStorageStatus(), MachineCard | Free |
@@ -213,7 +213,7 @@ Stripe
 | Storage included in Gross Profit total | ✅ | grossProfit = labour + parts + storage − cost | Free |
 | Dedicated Storage tab (Workshop → Storage) — a booked-in machine now leaves the Garage view entirely (same as a sold machine leaving into Sold Items) instead of just showing a badge on its card; lists every currently-booked machine with days in storage, accrued storage fee, unbilled labour, unbilled parts, a combined Total Owed, the machine's Estimated Value, and a red warning when Total Owed exceeds it | ✅ | New `StorageTab.jsx`, existing `machine_bookings`/tier machinery reused as-is — no schema change needed beyond `machines.estimated_value` (see below). Refetches its booking list every time the tab is activated (not just once on mount) — like every other Workshop sub-tab it stays mounted, hidden, for the whole session, so a mount-only fetch would never see a machine booked in from the Garage tab afterwards | Free |
 | `machines.estimated_value` — optional per-machine worth, feeds the Storage tab's owed-vs-value warning | ✅ | `supabase/machine_bench_storage.sql`; editable via MachineForm's "Estimated Value ($)" field (replaced the old Status picker there) | Free |
-| Book In's storage-fee checkbox now defaults OFF | ✅ | MachineCard.jsx bookForm — moving a machine into storage no longer silently starts a daily charge; must be ticked on deliberately per visit | Free |
+| Move to Storage's storage-fee checkbox now defaults OFF | ✅ | MachineCard.jsx bookForm — moving a machine into storage no longer silently starts a daily charge; must be ticked on deliberately per visit | Free |
 
 ---
 
