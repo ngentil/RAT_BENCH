@@ -310,7 +310,7 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
       {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
         <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto",overscrollBehavior:"contain"}}>
           <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
-            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse onClose={closeTile} searchQuery={searchQuery} searchTokens={searchTokens} onMoveToBench={moveToBench} onBookIn={id=>setBookedIds(prev=>new Set(prev).add(id))} onCollect={id=>setBookedIds(prev=>{const n=new Set(prev);n.delete(id);return n;})}/>
+            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse onClose={closeTile} searchQuery={searchQuery} searchTokens={searchTokens} onMoveToBench={moveToBench} onBookIn={id=>setBookedIds(prev=>new Set(prev).add(id))}/>
           </div>
         </div>
       ):null;})()}
