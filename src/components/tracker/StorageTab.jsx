@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MUT, BRD, SURF, TXT, GRN, RED, btnA, sm } from '../../lib/styles';
+import { MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { SL, Empty } from '../ui/shared';
+import { upsertMachine } from '../../lib/db';
 import { getAllActiveBookings, collectMachine } from '../../lib/db/bookings';
 import { getTiers } from '../../lib/storageTiers';
 import { getStorageStatus, mIcon } from '../../lib/helpers';
@@ -9,7 +10,7 @@ import { toastError } from '../../lib/toast';
 const qtyOf = p => (p.qty == null || p.qty === '') ? 1 : (Number(p.qty) || 0);
 const fmt$  = n => `$${(n || 0).toFixed(2)}`;
 
-function StorageTab({ machines, profile, company, active }) {
+function StorageTab({ machines, setMachines, profile, company, active }) {
   const [bookings, setBookings] = useState([]);
   const [loaded, setLoaded]     = useState(false);
 
@@ -52,13 +53,21 @@ function StorageTab({ machines, profile, company, active }) {
     }).filter(Boolean).sort((a, b) => b.totalOwed - a.totalOwed)
   ), [bookings, machines, activeTiers, hourlyRate]);
 
-  const doCollect = async (row) => {
+  // toBench sends it straight onto the Bench instead of parking it back in
+  // Garage — for when the reason it's being pulled from storage is to start
+  // work on it right away.
+  const doCollect = async (row, toBench) => {
     try {
       await collectMachine(row.b.id);
+      if (toBench) {
+        const u = { ...row.m, onBench: true };
+        await upsertMachine(u);
+        setMachines(prev => prev.map(x => x.id === u.id ? u : x));
+      }
       setBookings(prev => prev.filter(b => b.id !== row.b.id));
     } catch (e) {
       console.error("collectMachine:", e);
-      toastError("Couldn't mark as collected — check connection");
+      toastError("Couldn't move out of storage — check connection");
     }
   };
 
@@ -69,7 +78,7 @@ function StorageTab({ machines, profile, company, active }) {
       {!loaded && <div style={{ fontSize: 10, color: MUT }}>Loading…</div>}
 
       {loaded && rows.length === 0 && (
-        <Empty icon="📦" t="Nothing in storage" sub="Book a machine in from the Garage tab to start tracking it here." />
+        <Empty icon="📦" t="Nothing in storage" sub="Move a machine to Storage from the Garage tab to start tracking it here." />
       )}
 
       {rows.map(row => {
@@ -87,7 +96,10 @@ function StorageTab({ machines, profile, company, active }) {
                   </div>
                 </div>
               </div>
-              <button style={{ ...btnA, ...sm, flexShrink: 0 }} onClick={() => doCollect(row)}>✓ Collected</button>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                <button style={{ ...btnG, ...sm }} onClick={() => doCollect(row, false)} title="Move back to Garage">← Garage</button>
+                <button style={{ ...btnA, ...sm }} onClick={() => doCollect(row, true)} title="Move straight onto the Bench">🔧 Bench</button>
+              </div>
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 10, color: MUT, marginBottom: exceeds ? 8 : 0 }}>
