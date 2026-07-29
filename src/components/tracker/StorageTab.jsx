@@ -18,6 +18,7 @@ function StorageTab({ machines, setMachines, profile, company, active }) {
   const [loaded, setLoaded]     = useState(false);
   const [collectFormRow, setCollectFormRow] = useState(null); // booking id whose Collected form is open
   const [collectForm, setCollectForm]       = useState(emptyCollectForm);
+  const [collectErr, setCollectErr]         = useState("");
 
   // Like every other Workshop sub-tab this stays mounted (display:none) for
   // the whole session rather than unmounting on tab switch — a mount-only
@@ -78,22 +79,28 @@ function StorageTab({ machines, setMachines, profile, company, active }) {
 
   // A customer taking the machine away is a third destination, distinct from
   // Garage/Bench — onBench is already false here so it doesn't need touching,
-  // unlike the toBench branch above.
+  // unlike the toBench branch above. Creates the collection record BEFORE
+  // closing the storage booking (not after) — if it were the other way
+  // around and this insert failed, the booking would already be closed with
+  // no collection record to show for it, so the machine would silently fall
+  // back to Garage instead of staying visibly in Storage where the retry
+  // button still is.
   const doMarkCollected = async (row) => {
+    setCollectErr("");
     try {
-      await collectMachine(row.b.id);
       await createCollection({
         machineId: row.m.id,
         customerName: collectForm.name,
         customerPhone: collectForm.phone,
         customerUnknown: collectForm.unknown,
       });
+      await collectMachine(row.b.id);
       setBookings(prev => prev.filter(b => b.id !== row.b.id));
       setCollectFormRow(null);
       setCollectForm(emptyCollectForm);
     } catch (e) {
-      console.error("createCollection:", e);
-      toastError("Couldn't mark as collected — check connection");
+      console.error("markCollected:", e);
+      setCollectErr(e?.message || "Couldn't mark as collected — check connection");
     }
   };
 
@@ -125,7 +132,7 @@ function StorageTab({ machines, setMachines, profile, company, active }) {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", marginLeft: "auto" }}>
                 <button style={{ ...btnG, ...sm }} onClick={() => doCollect(row, false)} title="Move back to Garage">← Garage</button>
                 <button style={{ ...btnA, ...sm }} onClick={() => doCollect(row, true)} title="Move straight onto the Bench">🔧 Bench</button>
-                <button style={{ ...btnG, ...sm, color: ACC, borderColor: ACC + "55" }} onClick={() => { setCollectFormRow(row.b.id); setCollectForm(emptyCollectForm); }} title="Customer has taken the machine">📦 Collected</button>
+                <button style={{ ...btnG, ...sm, color: ACC, borderColor: ACC + "55" }} onClick={() => { setCollectFormRow(row.b.id); setCollectForm(emptyCollectForm); setCollectErr(""); }} title="Customer has taken the machine">📦 Collected</button>
               </div>
             </div>
 
@@ -146,8 +153,9 @@ function StorageTab({ machines, setMachines, profile, company, active }) {
                     <span style={{ fontSize: 10, color: MUT }}>Unknown — not sure who picked it up</span>
                   </label>
                 </div>
+                {collectErr && <div style={{ fontSize: 9, color: RED, marginBottom: 10 }}>{collectErr}</div>}
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button style={{ ...btnG, ...sm }} onClick={() => { setCollectFormRow(null); setCollectForm(emptyCollectForm); }}>Cancel</button>
+                  <button style={{ ...btnG, ...sm }} onClick={() => { setCollectFormRow(null); setCollectForm(emptyCollectForm); setCollectErr(""); }}>Cancel</button>
                   <button style={{ ...btnA, ...sm }} onClick={() => doMarkCollected(row)}>✓ Confirm Collected</button>
                 </div>
               </div>
