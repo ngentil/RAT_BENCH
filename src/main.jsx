@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
+import { registerSW } from 'virtual:pwa-register';
 import './index.css';
 import App from './App';
 import WikiApp from './components/wiki/WikiApp';
@@ -8,6 +9,17 @@ import PublicMachinePage from './components/tracker/PublicMachinePage';
 import PublicMarketplaceApp from './components/marketplace/PublicMarketplaceApp';
 import { installBackGuard } from './lib/backGuard';
 import ErrorBoundary from './components/ui/ErrorBoundary';
+
+// vite-plugin-pwa's default auto-injected registration (now disabled via
+// injectRegister:false in vite.config.js) forces window.location.reload()
+// the instant a newly-deployed service worker activates — including mid-
+// session, e.g. with a machine card open. The new worker still installs
+// and activates in the background exactly as before (registerType stays
+// 'autoUpdate'); a no-op onNeedReload just stops it from yanking the user
+// into an unannounced reload. The updated code takes effect naturally the
+// next time the page is actually reloaded/reopened, same as any normal
+// site update.
+registerSW({ immediate: true, onNeedReload() {} });
 
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
