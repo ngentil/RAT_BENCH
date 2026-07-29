@@ -90,8 +90,14 @@ export default function TabOrderSettings({ profile, setProfile }) {
   const [workshop, setWorkshop] = useState(() => applyTabOrder(WORKSHOP_TABS, saved.workshop));
   const [settings, setSettings] = useState(() => applyTabOrder(SETTINGS_TABS, saved.settings));
   const [workshopVisible, setWorkshopVisible] = useState(() => {
-    const vis = saved.workshop_visible;
-    return vis ? new Set(vis) : new Set(WORKSHOP_TABS.map(t => t.id));
+    // Only the new workshop_hidden field is trusted — the old workshop_visible
+    // whitelist format is deliberately ignored rather than used to derive an
+    // equivalent hidden list, since "not in that old list" can't be told apart
+    // from "didn't exist yet" (see the matching comment in App.jsx). Accounts
+    // with only a legacy value start with everything checked here; saving
+    // this page writes workshop_hidden and makes their choices stick from then on.
+    const hidden = saved.workshop_hidden;
+    return hidden ? new Set(WORKSHOP_TABS.filter(t => !hidden.includes(t.id)).map(t => t.id)) : new Set(WORKSHOP_TABS.map(t => t.id));
   });
 
   const [saving, setSaving] = useState(false);
@@ -103,7 +109,7 @@ export default function TabOrderSettings({ profile, setProfile }) {
     const tabOrder = {
       main:             main.map(t => t.id),
       workshop:         workshop.map(t => t.id),
-      workshop_visible: [...workshopVisible],
+      workshop_hidden:  WORKSHOP_TABS.filter(t => !workshopVisible.has(t.id)).map(t => t.id),
       settings:         settings.map(t => t.id),
     };
     const { error } = await supabase.from('profiles').update({ tab_order: tabOrder }).eq('id', profile.id);
