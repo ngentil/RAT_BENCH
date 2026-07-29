@@ -1,7 +1,7 @@
 import { MACHINE_TYPES } from './constants';
 import { DEFAULT_STORAGE_TIERS } from './storageTiers';
 import { parseLocalDate } from './dates';
-import { SPEC_SEARCH_FIELDS } from './constants/specSearchFields';
+import { getMachineSpecEntries } from './machineSpecs';
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 // Progressively-enhanced internal link click: a plain left-click hands off to
@@ -57,19 +57,23 @@ export const parseNum = (v, { min = -Infinity, max = Infinity } = {}) => {
 export const mIcon = t => MACHINE_TYPES.find(m => m.label === t)?.icon || "⚙️";
 
 // Same matching model as the wiki search: a single plain, case-insensitive
-// substring, checked against name/make/model/type first, then every spec
-// field the old Spec Search tab used to cover (plug gap, bore, carb brand,
-// tyre size, etc.) — so one search box covers every Tracker view mode.
+// substring, checked against name/make/model/type first, then every entry
+// getMachineSpecEntries produces — the same comprehensive, section-tagged
+// list the Tile Badges/Layout pickers and the Engine Spec grid all read
+// from, so a field can never be visible/editable elsewhere in the app and
+// still be unsearchable here. (Previously used a separate hand-maintained
+// SPEC_SEARCH_FIELDS list that quietly fell behind every time a new field
+// was added anywhere else — it never covered nested carbSpec/chipperSpec/
+// stumpGrinderSpec fields at all, and missed ~100 fields added in the spec-
+// coverage rebuild: EV drive, engine internals, turbo, drivetrain/
+// suspension/brakes/tyres/electrics detail, bar & chain, etc.)
 export function machineMatchesQuery(m, q) {
   const lowerQ = q.toLowerCase();
   if ((m.name||"").toLowerCase().includes(lowerQ)) return true;
   if ((m.make||"").toLowerCase().includes(lowerQ)) return true;
   if ((m.model||"").toLowerCase().includes(lowerQ)) return true;
   if ((m.type||"").toLowerCase().includes(lowerQ)) return true;
-  return SPEC_SEARCH_FIELDS.some(f => {
-    const v = m[f.k];
-    return v != null && v !== "" && v !== false && String(v).toLowerCase().includes(lowerQ);
-  });
+  return getMachineSpecEntries(m).some(s => String(s.value).toLowerCase().includes(lowerQ));
 }
 
 const SNIPPET_MAX = 90; // long free-text fields (e.g. notes, port notes) get a trimmed snippet around the match
@@ -80,18 +84,16 @@ const SNIPPET_MAX = 90; // long free-text fields (e.g. notes, port notes) get a 
 export function findMachineSpecMatch(m, q) {
   if (!q) return null;
   const lowerQ = q.toLowerCase();
-  for (const f of SPEC_SEARCH_FIELDS) {
-    const raw = m[f.k];
-    if (raw == null || raw === "" || raw === false) continue;
-    const value = String(raw) + (f.u ? " " + f.u : "");
+  for (const s of getMachineSpecEntries(m)) {
+    const value = String(s.value);
     const lowerValue = value.toLowerCase();
     if (!lowerValue.includes(lowerQ)) continue;
-    if (value.length <= SNIPPET_MAX) return { label: f.l, value };
+    if (value.length <= SNIPPET_MAX) return { label: s.label, value };
     const idx = lowerValue.indexOf(lowerQ);
     const start = Math.max(0, idx - 30);
     const end = Math.min(value.length, idx + q.length + 50);
     const snippet = (start > 0 ? "…" : "") + value.slice(start, end) + (end < value.length ? "…" : "");
-    return { label: f.l, value: snippet };
+    return { label: s.label, value: snippet };
   }
   return null;
 }
