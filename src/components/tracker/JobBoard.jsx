@@ -13,6 +13,7 @@ import { toastError } from '../../lib/toast';
 import MachineTile from '../machine/MachineTile';
 import MachineRow from '../machine/MachineRow';
 import MachinePhotoRow from '../machine/MachinePhotoRow';
+import MoveToStoragePanel from '../machine/MoveToStoragePanel';
 
 const ORANGE = "#e8a20a";
 
@@ -1030,6 +1031,12 @@ function JobCard({ m, clientMap, clients, company, session, profile, onUpdate, o
               ← Back to Garage
             </button>
           </div>
+          {!!profile?.storage_policy_enabled && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ borderLeft: "2px solid " + ACC, paddingLeft: 8, marginBottom: 10 }}><SL t="Storage" /></div>
+              <MoveToStoragePanel machine={m} profile={profile} onUpdate={onUpdate} />
+            </div>
+          )}
           {onClose && (
             <button onClick={ev => { ev.stopPropagation(); onClose(); }} style={{ width: "100%", marginTop: 8, padding: "9px 14px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace", background: "transparent", border: "1px solid " + BRD, color: MUT, cursor: "pointer" }}>✕ Close</button>
           )}

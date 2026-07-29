@@ -349,10 +349,11 @@ function App(){
 
   const goToBilling=()=>{ setSettingsTab("billing"); setTab("settings"); };
   const activeMachines = machines.filter(m => !m.soldAt);
-  // A machine can't be moved onto the Bench while it's still booked into
-  // Storage (that button only ever shows on a Garage card, and Garage
-  // already excludes booked machines) — so onBench alone is a safe filter
-  // here without also needing this component to know about bookings.
+  // onBench alone is a safe filter here (no need for this component to also
+  // know about bookings) because MoveToStoragePanel — reachable from both
+  // Garage and Bench — always clears onBench as part of writing a new
+  // booking, so a machine can never end up flagged onBench while also
+  // actively booked into Storage, regardless of which card sent it there.
   const benchMachines = activeMachines.filter(m => m.onBench);
   const overdueCount = activeMachines.filter(m => getMachineServiceStatus(m).overdue).length;
   const dueSoonCount = activeMachines.filter(m => { const s = getMachineServiceStatus(m); return !s.overdue && s.dueSoon; }).length;

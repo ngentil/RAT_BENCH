@@ -2,20 +2,19 @@ import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'rea
 import PhotoViewer from '../ui/PhotoViewer';
 import { supabase } from '../../lib/supabase';
 import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
-import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, inp, btnA, btnG, btnD, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { MACHINE_TYPES, DEFAULT_TILE, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
 import { mIcon, fmtDT, getMachineServiceStatus, findMachineSpecMatch } from '../../lib/helpers';
 import { getMachineSpecEntries, humanizeKey, DEFAULT_EXPAND } from '../../lib/machineSpecs';
 import { hl } from '../wiki/wikiSearchHighlight';
 import { WikiTrackerModal } from '../wiki/WikiModals';
-import { getTiers, TIER_NAMES } from '../../lib/storageTiers';
-import { createBooking } from '../../lib/db/bookings';
 import { deletePhoto } from '../../lib/storage';
 import { toastError } from '../../lib/toast';
 const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import MachineForm from './MachineForm';
+import MoveToStoragePanel from './MoveToStoragePanel';
 function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse,onClose,searchQuery,searchTokens,onMoveToBench,onBookIn}){
   const [open,setOpen]=useState(!!initialOpen);
   const [svcs,setSvcs]=useState([]);
@@ -29,14 +28,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const [showWiki,setShowWiki]=useState(false);
   const [showExpandConfig,setShowExpandConfig]=useState(false);
   const [showPdfOpts,setShowPdfOpts]=useState(false);
-  // Storage policy state
-  const [showBookIn,setShowBookIn]=useState(false);
-  // storageEnabled defaults OFF — booking a machine in for storage shouldn't
-  // silently start a daily charge unless you deliberately opt in per visit.
-  const [bookForm,setBookForm]=useState({storageTier:"Bench",receivedAt:"",storageEnabled:false,storageFeeOverride:"",notes:""});
-  const [bookSaving,setBookSaving]=useState(false);
   const [copied,setCopied]=useState(false);
-  const [bookErr,setBookErr]=useState("");
   const [confirmDelete,setConfirmDelete]=useState(false);
   const m=machine;
   // The plain-text type caption below and the "Type:" tile badge both show
@@ -91,26 +83,6 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   },[open]);
-
-  const activeTiers = useMemo(()=>getTiers(profile?.storage_tiers),[profile?.storage_tiers]);
-
-  const doBookIn = async () => {
-    setBookSaving(true); setBookErr("");
-    try {
-      await createBooking({
-        machineId: m.id,
-        storageTier: bookForm.storageTier,
-        receivedAt: bookForm.receivedAt ? new Date(bookForm.receivedAt).toISOString() : undefined,
-        storageEnabled: bookForm.storageEnabled,
-        storageFeeOverride: bookForm.storageFeeOverride ? parseFloat(bookForm.storageFeeOverride) : undefined,
-        notes: bookForm.notes || undefined,
-      });
-      setShowBookIn(false);
-      setBookForm({storageTier:"Bench",receivedAt:"",storageEnabled:false,storageFeeOverride:"",notes:""});
-      onBookIn?.(m.id);
-    } catch(e){ setBookErr(e.message); }
-    setBookSaving(false);
-  };
 
   const saveSvc=async entry=>{
     setSaving(true);
@@ -486,49 +458,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
           {storagePolicyEnabled&&(
             <div style={{padding:"0 14px 12px"}}>
               <div style={{borderLeft:"2px solid "+ACC,paddingLeft:8,marginBottom:10}}><SL t="Storage" /></div>
-              {!showBookIn&&(
-                <button style={{width:"100%",background:"none",border:"1px solid "+BRD,borderRadius:3,padding:"16px 14px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:12,fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:MUT,fontSize:12,minHeight:56}} onClick={ev=>{ev.stopPropagation();const now=new Date();const pad=n=>String(n).padStart(2,"0");setBookForm(f=>({...f,receivedAt:now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+"T"+pad(now.getHours())+":"+pad(now.getMinutes())}));setShowBookIn(true);}}>
-                  <span style={{fontSize:28,lineHeight:1}}>🗄️</span>
-                  Move to Storage
-                </button>
-              )}
-              {showBookIn&&(
-                <div style={{background:"#0a0a0a",border:"1px solid "+BRD,borderRadius:3,padding:"16px 14px"}}>
-                  <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:14}}>
-                    <div>
-                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Storage Tier</div>
-                      <select value={bookForm.storageTier} onChange={e=>setBookForm(f=>({...f,storageTier:e.target.value}))} style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}}>
-                        {TIER_NAMES.map(t=><option key={t} value={t}>{t}{activeTiers[t]?.dailyRate!=null?" — $"+activeTiers[t].dailyRate+"/day after "+activeTiers[t].freeDays+"d free":""}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Received</div>
-                      <input type="datetime-local" value={bookForm.receivedAt} onChange={e=>setBookForm(f=>({...f,receivedAt:e.target.value}))} style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
-                    </div>
-                    {bookForm.storageTier==="Custom"&&(
-                      <div>
-                        <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Custom Daily Rate ($)</div>
-                        <input type="number" min="0" step="0.01" value={bookForm.storageFeeOverride} onChange={e=>setBookForm(f=>({...f,storageFeeOverride:e.target.value}))} placeholder="0.00" style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
-                      </div>
-                    )}
-                    <div>
-                      <div style={{fontSize:9,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:6}}>Notes</div>
-                      <input value={bookForm.notes} onChange={e=>setBookForm(f=>({...f,notes:e.target.value}))} placeholder="Optional" style={{...inp,fontSize:13,padding:"12px 10px",minHeight:48}} />
-                    </div>
-                  </div>
-                  <label htmlFor={"se-"+m.id} style={{display:"flex",alignItems:"center",gap:14,padding:"12px 0",cursor:"pointer",borderTop:"1px solid #1a1a1a",borderBottom:"1px solid #1a1a1a",marginBottom:14}}>
-                    <input type="checkbox" id={"se-"+m.id} checked={bookForm.storageEnabled} onChange={e=>setBookForm(f=>({...f,storageEnabled:e.target.checked}))} style={{width:22,height:22,accentColor:ACC,cursor:"pointer",flexShrink:0}} />
-                    <span style={{fontSize:12,color:MUT}}>Charge storage for this machine</span>
-                  </label>
-                  {bookErr&&<div style={{fontSize:9,color:RED,marginBottom:10}}>{bookErr}</div>}
-                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    <button style={{...btnA,width:"100%",padding:"14px",fontSize:12,minHeight:50,display:"flex",alignItems:"center",justifyContent:"center",gap:8}} onClick={doBookIn} disabled={bookSaving}>
-                      <span style={{fontSize:20}}>🗄️</span>{bookSaving?"Saving…":"Move to Storage"}
-                    </button>
-                    <button style={{...btnG,width:"100%",padding:"12px",fontSize:11,minHeight:44}} onClick={()=>{setShowBookIn(false);setBookErr("");}}>Cancel</button>
-                  </div>
-                </div>
-              )}
+              <MoveToStoragePanel machine={m} profile={profile} onUpdate={onUpdate} onBooked={onBookIn} />
             </div>
           )}
           {showPdfOpts&&<Suspense fallback={null}><PdfExportModal m={m} svcs={svcs} onClose={()=>setShowPdfOpts(false)}/></Suspense>}
