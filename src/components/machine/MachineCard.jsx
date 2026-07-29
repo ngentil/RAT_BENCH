@@ -284,10 +284,18 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
               if(k==="rage"&&(m.rage||0)>0) return <span key="rage" style={{fontSize:10,letterSpacing:-2}}>{"☠️".repeat(m.rage)}</span>;
               const field=ALL_BADGE_FIELDS.find(f=>f.k===k);
               if(field&&m[k]){const lbl=(field.s?field.s.replace(":",""):field.l.split("/")[0].trim().split(" ").slice(0,2).join(" "));return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,14)}</span>;}
-              // Not in the curated list — a field the Tile picker discovered
-              // dynamically on the machine itself (see config.jsx's
-              // TileConfig). Render it the same way, just with a
-              // humanized-from-the-key label instead of a curated one.
+              // Not in the curated list — the Tile picker (config.jsx's
+              // TileConfig) also offers every getMachineSpecEntries field,
+              // keyed by its label rather than a raw machine key, since many
+              // combine several fields into one value (e.g. "Front
+              // Suspension") or come from a nested object like carbSpec that
+              // a raw key can't address at all. Render using that entry's
+              // already-formatted value.
+              const specEntry=specs.find(s=>s.label===k);
+              if(specEntry){const lbl=k.split(" ").slice(0,2).join(" ");return <span key={k} style={bStyle}>{lbl}: {String(specEntry.value).slice(0,14)}</span>;}
+              // Last-resort fallback for a raw key with data that's in
+              // neither list (shouldn't normally happen now that
+              // getMachineSpecEntries covers essentially every field).
               if(!field&&m[k]&&typeof m[k]!=="object"){const lbl=humanizeKey(k).split(" ").slice(0,2).join(" ");return <span key={k} style={bStyle}>{lbl}: {String(m[k]).slice(0,14)}</span>;}
               return null;
             })}

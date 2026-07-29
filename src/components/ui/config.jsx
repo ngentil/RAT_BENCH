@@ -1,20 +1,7 @@
 import React, { useState } from 'react';
 import { ACC, MUT, TXT, btnA, btnG, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { ALL_SECTIONS, ALL_BADGE_FIELDS, BADGE_PALETTE, DEFAULT_TILE } from '../../lib/constants';
-import { getMachineSpecEntries, humanizeKey, CONTENT_BLOCKS, KEY_SECTIONS } from '../../lib/machineSpecs';
-
-// Structural/internal machine keys that are never spec data — never offer
-// these as tile badges or layout toggles no matter what value they hold.
-const NON_SPEC_KEYS = new Set([
-  "id","userId","companyId","clientId","createdAt","updatedAt","name","make","model",
-  "tileFields","tileColors","expandFields","hiddenSpecFields",
-  "photos","iPPhotos","ePPhotos","jobPhotos","services","parts","timeLog","jobTimers",
-  "dueDate","lastServiceDate","lastServiceOdo","lastServiceNotes",
-  "notes","desc","lighting","fasteners","belts","hydRams",
-  "bearings","batteries","fuseBoxes","attachments",
-  "chipperSpec","stumpGrinderSpec","carbSpec",
-  "submittedToWiki","wikiMachineId","status","strokeType","rage","type",
-]);
+import { getMachineSpecEntries, CONTENT_BLOCKS } from '../../lib/machineSpecs';
 
 export function SectionPicker({selected, onSave, onClose}){
   const [secs,setSecs]=useState(selected!==null&&selected!==undefined?selected:[...ALL_SECTIONS]);
@@ -56,32 +43,33 @@ export function TileConfig({machine, onSave, onClose}){
   const getColorIdx = k => colors[k]!==undefined ? colors[k] : 0;
   const save = () => onSave({...machine, tileFields: fields, tileColors: colors});
   const autoFields = ["status","strokeType","rage"];
-  // Any machine key with a real scalar value that ALL_BADGE_FIELDS doesn't
-  // already know about becomes a selectable badge too, grouped under its
-  // real category via KEY_SECTIONS (falling back to "General" only for a
-  // truly uncategorized key) — previously a field only became tile-able
-  // once someone remembered to add it to that curated list, so real data
-  // (e.g. Outboard Motor specs) could be logged and still be impossible to
-  // pick as a badge; and a flat "Other" bucket would just recreate the same
-  // "shown but not filed under what it actually is" problem Layout had.
-  const knownKeys = new Set(ALL_BADGE_FIELDS.map(f => f.k));
-  const dynamicFields = Object.keys(machine)
-    .filter(k => !knownKeys.has(k) && !NON_SPEC_KEYS.has(k))
-    .filter(k => {
-      const val = machine[k];
-      if (val == null || val === "") return false;
-      if (typeof val === "object") return false; // arrays/nested spec objects aren't single-badge-able
-      return true;
-    })
-    .map(k => ({ k, l: humanizeKey(k), s: "", section: KEY_SECTIONS[k] || "General" }));
-  const availableFields = [...ALL_BADGE_FIELDS, ...dynamicFields].filter(f => {
+
+  const curatedFields = ALL_BADGE_FIELDS.filter(f => {
     if(f.auto) return true;
     const val = machine[f.k];
     if(!val) return false;
     if(typeof val === "string") return val.trim().length > 0;
     if(typeof val === "number") return val > 0;
     return true;
-  });
+  }).map(f => ({...f, v: machine[f.k]}));
+
+  // Every field getMachineSpecEntries knows about (the same comprehensive,
+  // section-tagged list Layout's picker uses) that ALL_BADGE_FIELDS doesn't
+  // already offer under the same label — keyed by LABEL rather than a raw
+  // machine key, since several of these combine multiple fields into one
+  // value (e.g. "Front Suspension" = forkType + forkDiameter + forkTravel)
+  // or come from a nested object (carbSpec/chipperSpec/stumpGrinderSpec)
+  // that a flat top-level key scan could never reach as a badge at all —
+  // previously a field only became tile-able once someone remembered to add
+  // it to the curated list, so real data could be logged and still be
+  // impossible to pick; grouped under its real section, never a flat
+  // "Other" bucket, exactly like Layout.
+  const knownLabels = new Set(ALL_BADGE_FIELDS.map(f => f.l));
+  const specFields = getMachineSpecEntries(machine)
+    .filter(s => !knownLabels.has(s.label))
+    .map(s => ({ k: s.label, l: s.label, s: "", section: s.section, v: s.value }));
+
+  const availableFields = [...curatedFields, ...specFields];
   const sections = [...new Set(availableFields.map(f=>f.section))];
   return (
     <div style={ovly} onClick={onClose}>
@@ -105,7 +93,7 @@ export function TileConfig({machine, onSave, onClose}){
                 const active = fields.includes(f.k);
                 const isAuto = autoFields.includes(f.k);
                 const cidx = getColorIdx(f.k);
-                const val = machine[f.k];
+                const val = f.v;
                 return (
                   <div key={f.k} style={{padding:"6px 0",borderBottom:"1px solid #111"}}>
                     <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
