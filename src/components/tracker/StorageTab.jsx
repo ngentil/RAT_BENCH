@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
+import { MUT, BRD, SURF, TXT, GRN, RED, ACC, inp, btnA, btnG, sm } from '../../lib/styles';
 import { SL, Empty } from '../ui/shared';
 import { upsertMachine } from '../../lib/db';
 import { getAllActiveBookings, collectMachine } from '../../lib/db/bookings';
+import { createCollection } from '../../lib/db/collections';
 import { getTiers } from '../../lib/storageTiers';
 import { getStorageStatus, mIcon } from '../../lib/helpers';
 import { toastError } from '../../lib/toast';
@@ -10,9 +11,13 @@ import { toastError } from '../../lib/toast';
 const qtyOf = p => (p.qty == null || p.qty === '') ? 1 : (Number(p.qty) || 0);
 const fmt$  = n => `$${(n || 0).toFixed(2)}`;
 
+const emptyCollectForm = { name: "", phone: "", unknown: false };
+
 function StorageTab({ machines, setMachines, profile, company, active }) {
   const [bookings, setBookings] = useState([]);
   const [loaded, setLoaded]     = useState(false);
+  const [collectFormRow, setCollectFormRow] = useState(null); // booking id whose Collected form is open
+  const [collectForm, setCollectForm]       = useState(emptyCollectForm);
 
   // Like every other Workshop sub-tab this stays mounted (display:none) for
   // the whole session rather than unmounting on tab switch — a mount-only
@@ -71,6 +76,27 @@ function StorageTab({ machines, setMachines, profile, company, active }) {
     }
   };
 
+  // A customer taking the machine away is a third destination, distinct from
+  // Garage/Bench — onBench is already false here so it doesn't need touching,
+  // unlike the toBench branch above.
+  const doMarkCollected = async (row) => {
+    try {
+      await collectMachine(row.b.id);
+      await createCollection({
+        machineId: row.m.id,
+        customerName: collectForm.name,
+        customerPhone: collectForm.phone,
+        customerUnknown: collectForm.unknown,
+      });
+      setBookings(prev => prev.filter(b => b.id !== row.b.id));
+      setCollectFormRow(null);
+      setCollectForm(emptyCollectForm);
+    } catch (e) {
+      console.error("createCollection:", e);
+      toastError("Couldn't mark as collected — check connection");
+    }
+  };
+
   return (
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
       <div style={{ marginBottom: 14 }}><SL t="Storage" /></div>
@@ -96,11 +122,36 @@ function StorageTab({ machines, setMachines, profile, company, active }) {
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
                 <button style={{ ...btnG, ...sm }} onClick={() => doCollect(row, false)} title="Move back to Garage">← Garage</button>
                 <button style={{ ...btnA, ...sm }} onClick={() => doCollect(row, true)} title="Move straight onto the Bench">🔧 Bench</button>
+                <button style={{ ...btnG, ...sm, color: ACC, borderColor: ACC + "55" }} onClick={() => { setCollectFormRow(row.b.id); setCollectForm(emptyCollectForm); }} title="Customer has taken the machine">📦 Collected</button>
               </div>
             </div>
+
+            {collectFormRow === row.b.id && (
+              <div style={{ background: "#0a0a0a", border: "1px solid " + BRD, borderRadius: 2, padding: "10px 12px", marginBottom: 10 }}>
+                <div style={{ fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Who's picking it up?</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+                  <input placeholder="Customer name" value={collectForm.name} disabled={collectForm.unknown}
+                    onChange={e => setCollectForm(f => ({ ...f, name: e.target.value }))}
+                    style={{ ...inp, fontSize: 12, padding: "8px 10px", opacity: collectForm.unknown ? 0.4 : 1 }} />
+                  <input placeholder="Customer phone" value={collectForm.phone} disabled={collectForm.unknown}
+                    onChange={e => setCollectForm(f => ({ ...f, phone: e.target.value }))}
+                    style={{ ...inp, fontSize: 12, padding: "8px 10px", opacity: collectForm.unknown ? 0.4 : 1 }} />
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <input type="checkbox" checked={collectForm.unknown}
+                      onChange={e => setCollectForm(f => ({ ...f, unknown: e.target.checked, name: "", phone: "" }))}
+                      style={{ width: 16, height: 16, accentColor: ACC, cursor: "pointer", flexShrink: 0 }} />
+                    <span style={{ fontSize: 10, color: MUT }}>Unknown — not sure who picked it up</span>
+                  </label>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button style={{ ...btnG, ...sm }} onClick={() => { setCollectFormRow(null); setCollectForm(emptyCollectForm); }}>Cancel</button>
+                  <button style={{ ...btnA, ...sm }} onClick={() => doMarkCollected(row)}>✓ Confirm Collected</button>
+                </div>
+              </div>
+            )}
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 10, color: MUT, marginBottom: exceeds ? 8 : 0 }}>
               <span>Labour <span style={{ color: TXT, fontFamily: "'IBM Plex Mono',monospace" }}>{fmt$(labourOwed)}</span></span>

@@ -111,6 +111,7 @@ export const WORKSHOP_TABS = [
   {id:"equipment",   label:"Equipment"},
   {id:"vehicles",    label:"Vehicles"},
   {id:"storage",     label:"Storage"},
+  {id:"collected",   label:"Collected"},
   {id:"clients",     label:"Clients"},
   {id:"revenue",     label:"Revenue"},
 ];

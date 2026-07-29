@@ -4,6 +4,7 @@ import { upsertMachine, deleteMachineApi } from '../../lib/db';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { getPref, savePref } from '../../lib/db/preferences';
 import { getAllActiveBookings } from '../../lib/db/bookings';
+import { getAllActiveCollections } from '../../lib/db/collections';
 import MachineTile from '../machine/MachineTile';
 import MachineRow from '../machine/MachineRow';
 import MachinePhotoRow from '../machine/MachinePhotoRow';
@@ -73,25 +74,27 @@ function GuideStep2({ onSkip }) {
 }
 
 function Tracker({machines:allMachines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear,active}){
-  // Bulk-fetched (not per-machine) — a machine currently on the Bench or
-  // booked into Storage lives in that tab instead, the same way a sold
-  // machine lives in Sold Items. Refetches on every activation rather than
-  // just once on mount: like every other main tab this stays mounted
-  // (display:none) for the whole session, so a mount-only fetch would go
-  // stale the moment a machine is collected from the Storage tab instead of
-  // from here.
-  const [bookedIds,setBookedIds]=useState(()=>new Set());
+  // Bulk-fetched (not per-machine) — a machine currently on the Bench,
+  // booked into Storage, or Collected by a customer lives in that tab
+  // instead, the same way a sold machine lives in Sold Items. Refetches on
+  // every activation rather than just once on mount: like every other main
+  // tab this stays mounted (display:none) for the whole session, so a
+  // mount-only fetch would go stale the moment a machine moves out of
+  // Garage from one of those other tabs instead of from here.
+  const [awayIds,setAwayIds]=useState(()=>new Set());
   useEffect(()=>{
     if(!active) return;
     let alive=true;
-    getAllActiveBookings().then(rows=>{if(alive)setBookedIds(new Set(rows.map(b=>b.machine_id)));});
+    Promise.all([getAllActiveBookings(),getAllActiveCollections()]).then(([bookings,collections])=>{
+      if(alive)setAwayIds(new Set([...bookings.map(b=>b.machine_id),...collections.map(c=>c.machine_id)]));
+    });
     return ()=>{alive=false;};
   },[active]);
   // Sold machines stay in the shared machines[] state (so relisting from the
   // Sold Items tab can instantly clear their soldAt flag) but drop out of the
-  // active Garage view here — same for a machine currently on the Bench or in
-  // Storage, which live in their own tabs instead.
-  const machines=useMemo(()=>allMachines.filter(m=>!m.soldAt&&!m.onBench&&!bookedIds.has(m.id)),[allMachines,bookedIds]);
+  // active Garage view here — same for a machine currently on the Bench, in
+  // Storage, or Collected, which live in their own tabs instead.
+  const machines=useMemo(()=>allMachines.filter(m=>!m.soldAt&&!m.onBench&&!awayIds.has(m.id)),[allMachines,awayIds]);
   const [showAdd,setShowAdd]=useState(false);
   const [prefill,setPrefill]=useState(null);
   const [showUpgrade,setShowUpgrade]=useState(false);
@@ -310,7 +313,7 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
       {tileOpen&&(()=>{const m=sorted.find(x=>x.id===tileOpen);return m?(
         <div style={{position:"fixed",inset:0,background:"#000",zIndex:200,overflowY:"auto",overscrollBehavior:"contain"}}>
           <div style={{maxWidth:640,margin:"0 auto",padding:"8px 8px 0"}}>
-            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse onClose={closeTile} searchQuery={searchQuery} searchTokens={searchTokens} onMoveToBench={moveToBench} onBookIn={id=>setBookedIds(prev=>new Set(prev).add(id))}/>
+            <MachineCard machine={m} onUpdate={u=>{updateM(u);}} onDelete={d=>{deleteM(d);setTileOpen(null);}} company={company} profile={profile} clients={clients} isGuest={isGuest} showGuide={tutStep===2} onTutDismiss={skipTut} onCardOpened={()=>setTutCardOpened(true)} initialOpen hideCollapse onClose={closeTile} searchQuery={searchQuery} searchTokens={searchTokens} onMoveToBench={moveToBench} onBookIn={id=>setAwayIds(prev=>new Set(prev).add(id))}/>
           </div>
         </div>
       ):null;})()}
