@@ -82,10 +82,31 @@ export const BADGE_PALETTE = [
   ["#1a1a1a","#55555588","#888888"],
 ];
 
-// The same 8 colours as BADGE_PALETTE's accent column, offered as the site-
-// wide accent-color choices in Settings → Profile — one shared swatch set
-// instead of two palettes that could drift apart.
-export const ACCENT_PRESETS = BADGE_PALETTE.map(t => t[2]);
+// Site-wide accent-color choices (Settings → Profile → Appearance). A
+// separate, larger, more saturated palette from BADGE_PALETTE on purpose —
+// tile badges are small text-on-chip elements tuned for legibility at that
+// size, while the accent recolors big surfaces (buttons, tab highlights),
+// so it can afford to be more vibrant. First entry is the original default,
+// kept first so an account that's never chosen one still sees its current
+// color highlighted in the grid.
+export const ACCENT_PRESETS = [
+  "#e8670a", // orange (default)
+  "#ef4444", // red
+  "#f43f5e", // rose
+  "#ec4899", // pink
+  "#d946ef", // fuchsia
+  "#a855f7", // purple
+  "#8b5cf6", // violet
+  "#6366f1", // indigo
+  "#3b82f6", // blue
+  "#0ea5e9", // sky
+  "#06b6d4", // cyan
+  "#14b8a6", // teal
+  "#22c55e", // green
+  "#84cc16", // lime
+  "#eab308", // yellow
+  "#f59e0b", // amber
+];
 
 export const TILE_COLOR_DEFAULTS = {
   status:"auto", strokeType:"auto", rage:"auto",
