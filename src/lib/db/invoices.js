@@ -14,3 +14,15 @@ export async function getNextInvoiceNumber(userId) {
     return `INV-${y}-T${Date.now().toString(36).toUpperCase()}`;
   }
 }
+
+export async function getNextQuoteNumber(userId) {
+  try {
+    const { data, error } = await supabase.rpc('next_quote_number', { p_user_id: userId });
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    console.error('next_quote_number RPC failed — using timestamp fallback:', e);
+    const y = new Date().getFullYear();
+    return `QT-${y}-T${Date.now().toString(36).toUpperCase()}`;
+  }
+}

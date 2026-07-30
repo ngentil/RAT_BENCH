@@ -5,6 +5,7 @@ import { upsertMachine } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
 import { generateInvoicePDF } from '../../lib/invoicePdf';
+import { getLatestDocumentForMachine } from '../../lib/db/billingDocuments';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { SL, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
@@ -107,6 +108,10 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
   const [editingNotes, setEditingNotes] = useState(null);
   const [noteDraft, setNoteDraft] = useState("");
+  // { docType, existing } while the merge-or-copy choice is showing (a prior
+  // quote/invoice was found for this machine); null the rest of the time.
+  const [regen, setRegen] = useState(null);
+  const [checking, setChecking] = useState(null); // docType currently being checked
   const log = machine.timeLog || [];
   const hasParts = (machine.parts || []).length > 0;
   if (!log.length && !hasParts) return null;
@@ -155,6 +160,29 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
     if (ok) setEditingNotes(null);
   };
 
+  // Regenerate check: does this machine already have a quote/invoice logged
+  // under Office? If so, ask merge-into-existing vs keep-as-new-copy instead
+  // of silently minting another numbered document every time.
+  const handleGenerate = async (docType) => {
+    setChecking(docType);
+    try {
+      const existing = await getLatestDocumentForMachine(machine.id, docType);
+      if (existing) setRegen({ docType, existing });
+      else await generateInvoicePDF(machine, company, clients, userId, docType, onUpdate);
+    } catch (err) {
+      console.error('regenerate check:', err);
+      toastError("Couldn't check for an existing document — check connection");
+    } finally {
+      setChecking(null);
+    }
+  };
+
+  const resolveRegen = async (mergeInto) => {
+    const { docType, existing } = regen;
+    setRegen(null);
+    await generateInvoicePDF(machine, company, clients, userId, docType, onUpdate, mergeInto ? existing : null);
+  };
+
   return (
     <div style={{ marginTop: 8, padding: "8px 10px", background: "#0a0a0a", border: "1px solid #1e1e1e", borderRadius: 2 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -176,9 +204,21 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
         ) : (
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em", flex: 1 }}>Parts only — no time logged</span>
         )}
-        <button onClick={() => generateInvoicePDF(machine, company, clients, userId, 'quote', onUpdate)} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Quote</button>
-        <button onClick={() => generateInvoicePDF(machine, company, clients, userId, 'invoice', onUpdate)} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3 }}>Invoice</button>
+        <button disabled={!!checking} onClick={() => handleGenerate('quote')} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3, opacity: checking === 'quote' ? 0.6 : 1 }}>Quote</button>
+        <button disabled={!!checking} onClick={() => handleGenerate('invoice')} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3, opacity: checking === 'invoice' ? 0.6 : 1 }}>Invoice</button>
       </div>
+      {regen && (
+        <div style={{ marginTop: 8, padding: "8px 10px", background: "#120d00", border: "1px solid " + ACC + "55", borderRadius: 2 }}>
+          <div style={{ fontSize: 9, color: TXT, lineHeight: 1.5, marginBottom: 7 }}>
+            {regen.docType === 'quote' ? 'A quote' : 'An invoice'} already exists for this machine — <span style={{ color: ACC, fontWeight: 700 }}>{regen.existing.doc_ref}</span>. Merge into it, or keep a distinct new copy?
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button onClick={() => resolveRegen(true)} style={{ ...btnA, ...sm, fontSize: 9 }}>Merge into {regen.existing.doc_ref}</button>
+            <button onClick={() => resolveRegen(false)} style={{ ...btnG, ...sm, fontSize: 9 }}>New Copy</button>
+            <button onClick={() => setRegen(null)} style={{ ...btnG, ...sm, fontSize: 9 }}>Cancel</button>
+          </div>
+        </div>
+      )}
       {expanded && log.length > 0 && (
         <div style={{ marginTop: 8 }}>
           {log.map((entry, idx) => {

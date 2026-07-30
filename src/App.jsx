@@ -6,7 +6,7 @@ import { getVehicles } from './lib/db/vehicles';
 import { getEquipment } from './lib/db/equipment';
 import { getTools } from './lib/db/tools';
 import { fromDb } from './lib/db/transforms';
-import { TABS, WORKSHOP_TABS } from './lib/constants';
+import { TABS, WORKSHOP_TABS, OFFICE_TABS } from './lib/constants';
 import { getMachineServiceStatus } from './lib/helpers';
 import { savePref, migrateLocalPreferences } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
@@ -28,6 +28,7 @@ import StorageTab from './components/tracker/StorageTab';
 import CollectedTab from './components/tracker/CollectedTab';
 import CustomersTab from './components/customers/CustomersTab';
 import PartsTab from './components/tracker/PartsTab';
+import BillingDocumentsTab from './components/office/BillingDocumentsTab';
 import ToolsTab from './components/tools/ToolsTab';
 import VehiclesTab from './components/vehicles/VehiclesTab';
 import EquipmentTab from './components/equipment/EquipmentTab';
@@ -37,6 +38,7 @@ import ConsumablesTab from './components/consumables/ConsumablesTab';
 function App(){
   const [tab,setTab]=useState("tracker");
   const [workshopTab,setWorkshopTab]=useState("parts");
+  const [officeTab,setOfficeTab]=useState("clients");
   const [settingsTab,setSettingsTab]=useState("profile");
   const [machines,setMachines]=useState([]);
   const [clients,setClients]=useState([]);
@@ -212,6 +214,7 @@ function App(){
 
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'tab',tab); },[tab,prefsSynced,profile?.id]);
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'workshopTab',workshopTab); },[workshopTab,prefsSynced,profile?.id]);
+  useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'officeTab',officeTab); },[officeTab,prefsSynced,profile?.id]);
 
   // Site-wide "N online" — real Presence count, shared with the public wiki
   // subdomain via the same channel, shown always in the top bar regardless
@@ -227,16 +230,23 @@ function App(){
     if(!prefsSynced&&!prefsSyncStartedRef.current){
       prefsSyncStartedRef.current=true;
       const prefs=profile.preferences||{};
-      const WS_IDS=new Set(["parts","clients","tools","vehicles","equipment","consumables","revenue","reminders","storage","collected"]);
+      const WS_IDS=new Set(["parts","tools","vehicles","equipment","consumables","reminders","storage","collected"]);
+      // Clients/Revenue used to live under Workshop — old saved prefs pointing
+      // at either (as a legacy top-level tab.tab, or as a workshopTab value)
+      // now route to their new home under Office instead.
+      const OFFICE_IDS=new Set(["clients","revenue","quotes","invoices"]);
       if(prefs.tab&&prefs.tab!=="users"){
         // Reminders used to be its own top-level tab — route old saved prefs
         // straight to its new home instead of the last-used workshop sub-tab.
         if(prefs.tab==="reminders"){setTab("workshop");setWorkshopTab("reminders");}
+        else if(OFFICE_IDS.has(prefs.tab)){setTab("office");setOfficeTab(prefs.tab);}
         else if(WS_IDS.has(prefs.tab)){setTab("workshop");if(prefs.workshopTab)setWorkshopTab(prefs.workshopTab);}
         else setTab(prefs.tab);
       } else if(prefs.workshopTab){
-        setWorkshopTab(prefs.workshopTab);
+        if(OFFICE_IDS.has(prefs.workshopTab)){setTab("office");setOfficeTab(prefs.workshopTab);}
+        else setWorkshopTab(prefs.workshopTab);
       }
+      if(prefs.officeTab&&OFFICE_IDS.has(prefs.officeTab)) setOfficeTab(prefs.officeTab);
       if(prefs.dismissedAnns) setDismissedAnns(prefs.dismissedAnns);
       migrateLocalPreferences(profile.id, prefs).then(()=>setPrefsSynced(true));
     }
@@ -249,6 +259,13 @@ function App(){
     if(Array.isArray(wsHidden)&&wsHidden.includes(workshopTab)){
       const first=WORKSHOP_TABS.find(t=>!wsHidden.includes(t.id));
       if(first) setWorkshopTab(first.id);
+    }
+    // Same hidden-list semantics for Office (see visibleOfficeTabs below) —
+    // brand new, so there's no legacy office_visible whitelist to worry about.
+    const offHidden=profile?.tab_order?.office_hidden;
+    if(Array.isArray(offHidden)&&offHidden.includes(officeTab)){
+      const first=OFFICE_TABS.find(t=>!offHidden.includes(t.id));
+      if(first) setOfficeTab(first.id);
     }
   },[profile,company]);
 
@@ -380,6 +397,11 @@ function App(){
     WORKSHOP_TABS.filter(t=>!savedWorkshopHidden?.includes(t.id)),
     profile?.tab_order?.workshop
   );
+  const savedOfficeHidden = profile?.tab_order?.office_hidden;
+  const visibleOfficeTabs = applyTabOrder(
+    OFFICE_TABS.filter(t=>!savedOfficeHidden?.includes(t.id)),
+    profile?.tab_order?.office
+  );
   const orderedMainTabs = applyTabOrder(TABS, profile?.tab_order?.main);
   const mainTabsToShow = orderedMainTabs;
 
@@ -452,6 +474,19 @@ function App(){
           })}
         </div>
       )}
+      {tab==="office"&&(
+        <div className="tab-bar-rocker" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
+          {visibleOfficeTabs.map(t=>{
+            const active=officeTab===t.id;
+            return (
+            <button key={t.id} onClick={()=>setOfficeTab(t.id)} className={"tab-btn-rocker"+(active?" on":"")} style={{flexShrink:0,padding:"8px 12px 11px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?"#191410":"none",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
+              {t.label}
+              <span className="lamp" />
+            </button>
+            );
+          })}
+        </div>
+      )}
 
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)} active={tab==="tracker"}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={benchMachines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
@@ -459,14 +494,16 @@ function App(){
       <div style={{display:tab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)}/>}</div>
       <div style={{display:tab==="workshop"&&workshopTab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} refreshKey={toolsRefreshKey} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="vehicles"?"contents":"none"}}><VehiclesTab vehicles={vehicles} setVehicles={setVehicles} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="storage"?"contents":"none"}}><StorageTab machines={machines} setMachines={setMachines} profile={profile} company={company} active={tab==="workshop"&&workshopTab==="storage"} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="collected"?"contents":"none"}}><CollectedTab machines={machines} setMachines={setMachines} active={tab==="workshop"&&workshopTab==="collected"}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="collected"?"contents":"none"}}><CollectedTab machines={machines} setMachines={setMachines} profile={profile} active={tab==="workshop"&&workshopTab==="collected"}/></div>
+      <div style={{display:tab==="office"&&officeTab==="clients"?"contents":"none"}}><CustomersTab machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} session={session} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="office"&&officeTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="office"&&officeTab==="quotes"?"contents":"none"}}><BillingDocumentsTab docType="quote" machines={machines} clients={clients} active={tab==="office"&&officeTab==="quotes"}/></div>
+      <div style={{display:tab==="office"&&officeTab==="invoices"?"contents":"none"}}><BillingDocumentsTab docType="invoice" machines={machines} clients={clients} active={tab==="office"&&officeTab==="invoices"}/></div>
       {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools} initialTab={settingsTab}/>}
     </div>
   );

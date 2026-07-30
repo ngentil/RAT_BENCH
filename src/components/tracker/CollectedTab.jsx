@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MUT, BRD, SURF, TXT, GRN, btnA, btnG, sm } from '../../lib/styles';
+import { MUT, BRD, SURF, TXT, GRN, ACC, btnA, btnG, sm } from '../../lib/styles';
 import { SL, Empty } from '../ui/shared';
 import { upsertMachine } from '../../lib/db';
 import { getAllActiveCollections, returnMachine } from '../../lib/db/collections';
 import { mIcon } from '../../lib/helpers';
 import { toastError } from '../../lib/toast';
+import MoveToStoragePanel from '../machine/MoveToStoragePanel';
 
-function CollectedTab({ machines, setMachines, active }) {
+function CollectedTab({ machines, setMachines, profile, active }) {
   const [collections, setCollections] = useState([]);
   const [loaded, setLoaded]           = useState(false);
 
@@ -44,6 +45,21 @@ function CollectedTab({ machines, setMachines, active }) {
     }
   };
 
+  // MoveToStoragePanel only knows how to create a new booking — closing out
+  // the Collected record it's leaving is this tab's own extra step, fired
+  // only once the new booking is confirmed to exist (mirrors doMarkCollected
+  // in StorageTab: don't touch the record you're leaving until the new one
+  // is safely created, so a failure here doesn't orphan the machine).
+  const closeCollectionAfter = (row) => async () => {
+    try {
+      await returnMachine(row.c.id);
+      setCollections(prev => prev.filter(c => c.id !== row.c.id));
+    } catch (e) {
+      console.error("returnMachine (post-rebooking):", e);
+      toastError("Moved to Storage, but couldn't clear the Collected record — check connection");
+    }
+  };
+
   return (
     <div style={{ padding: 16, flex: 1, overflowY: "auto" }}>
       <div style={{ marginBottom: 14 }}><SL t="Collected" /></div>
@@ -58,7 +74,7 @@ function CollectedTab({ machines, setMachines, active }) {
         const { m, c } = row;
         return (
           <div key={m.id} style={{ background: SURF, border: "1px solid " + BRD, borderRadius: 3, padding: "12px 14px", marginBottom: 10 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: "1 1 160px" }}>
                 <span style={{ fontSize: 22, flexShrink: 0 }}>{mIcon(m.type)}</span>
                 <div style={{ minWidth: 0 }}>
@@ -78,6 +94,20 @@ function CollectedTab({ machines, setMachines, active }) {
                 <button style={{ ...btnA, ...sm }} onClick={() => doReturn(row, true)} title="Straight to the Bench">🔧 Bench</button>
               </div>
             </div>
+
+            {!!profile?.storage_policy_enabled && (
+              <>
+                <div style={{ borderLeft: "2px solid " + ACC, paddingLeft: 8, marginBottom: 8, fontSize: 9, color: MUT, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  Or back into storage
+                </div>
+                <MoveToStoragePanel
+                  machine={m}
+                  profile={profile}
+                  onUpdate={u => setMachines(prev => prev.map(x => x.id === u.id ? u : x))}
+                  onBooked={closeCollectionAfter(row)}
+                />
+              </>
+            )}
           </div>
         );
       })}
