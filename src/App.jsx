@@ -64,6 +64,16 @@ function App(){
   // initializedRef alone (which, once true, stays true across a sign-out ->
   // different-user sign-in in the same tab).
   const loadedUserIdRef=useRef(null);
+  // Guards the cross-device accent-color reload (below) to at most once per
+  // page lifetime — loadForSession re-runs on every SIGNED_IN refire (see the
+  // comment above isNewSession), including the harmless tab-focus-regain one,
+  // so without this a save that never actually lands server-side (e.g. the
+  // SQL migration adding accentColor to the preference allowlist not yet run
+  // against this project) would re-trigger the mismatch check — and the
+  // reload — every single time, silently aborting whatever else was mid-fetch
+  // (this is what previously surfaced as a spurious "Could not load: vehicles,
+  // equipment, tools" error, cut off by the next reload before they resolved).
+  const accentSyncCheckedRef=useRef(false);
   const [session,setSession]=useState(null);
   const [authChecked,setAuthChecked]=useState(false);
   const [profile,setProfile]=useState(null);
@@ -96,7 +106,7 @@ function App(){
       setSession(null);setProfile(null);setMachines([]);setCompany(null);setClients([]);
       setVehicles([]);setEquipment([]);setTools([]);
       // Reset preference sync so the next sign-in restores that user's prefs
-      setPrefsSynced(false);prefsSyncStartedRef.current=false;
+      setPrefsSynced(false);prefsSyncStartedRef.current=false;accentSyncCheckedRef.current=false;
       setAuthChecked(true);setProfileChecked(true);setInitializing(false);
       initializedRef.current=true;
       loadedUserIdRef.current=null;
@@ -163,14 +173,17 @@ function App(){
     // localStorage (see ACCENT_KEY there), so a synced preference from
     // another device can't take effect without a reload — do that once,
     // right here, rather than leaving a new device stuck on the default
-    // color until the user happens to refresh some other way. Comparing
-    // against the current localStorage value first means this only ever
-    // fires the one time a device's cache doesn't yet match.
-    const syncedAccent = profileData?.preferences?.accentColor;
-    if(syncedAccent && localStorage.getItem(ACCENT_KEY) !== syncedAccent){
-      localStorage.setItem(ACCENT_KEY, syncedAccent);
-      window.location.reload();
-      return;
+    // color until the user happens to refresh some other way. Gated by the
+    // ref above so this can only ever reload once per page lifetime, even
+    // though loadForSession itself re-runs on every SIGNED_IN refire.
+    if(!accentSyncCheckedRef.current){
+      accentSyncCheckedRef.current = true;
+      const syncedAccent = profileData?.preferences?.accentColor;
+      if(syncedAccent && localStorage.getItem(ACCENT_KEY) !== syncedAccent){
+        localStorage.setItem(ACCENT_KEY, syncedAccent);
+        window.location.reload();
+        return;
+      }
     }
 
     // All five data loads run in parallel — was sequential (up to ~2.5s), now ~one RTT
