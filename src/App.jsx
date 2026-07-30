@@ -6,7 +6,7 @@ import { getVehicles } from './lib/db/vehicles';
 import { getEquipment } from './lib/db/equipment';
 import { getTools } from './lib/db/tools';
 import { fromDb } from './lib/db/transforms';
-import { TABS, WORKSHOP_TABS, OFFICE_TABS } from './lib/constants';
+import { TABS, WORKSHOP_TABS, OFFICE_TABS, COMMUNITY_TABS } from './lib/constants';
 import { getMachineServiceStatus } from './lib/helpers';
 import { savePref, migrateLocalPreferences } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
@@ -21,6 +21,7 @@ import Tracker from './components/tracker/Tracker';
 import JobBoard from './components/tracker/JobBoard';
 import WikiTab from './components/wiki/WikiTab';
 import MarketplaceTab from './components/marketplace/MarketplaceTab';
+import MessagesTab from './components/marketplace/MessagesTab';
 import UsersTab from './components/users/UsersTab';
 import ServiceReminders from './components/tracker/ServiceReminders';
 import RevenueDashboard from './components/tracker/RevenueDashboard';
@@ -39,6 +40,14 @@ function App(){
   const [tab,setTab]=useState("tracker");
   const [workshopTab,setWorkshopTab]=useState("parts");
   const [officeTab,setOfficeTab]=useState("clients");
+  const [communityTab,setCommunityTab]=useState("wiki");
+  // Cross-tab handoffs between Marketplace and Messages, now that messaging
+  // lives as its own Community sub-tab instead of being nested inside
+  // Marketplace: "message seller" asks Messages to jump to a thread;
+  // a thread's linked-listing click asks Marketplace to jump to a listing.
+  const [pendingThreadId,setPendingThreadId]=useState(null);
+  const [pendingListingId,setPendingListingId]=useState(null);
+  const [messagesUnread,setMessagesUnread]=useState(0);
   const [settingsTab,setSettingsTab]=useState("profile");
   const [machines,setMachines]=useState([]);
   const [clients,setClients]=useState([]);
@@ -215,6 +224,7 @@ function App(){
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'tab',tab); },[tab,prefsSynced,profile?.id]);
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'workshopTab',workshopTab); },[workshopTab,prefsSynced,profile?.id]);
   useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'officeTab',officeTab); },[officeTab,prefsSynced,profile?.id]);
+  useEffect(()=>{ if(prefsSynced&&profile?.id) savePref(profile.id,'communityTab',communityTab); },[communityTab,prefsSynced,profile?.id]);
 
   // Site-wide "N online" — real Presence count, shared with the public wiki
   // subdomain via the same channel, shown always in the top bar regardless
@@ -235,11 +245,15 @@ function App(){
       // at either (as a legacy top-level tab.tab, or as a workshopTab value)
       // now route to their new home under Office instead.
       const OFFICE_IDS=new Set(["clients","revenue","quotes","invoices"]);
+      // Wiki/Market used to be their own top-level tabs — old saved prefs
+      // pointing at either now route to their new home under Community.
+      const COMMUNITY_IDS=new Set(["wiki","marketplace"]);
       if(prefs.tab&&prefs.tab!=="users"){
         // Reminders used to be its own top-level tab — route old saved prefs
         // straight to its new home instead of the last-used workshop sub-tab.
         if(prefs.tab==="reminders"){setTab("workshop");setWorkshopTab("reminders");}
         else if(OFFICE_IDS.has(prefs.tab)){setTab("office");setOfficeTab(prefs.tab);}
+        else if(COMMUNITY_IDS.has(prefs.tab)){setTab("community");setCommunityTab(prefs.tab);}
         else if(WS_IDS.has(prefs.tab)){setTab("workshop");if(prefs.workshopTab)setWorkshopTab(prefs.workshopTab);}
         else setTab(prefs.tab);
       } else if(prefs.workshopTab){
@@ -247,6 +261,7 @@ function App(){
         else setWorkshopTab(prefs.workshopTab);
       }
       if(prefs.officeTab&&OFFICE_IDS.has(prefs.officeTab)) setOfficeTab(prefs.officeTab);
+      if(prefs.communityTab&&COMMUNITY_IDS.has(prefs.communityTab)) setCommunityTab(prefs.communityTab);
       if(prefs.dismissedAnns) setDismissedAnns(prefs.dismissedAnns);
       migrateLocalPreferences(profile.id, prefs).then(()=>setPrefsSynced(true));
     }
@@ -266,6 +281,12 @@ function App(){
     if(Array.isArray(offHidden)&&offHidden.includes(officeTab)){
       const first=OFFICE_TABS.find(t=>!offHidden.includes(t.id));
       if(first) setOfficeTab(first.id);
+    }
+    // Same again for Community.
+    const commHidden=profile?.tab_order?.community_hidden;
+    if(Array.isArray(commHidden)&&commHidden.includes(communityTab)){
+      const first=COMMUNITY_TABS.find(t=>!commHidden.includes(t.id));
+      if(first) setCommunityTab(first.id);
     }
   },[profile,company]);
 
@@ -402,6 +423,11 @@ function App(){
     OFFICE_TABS.filter(t=>!savedOfficeHidden?.includes(t.id)),
     profile?.tab_order?.office
   );
+  const savedCommunityHidden = profile?.tab_order?.community_hidden;
+  const visibleCommunityTabs = applyTabOrder(
+    COMMUNITY_TABS.filter(t=>!savedCommunityHidden?.includes(t.id)),
+    profile?.tab_order?.community
+  );
   const orderedMainTabs = applyTabOrder(TABS, profile?.tab_order?.main);
   const mainTabsToShow = orderedMainTabs;
 
@@ -446,6 +472,7 @@ function App(){
             t.id==="workshop"&&overdueCount>0?{n:overdueCount,c:RED}:
             t.id==="workshop"&&dueSoonCount>0?{n:dueSoonCount,c:"#e8870a"}:
             t.id==="jobs"&&timerRunning?{n:"▶",c:GRN}:
+            t.id==="community"&&messagesUnread>0?{n:messagesUnread>9?"9+":messagesUnread,c:RED}:
             null;
           return (
           <button key={t.id} onClick={()=>setTab(t.id)} className={"tab-btn tab-btn-rocker"+(active?" on":"")} style={{flex:"1 1 0",minWidth:0,padding:"10px 8px 13px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?"#191410":"none",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textAlign:"center",position:"relative"}}>
@@ -487,11 +514,27 @@ function App(){
           })}
         </div>
       )}
+      {tab==="community"&&(
+        <div className="tab-bar-rocker" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
+          {visibleCommunityTabs.map(t=>{
+            const active=communityTab===t.id;
+            const badge=t.id==="messages"&&messagesUnread>0?{n:messagesUnread>9?"9+":messagesUnread,c:RED}:null;
+            return (
+            <button key={t.id} onClick={()=>setCommunityTab(t.id)} className={"tab-btn-rocker"+(active?" on":"")} style={{flexShrink:0,padding:"8px 12px 11px",fontSize:10,fontWeight:active?900:700,letterSpacing:"0.06em",textTransform:"uppercase",color:active?ACC:MUT,cursor:"pointer",border:"none",background:active?"#191410":"none",fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",position:"relative"}}>
+              {t.label}
+              <span className="lamp" />
+              {badge&&<span style={{position:"absolute",top:2,right:2,fontSize:9,fontWeight:900,lineHeight:1,background:badge.c+"22",color:badge.c,border:"1px solid "+badge.c+"66",borderRadius:2,padding:"0px 3px"}}>{badge.n}</span>}
+            </button>
+            );
+          })}
+        </div>
+      )}
 
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)} active={tab==="tracker"}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={benchMachines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)}/>}</div>
+      <div style={{display:tab==="community"&&communityTab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="community"&&communityTab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)} onOpenThread={(id)=>{setCommunityTab("messages");setPendingThreadId(id);}} pendingListingId={pendingListingId} onConsumePendingListing={()=>setPendingListingId(null)}/>}</div>
+      <div style={{display:tab==="community"&&communityTab==="messages"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MessagesTab profile={profile} pendingThreadId={pendingThreadId} onConsumePendingThread={()=>setPendingThreadId(null)} onOpenListing={(id)=>{setCommunityTab("marketplace");setPendingListingId(id);}} onUnreadChange={setMessagesUnread}/>}</div>
       <div style={{display:tab==="workshop"&&workshopTab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} refreshKey={toolsRefreshKey} onGoToBilling={()=>goToBilling("unknown")}/></div>

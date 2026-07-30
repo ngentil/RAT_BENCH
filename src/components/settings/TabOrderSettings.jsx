@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
-import { TABS, WORKSHOP_TABS, OFFICE_TABS } from '../../lib/constants';
+import { TABS, WORKSHOP_TABS, OFFICE_TABS, COMMUNITY_TABS } from '../../lib/constants';
 import { applyTabOrder } from '../../lib/tabOrder';
 
 const secHd = { borderLeft: "2px solid " + ACC, paddingLeft: 8, fontSize: 10, color: TXT, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 };
@@ -89,6 +89,7 @@ export default function TabOrderSettings({ profile, setProfile }) {
   const [main,     setMain]     = useState(() => applyTabOrder(TABS, saved.main));
   const [workshop, setWorkshop] = useState(() => applyTabOrder(WORKSHOP_TABS, saved.workshop));
   const [office,   setOffice]   = useState(() => applyTabOrder(OFFICE_TABS, saved.office));
+  const [community, setCommunity] = useState(() => applyTabOrder(COMMUNITY_TABS, saved.community));
   const [settings, setSettings] = useState(() => applyTabOrder(SETTINGS_TABS, saved.settings));
   const [workshopVisible, setWorkshopVisible] = useState(() => {
     // Only the new workshop_hidden field is trusted — the old workshop_visible
@@ -106,6 +107,14 @@ export default function TabOrderSettings({ profile, setProfile }) {
     const hidden = saved.office_hidden;
     return hidden ? new Set(OFFICE_TABS.filter(t => !hidden.includes(t.id)).map(t => t.id)) : new Set(OFFICE_TABS.map(t => t.id));
   });
+  const [communityVisible, setCommunityVisible] = useState(() => {
+    // Wiki/Market used to be their own top-level tabs (always shown, no
+    // per-tab hidden concept existed for them) — same hidden-list-only
+    // pattern as Office, nothing to migrate from since a whitelist was
+    // never stored for these two.
+    const hidden = saved.community_hidden;
+    return hidden ? new Set(COMMUNITY_TABS.filter(t => !hidden.includes(t.id)).map(t => t.id)) : new Set(COMMUNITY_TABS.map(t => t.id));
+  });
 
   const [saving, setSaving] = useState(false);
   const [saved2, setSaved2] = useState(false);
@@ -119,6 +128,8 @@ export default function TabOrderSettings({ profile, setProfile }) {
       workshop_hidden:  WORKSHOP_TABS.filter(t => !workshopVisible.has(t.id)).map(t => t.id),
       office:           office.map(t => t.id),
       office_hidden:    OFFICE_TABS.filter(t => !officeVisible.has(t.id)).map(t => t.id),
+      community:        community.map(t => t.id),
+      community_hidden: COMMUNITY_TABS.filter(t => !communityVisible.has(t.id)).map(t => t.id),
       settings:         settings.map(t => t.id),
     };
     const { error } = await supabase.from('profiles').update({ tab_order: tabOrder }).eq('id', profile.id);
@@ -132,9 +143,11 @@ export default function TabOrderSettings({ profile, setProfile }) {
     setMain(TABS);
     setWorkshop(WORKSHOP_TABS);
     setOffice(OFFICE_TABS);
+    setCommunity(COMMUNITY_TABS);
     setSettings(SETTINGS_TABS);
     setWorkshopVisible(new Set(WORKSHOP_TABS.map(t => t.id)));
     setOfficeVisible(new Set(OFFICE_TABS.map(t => t.id)));
+    setCommunityVisible(new Set(COMMUNITY_TABS.map(t => t.id)));
     setSaved2(false);
   };
 
@@ -156,6 +169,12 @@ export default function TabOrderSettings({ profile, setProfile }) {
         <div style={secHd}>Office</div>
         <div style={{ fontSize: 9, color: MUT, marginBottom: 8, lineHeight: 1.5 }}>Check to show, uncheck to hide. First visible tab is the default.</div>
         <WorkshopReorderList items={office} setItems={setOffice} visible={officeVisible} setVisible={setOfficeVisible} />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={secHd}>Community</div>
+        <div style={{ fontSize: 9, color: MUT, marginBottom: 8, lineHeight: 1.5 }}>Check to show, uncheck to hide. First visible tab is the default.</div>
+        <WorkshopReorderList items={community} setItems={setCommunity} visible={communityVisible} setVisible={setCommunityVisible} />
       </div>
 
       <div style={{ marginBottom: 20 }}>
