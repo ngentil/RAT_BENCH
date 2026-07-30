@@ -227,6 +227,11 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
         ) : (
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em", flex: 1 }}>Parts only — no time logged</span>
         )}
+        {company?.invoice_addon_status === 'active' && (
+          <span title="Invoice add-on active — unlimited invoicing for this organisation" style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", color: GRN, border: "1px solid " + GRN + "55", background: GRN + "15", padding: "4px 6px", borderRadius: 2, flexShrink: 0 }}>
+            ★ BUSINESS
+          </span>
+        )}
         <button disabled={!!checking} onClick={() => handleGenerate('quote')} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3, opacity: checking === 'quote' ? 0.6 : 1 }}>Quote</button>
         <button disabled={!!checking} onClick={() => handleGenerate('invoice')} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3, opacity: checking === 'invoice' ? 0.6 : 1 }}>Invoice</button>
       </div>

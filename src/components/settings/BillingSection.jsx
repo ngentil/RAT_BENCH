@@ -193,9 +193,16 @@ function InvoicingSection({ company, setCompany }) {
 
   return (
     <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid ' + BRD }}>
-      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Invoicing</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>Invoicing</div>
+        {addonActive && (
+          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', color: GRN, border: '1px solid ' + GRN + '55', background: GRN + '15', padding: '3px 6px', borderRadius: 2 }}>
+            ★ BUSINESS
+          </span>
+        )}
+      </div>
       <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7, marginBottom: 14 }}>
-        5 free invoices per month for this organisation — Quotes are always free and uncapped. $20/month unlocks unlimited invoices.
+        5 free invoices per month for this organisation — Quotes are always free and uncapped. $20/month unlocks the Business plan: unlimited invoices.
       </div>
 
       {showSetup ? (
@@ -214,9 +221,9 @@ function InvoicingSection({ company, setCompany }) {
               <div style={{ fontSize: 15, fontWeight: 700, color: TXT }}>{addonActive ? `${used} (unlimited)` : `${used} / ${cap}`}</div>
             </div>
             <div>
-              <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Add-on</div>
+              <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Plan</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: addonActive ? GRN : MUT }}>
-                {isCanceling ? 'Canceling' : addonActive ? 'Active' : 'Inactive'}
+                {isCanceling ? 'Canceling' : addonActive ? 'Business' : 'Free'}
               </div>
             </div>
             <div>
@@ -228,11 +235,11 @@ function InvoicingSection({ company, setCompany }) {
           {err && <div style={{ fontSize: 10, color: RED, marginBottom: 10 }}>{err}</div>}
 
           {!addonActive ? (
-            <button onClick={() => setShowSetup(true)} style={{ ...btnA, ...sm }}>Enable Invoice Add-on ($20/mo)</button>
+            <button onClick={() => setShowSetup(true)} style={{ ...btnA, ...sm }}>Upgrade to Business ($20/mo)</button>
           ) : isCanceling ? (
-            <button onClick={() => toggleCancel(false)} disabled={saving} style={{ ...btnG, ...sm, color: GRN, border: '1px solid ' + GRN + '55' }}>Resume Add-on</button>
+            <button onClick={() => toggleCancel(false)} disabled={saving} style={{ ...btnG, ...sm, color: GRN, border: '1px solid ' + GRN + '55' }}>Resume Business Plan</button>
           ) : (
-            <button onClick={() => toggleCancel(true)} disabled={saving} style={{ ...btnG, ...sm, color: RED, border: '1px solid ' + RED + '55' }}>Cancel Add-on</button>
+            <button onClick={() => toggleCancel(true)} disabled={saving} style={{ ...btnG, ...sm, color: RED, border: '1px solid ' + RED + '55' }}>Cancel Business Plan</button>
           )}
         </div>
       )}
