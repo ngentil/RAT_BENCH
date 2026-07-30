@@ -124,5 +124,6 @@ export const OFFICE_TABS = [
 export const COMMUNITY_TABS = [
   {id:"wiki",        label:"Wiki"},
   {id:"marketplace", label:"Market"},
+  {id:"messages",    label:"Messages"},
 ];
 

@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT } from '../../lib/styles';
-import { getMyUnreadCount, subscribeToMyMessages } from '../../lib/marketplace';
 import MarketplaceBrowse from './MarketplaceBrowse';
 import ListingDetail from './ListingDetail';
 import SellForm from './SellForm';
 import MyListings from './MyListings';
-import MarketplaceInbox from './MarketplaceInbox';
-import ThreadView from './ThreadView';
 import SoldItemsTab from '../soldItems/SoldItemsTab';
 import RemovedListingsTab from './RemovedListingsTab';
 
@@ -14,49 +11,35 @@ const NAV = [
   { id: "browse",  label: "Browse" },
   { id: "sell",    label: "Sell" },
   { id: "mine",    label: "Active Listings" },
-  { id: "inbox",   label: "Messages" },
   { id: "sold",    label: "Sold" },
   { id: "removed", label: "Removed" },
 ];
 
-function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines, setEquipment, onToolRelisted }) {
+// onOpenThread: "message seller" now hands off to the Community → Messages
+// sub-tab instead of opening a thread view nested inside Marketplace itself
+// (see MessagesTab.jsx). pendingListingId/onConsumePendingListing is the
+// mirror image — a thread's linked-listing click asks this tab to open a
+// specific listing.
+function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines, setEquipment, onToolRelisted, onOpenThread, pendingListingId, onConsumePendingListing }) {
   const [view, setView] = useState("browse");
   const [listingId, setListingId] = useState(null);
-  const [threadId, setThreadId] = useState(null);
   const [listingsRefreshKey, setListingsRefreshKey] = useState(0);
-  const [unread, setUnread] = useState(0);
-
-  const refreshUnread = () => getMyUnreadCount().then(setUnread);
-
-  useEffect(() => {
-    refreshUnread();
-    const unsubscribe = subscribeToMyMessages(
-      profile.id, refreshUnread,
-      // Re-check on every (re)subscribe, not just on a live INSERT event —
-      // covers both the initial fetch/subscribe race and any badge drift
-      // left by a dropped-then-restored websocket missing an event.
-      (status) => { if (status === 'SUBSCRIBED') refreshUnread(); },
-    );
-    // Safety-net poll: Realtime is best-effort, and a fully blocked
-    // websocket (firewall, etc.) never reaches 'SUBSCRIBED' at all, so the
-    // reconnect refetch above can't cover that case — this bounds the
-    // badge's worst-case staleness to one poll interval instead of forever.
-    const pollId = setInterval(refreshUnread, 20000);
-    return () => { unsubscribe(); clearInterval(pollId); };
-  }, [profile.id]);
-
-  // Re-check unread whenever a thread is closed — the recipient's own read
-  // receipt (markThreadRead) has already fired by then.
-  useEffect(() => { if (!threadId) refreshUnread(); }, [threadId]);
 
   const openListing = (id) => { setListingId(id); setView("listing"); };
-  const openThread = (id) => { setThreadId(id); setView("thread"); };
 
   const navTo = (id) => {
     setView(id);
     setListingId(null);
-    setThreadId(null);
   };
+
+  // A caller elsewhere (a thread's linked-listing click, in Community →
+  // Messages) wants this tab to jump straight to a listing — consume it
+  // once so re-renders don't re-open it after the user navigates away.
+  useEffect(() => {
+    if (!pendingListingId) return;
+    openListing(pendingListingId);
+    onConsumePendingListing?.();
+  }, [pendingListingId]);
 
   // Phone/browser back button closes an open listing back to Browse in one
   // press, instead of falling through to the app-level "press back again to
@@ -84,7 +67,7 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines
     <div style={{ padding: "4px 0" }}>
       <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
         {NAV.map(n => {
-          const active = view === n.id || (n.id === "browse" && view === "listing") || (n.id === "inbox" && view === "thread");
+          const active = view === n.id || (n.id === "browse" && view === "listing");
           return (
             <button
               key={n.id}
@@ -99,11 +82,6 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines
               }}
             >
               {n.label}
-              {n.id === "inbox" && unread > 0 && (
-                <span style={{ position: "absolute", top: -6, right: -6, background: "#c94040", color: "#fff", fontSize: 8, fontWeight: 700, borderRadius: 10, minWidth: 15, height: 15, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>
-                  {unread > 9 ? "9+" : unread}
-                </span>
-              )}
             </button>
           );
         })}
@@ -118,7 +96,7 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines
           company={company}
           onGoToBilling={onGoToBilling}
           onBack={closeListing}
-          onOpenThread={openThread}
+          onOpenThread={onOpenThread}
         />
       )}
 
@@ -133,19 +111,6 @@ function MarketplaceTab({ machines, profile, company, onGoToBilling, setMachines
 
       {view === "mine" && (
         <MyListings profile={profile} onSelect={openListing} refreshKey={listingsRefreshKey} />
-      )}
-
-      {view === "inbox" && (
-        <MarketplaceInbox profile={profile} onOpenThread={openThread} refreshKey={threadId ? 0 : unread} />
-      )}
-
-      {view === "thread" && threadId && (
-        <ThreadView
-          threadId={threadId}
-          profile={profile}
-          onBack={() => navTo("inbox")}
-          onListingSelect={openListing}
-        />
       )}
 
       {view === "sold" && (
