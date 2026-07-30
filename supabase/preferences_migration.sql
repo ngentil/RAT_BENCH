@@ -19,11 +19,11 @@ BEGIN
   IF p_key NOT IN (
     'rat_tut', 'rat_tut_job_card', 'rat_tut_jobs', 'rat_tut_revenue',
     'rat_tut_search', 'rat_tut_clients', 'rat_form_tut', 'rat_wiki_seeded',
-    'tab', 'workshopTab', 'trackerSort', 'trackerView',
+    'tab', 'workshopTab', 'officeTab', 'communityTab', 'trackerSort', 'trackerView',
     'vehiclesSort', 'vehiclesView', 'toolsSort', 'toolsView',
     'equipmentSort', 'equipmentView',
     'trackerCols', 'vehiclesCols', 'toolsCols', 'equipmentCols',
-    'dismissedAnns', '_lsMigrated'
+    'dismissedAnns', '_lsMigrated', 'accentColor'
   ) THEN
     RAISE EXCEPTION 'Forbidden preference key';
   END IF;

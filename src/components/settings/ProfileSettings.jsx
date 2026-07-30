@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { ACC, MUT, BRD, TXT, GRN, RED, inp, btnA, btnG, col, dvdr, sm } from '../../lib/styles';
+import { ACC, MUT, BRD, TXT, GRN, RED, inp, btnA, btnG, col, dvdr, sm, ACCENT_KEY, DEFAULT_ACCENT } from '../../lib/styles';
+import { ACCENT_PRESETS } from '../../lib/constants';
 import { updateProfile } from '../../lib/db';
+import { savePref } from '../../lib/db/preferences';
 import { getMyContributionStats, getMyWikiPoints, setWikiLeaderboardOptIn } from '../../lib/wiki';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
 import { Tooltip } from '../ui/shared';
@@ -20,6 +22,20 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
   const [wikiPoints,setWikiPoints]=useState(0);
   const [leaderboardOptIn,setLeaderboardOptIn]=useState(!!profile?.wiki_leaderboard_opt_in);
   const [optInSaving,setOptInSaving]=useState(false);
+  const [accent,setAccent]=useState(()=>localStorage.getItem(ACCENT_KEY)||DEFAULT_ACCENT);
+  const [applyingAccent,setApplyingAccent]=useState(false);
+
+  // ACC is baked into styles.js's exports at module load (see the comment
+  // there), so changing it only takes effect after a reload — there's no way
+  // to make every existing ACC-based inline style across the app update live
+  // without converting each one into something re-render-reactive.
+  const chooseAccent = async (hex) => {
+    if (hex === accent || applyingAccent) return;
+    setApplyingAccent(true);
+    localStorage.setItem(ACCENT_KEY, hex);
+    try { await savePref(profile.id, 'accentColor', hex); } catch {}
+    window.location.reload();
+  };
 
   useEffect(()=>{
     if(isGuest||!session?.user?.id) return;
@@ -112,6 +128,24 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
             </label>
           </div>
         )}
+      </div>
+
+      <div style={{...sec,...secSep}}>
+        <div style={secHd}>Appearance</div>
+        <div style={{fontSize:10,color:MUT,marginBottom:10,lineHeight:1.6}}>Accent color for buttons, badges, and highlights across the site — same swatches as the tile badge colors.</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:applyingAccent?8:0}}>
+          {ACCENT_PRESETS.map(hex=>(
+            <button key={hex} onClick={()=>chooseAccent(hex)} disabled={applyingAccent} title={hex}
+              style={{
+                width:28,height:28,borderRadius:"50%",background:hex,cursor:applyingAccent?"default":"pointer",
+                border:hex===accent?"2px solid #fff":"2px solid transparent",
+                boxShadow:hex===accent?"0 0 0 2px "+hex:"none",
+                opacity:applyingAccent?0.5:1,padding:0,
+              }}
+            />
+          ))}
+        </div>
+        {applyingAccent&&<div style={{fontSize:9,color:MUT}}>Saving — reloading to apply…</div>}
       </div>
 
       {!isGuest&&<div style={{...sec,...secSep}}>

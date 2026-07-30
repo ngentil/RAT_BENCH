@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
-import { BG, TXT, MUT, ACC, BRD, SURF, RED, GRN, btnG, sm } from './lib/styles';
+import { BG, TXT, MUT, ACC, BRD, SURF, RED, GRN, btnG, sm, ACCENT_KEY } from './lib/styles';
 import { getMachines, getMyCompany, getClients, migrateLocalClients } from './lib/db';
 import { getVehicles } from './lib/db/vehicles';
 import { getEquipment } from './lib/db/equipment';
@@ -158,6 +158,20 @@ function App(){
     setProfileChecked(true);
     setAuthChecked(true);
     loadedUserIdRef.current=session.user.id;
+
+    // Accent color is baked into styles.js's exports at module load from
+    // localStorage (see ACCENT_KEY there), so a synced preference from
+    // another device can't take effect without a reload — do that once,
+    // right here, rather than leaving a new device stuck on the default
+    // color until the user happens to refresh some other way. Comparing
+    // against the current localStorage value first means this only ever
+    // fires the one time a device's cache doesn't yet match.
+    const syncedAccent = profileData?.preferences?.accentColor;
+    if(syncedAccent && localStorage.getItem(ACCENT_KEY) !== syncedAccent){
+      localStorage.setItem(ACCENT_KEY, syncedAccent);
+      window.location.reload();
+      return;
+    }
 
     // All five data loads run in parallel — was sequential (up to ~2.5s), now ~one RTT
     const [msR, csR, vsR, eqR, tsR] = await Promise.allSettled([
