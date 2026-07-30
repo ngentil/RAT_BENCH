@@ -132,7 +132,7 @@ function ProfileSettings({profile,setProfile,session,onSignOut,isGuest,machines}
 
       <div style={{...sec,...secSep}}>
         <div style={secHd}>Appearance</div>
-        <div style={{fontSize:10,color:MUT,marginBottom:10,lineHeight:1.6}}>Accent color for buttons, badges, and highlights across the site — same swatches as the tile badge colors.</div>
+        <div style={{fontSize:10,color:MUT,marginBottom:10,lineHeight:1.6}}>Accent color for buttons, badges, and highlights across the site.</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:applyingAccent?8:0}}>
           {ACCENT_PRESETS.map(hex=>(
             <button key={hex} onClick={()=>chooseAccent(hex)} disabled={applyingAccent} title={hex}
