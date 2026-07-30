@@ -43,14 +43,19 @@ export async function createDocument({ machineId, clientId, docType, docRef, sna
 }
 
 // Merge path — refreshes an existing document's snapshot/total in place,
-// keeping its original doc_ref. Leaves everything else (id, created_at) untouched.
-export async function updateDocument(id, patch) {
-  const { data, error } = await supabase
-    .from('billing_documents')
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
+// keeping its original doc_ref, but archives what it held before into
+// `revisions` first so an older version stays regenerable. Done via an RPC
+// (not a plain client-side update) since referencing the row's own prior
+// snapshot/total in the same write isn't something a REST PATCH can express
+// — it needs a single atomic UPDATE ... SET revisions = revisions || ... on
+// the server, or a fast merge-twice-in-a-row could still lose a revision.
+export async function mergeDocument(id, { snapshot, total, clientId }) {
+  const { data, error } = await supabase.rpc('merge_billing_document', {
+    p_id: id,
+    p_snapshot: snapshot || {},
+    p_total: total ?? null,
+    p_client_id: clientId || null,
+  });
   if (error) throw error;
   return data;
 }

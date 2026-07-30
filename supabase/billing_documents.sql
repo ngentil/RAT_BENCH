@@ -16,9 +16,15 @@ CREATE TABLE IF NOT EXISTS billing_documents (
   doc_ref     text NOT NULL,
   snapshot    jsonb NOT NULL DEFAULT '{}'::jsonb,
   total       numeric,
+  -- Prior snapshots this document held before being merged over — each
+  -- element is {snapshot, total, archived_at}. Lets "Regenerate" reproduce
+  -- an older version of a merged document, not just its current state.
+  revisions   jsonb NOT NULL DEFAULT '[]'::jsonb,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE billing_documents ADD COLUMN IF NOT EXISTS revisions jsonb NOT NULL DEFAULT '[]'::jsonb;
 
 ALTER TABLE billing_documents ENABLE ROW LEVEL SECURITY;
 
