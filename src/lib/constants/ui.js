@@ -99,6 +99,7 @@ export const TABS = [
   {id:"jobs",        label:"Bench"},
   {id:"tracker",     label:"Garage"},
   {id:"workshop",    label:"Workshop"},
+  {id:"office",      label:"Office"},
   {id:"wiki",        label:"Wiki"},
   {id:"marketplace", label:"Market"},
 ];
@@ -112,7 +113,12 @@ export const WORKSHOP_TABS = [
   {id:"vehicles",    label:"Vehicles"},
   {id:"storage",     label:"Storage"},
   {id:"collected",   label:"Collected"},
+];
+
+export const OFFICE_TABS = [
   {id:"clients",     label:"Clients"},
   {id:"revenue",     label:"Revenue"},
+  {id:"quotes",      label:"Quotes"},
+  {id:"invoices",    label:"Invoices"},
 ];
 

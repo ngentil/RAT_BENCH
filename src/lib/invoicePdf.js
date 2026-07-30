@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { upsertMachine } from './db';
-import { getNextInvoiceNumber } from './db/invoices';
+import { getNextInvoiceNumber, getNextQuoteNumber } from './db/invoices';
+import { createDocument, updateDocument } from './db/billingDocuments';
 import { toastError } from './toast';
 
 const round2 = n => Math.round(n * 100) / 100;
@@ -29,7 +30,11 @@ function logoFormat(dataUrl) {
   return ext === 'webp' ? 'WEBP' : (ext === 'jpg' || ext === 'jpeg') ? 'JPEG' : 'PNG';
 }
 
-export async function generateInvoicePDF(machine, company, clients, userId, docType = 'invoice', onUpdate) {
+// existingDoc: pass the billing_documents row to merge into (reuses its
+// doc_ref, refreshes its snapshot/total in place) — omit/null to mint a
+// brand-new numbered document instead. The caller (Bench's Quote/Invoice
+// buttons) decides which via the regenerate merge-or-copy prompt.
+export async function generateInvoicePDF(machine, company, clients, userId, docType = 'invoice', onUpdate, existingDoc = null) {
   const allLog   = machine.timeLog || [];
   const allParts = machine.parts   || [];
   // Sessions/parts already invoiced must not be billed again. (Cycle a
@@ -65,9 +70,9 @@ export async function generateInvoicePDF(machine, company, clients, userId, docT
 
   const isQuote  = docType === 'quote';
   const docLabel = isQuote ? 'QUOTE' : 'INVOICE';
-  const docRef   = isQuote
-    ? `QT-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase().slice(-5)}`
-    : await getNextInvoiceNumber(userId);
+  // Merging into an existing document reuses its number; otherwise mint a
+  // fresh sequential one (quotes now get a real counter too, not a timestamp).
+  const docRef   = existingDoc?.doc_ref || (isQuote ? await getNextQuoteNumber(userId) : await getNextInvoiceNumber(userId));
 
   const coAddress  = [co.address, co.city, co.state, co.postcode, co.country].filter(Boolean).join(', ');
   const coContact  = [co.abn ? `ABN ${co.abn}` : null, co.phone, co.email].filter(Boolean).join('  ·  ');
@@ -217,6 +222,26 @@ export async function generateInvoicePDF(machine, company, clients, userId, docT
 
   const filename = `${docRef}_${(machine.name || docLabel).replace(/[^a-z0-9]/gi, '_')}.pdf`;
   doc.save(filename);
+
+  // Log this generation to billing_documents (Office → Quotes/Invoices) — a
+  // JSON snapshot of what was billed, not the rendered PDF itself, so the
+  // Office tab can list it without a Storage upload round-trip. Merging
+  // refreshes the existing row in place; otherwise a new row is created
+  // alongside any prior documents for this machine.
+  const snapshot = {
+    machineName: machine.name || '',
+    clientName: client?.name || null,
+    labour: log.map((e, i) => ({ label: e.jobLabel || 'General work', seconds: e.seconds || 0, amount: labourAmounts[i] })),
+    parts: parts.map((p, i) => ({ name: p.name || '', qty: qtyOf(p), amount: partAmounts[i] })),
+    subtotal, tax, taxRate, total,
+  };
+  try {
+    if (existingDoc) await updateDocument(existingDoc.id, { client_id: client?.id || null, snapshot, total });
+    else await createDocument({ machineId: machine.id, clientId: client?.id || null, docType, docRef, snapshot, total });
+  } catch (err) {
+    console.error('billing_documents log:', err);
+    toastError(`${docLabel === 'QUOTE' ? 'Quote' : 'Invoice'} generated, but couldn't log it under Office — check connection`);
+  }
 
   // Mark the billed sessions/parts so the next invoice doesn't re-charge them.
   if (!isQuote && onUpdate) {

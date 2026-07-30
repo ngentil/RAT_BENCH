@@ -260,6 +260,7 @@ Migration for existing machines (`supabase/machine_bench_storage.sql`): Active �
 | Jobs picker: Parts tab + Consumables tab | ✅ | inventory + consumables, sourceType on entries | Free |
 | Running cost total per job (parts + labour) | ✅ | machines.parts sellPrice, company.hourly_rate | Free |
 | Cost Summary row in expanded job card | ✅ | partsTotal + labourTotal = grandTotal | Free |
+| Quote/Invoice generation now logs to Office + offers merge-or-copy on regenerate | ✅ | See section 15 (Office) — `generateInvoicePDF` gained logging + an `existingDoc` merge parameter; the Quote/Invoice buttons here check for an existing document first | Free |
 
 ---
 
@@ -468,7 +469,7 @@ All marketplace SQL (marketplace_listings.sql, marketplace_messaging.sql, market
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | 🔨 Workshop parent tab (nested sub-tab bar) | ✅ | App.jsx, WORKSHOP_TABS constant | Free |
-| Workshop sub-tabs: Remind, Parts, Clients, Tools, Vehicles, Equipment, Consumables, Revenue | ✅ | WORKSHOP_TABS, App.jsx content panels | Free / Ent+ |
+| Workshop sub-tabs: Remind, Parts, Consumables, Tools, Vehicles, Equipment, Storage, Collected | ✅ | WORKSHOP_TABS, App.jsx content panels — Clients and Revenue moved out to the new Office tab (see section 16) | Free / Ent+ |
 | ~~Standalone 🔔 Remind top-level tab~~ | ❌ moved | Folded into Workshop as its first sub-tab (was its own entry in TABS, cluttering the main nav for what's really a workshop-scoped view). The overdue/due-soon count badge moved from the top-level tab bar onto the Remind sub-tab, and the top-level 🔨 Workshop tab itself now also carries that badge so the at-a-glance signal isn't lost by nesting one level deeper. Old saved `profile.preferences.tab==="reminders"` values are migrated on load straight to Workshop → Remind rather than being silently dropped | Free |
 | Per-subtab upgrade banner (shows only when at item limit) | ✅ | VehiclesTab / EquipmentTab / ToolsTab / StockItemTab — each shows banner only when atLimit/atAssetLimit; global Workshop tab banner removed from App.jsx | Free |
 | Revenue sub-tab gated behind Enthusiast+ | ✅ | WORKSHOP_TABS enthusiastOnly flag | Free |
@@ -489,8 +490,28 @@ All marketplace SQL (marketplace_listings.sql, marketplace_messaging.sql, market
 
 ---
 
+## 15. Office
 
-## 15. Queued Features
+A new top-level tab (`App.jsx` TABS, positioned immediately after Workshop) housing Clients, Revenue, Quotes, and Invoices — the paperwork/back-office side of the app, split out of Workshop because it's conceptually distinct from the physical-inventory sub-tabs that remain there (Parts/Tools/Vehicles/etc.). `CustomersTab` and `RevenueDashboard` are reused completely unchanged under Office — only which parent tab mounts them moved. Quotes and Invoices are new: every PDF generated from the Bench tab is now logged to a real `billing_documents` table and listed here, with a real sequential number and a regenerate-safe merge-or-copy flow instead of silently minting a new document every time. Deliberately out of scope for this pass: the older per-client HTML invoice export in `CustomersTab.jsx` (`exportClientInvoice`) is untouched and not unified with this logging — it's a separate, older export path.
+
+| Feature | Status | Depends on | Tier |
+|---------|--------|-----------|------|
+| Office top-level tab (Clients / Revenue / Quotes / Invoices sub-nav) | ✅ | `OFFICE_TABS` constant (`src/lib/constants/ui.js`), App.jsx `officeTab` state + sub-nav bar, mirroring Workshop's existing (hardcoded, non-generic) tab pattern exactly | Free |
+| Clients and Revenue moved from Workshop into Office | ✅ | Removed from `WORKSHOP_TABS`, added to `OFFICE_TABS` — `CustomersTab`/`RevenueDashboard` components themselves unchanged, only the parent tab that mounts them moved | Free |
+| Legacy tab-preference migration for the move | ✅ | App.jsx prefs-restore effect — an old saved `profile.preferences.tab==="clients"`/`"revenue"` (top-level legacy) or `workshopTab==="clients"`/`"revenue"` now routes to `tab="office"` + the matching `officeTab`, instead of landing on a sub-tab id that no longer exists under Workshop | Free |
+| Per-user Office tab visibility + order preferences | ✅ | `profiles.tab_order.office` / `office_hidden` — same hidden-list-only semantics used for Workshop (see section 14's note on why a whitelist can't work), applied correctly from day one since Office has no legacy whitelist to migrate away from | Free |
+| Office section in Settings → ⇅ Tabs | ✅ | `TabOrderSettings.jsx` — reuses the existing generic checkbox+reorder list component (previously named for Workshop but not actually Workshop-specific) for Office's four sub-tabs | Free |
+| `billing_documents` table + RLS + GRANT | ✅ | `supabase/billing_documents.sql` — logs every generated quote/invoice: `doc_type`, `doc_ref`, `machine_id`, `client_id`, a JSON `snapshot` of the line items/totals at generation time (not the rendered PDF itself — re-listing doesn't need a Storage upload), `total`, timestamps. Same ownership/provisioned-select RLS pattern as `machine_collections`, with the table-level `GRANT` written in from the start this time (see section 5's note on the GRANT-vs-RLS bug that migration needed fixing after the fact) | Free |
+| Real sequential quote numbers | ✅ | `next_quote_number` RPC (`supabase/quote_number_rpc.sql`), same per-year-counter-in-profiles.preferences pattern as the existing `next_invoice_number` — quotes previously used a non-persistent `QT-{year}-{timestamp}` reference, now `QT-2026-0001` style like invoices | Free |
+| `src/lib/db/billingDocuments.js` client helpers | ✅ | `getLatestDocumentForMachine(machineId, docType)`, `getAllDocuments(docType)`, `createDocument(...)`, `updateDocument(id, patch)` | Free |
+| Regenerate merge-or-copy prompt on Bench's Quote/Invoice buttons | ✅ | `JobBoard.jsx` TimeLogSection — before generating, checks for the most recent existing `billing_documents` row for this machine+doc type; if one exists, shows an inline choice: **Merge into it** (reuses the existing `doc_ref`, refreshes its snapshot/total in place, leaves `created_at`/id untouched) or **New Copy** (mints a fresh sequential number, inserts a brand-new row, leaves the old one completely alone). No prompt at all the first time a machine is quoted/invoiced | Free |
+| `generateInvoicePDF` logs to `billing_documents` as a side effect | ✅ | `src/lib/invoicePdf.js` — gained an `existingDoc` parameter; builds the same JSON snapshot (labour lines, part lines, subtotal/tax/total, machine/client name) it already computes for the PDF itself and creates or updates the corresponding row after `doc.save()`. A logging failure surfaces as an inline toast ("...but couldn't log it under Office") without blocking the PDF the user already has | Free |
+| Shared `BillingDocumentsTab.jsx` for Quotes + Invoices | ✅ | One component parameterized by `docType`, instantiated twice (Office → Quotes, Office → Invoices) instead of duplicating the list UI — shows doc ref, machine name, client name, date (+ "updated" date if merged), and total per row; empty state when nothing's been generated yet. Same refetch-on-tab-activation pattern as Storage/Collected (stays mounted, hidden, for the whole session) | Free |
+
+---
+
+
+## 16. Queued Features
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|

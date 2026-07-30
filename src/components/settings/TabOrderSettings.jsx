@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
-import { TABS, WORKSHOP_TABS } from '../../lib/constants';
+import { TABS, WORKSHOP_TABS, OFFICE_TABS } from '../../lib/constants';
 import { applyTabOrder } from '../../lib/tabOrder';
 
 const secHd = { borderLeft: "2px solid " + ACC, paddingLeft: 8, fontSize: 10, color: TXT, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 };
@@ -88,6 +88,7 @@ export default function TabOrderSettings({ profile, setProfile }) {
 
   const [main,     setMain]     = useState(() => applyTabOrder(TABS, saved.main));
   const [workshop, setWorkshop] = useState(() => applyTabOrder(WORKSHOP_TABS, saved.workshop));
+  const [office,   setOffice]   = useState(() => applyTabOrder(OFFICE_TABS, saved.office));
   const [settings, setSettings] = useState(() => applyTabOrder(SETTINGS_TABS, saved.settings));
   const [workshopVisible, setWorkshopVisible] = useState(() => {
     // Only the new workshop_hidden field is trusted — the old workshop_visible
@@ -98,6 +99,12 @@ export default function TabOrderSettings({ profile, setProfile }) {
     // this page writes workshop_hidden and makes their choices stick from then on.
     const hidden = saved.workshop_hidden;
     return hidden ? new Set(WORKSHOP_TABS.filter(t => !hidden.includes(t.id)).map(t => t.id)) : new Set(WORKSHOP_TABS.map(t => t.id));
+  });
+  const [officeVisible, setOfficeVisible] = useState(() => {
+    // Office is brand new — no legacy whitelist to worry about, so this just
+    // uses the correct hidden-list pattern from day one.
+    const hidden = saved.office_hidden;
+    return hidden ? new Set(OFFICE_TABS.filter(t => !hidden.includes(t.id)).map(t => t.id)) : new Set(OFFICE_TABS.map(t => t.id));
   });
 
   const [saving, setSaving] = useState(false);
@@ -110,6 +117,8 @@ export default function TabOrderSettings({ profile, setProfile }) {
       main:             main.map(t => t.id),
       workshop:         workshop.map(t => t.id),
       workshop_hidden:  WORKSHOP_TABS.filter(t => !workshopVisible.has(t.id)).map(t => t.id),
+      office:           office.map(t => t.id),
+      office_hidden:    OFFICE_TABS.filter(t => !officeVisible.has(t.id)).map(t => t.id),
       settings:         settings.map(t => t.id),
     };
     const { error } = await supabase.from('profiles').update({ tab_order: tabOrder }).eq('id', profile.id);
@@ -122,8 +131,10 @@ export default function TabOrderSettings({ profile, setProfile }) {
   const reset = () => {
     setMain(TABS);
     setWorkshop(WORKSHOP_TABS);
+    setOffice(OFFICE_TABS);
     setSettings(SETTINGS_TABS);
     setWorkshopVisible(new Set(WORKSHOP_TABS.map(t => t.id)));
+    setOfficeVisible(new Set(OFFICE_TABS.map(t => t.id)));
     setSaved2(false);
   };
 
@@ -139,6 +150,12 @@ export default function TabOrderSettings({ profile, setProfile }) {
         <div style={secHd}>Workshop</div>
         <div style={{ fontSize: 9, color: MUT, marginBottom: 8, lineHeight: 1.5 }}>Check to show, uncheck to hide. First visible tab is the default.</div>
         <WorkshopReorderList items={workshop} setItems={setWorkshop} visible={workshopVisible} setVisible={setWorkshopVisible} />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={secHd}>Office</div>
+        <div style={{ fontSize: 9, color: MUT, marginBottom: 8, lineHeight: 1.5 }}>Check to show, uncheck to hide. First visible tab is the default.</div>
+        <WorkshopReorderList items={office} setItems={setOffice} visible={officeVisible} setVisible={setOfficeVisible} />
       </div>
 
       <div style={{ marginBottom: 20 }}>
