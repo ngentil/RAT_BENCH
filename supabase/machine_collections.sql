@@ -20,6 +20,13 @@ CREATE TABLE IF NOT EXISTS machine_collections (
 
 ALTER TABLE machine_collections ENABLE ROW LEVEL SECURITY;
 
+-- Table-level grant, explicit rather than relying on ambient default
+-- privileges — RLS policies below still control which ROWS are
+-- visible/writable, this just lets the authenticated role touch the table
+-- at all. Without it, every query fails with "permission denied for table
+-- machine_collections" regardless of how the RLS policies are written.
+GRANT SELECT, INSERT, UPDATE ON machine_collections TO authenticated;
+
 -- Ownership enforced on INSERT/UPDATE from day one (machine_bookings only
 -- got this after a follow-up fix — writing it correctly here instead of
 -- repeating that history): user_id must be the caller AND the machine
