@@ -9,3 +9,4 @@ export * from './tools';
 export * from './inventory';
 export * from './invoices';
 export * from './billingDocuments';
+export * from './invoiceCredits';

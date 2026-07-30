@@ -1,13 +1,19 @@
-// Per-seat company billing — step 1 of 2 (see update-seat-subscription for
-// step 2). Ensures a Stripe Customer exists for the company and returns a
-// SetupIntent client_secret so the frontend can mount Stripe's embedded
-// Payment Element directly inside the Billing tab (dark-themed to match the
-// app) — deliberately not Stripe Checkout or the hosted Billing Portal, so
-// collecting a card never leaves ratbench.net.
+// Company billing setup — step 1 of 2 (see update-seat-subscription /
+// update-invoice-addon for step 2). Ensures a Stripe Customer exists for the
+// company and returns a SetupIntent client_secret so the frontend can mount
+// Stripe's embedded Payment Element directly inside the Billing tab
+// (dark-themed to match the app) — deliberately not Stripe Checkout or the
+// hosted Billing Portal, so collecting a card never leaves ratbench.net.
 //
-// Also returns the current seat price's live unit amount/currency (fetched
-// from Stripe rather than hardcoded) so the UI never silently drifts out of
-// sync with whatever the Price object actually charges.
+// Shared across both products the company can subscribe to: the per-seat
+// subscription and the invoice add-on. A SetupIntent itself isn't tied to a
+// price — it only captures a payment method — so the `product` field just
+// picks which Price to report unit_amount/currency for, so the UI shows the
+// right cost for whichever thing the user is about to set up.
+//
+// Also returns the current price's live unit amount/currency (fetched from
+// Stripe rather than hardcoded) so the UI never silently drifts out of sync
+// with whatever the Price object actually charges.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@13.11.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -19,7 +25,10 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
-const PRICE_SEAT = Deno.env.get("PRICE_SEAT");
+const PRICES: Record<string, string | undefined> = {
+  seat: Deno.env.get("PRICE_SEAT"),
+  invoice_addon: Deno.env.get("PRICE_INVOICE_ADDON"),
+};
 
 const ALLOWED_ORIGINS = ["https://www.ratbench.net", "https://ratbench.net"];
 const BILLING_ACTION_COOLDOWN_MS = 5_000;
@@ -37,16 +46,19 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
   try {
-    if (!PRICE_SEAT) {
-      const msg = "create-billing-setup: PRICE_SEAT env var not set — cannot proceed";
+    const { company_id, product = "seat" } = await req.json();
+    if (!company_id) {
+      return new Response(JSON.stringify({ error: "Missing company_id" }), { status: 400, headers: CORS });
+    }
+    const priceId = PRICES[product];
+    if (!priceId) {
+      if (!(product in PRICES)) {
+        return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400, headers: CORS });
+      }
+      const msg = `create-billing-setup: price env var for product "${product}" not set — cannot proceed`;
       console.error(msg);
       Sentry.captureMessage(msg, "error");
       return new Response(JSON.stringify({ error: "Billing is not configured yet." }), { status: 500, headers: CORS });
-    }
-
-    const { company_id } = await req.json();
-    if (!company_id) {
-      return new Response(JSON.stringify({ error: "Missing company_id" }), { status: 400, headers: CORS });
     }
 
     const token = req.headers.get("Authorization")?.replace("Bearer ", "");
@@ -100,7 +112,7 @@ serve(async (req) => {
       usage: "off_session", // reused later for the recurring per-seat subscription
     });
 
-    const price = await stripe.prices.retrieve(PRICE_SEAT);
+    const price = await stripe.prices.retrieve(priceId);
 
     return new Response(
       JSON.stringify({

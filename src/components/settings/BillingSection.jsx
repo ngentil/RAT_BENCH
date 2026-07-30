@@ -2,7 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { ACC, MUT, BRD, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { getCompanyMembers } from '../../lib/db';
-import { createBillingSetup, updateSeatSubscription, listInvoices, setSubscriptionCancellation } from '../../lib/billing';
+import { createBillingSetup, updateSeatSubscription, listInvoices, setSubscriptionCancellation, setInvoiceAddonActive } from '../../lib/billing';
+import { InvoiceAddonPaymentSetup } from '../office/InvoicePaywallModal';
+
+// Matches Postgres's to_char(now(),'YYYY-MM') key used by
+// check_and_use_invoice_credit() (supabase/invoice_addon_billing.sql) closely
+// enough for display purposes — the server is the actual source of truth for
+// what counts against the cap.
+const currentMonthKey = () => new Date().toISOString().slice(0, 7);
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 let stripePromise;
@@ -151,6 +158,84 @@ function PaymentSetup({ company, seats, onDone, onCancel }) {
         </button>
         <button onClick={onCancel} style={{ ...btnG, ...sm }}>Cancel</button>
       </div>
+    </div>
+  );
+}
+
+// Invoice add-on: unlike per-seat billing this is a single on/off toggle, not
+// a quantity — one company either has unlimited invoices or is on the free
+// 5/month cap (see supabase/invoice_addon_billing.sql). Independent of
+// per-seat billing: a company can enable this without ever setting up seats.
+function InvoicingSection({ company, setCompany }) {
+  const [showSetup, setShowSetup] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  const used = company.invoice_usage?.[currentMonthKey()] || 0;
+  const cap = 5;
+  const addonActive = company.invoice_addon_status === 'active';
+  const isCanceling = company._invoiceAddonCancelAtPeriodEnd;
+
+  const toggleCancel = async (cancel) => {
+    setSaving(true); setErr('');
+    try {
+      const result = await setInvoiceAddonActive(company.id, !cancel);
+      setCompany(prev => ({
+        ...prev,
+        invoice_addon_status: result.invoice_addon_status,
+        _invoiceAddonCancelAtPeriodEnd: result.cancel_at_period_end,
+      }));
+    } catch (e) {
+      setErr(e.message || 'Could not update the invoice add-on.');
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid ' + BRD }}>
+      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Invoicing</div>
+      <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7, marginBottom: 14 }}>
+        5 free invoices per month for this organisation — Quotes are always free and uncapped. $20/month unlocks unlimited invoices.
+      </div>
+
+      {showSetup ? (
+        <div style={{ background: '#0a0a0a', border: '1px solid ' + BRD, borderRadius: 2, padding: 14 }}>
+          <InvoiceAddonPaymentSetup
+            company={company}
+            onDone={() => { setShowSetup(false); setCompany(prev => ({ ...prev, invoice_addon_status: 'active', _invoiceAddonCancelAtPeriodEnd: false })); }}
+            onCancel={() => setShowSetup(false)}
+          />
+        </div>
+      ) : (
+        <div>
+          <div style={{ display: 'flex', gap: 20, marginBottom: 14, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>This month</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TXT }}>{addonActive ? `${used} (unlimited)` : `${used} / ${cap}`}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Add-on</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: addonActive ? GRN : MUT }}>
+                {isCanceling ? 'Canceling' : addonActive ? 'Active' : 'Inactive'}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Cost</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TXT }}>{addonActive ? '$20/mo' : '$0/mo'}</div>
+            </div>
+          </div>
+
+          {err && <div style={{ fontSize: 10, color: RED, marginBottom: 10 }}>{err}</div>}
+
+          {!addonActive ? (
+            <button onClick={() => setShowSetup(true)} style={{ ...btnA, ...sm }}>Enable Invoice Add-on ($20/mo)</button>
+          ) : isCanceling ? (
+            <button onClick={() => toggleCancel(false)} disabled={saving} style={{ ...btnG, ...sm, color: GRN, border: '1px solid ' + GRN + '55' }}>Resume Add-on</button>
+          ) : (
+            <button onClick={() => toggleCancel(true)} disabled={saving} style={{ ...btnG, ...sm, color: RED, border: '1px solid ' + RED + '55' }}>Cancel Add-on</button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -309,6 +394,8 @@ function BillingSection({ company, setCompany }) {
           )}
         </div>
       )}
+
+      <InvoicingSection company={company} setCompany={setCompany} />
     </div>
   );
 }
