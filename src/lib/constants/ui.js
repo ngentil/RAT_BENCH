@@ -82,6 +82,11 @@ export const BADGE_PALETTE = [
   ["#1a1a1a","#55555588","#888888"],
 ];
 
+// The same 8 colours as BADGE_PALETTE's accent column, offered as the site-
+// wide accent-color choices in Settings → Profile — one shared swatch set
+// instead of two palettes that could drift apart.
+export const ACCENT_PRESETS = BADGE_PALETTE.map(t => t[2]);
+
 export const TILE_COLOR_DEFAULTS = {
   status:"auto", strokeType:"auto", rage:"auto",
   type:4, ccSize:3, compression:1, plugType:2, plugGap:2,

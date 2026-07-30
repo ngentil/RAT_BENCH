@@ -1,5 +1,16 @@
+// Accent color is a per-user preference (Settings → Profile → Appearance),
+// picked from the same swatches as the tile badges (ACCENT_PRESETS). It's
+// read once here, synchronously, at module load — every ACC-derived value
+// below (and every inline style elsewhere that reads ACC) bakes in whichever
+// color was current on this page load. Changing it therefore takes a reload
+// to apply everywhere, rather than needing every consumer of ACC across the
+// app converted into something that re-renders live on change.
+export const ACCENT_KEY = 'rat_accent_color';
+export const DEFAULT_ACCENT = "#e8670a";
+const storedAccent = (typeof localStorage !== 'undefined' && localStorage.getItem(ACCENT_KEY)) || DEFAULT_ACCENT;
+
 export const BG="#0e0e0e",SURF="#161616",BRD="#252525",BRD2="#1e1e1e",
-             TXT="#d8cfc4",MUT="#5a5a5a",ACC="#e8670a",GRN="#3d9e50",RED="#c94040";
+             TXT="#d8cfc4",MUT="#5a5a5a",ACC=storedAccent,GRN="#3d9e50",RED="#c94040";
 
 export const inp  = {background:"#0a0a0a",border:"1px solid "+BRD,color:TXT,fontFamily:"'IBM Plex Mono',monospace",fontSize:12,padding:"8px 10px",borderRadius:2,width:"100%",outline:"none",boxSizing:"border-box"};
 export const sel  = {...inp};
