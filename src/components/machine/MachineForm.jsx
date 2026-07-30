@@ -1767,7 +1767,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                     <FL t="Fuel delivery" />
                     <div style={{display:"flex",gap:0,borderRadius:2,overflow:"hidden",border:"1px solid #252525"}}>
                       {["Carburetted","Fuel Injected"].map(s=>(
-                        <button key={s} onClick={()=>setFuelSystem(s)} style={{flex:1,padding:"8px 0",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"none",background:fuelSystem===s?"#e8670a":"#0a0a0a",color:fuelSystem===s?"#fff":"#3a3a3a",transition:"background 0.15s,color 0.15s"}}>
+                        <button key={s} onClick={()=>setFuelSystem(s)} style={{flex:1,padding:"8px 0",fontSize:10,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",fontFamily:"'IBM Plex Mono',monospace",cursor:"pointer",border:"none",background:fuelSystem===s?ACC:"#0a0a0a",color:fuelSystem===s?"#fff":"#3a3a3a",transition:"background 0.15s,color 0.15s"}}>
                           {s}
                         </button>
                       ))}

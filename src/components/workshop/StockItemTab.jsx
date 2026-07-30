@@ -103,7 +103,7 @@ function QRModal({ item, onClose }) {
     <div class="name">${escHtml(item.name)}</div>
     ${item.partNumber ? `<div class="sub">${escHtml(item.partNumber)}</div>` : ''}
     ${item.brand ? `<div class="sub">${escHtml(item.brand)}</div>` : ''}
-    <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;background:#e8670a;color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer">🖨️ Print</button>
+    <button onclick="window.print()" style="margin-top:20px;padding:10px 20px;background:${ACC};color:#fff;border:none;border-radius:4px;font-size:14px;cursor:pointer">🖨️ Print</button>
     </body></html>`);
     w.document.close();
   };
