@@ -466,7 +466,7 @@ function App(){
       <div style={{display:tab==="workshop"&&workshopTab==="consumables"?"contents":"none"}}><ConsumablesTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="storage"?"contents":"none"}}><StorageTab machines={machines} setMachines={setMachines} profile={profile} company={company} active={tab==="workshop"&&workshopTab==="storage"} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="collected"?"contents":"none"}}><CollectedTab machines={machines} setMachines={setMachines} active={tab==="workshop"&&workshopTab==="collected"}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="collected"?"contents":"none"}}><CollectedTab machines={machines} setMachines={setMachines} profile={profile} active={tab==="workshop"&&workshopTab==="collected"}/></div>
       {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools} initialTab={settingsTab}/>}
     </div>
   );
