@@ -100,8 +100,7 @@ export const TABS = [
   {id:"tracker",     label:"Garage"},
   {id:"workshop",    label:"Workshop"},
   {id:"office",      label:"Office"},
-  {id:"wiki",        label:"Wiki"},
-  {id:"marketplace", label:"Market"},
+  {id:"community",   label:"Community"},
 ];
 
 export const WORKSHOP_TABS = [
@@ -120,5 +119,10 @@ export const OFFICE_TABS = [
   {id:"revenue",     label:"Revenue"},
   {id:"quotes",      label:"Quotes"},
   {id:"invoices",    label:"Invoices"},
+];
+
+export const COMMUNITY_TABS = [
+  {id:"wiki",        label:"Wiki"},
+  {id:"marketplace", label:"Market"},
 ];
 

@@ -469,7 +469,7 @@ All marketplace SQL (marketplace_listings.sql, marketplace_messaging.sql, market
 | Feature | Status | Depends on | Tier |
 |---------|--------|-----------|------|
 | 🔨 Workshop parent tab (nested sub-tab bar) | ✅ | App.jsx, WORKSHOP_TABS constant | Free |
-| Workshop sub-tabs: Remind, Parts, Consumables, Tools, Vehicles, Equipment, Storage, Collected | ✅ | WORKSHOP_TABS, App.jsx content panels — Clients and Revenue moved out to the new Office tab (see section 16) | Free / Ent+ |
+| Workshop sub-tabs: Remind, Parts, Consumables, Tools, Vehicles, Equipment, Storage, Collected | ✅ | WORKSHOP_TABS, App.jsx content panels — Clients and Revenue moved out to the new Office tab (see section 15) | Free / Ent+ |
 | ~~Standalone 🔔 Remind top-level tab~~ | ❌ moved | Folded into Workshop as its first sub-tab (was its own entry in TABS, cluttering the main nav for what's really a workshop-scoped view). The overdue/due-soon count badge moved from the top-level tab bar onto the Remind sub-tab, and the top-level 🔨 Workshop tab itself now also carries that badge so the at-a-glance signal isn't lost by nesting one level deeper. Old saved `profile.preferences.tab==="reminders"` values are migrated on load straight to Workshop → Remind rather than being silently dropped | Free |
 | Per-subtab upgrade banner (shows only when at item limit) | ✅ | VehiclesTab / EquipmentTab / ToolsTab / StockItemTab — each shows banner only when atLimit/atAssetLimit; global Workshop tab banner removed from App.jsx | Free |
 | Revenue sub-tab gated behind Enthusiast+ | ✅ | WORKSHOP_TABS enthusiastOnly flag | Free |
@@ -513,8 +513,21 @@ A new top-level tab (`App.jsx` TABS, positioned immediately after Workshop) hous
 
 ---
 
+## 16. Community
 
-## 16. Queued Features
+A new top-level tab (`App.jsx` TABS, positioned last, replacing the two separate Wiki and Market top-level tabs) grouping Wiki and Marketplace as sub-tabs — mirroring the Workshop/Office pattern exactly. Both were previously their own main-nav entries; this is purely a navigation regrouping (user request, after the main tab bar grew to 6 entries with the addition of Office) — `WikiTab` and `MarketplaceTab` themselves are unchanged, only which parent tab mounts them and where their nav sits moved. The public subdomain/route entry points (`wiki.ratbench.net`, `/marketplace`, `/listing/:id` — routed in `main.jsx`, entirely separate from this in-app tab) are unaffected.
+
+| Feature | Status | Depends on | Tier |
+|---------|--------|-----------|------|
+| Community top-level tab (Wiki / Market sub-nav) | ✅ | `COMMUNITY_TABS` constant (`src/lib/constants/ui.js`), App.jsx `communityTab` state + sub-nav bar, same hardcoded pattern as Workshop/Office | Free |
+| Wiki and Market moved from top-level tabs into Community | ✅ | Removed from `TABS`, added to `COMMUNITY_TABS` (same `"wiki"`/`"marketplace"` ids kept, so nothing else that keys off those ids needed to change) — `WikiTab`/`MarketplaceTab` components themselves untouched, only the parent tab that mounts them moved | Free |
+| Legacy tab-preference migration for the move | ✅ | App.jsx prefs-restore effect — an old saved `profile.preferences.tab==="wiki"`/`"marketplace"` (from when either was itself a top-level tab) now routes to `tab="community"` + the matching `communityTab`, instead of falling through to the top-level-tab default | Free |
+| Per-user Community tab visibility + order preferences | ✅ | `profiles.tab_order.community` / `community_hidden` — same hidden-list-only semantics used for Workshop/Office (see section 14's note on why a whitelist can't work); nothing to migrate since Wiki/Market never had a per-tab hidden concept as top-level tabs | Free |
+| Community section in Settings → ⇅ Tabs | ✅ | `TabOrderSettings.jsx` — reuses the same generic checkbox+reorder list component already shared by Workshop/Office for Community's two sub-tabs | Free |
+
+---
+
+## 17. Queued Features
 
 | Feature | Status | Blocked by / Notes |
 |---------|--------|--------------------|
