@@ -80,7 +80,7 @@ export function InvoiceAddonPaymentSetup({ company, onDone, onCancel }) {
     <div>
       {priceInfo && (
         <div style={{ fontSize: 10, color: MUT, marginBottom: 10, lineHeight: 1.7 }}>
-          Invoice Add-on × {formatMoney(priceInfo.unitAmount, priceInfo.currency)}/mo
+          Business Plan × {formatMoney(priceInfo.unitAmount, priceInfo.currency)}/mo
         </div>
       )}
       <div style={{ position: 'relative', marginBottom: 12, minHeight: ready ? 'auto' : 90 }}>
@@ -157,11 +157,11 @@ function InvoicePaywallModal({ company, usage, onClose, onUnlocked }) {
                 completely unaffected. Your free invoice count resets at the start of next month.
               </div>
               <div style={{ fontSize: 10, color: TXT, lineHeight: 1.7, marginBottom: 16 }}>
-                <span style={{ color: ACC, fontWeight: 700 }}>$20/month</span> unlocks unlimited invoice
-                generation for this organisation, plus the full Office suite.
+                The <span style={{ color: ACC, fontWeight: 700 }}>Business plan</span> ($20/month) unlocks
+                unlimited invoice generation for this organisation, plus the full Office suite.
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setShowPayment(true)} style={{ ...btnA, ...sm }}>Unlock for $20/mo</button>
+                <button onClick={() => setShowPayment(true)} style={{ ...btnA, ...sm }}>Upgrade to Business ($20/mo)</button>
                 <button onClick={onClose} style={{ ...btnG, ...sm }}>Maybe Later</button>
               </div>
             </>

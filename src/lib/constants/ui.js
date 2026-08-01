@@ -130,7 +130,7 @@ export const TABS = [
 ];
 
 export const WORKSHOP_TABS = [
-  {id:"reminders",   label:"Remind"},
+  {id:"reminders",   label:"Reminders"},
   {id:"parts",       label:"Parts"},
   {id:"consumables", label:"Consumables"},
   {id:"tools",       label:"Tools"},
