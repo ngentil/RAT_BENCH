@@ -267,7 +267,14 @@ export async function generateInvoicePDF(machine, company, clients, userId, docT
     else await createDocument({ machineId: machine.id, clientId: client?.id || null, docType, docRef, snapshot, total });
   } catch (err) {
     console.error('billing_documents log:', err);
-    toastError(`${docLabel === 'QUOTE' ? 'Quote' : 'Invoice'} generated, but couldn't log it under Office — check connection`);
+    // The DB-side rate limiter (supabase/document_rate_limit.sql) raises a
+    // message prefixed this way specifically so it can be told apart from a
+    // genuine connectivity failure here — "check your connection" would be
+    // actively misleading for a rate-limit rejection.
+    const rateLimited = String(err?.message || '').startsWith('RATE_LIMITED:');
+    toastError(rateLimited
+      ? `${docLabel === 'QUOTE' ? 'Quote' : 'Invoice'} PDF downloaded, but wasn't logged under Office — ${err.message.replace(/^RATE_LIMITED:\s*/, '')}`
+      : `${docLabel === 'QUOTE' ? 'Quote' : 'Invoice'} generated, but couldn't log it under Office — check connection`);
   }
 
   // Mark the billed sessions/parts so the next invoice doesn't re-charge them.
