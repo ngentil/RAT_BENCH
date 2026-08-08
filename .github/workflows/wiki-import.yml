@@ -21,7 +21,9 @@ on:
           - training-data-10-rc2stroke
           - training-data-11-outboards
           - training-data-12-baumr
+          - training-data-13-minibikes
           - training-data-holzfforma
+          - retype-minibikes
           - nhtsa-motorcycle
           - nhtsa-all
           - kaggle-motos
@@ -99,8 +101,14 @@ jobs:
             training-data-12-baumr)
               node scripts/wiki-import/training-data-seed-12-baumr.mjs $DRY $LIMIT_ARG
               ;;
+            training-data-13-minibikes)
+              node scripts/wiki-import/training-data-seed-13-minibikes.mjs $DRY $LIMIT_ARG
+              ;;
             training-data-holzfforma)
               node scripts/wiki-import/training-data-seed-holzfforma.mjs $DRY $LIMIT_ARG
+              ;;
+            retype-minibikes)
+              node scripts/wiki-import/retype-minibikes.mjs $DRY
               ;;
             nhtsa-motorcycle)
               node scripts/wiki-import/nhtsa.mjs --type=motorcycle $DRY $LIMIT_ARG
