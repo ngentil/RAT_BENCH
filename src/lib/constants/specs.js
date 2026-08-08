@@ -47,7 +47,7 @@ export const SVC_CATEGORIES = [
     show:(t,s)=>s!=="Electric"&&s!=="2-stroke"},
   {id:"brakes",     label:"Brakes",
     items:["Brake pads","Brake shoes","Brake fluid","Discs / rotors","Drums","Brake cables","Other"],
-    show:(t,s)=>["Vehicle","Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Ride-on Mower","Tracked Machine"].includes(t)},
+    show:(t,s)=>["Vehicle","Motorcycle","Scooter","Moped","Quad Bike","Mini Bike","Go-kart","Ride-on Mower","Tracked Machine"].includes(t)},
   {id:"electrical", label:"Electrical",
     items:(t,s)=>s==="Electric"?["Battery pack","Motor service","Controller","Charging system","Wiring","Lights","Other"]:["Battery","Starter motor","Alternator","Fuses","Wiring","Lights","Other"],
     show:(t,s)=>true},

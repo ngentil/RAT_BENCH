@@ -4,7 +4,7 @@ export const MACHINE_TYPES = [
   {icon:"🔫",label:"Pressure Washer"},{icon:"✂️",label:"Hedge Trimmer"},
   {icon:"🔧",label:"Multi-Tool"},{icon:"🌿",label:"Lawnmower"},{icon:"🚜",label:"Ride-on Mower"},
   {icon:"⚡",label:"Generator"},{icon:"🏍️",label:"Motorcycle"},{icon:"🛵",label:"Scooter"},
-  {icon:"🛵",label:"Moped"},{icon:"🏍️",label:"Quad Bike"},{icon:"🏎️",label:"Go-kart"},
+  {icon:"🛵",label:"Moped"},{icon:"🏍️",label:"Quad Bike"},{icon:"🏍️",label:"Mini Bike"},{icon:"🏎️",label:"Go-kart"},
   {icon:"🚗",label:"Vehicle"},{icon:"🚧",label:"Tracked Machine"},
   {icon:"⛵",label:"Outboard Motor"},{icon:"❄️",label:"Snowmobile"},
   {icon:"🌊",label:"Jet Ski / PWC"},
@@ -28,6 +28,7 @@ export const TYPE_PH = {
   "Scooter":             {name:"e.g. Yamaha NMAX 155",    make:"e.g. Yamaha",     model:"e.g. NMAX 155",    desc:"e.g. Condition on arrival, fault description"},
   "Moped":               {name:"e.g. Honda Ruckus",       make:"e.g. Honda",      model:"e.g. Ruckus",      desc:"e.g. Condition on arrival, fault description"},
   "Quad Bike":           {name:"e.g. Yamaha YFZ450",      make:"e.g. Yamaha",     model:"e.g. YFZ450",      desc:"e.g. Condition on arrival, fault description"},
+  "Mini Bike":           {name:"e.g. Coleman CT200U",     make:"e.g. Coleman",    model:"e.g. CT200U",      desc:"e.g. Condition on arrival, fault description"},
   "Go-kart":             {name:"e.g. Rotax 125",          make:"e.g. Rotax",      model:"e.g. 125",         desc:"e.g. Condition on arrival, fault description"},
   "Jet Ski / PWC":       {name:"e.g. Sea-Doo GTI 130",   make:"e.g. Sea-Doo",    model:"e.g. GTI 130",     desc:"e.g. Condition on arrival, impeller issue"},
   "Cement Mixer":        {name:"e.g. Belle Minimix 150",  make:"e.g. Belle",      model:"e.g. Minimix 150", desc:"e.g. Condition on arrival, drum fault"},
@@ -50,7 +51,7 @@ export const getPH = (t,f) => (TYPE_PH[t]||TYPE_PH["Custom"])[f];
 
 export const HANDHELD    = ["Chainsaw","Trimmer","Blower","Vacuum","Hedge Trimmer","Multi-Tool"];
 export const WHEELED     = ["Lawnmower","Ride-on Mower"];
-export const MOTO        = ["Motorcycle","Scooter","Moped","Quad Bike","Go-kart","Jet Ski / PWC","Snowmobile"];
+export const MOTO        = ["Motorcycle","Scooter","Moped","Quad Bike","Mini Bike","Go-kart","Jet Ski / PWC","Snowmobile"];
 export const RC_HOBBY    = ["RC / Hobby Engine"];
 export const VEHICLE     = ["Vehicle"];
 export const TRACKED     = ["Tracked Machine"];
