@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ACC } from '../../lib/styles';
 
-export default function PhotoViewer({ src, onClose, isCover, onSetCover }) {
+export default function PhotoViewer({ src, onClose, isCover, onSetCover, onDelete }) {
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
@@ -54,23 +54,43 @@ export default function PhotoViewer({ src, onClose, isCover, onSetCover }) {
         onClick={e => e.stopPropagation()}
         style={{ maxWidth: '95vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 2, userSelect: 'none' }}
       />
-      {onSetCover && (
-        <button
-          onClick={e => { e.stopPropagation(); if (!isCover) onSetCover(); }}
-          style={{
-            position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-            background: isCover ? ACC : 'rgba(255,255,255,0.15)',
-            border: '2px solid ' + (isCover ? ACC : 'rgba(255,255,255,0.5)'),
-            color: isCover ? '#000' : '#fff',
-            fontSize: 13, fontWeight: 700, letterSpacing: '0.04em',
-            borderRadius: 999, padding: '10px 20px',
-            cursor: isCover ? 'default' : 'pointer',
-            fontFamily: "'IBM Plex Mono',monospace",
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {isCover ? '★ Cover Photo' : '☆ Set as Cover'}
-        </button>
+      {(onSetCover || onDelete) && (
+        <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10 }}>
+          {onSetCover && (
+            <button
+              onClick={e => { e.stopPropagation(); if (!isCover) onSetCover(); }}
+              style={{
+                background: isCover ? ACC : 'rgba(255,255,255,0.15)',
+                border: '2px solid ' + (isCover ? ACC : 'rgba(255,255,255,0.5)'),
+                color: isCover ? '#000' : '#fff',
+                fontSize: 13, fontWeight: 700, letterSpacing: '0.04em',
+                borderRadius: 999, padding: '10px 20px',
+                cursor: isCover ? 'default' : 'pointer',
+                fontFamily: "'IBM Plex Mono',monospace",
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {isCover ? '★ Cover Photo' : '☆ Set as Cover'}
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={e => { e.stopPropagation(); if (confirm("Delete this photo? This can't be undone.")) onDelete(); }}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                border: '2px solid rgba(255,80,80,0.6)',
+                color: '#ff8080',
+                fontSize: 13, fontWeight: 700, letterSpacing: '0.04em',
+                borderRadius: 999, padding: '10px 20px',
+                cursor: 'pointer',
+                fontFamily: "'IBM Plex Mono',monospace",
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              🗑 Delete
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
