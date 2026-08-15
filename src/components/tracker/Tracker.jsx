@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { upsertMachine, deleteMachineApi } from '../../lib/db';
+import { upsertMachine, deleteMachineApi, findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
+import { toastUndo, toastError } from '../../lib/toast';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { getPref, savePref } from '../../lib/db/preferences';
 import { getAllActiveBookings } from '../../lib/db/bookings';
@@ -224,7 +225,19 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
     try{
       await deleteMachineApi(m.id);
       setMachines(prev=>prev.filter(x=>x.id!==m.id));
-    }catch(e){alert("Delete failed: "+e.message);}
+    }catch(e){toastError("Delete failed: "+e.message);return;}
+
+    // Goes to Recently Deleted for 72h (supabase/recently_deleted.sql) rather
+    // than a scary "are you sure?" wall — this toast's Undo is the fast path,
+    // Settings → Recently Deleted is the slow path if it's missed.
+    const logId=await findMyRecentlyDeletedLogId('machines',m.id);
+    if(!logId)return; // snapshot lookup failed — delete already succeeded either way
+    toastUndo(`${m.name||'Machine'} deleted`, async()=>{
+      try{
+        const {record}=await restoreDeletedRecord(logId);
+        setMachines(prev=>[record||m,...prev]);
+      }catch(e){toastError("Couldn't undo — "+e.message);}
+    });
   };
 
   const onDragStart=(e,idx)=>{setDragIdx(idx);e.dataTransfer.effectAllowed="move";};

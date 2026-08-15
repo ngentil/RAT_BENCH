@@ -75,7 +75,7 @@ export default function PhotoViewer({ src, onClose, isCover, onSetCover, onDelet
           )}
           {onDelete && (
             <button
-              onClick={e => { e.stopPropagation(); if (confirm("Delete this photo? This can't be undone.")) onDelete(); }}
+              onClick={e => { e.stopPropagation(); onDelete(); }}
               style={{
                 background: 'rgba(255,255,255,0.15)',
                 border: '2px solid rgba(255,80,80,0.6)',

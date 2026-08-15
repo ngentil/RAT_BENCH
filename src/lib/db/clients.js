@@ -1,7 +1,6 @@
 import { supabase } from '../supabase';
-import { deletePhoto } from '../storage';
 
-function fromDb(r) {
+export function fromDb(r) {
   return {
     id:        r.id,
     name:      r.name,
@@ -52,15 +51,13 @@ export async function upsertClient(client) {
 }
 
 export async function deleteClientApi(id) {
-  let photos = [];
-  try {
-    const { data } = await supabase.from('clients').select('photos').eq('id', id).single();
-    photos = data?.photos || [];
-  } catch {}
-  // Row first — a failed delete must not leave the surviving client with 404 photos
+  // Storage photos are deliberately NOT deleted here — the row goes into
+  // Recently Deleted for 72 hours (see supabase/recently_deleted.sql),
+  // restorable via restore_deleted_record(). Eagerly deleting the actual
+  // image files would make a "restored" client come back with broken photo
+  // links; the 72h expiry sweep is what actually deletes the files.
   const { error } = await supabase.from("clients").delete().eq("id", id);
   if (error) { console.error("deleteClient:", error); throw error; }
-  photos.forEach(url => deletePhoto(url));
 }
 
 // One-time migration: pushes any clients stored in localStorage up to Supabase.

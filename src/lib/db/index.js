@@ -10,3 +10,4 @@ export * from './inventory';
 export * from './invoices';
 export * from './billingDocuments';
 export * from './invoiceCredits';
+export * from './trash';

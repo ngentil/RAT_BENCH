@@ -1,0 +1,37 @@
+name: Prune Recently Deleted
+
+on:
+  schedule:
+    - cron: "30 7 * * *" # daily, 07:30 UTC — offset from Prune Activity Log's 07:00 run
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (show what would be cleaned up, no writes)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  prune-recently-deleted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Expire Recently Deleted items past their 72h recovery window
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          DRY=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          node scripts/prune-recently-deleted.mjs $DRY

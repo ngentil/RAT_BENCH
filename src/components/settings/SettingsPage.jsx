@@ -6,10 +6,11 @@ import CompanySettings from './CompanySettings';
 import AdminPanel from './AdminPanel';
 import StorageSettings from './StorageSettings';
 import TabOrderSettings from './TabOrderSettings';
+import RecentlyDeletedSettings from './RecentlyDeletedSettings';
 
 const ADMIN_EMAILS = [import.meta.env.VITE_ADMIN_EMAIL, 'nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'].filter(Boolean);
 
-function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,vehicles,equipment,tools,initialTab}){
+function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,machines,setMachines,clients,setClients,vehicles,equipment,tools,initialTab}){
   const isAdmin = ADMIN_EMAILS.includes(session?.user?.email);
   const [tab,setTab]=useState(initialTab||"profile");
   // Billing tab removed for now (no paid plan to manage — see gates.js) and
@@ -20,6 +21,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
     {id:"company",  label:"Company / Org"},
     {id:"storage",  label:"Billing & Storage"},
     {id:"tabs",     label:"Tabs"},
+    {id:"trash",    label:"Recently Deleted"},
   ];
   const tabs = applyTabOrder(baseTabs, profile?.tab_order?.settings).concat(
     isAdmin ? [{id:"admin",label:"Admin"}] : []
@@ -35,6 +37,7 @@ function SettingsPage({profile,setProfile,session,company,setCompany,onSignOut,m
       {tab==="company"&&<CompanySettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany} session={session} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools}/>}
       {tab==="storage"&&<StorageSettings profile={profile} setProfile={setProfile} company={company} setCompany={setCompany}/>}
       {tab==="tabs"&&<TabOrderSettings profile={profile} setProfile={setProfile}/>}
+      {tab==="trash"&&<RecentlyDeletedSettings machines={machines} setMachines={setMachines} clients={clients} setClients={setClients}/>}
       {tab==="admin"&&isAdmin&&<AdminPanel/>}
     </div>
   );
