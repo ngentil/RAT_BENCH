@@ -1,6 +1,5 @@
 import { supabase } from '../supabase';
 import { unassignAllByParent, syncAssignmentParentName } from './assetAssignments';
-import { deletePhoto } from '../storage';
 
 function toDb(v) {
   return {
@@ -25,7 +24,7 @@ function toDb(v) {
   };
 }
 
-function fromDb(r) {
+export function fromDb(r) {
   return {
     id:          r.id,
     userId:      r.user_id,
@@ -97,12 +96,14 @@ export async function upsertVehicle(vehicle) {
 }
 
 export async function deleteVehicle(id) {
-  const { data } = await supabase.from('vehicles').select('photos, service_log').eq('id', id).single();
-  (data?.photos || []).forEach(url => deletePhoto(url));
-  (data?.service_log || []).forEach(entry => {
-    if (entry.plugPhoto) deletePhoto(entry.plugPhoto);
-    (entry.jobPhotos || []).forEach(url => deletePhoto(url));
-  });
+  // Storage photos are deliberately NOT deleted here — the row goes into
+  // Recently Deleted for 72 hours (see supabase/recently_deleted.sql),
+  // restorable via restore_deleted_record(). Eagerly deleting them would
+  // make a "restored" vehicle come back with broken photo links; the 72h
+  // expiry sweep is what actually deletes the files. Asset-permission
+  // grants are still cleared immediately, same as before — those aren't
+  // part of what a restore brings back (a known, accepted gap, same as
+  // clients not re-linking unlinked machines on restore).
   await unassignAllByParent('vehicle', id);
   await supabase.from('asset_permissions').delete().eq('asset_type', 'vehicle').eq('asset_id', id);
   const { error } = await supabase.from('vehicles').delete().eq('id', id);

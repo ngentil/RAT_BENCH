@@ -4,7 +4,8 @@ import { SL, FL, Empty } from '../ui/shared';
 import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { getEquipment, upsertEquipment, deleteEquipmentItem } from '../../lib/db/equipment';
-import { deletePhoto } from '../../lib/storage';
+import { findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
+import { toastError, toastUndo } from '../../lib/toast';
 import { fmtDate } from '../../lib/helpers';
 import LoadoutSection from '../ui/LoadoutSection';
 import AssetTile from '../ui/AssetTile';
@@ -272,11 +273,16 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
   );
 }
 
-export default function EquipmentTab({ equipment, setEquipment, session, profile, company }) {
+export default function EquipmentTab({ equipment, setEquipment, session, profile, company, initialSearch, onInitialSearchConsumed }) {
   const [loading, setLoading] = useState(!equipment?.length);
   const [err, setErr] = useState('');
   const [formItem, setFormItem] = useState(null);
   const [search, setSearch]    = useState('');
+  useEffect(() => {
+    if (!initialSearch) return;
+    setSearch(initialSearch);
+    onInitialSearchConsumed?.();
+  }, [initialSearch]);
   const [typeFilter, setTypeFilter] = useState(null);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState(() => getPref(profile, 'equipmentSort', null));
@@ -351,11 +357,21 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
   };
 
   const remove = async (id) => {
-    if (!confirm('Delete this equipment?')) return;
     const eq = equipment.find(x => x.id === id);
-    (eq?.photos || []).forEach(url => deletePhoto(url));
-    await deleteEquipmentItem(id);
-    setEquipment(prev => prev.filter(e => e.id !== id));
+    try {
+      await deleteEquipmentItem(id);
+      setEquipment(prev => prev.filter(e => e.id !== id));
+    } catch (e) { toastError('Delete failed: ' + e.message); return; }
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    const logId = await findMyRecentlyDeletedLogId('equipment', id);
+    if (!logId) return;
+    toastUndo(`${eq?.name || 'Equipment'} deleted`, async () => {
+      try {
+        const { record } = await restoreDeletedRecord(logId);
+        setEquipment(prev => [record || eq, ...prev]);
+      } catch (e) { toastError("Couldn't undo — " + e.message); }
+    });
   };
 
   return (

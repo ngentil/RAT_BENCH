@@ -74,7 +74,7 @@ function GuideStep2({ onSkip }) {
   );
 }
 
-function Tracker({machines:allMachines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear,active}){
+function Tracker({machines:allMachines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear,active,initialSearch,onInitialSearchConsumed}){
   // Bulk-fetched (not per-machine) — a machine currently on the Bench,
   // booked into Storage, or Collected by a customer lives in that tab
   // instead, the same way a sold machine lives in Sold Items. Refetches on
@@ -129,6 +129,13 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
     else setTileOpen(null);
   };
   const [search,setSearch]=useState("");
+  // Consume-once, same idiom as templateMachineId/onTemplateClear above —
+  // a global-search result jumping in here pre-fills this tab's own filter.
+  useEffect(()=>{
+    if(!initialSearch)return;
+    setSearch(initialSearch);
+    onInitialSearchConsumed?.();
+  },[initialSearch]);
   const [tutDone,setTutDone]=useState(()=>getPref(profile,'rat_tut',false));
   const [tutCardOpened,setTutCardOpened]=useState(false);
   const skipTut=()=>{setTutDone(true);savePref(profile?.id,'rat_tut',true);};

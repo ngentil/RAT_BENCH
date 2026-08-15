@@ -28,7 +28,8 @@ function MarketplaceInbox({ profile, onOpenThread, refreshKey }) {
     return (
       <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "32px 0" }}>
         <div style={{ fontSize: 22, marginBottom: 10 }}>💬</div>
-        No conversations yet.
+        No conversations yet.<br />
+        Message a seller from a listing in Community → Market to start one.
       </div>
     );
   }

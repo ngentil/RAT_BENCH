@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
-import { getCompanyMembers, removeMember, regenerateInviteCode, updateMemberRole } from '../../lib/db';
+import { getCompanyMembers, removeMember, regenerateInviteCode, updateMemberRole, findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
+import { toastUndo, toastError } from '../../lib/toast';
 import { SL } from '../ui/shared';
 
 const ROLES = ["admin", "technician", "viewer"];
@@ -96,12 +97,24 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
   };
 
   const handleRemove = async (userId, name) => {
-    if (!confirm(`Remove ${name} from the organisation?`)) return;
     try {
       await removeMember(company.id, userId);
       setMembers(prev => prev.filter(m => m.user_id !== userId));
       setSelected(prev => { if (!prev.has(userId)) return prev; const next = new Set(prev); next.delete(userId); return next; });
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(e.message); return; }
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup — a
+    // removed member's seat frees up immediately either way; restoring just
+    // re-adds their company_members row (re-fetched with its profile join,
+    // since the raw restored row alone has no display name attached).
+    const logId = await findMyRecentlyDeletedLogId('company_members', userId);
+    if (!logId) return;
+    toastUndo(`${name} removed`, async () => {
+      try {
+        await restoreDeletedRecord(logId);
+        setMembers(await getCompanyMembers(company.id));
+      } catch (e) { toastError("Couldn't undo — " + e.message); }
+    });
   };
 
   // Removable = anyone but the owner and myself (mirrors rpc_remove_member's
@@ -125,19 +138,26 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
   const handleBulkRemove = async () => {
     const ids = Array.from(selected);
     if (!ids.length) return;
-    const names = ids.map(id => {
-      const m = members.find(mm => mm.user_id === id);
-      return m?.profile?.display_name || m?.profile?.username || 'this member';
-    });
-    if (!confirm(`Remove ${ids.length} member${ids.length !== 1 ? 's' : ''} from the organisation?\n\n${names.join(', ')}`)) return;
     setBulkRemoving(true);
     setErr('');
     const results = await Promise.allSettled(ids.map(id => removeMember(company.id, id)));
     const failedIds = ids.filter((id, i) => results[i].status === 'rejected');
+    const removedIds = ids.filter(id => !failedIds.includes(id));
     setMembers(prev => prev.filter(m => !ids.includes(m.user_id) || failedIds.includes(m.user_id)));
     setSelected(new Set(failedIds));
     if (failedIds.length) setErr(`Couldn't remove ${failedIds.length} member${failedIds.length !== 1 ? 's' : ''} — try again.`);
     setBulkRemoving(false);
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    if (!removedIds.length) return;
+    const logIds = (await Promise.all(removedIds.map(id => findMyRecentlyDeletedLogId('company_members', id)))).filter(Boolean);
+    if (!logIds.length) return;
+    toastUndo(`${removedIds.length} member${removedIds.length !== 1 ? 's' : ''} removed`, async () => {
+      try {
+        await Promise.all(logIds.map(id => restoreDeletedRecord(id)));
+        setMembers(await getCompanyMembers(company.id));
+      } catch (e) { toastError("Couldn't undo — " + e.message); }
+    });
   };
 
   const handleRoleChange = async (userId, role) => {
