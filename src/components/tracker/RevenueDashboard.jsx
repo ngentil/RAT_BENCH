@@ -312,7 +312,7 @@ export default function RevenueDashboard({ machines, company, profile }) {
         <div style={{ fontSize: 10, color: MUT, textAlign: "center", padding: "32px 0" }}>
           <div style={{ fontSize: 22, marginBottom: 10 }}>📊</div>
           No sessions recorded {period === "week" ? "this week" : period === "month" ? "this month" : "yet"}.<br />
-          Use the Job Timer on the Jobs tab to log work sessions.
+          Use the Job Timer on the Bench tab to log work sessions.
         </div>
       )}
     </div>
