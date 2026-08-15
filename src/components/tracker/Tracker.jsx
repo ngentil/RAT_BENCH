@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { upsertMachine, deleteMachineApi, findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
+import { upsertMachine, deleteMachineApi, findMyRecentlyDeletedLogId, restoreDeletedRecord, getInventoryItems } from '../../lib/db';
 import { toastUndo, toastError } from '../../lib/toast';
 import { ACC, MUT, BRD, SURF, TXT, btnA, btnG, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF, inp } from '../../lib/styles';
 import { getPref, savePref } from '../../lib/db/preferences';
@@ -15,7 +15,7 @@ import MachineForm from '../machine/MachineForm';
 import ErrorBoundary from '../ui/ErrorBoundary';
 import GuestUpgradeModal from '../auth/GuestUpgradeModal';
 import { machineMatchesQuery } from '../../lib/helpers';
-import { tokenizeSearch } from '../../lib/wiki';
+import { tokenizeSearch, searchWiki } from '../../lib/wiki';
 
 const _ARW = "#e8870a";
 const _M = { fontFamily:"'IBM Plex Mono',monospace" };
@@ -74,7 +74,22 @@ function GuideStep2({ onSkip }) {
   );
 }
 
-function Tracker({machines:allMachines,setMachines,company,profile,setProfile,clients,isGuest,onGoToBilling,templateMachineId,onTemplateClear,active,initialSearch,onInitialSearchConsumed}){
+// Cross-tab destinations the Garage search bar's scope dropdown can reach
+// into, beyond Garage's own machines (always searched, not a checkbox).
+// Clients/Vehicles/Equipment/Tools are already loaded app-wide, so they
+// match instantly; Parts and Wiki aren't, so those go through a debounced
+// live query instead (see the effect below) — only fired when actually
+// selected, not on every keystroke regardless of scope.
+const CROSS_TAB_CATEGORIES=[
+  {key:'clients',label:'Clients'},
+  {key:'vehicles',label:'Vehicles'},
+  {key:'equipment',label:'Equipment'},
+  {key:'tools',label:'Tools'},
+  {key:'parts',label:'Parts'},
+  {key:'wiki',label:'Wiki'},
+];
+
+function Tracker({machines:allMachines,setMachines,company,profile,setProfile,clients,vehicles,equipment,tools,onJumpTo,isGuest,onGoToBilling,templateMachineId,onTemplateClear,active,initialSearch,onInitialSearchConsumed}){
   // Bulk-fetched (not per-machine) — a machine currently on the Bench,
   // booked into Storage, or Collected by a customer lives in that tab
   // instead, the same way a sold machine lives in Sold Items. Refetches on
@@ -136,6 +151,83 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
     setSearch(initialSearch);
     onInitialSearchConsumed?.();
   },[initialSearch]);
+
+  // The search bar's scope selector — "Garage" (machines, always on) plus
+  // whichever of Clients/Vehicles/Equipment/Tools/Parts/Wiki the user has
+  // checked. Replaces the old standalone 🔍 header button/modal: same reach,
+  // but integrated into the filter you're already typing into instead of a
+  // separate overlay, and the header no longer has to make room for it.
+  const [searchScope,setSearchScope]=useState(()=>new Set());
+  const [scopeOpen,setScopeOpen]=useState(false);
+  const scopeRef=useRef(null);
+  useEffect(()=>{
+    if(!scopeOpen)return;
+    const onDocClick=e=>{ if(scopeRef.current&&!scopeRef.current.contains(e.target))setScopeOpen(false); };
+    document.addEventListener('mousedown',onDocClick);
+    return ()=>document.removeEventListener('mousedown',onDocClick);
+  },[scopeOpen]);
+  const toggleScope=key=>setSearchScope(prev=>{
+    const next=new Set(prev);
+    if(next.has(key))next.delete(key);else next.add(key);
+    return next;
+  });
+  const allScoped=searchScope.size===CROSS_TAB_CATEGORIES.length;
+  const toggleEverywhere=()=>setSearchScope(allScoped?new Set():new Set(CROSS_TAB_CATEGORIES.map(c=>c.key)));
+
+  // Parts/Wiki aren't preloaded app-wide, so they're debounced live queries —
+  // gated on actually being selected, not fired just because a scope of any
+  // kind is active.
+  const [liveResults,setLiveResults]=useState([]);
+  useEffect(()=>{
+    const query=search.trim();
+    const wantParts=searchScope.has('parts');
+    const wantWiki=searchScope.has('wiki');
+    if(query.length<2||(!wantParts&&!wantWiki)){setLiveResults([]);return;}
+    let cancelled=false;
+    const timer=setTimeout(async()=>{
+      const lower=query.toLowerCase();
+      const [items,wikiRows]=await Promise.all([
+        wantParts?getInventoryItems().catch(()=>[]):Promise.resolve([]),
+        wantWiki?searchWiki(query).catch(()=>[]):Promise.resolve([]),
+      ]);
+      if(cancelled)return;
+      const out=[];
+      if(wantParts)(items||[]).forEach(i=>{
+        const hay=[i.name,i.brand,i.partNumber,i.supplier].filter(Boolean).join(' ').toLowerCase();
+        if(hay.includes(lower))out.push({key:'p:'+i.id,category:'Part',label:i.name||i.partNumber||'Part',sub:[i.brand,i.partNumber].filter(Boolean).join(' · '),jump:{tab:'workshop',subTab:'parts',query:i.name||query}});
+      });
+      if(wantWiki)(wikiRows||[]).slice(0,12).forEach(e=>{
+        out.push({key:'w:'+e.id,category:'Wiki',label:[e.make,e.model].filter(Boolean).join(' ')||e.slug,sub:e.type||'',jump:{tab:'community',subTab:'wiki',query:e.slug}});
+      });
+      setLiveResults(out);
+    },300);
+    return ()=>{cancelled=true;clearTimeout(timer);};
+  },[search,searchScope]);
+
+  const crossTabResults=useMemo(()=>{
+    const query=search.trim();
+    if(query.length<2||searchScope.size===0)return [];
+    const lower=query.toLowerCase();
+    const out=[];
+    if(searchScope.has('clients'))(clients||[]).forEach(c=>{
+      if((c.name||'').toLowerCase().includes(lower)||(c.phone||'').includes(query)||(c.email||'').toLowerCase().includes(lower))
+        out.push({key:'c:'+c.id,category:'Client',label:c.name,sub:c.phone||c.email||'',jump:{tab:'office',subTab:'clients',query:c.name}});
+    });
+    if(searchScope.has('vehicles'))(vehicles||[]).forEach(v=>{
+      const hay=[v.name,v.make,v.model].filter(Boolean).join(' ').toLowerCase();
+      if(hay.includes(lower))out.push({key:'v:'+v.id,category:'Vehicle',label:v.name||[v.make,v.model].filter(Boolean).join(' '),sub:[v.make,v.model].filter(Boolean).join(' '),jump:{tab:'workshop',subTab:'vehicles',query:v.name||query}});
+    });
+    if(searchScope.has('equipment'))(equipment||[]).forEach(e=>{
+      const hay=[e.name,e.make,e.model,e.type].filter(Boolean).join(' ').toLowerCase();
+      if(hay.includes(lower))out.push({key:'e:'+e.id,category:'Equipment',label:e.name||[e.make,e.model].filter(Boolean).join(' '),sub:e.type||'',jump:{tab:'workshop',subTab:'equipment',query:e.name||query}});
+    });
+    if(searchScope.has('tools'))(tools||[]).forEach(t=>{
+      const hay=[t.name,t.brand,t.model,t.category].filter(Boolean).join(' ').toLowerCase();
+      if(hay.includes(lower))out.push({key:'t:'+t.id,category:'Tool',label:t.name||[t.brand,t.model].filter(Boolean).join(' '),sub:t.category||'',jump:{tab:'workshop',subTab:'tools',query:t.name||query}});
+    });
+    return [...out,...liveResults].slice(0,40);
+  },[search,searchScope,clients,vehicles,equipment,tools,liveResults]);
+
   const [tutDone,setTutDone]=useState(()=>getPref(profile,'rat_tut',false));
   const [tutCardOpened,setTutCardOpened]=useState(false);
   const skipTut=()=>{setTutDone(true);savePref(profile?.id,'rat_tut',true);};
@@ -306,7 +398,59 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
           </div>
         </div>
       )}
-      <input style={{...inp,marginBottom:8,fontSize:11}} placeholder="Search name, make, model, or any spec (e.g. plug gap, tyre size)…" value={search} onChange={e=>setSearch(e.target.value)} />
+      <div style={{position:"relative",marginBottom:8}}>
+        <input
+          style={{...inp,fontSize:11,paddingRight:searchScope.size>0?96:76}}
+          placeholder="Search name, make, model, or any spec (e.g. plug gap, tyre size)…"
+          value={search} onChange={e=>setSearch(e.target.value)}
+        />
+        <button
+          onClick={()=>setScopeOpen(o=>!o)}
+          title="Choose where else to search"
+          style={{
+            position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",
+            background:searchScope.size>0?ACC+"22":"#1a1a1a",
+            border:"1px solid "+(searchScope.size>0?ACC+"88":BRD),
+            borderRadius:2,color:searchScope.size>0?ACC:MUT,fontSize:9,
+            padding:"4px 8px",cursor:"pointer",letterSpacing:"0.03em",
+            fontFamily:"'IBM Plex Mono',monospace",whiteSpace:"nowrap",
+          }}
+        >
+          {searchScope.size===0?"Garage":allScoped?"Everywhere":`Garage +${searchScope.size}`} ▾
+        </button>
+        {scopeOpen&&(
+          <div ref={scopeRef} style={{position:"absolute",top:"100%",right:0,marginTop:4,background:SURF,border:"1px solid "+BRD,borderRadius:3,zIndex:20,width:200,boxShadow:"0 4px 16px rgba(0,0,0,0.5)"}}>
+            <div style={{padding:"8px 10px",fontSize:8,color:MUT,letterSpacing:"0.1em",textTransform:"uppercase",borderBottom:"1px solid "+BRD}}>Also search in</div>
+            <label style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",cursor:"pointer",borderBottom:"1px solid #1a1a1a"}}>
+              <input type="checkbox" checked={allScoped} onChange={toggleEverywhere} style={{accentColor:ACC,width:14,height:14}} />
+              <span style={{fontSize:11,color:TXT,fontWeight:700}}>🌐 Everywhere</span>
+            </label>
+            {CROSS_TAB_CATEGORIES.map(c=>(
+              <label key={c.key} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",cursor:"pointer"}}>
+                <input type="checkbox" checked={searchScope.has(c.key)} onChange={()=>toggleScope(c.key)} style={{accentColor:ACC,width:14,height:14}} />
+                <span style={{fontSize:11,color:TXT}}>{c.label}</span>
+              </label>
+            ))}
+            <div style={{padding:"6px 10px",fontSize:8,color:MUT,borderTop:"1px solid "+BRD}}>Garage is always searched</div>
+          </div>
+        )}
+      </div>
+      {crossTabResults.length>0&&(
+        <div style={{border:"1px solid "+BRD,borderRadius:2,marginBottom:10,maxHeight:240,overflowY:"auto"}}>
+          {crossTabResults.map(r=>(
+            <div key={r.key} onClick={()=>onJumpTo?.(r.jump)}
+              style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderBottom:"1px solid #1a1a1a",cursor:"pointer"}}
+              onMouseEnter={e=>e.currentTarget.style.background="#161616"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+            >
+              <span style={{fontSize:7,color:ACC,letterSpacing:"0.08em",textTransform:"uppercase",fontWeight:700,border:"1px solid "+ACC+"55",borderRadius:2,padding:"2px 5px",flexShrink:0}}>{r.category}</span>
+              <div style={{minWidth:0,flex:1}}>
+                <div style={{fontSize:11,color:TXT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.label}</div>
+                {r.sub&&<div style={{fontSize:9,color:MUT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.sub}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:8,marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",rowGap:6}}>
           <span style={{fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:ACC,whiteSpace:"nowrap"}}>Machines</span>
