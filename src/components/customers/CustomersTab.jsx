@@ -172,7 +172,7 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
       }
     } catch (e) { toastError("Delete failed: " + e.message); return; }
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup — note
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup — note
     // this only brings the client record itself back; any machines that got
     // unlinked above (clientId set to null) aren't automatically re-linked.
     const logId = await findMyRecentlyDeletedLogId('clients', id);

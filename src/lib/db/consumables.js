@@ -80,7 +80,7 @@ export async function upsertConsumable(item) {
 
 export async function deleteConsumable(id) {
   // Storage photos deliberately NOT deleted here — goes into Recently
-  // Deleted for 72h instead (see supabase/recently_deleted.sql); the 72h
+  // Deleted for 30 days instead (see supabase/recently_deleted.sql); the 30-day
   // expiry sweep does the actual Storage cleanup.
   await unassignAllByChild('consumable', id);
   const { error } = await supabase.from('consumables').delete().eq('id', id);

@@ -482,15 +482,15 @@ function App(){
         </div>
       ))}
       <div style={{background:SURF,borderBottom:"3px solid "+ACC,padding:"12px 18px",display:"flex",alignItems:"center",gap:10,position:"relative",zIndex:10}}>
-        <a href="/" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1}}>
+        <a href="/" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",flex:1,minWidth:0}}>
           {company?.logo
-            ? <img src={company.logo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD}}/>
-            : <span style={{fontSize:20}}>🐀</span>}
-          <div>
-            <div style={{fontSize:17,fontWeight:700,color:ACC,letterSpacing:"0.04em",textTransform:"uppercase"}}>Rat Bench</div>
+            ? <img src={company.logo} alt="" style={{width:36,height:36,objectFit:"cover",borderRadius:2,border:"1px solid "+BRD,flexShrink:0}}/>
+            : <span style={{fontSize:20,flexShrink:0}}>🐀</span>}
+          <div style={{minWidth:0}}>
+            <div style={{fontSize:17,fontWeight:700,color:ACC,letterSpacing:"0.04em",textTransform:"uppercase",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>Rat Bench</div>
             {company
-              ? <div style={{fontSize:9,color:TXT,letterSpacing:"0.08em",textTransform:"uppercase",marginTop:1}}>{company.name}</div>
-              : <div style={{fontSize:9,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:1}}>small engine & equipment repair</div>}
+              ? <div style={{fontSize:9,color:TXT,letterSpacing:"0.08em",textTransform:"uppercase",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{company.name}</div>
+              : <div style={{fontSize:9,color:MUT,letterSpacing:"0.18em",textTransform:"uppercase",marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>small engine & equipment repair</div>}
           </div>
         </a>
         <div style={{display:"flex",alignItems:"center",gap:8}}>

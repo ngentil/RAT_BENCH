@@ -13,7 +13,7 @@ import { fromDb as fromDbInventory } from './inventory';
 //     consumables, company_members) come back from list_my_recently_deleted()
 //   - things embedded inside a machine's own jsonb columns (time log
 //     entries, parts, photos) come back from list_my_trash_items()
-// Both share the same 72-hour recovery window and the same shape once
+// Both share the same 30-day recovery window and the same shape once
 // normalized here, so the Settings page can render one flat, newest-first
 // list without caring which table something actually came from.
 
@@ -120,7 +120,7 @@ export async function restoreTrashItem(id) {
 // upsertMachine() save that actually removes it from the array — same
 // best-effort two-step pattern already used elsewhere (e.g. inventory stock
 // adjustments alongside a machine save). A failure here doesn't block the
-// removal itself; it just means that one item won't have a 72h undo.
+// removal itself; it just means that one item won't have a 30-day undo.
 // Returns the new trash_items row's id, for wiring up an Undo button.
 export async function logTrashItem({ machineId, itemType, label, snapshot }) {
   const { data: { user } } = await supabase.auth.getUser();

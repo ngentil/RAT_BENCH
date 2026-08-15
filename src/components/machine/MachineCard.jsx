@@ -109,7 +109,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
     setSvcs(prev=>prev.filter(s=>s.id!==id));
   };
 
-  // Goes to Recently Deleted for 72h (supabase/trash_items.sql) instead of a
+  // Goes to Recently Deleted for 30 days (supabase/trash_items.sql) instead of a
   // confirm() popup — same immediate-delete-with-Undo-toast pattern as the
   // whole-machine Delete button below.
   const deletePhotoAt=idx=>{

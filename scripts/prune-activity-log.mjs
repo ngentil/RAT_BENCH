@@ -26,10 +26,20 @@ const RETENTION_DAYS = daysArg ? parseInt(daysArg.split('=')[1], 10) : 30;
 const CUTOFF = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
 async function main() {
+  // .is('snapshot', null) excludes a '.delete' row whose Recently Deleted
+  // snapshot hasn't been cleared yet (see prune-recently-deleted.mjs, which
+  // runs 30 min later and also uses a 30-day window now that both retention
+  // periods match). Without this, this run — 30 min *earlier* in the same
+  // day — could hard-delete a still-undo-eligible row before that sweep
+  // ever sees it, permanently orphaning any Storage photos its snapshot
+  // referenced. Every non-delete row already has a null snapshot anyway, so
+  // this only ever excludes exactly the rows that genuinely need the other
+  // script to run first.
   const { count, error: countErr } = await supabase
     .from('activity_log')
     .select('id', { count: 'exact', head: true })
-    .lt('created_at', CUTOFF);
+    .lt('created_at', CUTOFF)
+    .is('snapshot', null);
   if (countErr) throw countErr;
 
   console.log(`${count || 0} activity_log row(s) older than ${RETENTION_DAYS} days (before ${CUTOFF}).`);
@@ -39,7 +49,7 @@ async function main() {
     return;
   }
 
-  const { error: delErr } = await supabase.from('activity_log').delete().lt('created_at', CUTOFF);
+  const { error: delErr } = await supabase.from('activity_log').delete().lt('created_at', CUTOFF).is('snapshot', null);
   if (delErr) throw delErr;
 
   console.log(`Deleted ${count} row(s).`);

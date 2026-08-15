@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Finishes what a delete started, once it's past the 72-hour Recently
+// Finishes what a delete started, once it's past the 30-day Recently
 // Deleted recovery window (see supabase/recently_deleted.sql and
 // supabase/trash_items.sql). deleteMachineApi/deleteClientApi etc.
 // deliberately stop short of deleting the actual Storage photo files at
@@ -7,12 +7,12 @@
 // whole point of "you can undo this." This is what actually deletes those
 // files, once undo is no longer possible:
 //
-//   - activity_log '.delete' rows older than 72h: any photo URLs found in
+//   - activity_log '.delete' rows older than 30 days: any photo URLs found in
 //     the stored snapshot get removed from Storage, then the (now heavy and
 //     no-longer-useful) snapshot column is nulled out. The activity_log row
 //     itself is left alone — it still has its own, separate 30-day general
 //     retention (prune-activity-log.mjs).
-//   - trash_items rows older than 72h: if it was a photo, delete the file
+//   - trash_items rows older than 30 days: if it was a photo, delete the file
 //     from Storage; either way, the row itself is deleted outright (unlike
 //     activity_log, there's no separate audit-trail reason to keep it).
 //
@@ -33,7 +33,7 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const CUTOFF = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+const CUTOFF = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 const PHOTOS_BUCKET = 'photos';
 
 function photoPathFromUrl(url) {

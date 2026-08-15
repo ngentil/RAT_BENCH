@@ -527,7 +527,7 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
       setVehicles(prev => prev.filter(x => x.id !== id));
     } catch (e) { toastError('Delete failed: ' + e.message); return; }
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup.
     const logId = await findMyRecentlyDeletedLogId('vehicles', id);
     if (!logId) return;
     toastUndo(`${v?.name || 'Vehicle'} deleted`, async () => {

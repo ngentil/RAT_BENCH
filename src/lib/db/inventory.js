@@ -102,8 +102,8 @@ export async function saveInventoryItem(userId, item) {
 
 export async function deleteInventoryItem(userId, itemId) {
   // Storage photos deliberately NOT deleted here — the row goes into
-  // Recently Deleted for 72h instead (see supabase/recently_deleted.sql);
-  // the 72h expiry sweep does the actual Storage cleanup.
+  // Recently Deleted for 30 days instead (see supabase/recently_deleted.sql);
+  // the 30-day expiry sweep does the actual Storage cleanup.
   try {
     await unassignAllByChild('part', itemId);
     await supabase.from('inventory_items').delete().eq('id', itemId).eq('user_id', userId);

@@ -97,9 +97,9 @@ export async function upsertVehicle(vehicle) {
 
 export async function deleteVehicle(id) {
   // Storage photos are deliberately NOT deleted here — the row goes into
-  // Recently Deleted for 72 hours (see supabase/recently_deleted.sql),
+  // Recently Deleted for 30 days (see supabase/recently_deleted.sql),
   // restorable via restore_deleted_record(). Eagerly deleting them would
-  // make a "restored" vehicle come back with broken photo links; the 72h
+  // make a "restored" vehicle come back with broken photo links; the 30-day
   // expiry sweep is what actually deletes the files. Asset-permission
   // grants are still cleared immediately, same as before — those aren't
   // part of what a restore brings back (a known, accepted gap, same as
