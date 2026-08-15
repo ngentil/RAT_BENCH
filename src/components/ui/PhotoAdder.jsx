@@ -45,8 +45,8 @@ function PhotoAdder({ photos, setPhotos, label = "Photos" }) {
           {photos.map((p, i) => (
             <div key={p} style={{ position: 'relative' }}>
               <img src={p} alt="" style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 2, border: '1px solid ' + BRD, display: 'block' }} />
-              <button onClick={() => remove(p, i)}
-                style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.8)', border: 'none', color: '#ccc', width: 16, height: 16, borderRadius: '50%', cursor: 'pointer', fontSize: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              <button onClick={() => remove(p, i)} title="Remove photo"
+                style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.8)', border: 'none', color: '#ccc', width: 20, height: 20, borderRadius: '50%', cursor: 'pointer', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>✕</button>
             </div>
           ))}
         </div>

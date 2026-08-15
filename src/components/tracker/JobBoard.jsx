@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import TabGuide from '../ui/TabGuide';
 import { getPref, savePref } from '../../lib/db/preferences';
-import { upsertMachine } from '../../lib/db';
+import { upsertMachine, logTrashItem, restoreTrashItem } from '../../lib/db';
 import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
 import { generateInvoicePDF } from '../../lib/invoicePdf';
@@ -11,7 +11,7 @@ import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../l
 import { SL, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
 import { parseLocalDate, isOverdueLocal } from '../../lib/dates';
-import { toastError, toastSuccess } from '../../lib/toast';
+import { toastError, toastSuccess, toastUndo } from '../../lib/toast';
 import MachineTile from '../machine/MachineTile';
 import MachineRow from '../machine/MachineRow';
 import MachinePhotoRow from '../machine/MachinePhotoRow';
@@ -136,11 +136,26 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
   };
 
   const removeEntry = async (entryId) => {
-    if (!confirm("Remove this time entry?")) return;
-    await applyUpdate(
+    const entry = machine.timeLog.find(e => e.id === entryId);
+    const ok = await applyUpdate(
       { ...machine, timeLog: machine.timeLog.filter(e => e.id !== entryId) },
       "Couldn't remove entry — check connection",
     );
+    if (!ok || !entry) return;
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    logTrashItem({
+      machineId: machine.id, itemType: 'time_log',
+      label: entry.jobLabel ? `Time entry — ${entry.jobLabel}` : 'Time entry',
+      snapshot: entry,
+    }).then(trashId => {
+      toastUndo('Time entry removed', async () => {
+        try {
+          await restoreTrashItem(trashId);
+          onUpdate({ ...machine, timeLog: [...machine.timeLog.filter(e => e.id !== entryId), entry] });
+        } catch (e) { toastError("Couldn't undo — " + e.message); }
+      });
+    }).catch(e => console.error('logTrashItem (time entry):', e));
   };
 
   const cycleBillStatus = async (entryId) => {
@@ -458,7 +473,6 @@ function PartsSection({ machine, onUpdate, userId }) {
   };
 
   const remove = async (idx) => {
-    if (!confirm("Remove this part usage? Stock will be returned if it came from inventory.")) return;
     const p = parts[idx];
     const original = machine;
     const updated = { ...machine, parts: parts.filter((_,i) => i !== idx) };
@@ -484,7 +498,31 @@ function PartsSection({ machine, onUpdate, userId }) {
         onUpdate(original);
         toastError("Couldn't remove part — check connection");
       }
+      return;
     }
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup. Undo
+    // needs to reverse BOTH the part removal and the stock return above, or
+    // the item would end up double-counted (back on the job AND back in stock).
+    logTrashItem({
+      machineId: machine.id, itemType: 'parts',
+      label: p.name ? `Part — ${p.name}` : 'Part',
+      snapshot: p,
+    }).then(trashId => {
+      toastUndo(`${p.name || 'Part'} removed`, async () => {
+        try {
+          await restoreTrashItem(trashId);
+          onUpdate({ ...machine, parts: [...machine.parts.filter((_,i) => i !== idx), p] });
+          const sourceType = p.sourceType || (p.inventoryId ? "part" : null);
+          if (sourceType === "consumable" && p.consumableId) {
+            const updatedItem = await adjustConsumableQty(p.consumableId, -(Number(p.qty) || 1));
+            setCons(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+          } else if (p.inventoryId) {
+            setInv(await adjustStock(userId, p.inventoryId, -(Number(p.qty) || 1)));
+          }
+        } catch (e) { toastError("Couldn't undo — " + e.message); }
+      });
+    }).catch(e => console.error('logTrashItem (part):', e));
   };
 
   const cyclePartBillStatus = async (partId) => {

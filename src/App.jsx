@@ -574,7 +574,7 @@ function App(){
       <div style={{display:tab==="office"&&officeTab==="revenue"?"contents":"none"}}><RevenueDashboard machines={machines} company={company} profile={profile} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="office"&&officeTab==="quotes"?"contents":"none"}}><BillingDocumentsTab docType="quote" machines={machines} clients={clients} company={company} active={tab==="office"&&officeTab==="quotes"}/></div>
       <div style={{display:tab==="office"&&officeTab==="invoices"?"contents":"none"}}><BillingDocumentsTab docType="invoice" machines={machines} clients={clients} company={company} active={tab==="office"&&officeTab==="invoices"}/></div>
-      {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} vehicles={vehicles} equipment={equipment} tools={tools} initialTab={settingsTab}/>}
+      {tab==="settings"&&<SettingsPage profile={profile} setProfile={setProfile} session={session} company={company} setCompany={setCompany} onSignOut={signOut} machines={machines} setMachines={setMachines} clients={clients} setClients={setClients} vehicles={vehicles} equipment={equipment} tools={tools} initialTab={settingsTab}/>}
     </div>
   );
 }

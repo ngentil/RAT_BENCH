@@ -1,6 +1,5 @@
 import { supabase } from '../supabase';
 import { toDb, fromDb } from './transforms';
-import { deletePhoto } from '../storage';
 
 export async function getMachines() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -65,29 +64,17 @@ export async function upsertMachine(machine) {
 }
 
 export async function deleteMachineApi(id) {
-  // Collect photo URLs first, but do NOT delete them yet — if the row delete
-  // fails the machine must come back with its photos intact.
-  let urls = [];
-  try {
-    const [{ data: mach }, { data: svc }] = await Promise.all([
-      supabase.from('machines').select('photos, i_p_photos, e_p_photos, carb_spec').eq('id', id).single(),
-      supabase.from('services').select('plug_photo, job_photos').eq('machine_id', id),
-    ]);
-    urls = [
-      ...(mach?.photos || []),
-      ...(mach?.i_p_photos || []),
-      ...(mach?.e_p_photos || []),
-      ...(mach?.carb_spec?.gasketPhotos || []),
-      ...(svc || []).flatMap(s => [...(s.job_photos || []), ...(s.plug_photo ? [s.plug_photo] : [])]),
-    ];
-  } catch (e) { console.warn('deleteMachine photo scan:', e); }
+  // Storage photos are deliberately NOT deleted here — the row (and its
+  // services) go into Recently Deleted for 72 hours (see
+  // supabase/recently_deleted.sql), restorable via restore_deleted_record().
+  // Eagerly deleting the actual image files would make a "restored" machine
+  // come back with broken photo links. The 72h expiry sweep
+  // (scripts/prune-recently-deleted.mjs) is what actually deletes the files,
+  // once the record is truly beyond recovery.
 
   // Children first — services has no ON DELETE CASCADE on machine_id.
   const { error: svcErr } = await supabase.from('services').delete().eq('machine_id', id);
   if (svcErr) { console.error('deleteMachine services:', svcErr); throw svcErr; }
   const { error } = await supabase.from('machines').delete().eq('id', id);
   if (error) { console.error('deleteMachine:', error); throw error; }
-
-  // Row is gone — storage cleanup is now safe (best-effort).
-  urls.forEach(url => deletePhoto(url));
 }

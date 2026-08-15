@@ -4,9 +4,9 @@ import { SL, FL, Empty } from '../ui/shared';
 import TabGuide from '../ui/TabGuide';
 import { mIcon, getStorageStatus, fmtMoney } from '../../lib/helpers';
 import { getTiers } from '../../lib/storageTiers';
-import { toastError } from '../../lib/toast';
+import { toastError, toastUndo } from '../../lib/toast';
 import { getPref } from '../../lib/db/preferences';
-import { upsertMachine, upsertClient, deleteClientApi } from '../../lib/db';
+import { upsertMachine, upsertClient, deleteClientApi, findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
 import { deletePhoto } from '../../lib/storage';
 import { getActiveBooking } from '../../lib/db/bookings';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -155,11 +155,9 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
   };
 
   const deleteClient = async (id) => {
-    if (!confirm("Delete this client? Machines linked to them will be unlinked.")) return;
     const client = clients.find(c => c.id === id);
     try {
-      // DB delete first — if it fails the client keeps their photos
-      await deleteClientApi(id); // handles its own photo cleanup after the row delete
+      await deleteClientApi(id);
       setClients(prev => prev.filter(c => c.id !== id));
       const toUnlink = machines.filter(m => m.clientId === id);
       for (const m of toUnlink) {
@@ -167,7 +165,19 @@ export default function CustomersTab({ machines, setMachines, clients, setClient
         try { await upsertMachine(updated); } catch {}
         setMachines(prev => prev.map(x => x.id === m.id ? updated : x));
       }
-    } catch (e) { alert("Delete failed: " + e.message); }
+    } catch (e) { toastError("Delete failed: " + e.message); return; }
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup — note
+    // this only brings the client record itself back; any machines that got
+    // unlinked above (clientId set to null) aren't automatically re-linked.
+    const logId = await findMyRecentlyDeletedLogId('clients', id);
+    if (!logId) return;
+    toastUndo(`${client?.name || 'Client'} deleted`, async () => {
+      try {
+        const { record } = await restoreDeletedRecord(logId);
+        setClients(prev => [record || client, ...prev]);
+      } catch (e) { toastError("Couldn't undo — " + e.message); }
+    });
   };
 
   const linkMachine = async (clientId, machineId) => {

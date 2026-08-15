@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import PhotoViewer from '../ui/PhotoViewer';
 import { supabase } from '../../lib/supabase';
-import { getServices, upsertService, deleteServiceApi, upsertMachine } from '../../lib/db';
-import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
+import { getServices, upsertService, deleteServiceApi, upsertMachine, logTrashItem, restoreTrashItem } from '../../lib/db';
+import { ACC, MUT, BRD, BRD2, SURF, TXT, RED, GRN, btnA, btnG, btnD, dvdr, sm } from '../../lib/styles';
 import { MACHINE_TYPES, DEFAULT_TILE, ALL_BADGE_FIELDS, BADGE_PALETTE, TILE_COLOR_DEFAULTS } from '../../lib/constants';
 import { SL, FL, Empty, SkullRating, SpecCell, TileConfig, ExpandConfig } from '../ui/shared';
 import { mIcon, fmtDT, getMachineServiceStatus, findMachineSpecMatch } from '../../lib/helpers';
@@ -10,7 +10,7 @@ import { getMachineSpecEntries, humanizeKey, DEFAULT_EXPAND } from '../../lib/ma
 import { hl } from '../wiki/wikiSearchHighlight';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { deletePhoto } from '../../lib/storage';
-import { toastError } from '../../lib/toast';
+import { toastError, toastUndo } from '../../lib/toast';
 const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import MachineForm from './MachineForm';
@@ -29,7 +29,6 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const [showExpandConfig,setShowExpandConfig]=useState(false);
   const [showPdfOpts,setShowPdfOpts]=useState(false);
   const [copied,setCopied]=useState(false);
-  const [confirmDelete,setConfirmDelete]=useState(false);
   const m=machine;
   // The plain-text type caption below and the "Type:" tile badge both show
   // m.type — only show the caption when the badge isn't already covering it,
@@ -110,6 +109,26 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
     setSvcs(prev=>prev.filter(s=>s.id!==id));
   };
 
+  // Goes to Recently Deleted for 72h (supabase/trash_items.sql) instead of a
+  // confirm() popup — same immediate-delete-with-Undo-toast pattern as the
+  // whole-machine Delete button below.
+  const deletePhotoAt=idx=>{
+    const url=m.photos[idx];
+    onUpdate({...m,photos:m.photos.filter((_,j)=>j!==idx)});
+    logTrashItem({machineId:m.id,itemType:"photos",label:m.name?`Photo from ${m.name}`:"Photo",snapshot:url})
+      .then(trashId=>{
+        toastUndo("Photo deleted",async()=>{
+          try{
+            await restoreTrashItem(trashId);
+            // Mirrors what restore_trash_item() actually does server-side —
+            // appends to the end of the array, not back at its original index.
+            onUpdate({...m,photos:[...m.photos.filter((_,j)=>j!==idx),url]});
+          }catch(e){toastError("Couldn't undo — "+e.message);}
+        });
+      })
+      .catch(e=>console.error("logTrashItem (photo):",e)); // best-effort — photo is already removed either way
+  };
+
   const specs=getMachineSpecEntries(m);
 
   const timerRunning = m.jobTimers?.[0]?.status === "running";
@@ -131,42 +150,8 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
     <div className="panel-fastened" style={{background:SURF,border:"1px solid "+(timerRunning?GRN+"55":BRD),borderRadius:3,marginBottom:8,overflow:"hidden",position:"relative",boxShadow:timerRunning?"0 0 8px "+GRN+"22":undefined}}>
       <div className="screw tl" /><div className="screw tr" /><div className="screw bl" /><div className="screw br" />
       {fullImg&&(typeof fullImg==="object"
-        ?<PhotoViewer src={fullImg.src} onClose={()=>setFullImg(null)} isCover={fullImg.idx===0} onSetCover={()=>{const r=[fullImg.src,...m.photos.filter((_,j)=>j!==fullImg.idx)];onUpdate({...m,photos:r});setFullImg({src:fullImg.src,idx:0});}} onDelete={()=>{onUpdate({...m,photos:m.photos.filter((_,j)=>j!==fullImg.idx)});setFullImg(null);}} />
+        ?<PhotoViewer src={fullImg.src} onClose={()=>setFullImg(null)} isCover={fullImg.idx===0} onSetCover={()=>{const r=[fullImg.src,...m.photos.filter((_,j)=>j!==fullImg.idx)];onUpdate({...m,photos:r});setFullImg({src:fullImg.src,idx:0});}} onDelete={()=>{deletePhotoAt(fullImg.idx);setFullImg(null);}} />
         :<PhotoViewer src={fullImg} onClose={()=>setFullImg(null)} />)}
-      {confirmDelete&&(
-        <div style={ovly} onClick={()=>setConfirmDelete(false)}>
-          <div style={mdl} onClick={ev=>ev.stopPropagation()}>
-            <div style={mdlH}>
-              <span style={{fontWeight:700,fontSize:13,color:TXT}}>Delete machine?</span>
-              <button onClick={()=>setConfirmDelete(false)} style={{background:"none",border:"none",color:MUT,fontSize:16,cursor:"pointer",padding:"0 4px",lineHeight:1}}>✕</button>
-            </div>
-            <div style={mdlB}>
-              <p style={{margin:"0 0 10px",fontSize:12,color:TXT}}><strong style={{color:RED}}>{m.name}</strong> and all associated data will be <strong>permanently deleted</strong>. This cannot be undone.</p>
-              <p style={{margin:"0 0 6px",fontSize:11,color:MUT,fontWeight:600,letterSpacing:"0.04em"}}>WHAT WILL BE LOST</p>
-              <ul style={{margin:"0 0 12px",paddingLeft:18,fontSize:11,color:TXT,lineHeight:"1.8"}}>
-                <li>Service &amp; maintenance history</li>
-                <li>Time logs and labour records</li>
-                <li>Photos and attachments</li>
-                <li>Storage bookings</li>
-                <li>Client links</li>
-                <li>Parts and stock records</li>
-              </ul>
-              <div style={{background:"#1a1a1a",border:"1px solid "+BRD,borderRadius:3,padding:"8px 10px",fontSize:11,color:MUT,marginBottom:timerRunning?10:0}}>
-                📖 Wiki entries submitted from this machine will <strong style={{color:TXT}}>persist</strong> and remain publicly accessible.
-              </div>
-              {timerRunning&&(
-                <div style={{background:"#1a1500",border:"1px solid "+GRN,borderRadius:3,padding:"8px 10px",fontSize:11,color:GRN,marginTop:10}}>
-                  ⚠️ This machine has a running timer. Deleting will lose all unfinished time.
-                </div>
-              )}
-            </div>
-            <div style={{...mdlF,gap:8}}>
-              <button style={{...btnG,flex:1}} onClick={()=>setConfirmDelete(false)}>Cancel</button>
-              <button style={{...btnA,flex:1,background:RED,borderColor:RED,color:"#fff",fontWeight:700}} onClick={()=>{setConfirmDelete(false);onDelete(m);}}>Delete Forever</button>
-            </div>
-          </div>
-        </div>
-      )}
       {showEdit&&<MachineForm existing={m} onSave={u=>{onUpdate(u);setShowEdit(false);}} onClose={()=>setShowEdit(false)} company={company} units={profile?.units||"metric"} profile={profile} isGuest={isGuest}/>}
       {showWiki&&<WikiTrackerModal machine={m} profile={profile} onClose={()=>setShowWiki(false)}/>}
       {showConfig&&<TileConfig machine={m} onSave={u=>{onUpdate(u);setShowConfig(false);}} onClose={()=>setShowConfig(false)} />
@@ -275,7 +260,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             // with what the picker actually offers.
             const visibleSpecs = specs.filter(s=>!hiddenSpecFields.has(s.label));
             return <>
-              {show("photos")&&m.photos?.length>0&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Photos" /></div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginTop:4}}>{m.photos.map((p,i)=><div key={i} style={{position:"relative"}}><img src={p} alt="" onClick={()=>setFullImg({src:p,idx:i})} style={{width:"100%",height:80,objectFit:"cover",borderRadius:"2px 2px 0 0",border:i===0?"1px solid "+ACC+"88":"1px solid "+BRD,borderBottom:"none",cursor:"zoom-in",display:"block"}} /><button title="Delete photo" onClick={ev=>{ev.stopPropagation();if(!confirm("Delete this photo? This can't be undone."))return;onUpdate({...m,photos:m.photos.filter((_,j)=>j!==i)});}} style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.75)",border:"1px solid "+RED+"88",color:"#fff",width:20,height:20,borderRadius:"50%",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>✕</button><button title={i===0?"Cover photo":"Set as cover"} className={"cover-bar-tactile"+(i===0?" on":"")} onClick={ev=>{ev.stopPropagation();if(i===0)return;const r=[p,...m.photos.filter((_,j)=>j!==i)];onUpdate({...m,photos:r});}} style={{width:"100%",minHeight:34,background:i===0?"#120c06":"#1a1a1a",border:"1px solid "+(i===0?ACC+"66":BRD),borderTop:"none",borderRadius:"0 0 2px 2px",cursor:i===0?"default":"pointer",fontSize:9,fontWeight:700,color:i===0?ACC:MUT,fontFamily:"'IBM Plex Mono',monospace",padding:4}}>{i===0?"★ Cover":"☆ Set as Cover"}</button></div>)}</div></div>}
+              {show("photos")&&m.photos?.length>0&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Photos" /></div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginTop:4}}>{m.photos.map((p,i)=><div key={i} style={{position:"relative"}}><img src={p} alt="" onClick={()=>setFullImg({src:p,idx:i})} style={{width:"100%",height:80,objectFit:"cover",borderRadius:"2px 2px 0 0",border:i===0?"1px solid "+ACC+"88":"1px solid "+BRD,borderBottom:"none",cursor:"zoom-in",display:"block"}} /><button title="Delete photo" onClick={ev=>{ev.stopPropagation();deletePhotoAt(i);}} style={{position:"absolute",top:4,right:4,background:"rgba(0,0,0,0.75)",border:"1px solid "+RED+"88",color:"#fff",width:20,height:20,borderRadius:"50%",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>✕</button><button title={i===0?"Cover photo":"Set as cover"} className={"cover-bar-tactile"+(i===0?" on":"")} onClick={ev=>{ev.stopPropagation();if(i===0)return;const r=[p,...m.photos.filter((_,j)=>j!==i)];onUpdate({...m,photos:r});}} style={{width:"100%",minHeight:34,background:i===0?"#120c06":"#1a1a1a",border:"1px solid "+(i===0?ACC+"66":BRD),borderTop:"none",borderRadius:"0 0 2px 2px",cursor:i===0?"default":"pointer",fontSize:9,fontWeight:700,color:i===0?ACC:MUT,fontFamily:"'IBM Plex Mono',monospace",padding:4}}>{i===0?"★ Cover":"☆ Set as Cover"}</button></div>)}</div></div>}
               {show("desc")&&m.desc&&<div style={{padding:"10px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><FL t="Description" /></div><div style={{fontSize:11,color:"#999",lineHeight:1.5,marginTop:2}}>{m.desc}</div></div>}
               {visibleSpecs.length>0&&<div style={{padding:"12px 14px 0"}}><div style={{borderLeft:"2px solid "+ACC,paddingLeft:8}}><SL t="Engine Spec" /></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5}}>{visibleSpecs.map(s=><SpecCell key={s.label} label={s.label} value={s.value} highlight={s.highlight} />)}</div></div>}
               {show("fasteners")&&m.fasteners&&m.fasteners.length>0&&<div style={{padding:"12px 14px 0"}}>
@@ -470,7 +455,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
             {onClose&&<button style={{..._jClose,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();onClose();}}>✕ Close</button>}
-            <button style={{..._jDel,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();setConfirmDelete(true);}}>Delete</button>
+            <button style={{..._jDel,gridColumn:"1/-1"}} onClick={ev=>{ev.stopPropagation();onDelete(m);}}>Delete</button>
           </div>
           {showGuide&&(
             <div style={{padding:"0 14px 14px",textAlign:"right"}}>
