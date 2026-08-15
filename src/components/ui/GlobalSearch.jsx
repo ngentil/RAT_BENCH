@@ -1,21 +1,48 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, SURF, ovly } from '../../lib/styles';
 import { machineMatchesQuery } from '../../lib/helpers';
+import { getInventoryItems } from '../../lib/db';
+import { searchWiki } from '../../lib/wiki';
 
 // One search box that finds anything, anywhere — for "I don't know which
 // tab this is under" (was a Vehicle unfindable? was that client's mower in
 // Garage or already on the Bench?). Deliberately separate from each tab's
 // own inline filter (Garage/Vehicles/Equipment/Tools/Clients all keep
 // theirs) — this is only for jumping TO the right place, not for narrowing
-// a list you're already looking at. Only searches what's already loaded
-// client-side (machines/clients/vehicles/equipment/tools) — Workshop
-// inventory ("Parts") and the Wiki aren't preloaded app-wide the same way,
-// so they're deliberately out of scope here rather than adding a slower,
-// separate live-query path into a component this cheap to open.
+// a list you're already looking at. Machines/clients/vehicles/equipment/
+// tools are already loaded app-wide, so those match synchronously as you
+// type. Parts and Wiki aren't preloaded the same way, so those two go
+// through a debounced live query instead (see the effect below) rather than
+// fetching on every keystroke.
 function GlobalSearch({ machines, clients, vehicles, equipment, tools, onJumpTo, onClose }) {
   const [q, setQ] = useState('');
+  const [liveResults, setLiveResults] = useState([]);
   const inputRef = useRef(null);
   useEffect(() => { inputRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    const query = q.trim();
+    if (query.length < 2) { setLiveResults([]); return; }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const lower = query.toLowerCase();
+      const [items, wikiRows] = await Promise.all([
+        getInventoryItems().catch(() => []),
+        searchWiki(query).catch(() => []),
+      ]);
+      if (cancelled) return;
+      const out = [];
+      (items || []).forEach(i => {
+        const hay = [i.name, i.brand, i.partNumber, i.supplier].filter(Boolean).join(' ').toLowerCase();
+        if (hay.includes(lower)) out.push({ key: 'p:' + i.id, category: 'Part', label: i.name || i.partNumber || 'Part', sub: [i.brand, i.partNumber].filter(Boolean).join(' · '), jump: { tab: 'workshop', subTab: 'parts', query: i.name || query } });
+      });
+      (wikiRows || []).slice(0, 12).forEach(e => {
+        out.push({ key: 'w:' + e.id, category: 'Wiki', label: [e.make, e.model].filter(Boolean).join(' ') || e.slug, sub: e.type || '', jump: { tab: 'community', subTab: 'wiki', query: e.slug } });
+      });
+      setLiveResults(out);
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [q]);
 
   const results = useMemo(() => {
     const query = q.trim();
@@ -49,6 +76,8 @@ function GlobalSearch({ machines, clients, vehicles, equipment, tools, onJumpTo,
     return out.slice(0, 40);
   }, [q, machines, clients, vehicles, equipment, tools]);
 
+  const allResults = useMemo(() => [...results, ...liveResults], [results, liveResults]);
+
   return (
     <div style={{ ...ovly, alignItems: 'flex-start', paddingTop: '10vh' }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: SURF, border: '1px solid ' + BRD, borderTop: '2px solid ' + ACC, borderRadius: 3, width: '100%', maxWidth: 440, maxHeight: '70vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
@@ -59,19 +88,19 @@ function GlobalSearch({ machines, clients, vehicles, equipment, tools, onJumpTo,
             value={q}
             onChange={e => setQ(e.target.value)}
             onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
-            placeholder="Search machines, clients, vehicles, equipment, tools…"
+            placeholder="Search machines, clients, vehicles, equipment, tools, parts, wiki…"
             style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: TXT, fontSize: 13, fontFamily: "'IBM Plex Mono',monospace" }}
           />
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: MUT, fontSize: 16, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>✕</button>
         </div>
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {q.trim().length >= 2 && results.length === 0 && (
-            <div style={{ padding: 20, textAlign: 'center', fontSize: 10, color: MUT }}>No matches in machines, clients, vehicles, equipment, or tools.</div>
+          {q.trim().length >= 2 && allResults.length === 0 && (
+            <div style={{ padding: 20, textAlign: 'center', fontSize: 10, color: MUT }}>No matches.</div>
           )}
           {q.trim().length > 0 && q.trim().length < 2 && (
             <div style={{ padding: 20, textAlign: 'center', fontSize: 10, color: MUT }}>Keep typing…</div>
           )}
-          {results.map(r => (
+          {allResults.map(r => (
             <div key={r.key} onClick={() => { onJumpTo(r.jump); onClose(); }}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderBottom: '1px solid #1a1a1a', cursor: 'pointer' }}
               onMouseEnter={e => e.currentTarget.style.background = '#161616'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

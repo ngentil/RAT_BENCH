@@ -50,7 +50,8 @@ function App(){
   const [jumpQuery,setJumpQuery]=useState(null);
   const jumpToSearchResult=({tab:t,subTab,query})=>{
     setTab(t);
-    if(subTab==="clients")setOfficeTab(subTab);
+    if(t==="community")setCommunityTab(subTab||"wiki");
+    else if(subTab==="clients")setOfficeTab(subTab);
     else if(subTab)setWorkshopTab(subTab);
     setJumpQuery(query);
   };
@@ -503,7 +504,7 @@ function App(){
             )}
           </span>
           {session?.user?.is_anonymous&&<button onClick={signOut} style={{...btnG,...sm,fontSize:10}}>Sign Out</button>}
-          {!session?.user?.is_anonymous&&<button onClick={()=>setShowGlobalSearch(true)} title="Search machines, clients, vehicles, equipment, tools" style={{...btnG,...sm,fontSize:10}}>🔍</button>}
+          {!session?.user?.is_anonymous&&<button onClick={()=>setShowGlobalSearch(true)} title="Search machines, clients, vehicles, equipment, tools, parts, wiki" style={{...btnG,...sm,fontSize:10}}>🔍</button>}
           {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:10}}>⚙️</button>}
         </div>
       </div>
@@ -575,11 +576,11 @@ function App(){
 
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)} active={tab==="tracker"} initialSearch={tab==="tracker"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={benchMachines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="community"&&communityTab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="community"&&communityTab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")} initialSlug={tab==="community"&&communityTab==="wiki"?jumpQuery:null} onInitialSlugConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="community"&&communityTab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)} onOpenThread={(id)=>{setCommunityTab("messages");setPendingThreadId(id);}} pendingListingId={pendingListingId} onConsumePendingListing={()=>setPendingListingId(null)}/>}</div>
       <div style={{display:tab==="community"&&communityTab==="messages"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MessagesTab profile={profile} pendingThreadId={pendingThreadId} onConsumePendingThread={()=>setPendingThreadId(null)} onOpenListing={(id)=>{setCommunityTab("marketplace");setPendingListingId(id);}} onUnreadChange={setMessagesUnread}/>}</div>
       <div style={{display:tab==="workshop"&&workshopTab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
+      <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} initialSearch={tab==="workshop"&&workshopTab==="parts"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} refreshKey={toolsRefreshKey} onGoToBilling={()=>goToBilling("unknown")} initialSearch={tab==="workshop"&&workshopTab==="tools"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="vehicles"?"contents":"none"}}><VehiclesTab vehicles={vehicles} setVehicles={setVehicles} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} initialSearch={tab==="workshop"&&workshopTab==="vehicles"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="equipment"?"contents":"none"}}><EquipmentTab equipment={equipment} setEquipment={setEquipment} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} initialSearch={tab==="workshop"&&workshopTab==="equipment"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>

@@ -2,9 +2,19 @@ import React, { useState, useEffect } from 'react';
 import WikiHomePage from './WikiHomePage';
 import WikiEntryPage from './WikiEntryPage';
 import WikiLeaderboard from './WikiLeaderboard';
-function WikiTab({ session, profile, company, setMachines }) {
+function WikiTab({ session, profile, company, setMachines, initialSlug, onInitialSlugConsumed }) {
   const [currentSlug, setCurrentSlug] = useState(null);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  // Jumping here from a global search result — open that entry directly
+  // rather than landing on the wiki home page, mirroring the consume-once
+  // initialSearch pattern other tabs use (App.jsx's jumpQuery), except this
+  // one carries a slug instead of free-text search terms.
+  useEffect(() => {
+    if (!initialSlug) return;
+    setCurrentSlug(initialSlug);
+    onInitialSlugConsumed?.();
+  }, [initialSlug]);
 
   // No online-count tracking here — the main app shell's top bar already
   // shows a single site-wide "N online" for anyone logged in, regardless
