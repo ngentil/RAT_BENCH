@@ -6,7 +6,7 @@
 // to apply everywhere, rather than needing every consumer of ACC across the
 // app converted into something that re-renders live on change.
 export const ACCENT_KEY = 'rat_accent_color';
-export const DEFAULT_ACCENT = "#e8670a";
+export const DEFAULT_ACCENT = "#f59e0b";
 const storedAccent = (typeof localStorage !== 'undefined' && localStorage.getItem(ACCENT_KEY)) || DEFAULT_ACCENT;
 
 export const BG="#0e0e0e",SURF="#161616",BRD="#252525",BRD2="#1e1e1e",
