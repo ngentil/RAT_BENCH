@@ -432,10 +432,15 @@ function VehicleCard({ vehicle, onEdit, onDelete, onUpdate, isShared, units, com
   );
 }
 
-export default function VehiclesTab({ vehicles, setVehicles, session, profile, company }) {
+export default function VehiclesTab({ vehicles, setVehicles, session, profile, company, initialSearch, onInitialSearchConsumed }) {
   const [loading, setLoading]   = useState(!vehicles?.length);
   const [formVehicle, setFormVehicle] = useState(null);
   const [search, setSearch]     = useState('');
+  useEffect(() => {
+    if (!initialSearch) return;
+    setSearch(initialSearch);
+    onInitialSearchConsumed?.();
+  }, [initialSearch]);
   const [typeFilter, setTypeFilter] = useState(null);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState(() => getPref(profile, 'vehiclesSort', null));

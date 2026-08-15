@@ -350,13 +350,18 @@ function ToolCard({ tool, onEdit, onDelete, onUpdate, isShared }) {
   );
 }
 
-export default function ToolsTab({ session, profile, company, refreshKey }) {
+export default function ToolsTab({ session, profile, company, refreshKey, initialSearch, onInitialSearchConsumed }) {
   const userId = session?.user?.id;
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [formTool, setFormTool] = useState(null);
   const [search, setSearch] = useState("");
+  useEffect(() => {
+    if (!initialSearch) return;
+    setSearch(initialSearch);
+    onInitialSearchConsumed?.();
+  }, [initialSearch]);
   const [catFilter, setCatFilter] = useState(null);
   const [showLoaned, setShowLoaned] = useState(false);
   const [showSort, setShowSort] = useState(false);

@@ -273,11 +273,16 @@ function EquipmentCard({ item, onEdit, onDelete, onUpdate, isShared }) {
   );
 }
 
-export default function EquipmentTab({ equipment, setEquipment, session, profile, company }) {
+export default function EquipmentTab({ equipment, setEquipment, session, profile, company, initialSearch, onInitialSearchConsumed }) {
   const [loading, setLoading] = useState(!equipment?.length);
   const [err, setErr] = useState('');
   const [formItem, setFormItem] = useState(null);
   const [search, setSearch]    = useState('');
+  useEffect(() => {
+    if (!initialSearch) return;
+    setSearch(initialSearch);
+    onInitialSearchConsumed?.();
+  }, [initialSearch]);
   const [typeFilter, setTypeFilter] = useState(null);
   const [showSort, setShowSort] = useState(false);
   const [sortBy, setSortBy] = useState(() => getPref(profile, 'equipmentSort', null));

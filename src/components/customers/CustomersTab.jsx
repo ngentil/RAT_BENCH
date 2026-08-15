@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ACC, MUT, BRD, TXT, GRN, RED, SURF, inp, txa, btnA, btnG, btnD, sm, col, ovly, mdl, mdlH, mdlB, mdlF } from '../../lib/styles';
 import { SL, FL, Empty } from '../ui/shared';
 import TabGuide from '../ui/TabGuide';
@@ -114,11 +114,16 @@ async function exportClientInvoice(client, linked, company, storagePolicyEnabled
   w.document.close();
 }
 
-export default function CustomersTab({ machines, setMachines, clients, setClients, session, company, profile, onGoToBilling }) {
+export default function CustomersTab({ machines, setMachines, clients, setClients, session, company, profile, onGoToBilling, initialSearch, onInitialSearchConsumed }) {
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [search, setSearch] = useState("");
+  useEffect(() => {
+    if (!initialSearch) return;
+    setSearch(initialSearch);
+    onInitialSearchConsumed?.();
+  }, [initialSearch]);
   const [err, setErr] = useState("");
 
   const storagePolicyEnabled = !!(profile?.storage_policy_enabled);
