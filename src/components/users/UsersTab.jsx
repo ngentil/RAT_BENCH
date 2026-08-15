@@ -103,7 +103,7 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
       setSelected(prev => { if (!prev.has(userId)) return prev; const next = new Set(prev); next.delete(userId); return next; });
     } catch (e) { setErr(e.message); return; }
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup — a
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup — a
     // removed member's seat frees up immediately either way; restoring just
     // re-adds their company_members row (re-fetched with its profile join,
     // since the raw restored row alone has no display name attached).
@@ -148,7 +148,7 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
     if (failedIds.length) setErr(`Couldn't remove ${failedIds.length} member${failedIds.length !== 1 ? 's' : ''} — try again.`);
     setBulkRemoving(false);
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup.
     if (!removedIds.length) return;
     const logIds = (await Promise.all(removedIds.map(id => findMyRecentlyDeletedLogId('company_members', id)))).filter(Boolean);
     if (!logIds.length) return;

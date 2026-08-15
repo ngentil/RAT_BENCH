@@ -16,7 +16,7 @@ function relativeTime(iso) {
 // Settings → Recently Deleted — the "slow path" undo. The toast shown right
 // after a delete (src/lib/toast.js's toastUndo) is the fast path for
 // catching a mistake in the first few seconds; this page is for anything
-// missed, browsable for up to 72 hours (see supabase/recently_deleted.sql
+// missed, browsable for up to 30 days (see supabase/recently_deleted.sql
 // and supabase/trash_items.sql for where the underlying data actually
 // lives — nothing here is a separate store of its own).
 function RecentlyDeletedSettings({ machines, setMachines, clients, setClients }) {
@@ -53,7 +53,7 @@ function RecentlyDeletedSettings({ machines, setMachines, clients, setClients })
   return (
     <div>
       <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7, marginBottom: 14 }}>
-        Anything you delete — a machine, a client, a time entry, a part, a photo — lands here for 72 hours before it's
+        Anything you delete — a machine, a client, a time entry, a part, a photo — lands here for 30 days before it's
         gone for good. Restore it anytime before then.
       </div>
 
@@ -62,7 +62,7 @@ function RecentlyDeletedSettings({ machines, setMachines, clients, setClients })
       {items?.length === 0 && (
         <div style={{ textAlign: 'center', padding: '30px 16px' }}>
           <div style={{ fontSize: 24, marginBottom: 8 }}>🗑️</div>
-          <div style={{ fontSize: 10, color: MUT }}>Nothing here — anything you delete shows up for 72 hours.</div>
+          <div style={{ fontSize: 10, color: MUT }}>Nothing here — anything you delete shows up for 30 days.</div>
         </div>
       )}
 

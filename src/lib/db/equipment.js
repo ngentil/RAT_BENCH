@@ -93,7 +93,7 @@ export async function upsertEquipment(item) {
 
 export async function deleteEquipmentItem(id) {
   // Storage photos deliberately NOT deleted here — goes into Recently
-  // Deleted for 72h instead (see supabase/recently_deleted.sql); the 72h
+  // Deleted for 30 days instead (see supabase/recently_deleted.sql); the 30-day
   // expiry sweep does the actual Storage cleanup. Asset-permission grants
   // are still cleared immediately — a known, accepted gap on restore.
   await unassignAllByChild('equipment', id);

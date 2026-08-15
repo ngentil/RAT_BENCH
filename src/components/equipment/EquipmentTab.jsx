@@ -363,7 +363,7 @@ export default function EquipmentTab({ equipment, setEquipment, session, profile
       setEquipment(prev => prev.filter(e => e.id !== id));
     } catch (e) { toastError('Delete failed: ' + e.message); return; }
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup.
     const logId = await findMyRecentlyDeletedLogId('equipment', id);
     if (!logId) return;
     toastUndo(`${eq?.name || 'Equipment'} deleted`, async () => {

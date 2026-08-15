@@ -65,10 +65,10 @@ export async function upsertMachine(machine) {
 
 export async function deleteMachineApi(id) {
   // Storage photos are deliberately NOT deleted here — the row (and its
-  // services) go into Recently Deleted for 72 hours (see
+  // services) go into Recently Deleted for 30 days (see
   // supabase/recently_deleted.sql), restorable via restore_deleted_record().
   // Eagerly deleting the actual image files would make a "restored" machine
-  // come back with broken photo links. The 72h expiry sweep
+  // come back with broken photo links. The 30-day expiry sweep
   // (scripts/prune-recently-deleted.mjs) is what actually deletes the files,
   // once the record is truly beyond recovery.
 

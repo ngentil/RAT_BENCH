@@ -234,7 +234,7 @@ function Tracker({machines:allMachines,setMachines,company,profile,setProfile,cl
       setMachines(prev=>prev.filter(x=>x.id!==m.id));
     }catch(e){toastError("Delete failed: "+e.message);return;}
 
-    // Goes to Recently Deleted for 72h (supabase/recently_deleted.sql) rather
+    // Goes to Recently Deleted for 30 days (supabase/recently_deleted.sql) rather
     // than a scary "are you sure?" wall — this toast's Undo is the fast path,
     // Settings → Recently Deleted is the slow path if it's missed.
     const logId=await findMyRecentlyDeletedLogId('machines',m.id);

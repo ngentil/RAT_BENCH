@@ -52,10 +52,10 @@ export async function upsertClient(client) {
 
 export async function deleteClientApi(id) {
   // Storage photos are deliberately NOT deleted here — the row goes into
-  // Recently Deleted for 72 hours (see supabase/recently_deleted.sql),
+  // Recently Deleted for 30 days (see supabase/recently_deleted.sql),
   // restorable via restore_deleted_record(). Eagerly deleting the actual
   // image files would make a "restored" client come back with broken photo
-  // links; the 72h expiry sweep is what actually deletes the files.
+  // links; the 30-day expiry sweep is what actually deletes the files.
   const { error } = await supabase.from("clients").delete().eq("id", id);
   if (error) { console.error("deleteClient:", error); throw error; }
 }

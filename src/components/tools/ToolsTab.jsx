@@ -452,7 +452,7 @@ export default function ToolsTab({ session, profile, company, refreshKey, initia
       setTools(prev => prev.filter(x => x.id !== toolId));
     } catch (e) { toastError('Delete failed: ' + e.message); return; }
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup.
     const logId = await findMyRecentlyDeletedLogId('tools', toolId);
     if (!logId) return;
     toastUndo(`${t?.name || 'Tool'} deleted`, async () => {

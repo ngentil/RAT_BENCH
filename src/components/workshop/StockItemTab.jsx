@@ -625,7 +625,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
       const updated = await deleteInventoryItem(userId, item.id);
       setItems(updated);
 
-      // Goes to Recently Deleted for 72h instead of a confirm() popup — see
+      // Goes to Recently Deleted for 30 days instead of a confirm() popup — see
       // supabase/inventory_recently_deleted.sql.
       const logId = await findMyRecentlyDeletedLogId('inventory_items', item.id);
       if (!logId) return;
@@ -643,7 +643,7 @@ export default function StockItemTab({ tableType, label, machines, session, prof
       setItems(prev => prev.filter(i => i.id !== item.id));
     } catch (e) { toastError('Delete failed: ' + e.message); return; }
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup.
     const logId = await findMyRecentlyDeletedLogId('consumables', item.id);
     if (!logId) return;
     toastUndo(`${item?.name || 'Consumable'} deleted`, async () => {

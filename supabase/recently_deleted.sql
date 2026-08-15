@@ -1,5 +1,5 @@
 -- "Recently Deleted" — makes ordinary deletes (machines, clients, vehicles,
--- equipment, tools, consumables, company_members) restorable for 72 hours,
+-- equipment, tools, consumables, company_members) restorable for 30 days,
 -- replacing a scary confirm() popup with "just delete it, you can undo for
 -- a few days" the way most consumer apps' trash/recycle-bin works.
 --
@@ -54,7 +54,7 @@ BEGIN
 
   IF TG_OP = 'DELETE' THEN
     v_new := to_jsonb(OLD);
-    v_snapshot := v_new; -- full row, for 72h undo — see recently_deleted.sql
+    v_snapshot := v_new; -- full row, for 30 days undo — see recently_deleted.sql
   ELSE
     v_new := to_jsonb(NEW);
   END IF;
@@ -121,7 +121,7 @@ RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
   SELECT p_table IN ('machines', 'vehicles', 'equipment', 'tools', 'consumables', 'clients', 'company_members', 'services', 'inventory_items');
 $$;
 
--- Returns the caller's own deleted rows from the last 72 hours that haven't
+-- Returns the caller's own deleted rows from the last 30 days that haven't
 -- already been restored. Deliberately scoped to `actor_id = auth.uid()` —
 -- "things I deleted", not a company-wide view — activity_log itself stays
 -- admin-only (this RPC is the one narrow, self-scoped window into it for
@@ -139,7 +139,7 @@ AS $$
     AND a.action LIKE '%.delete'
     AND a.snapshot IS NOT NULL
     AND a.restored_at IS NULL
-    AND a.created_at > now() - interval '72 hours'
+    AND a.created_at > now() - interval '30 days'
     AND a.table_name != 'services'
     AND _recently_deleted_allowed_table(a.table_name)
   ORDER BY a.created_at DESC;
@@ -175,8 +175,8 @@ BEGIN
   IF v_row.snapshot IS NULL THEN
     RAISE EXCEPTION 'Nothing to restore — no snapshot was captured';
   END IF;
-  IF v_row.created_at < now() - interval '72 hours' THEN
-    RAISE EXCEPTION 'This is past the 72-hour recovery window';
+  IF v_row.created_at < now() - interval '30 days' THEN
+    RAISE EXCEPTION 'This is past the 30-day recovery window';
   END IF;
   IF NOT _recently_deleted_allowed_table(v_row.table_name) THEN
     RAISE EXCEPTION 'This type of record can''t be restored here';

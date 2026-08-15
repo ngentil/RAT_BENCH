@@ -143,7 +143,7 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
     );
     if (!ok || !entry) return;
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup.
     logTrashItem({
       machineId: machine.id, itemType: 'time_log',
       label: entry.jobLabel ? `Time entry — ${entry.jobLabel}` : 'Time entry',
@@ -501,7 +501,7 @@ function PartsSection({ machine, onUpdate, userId }) {
       return;
     }
 
-    // Goes to Recently Deleted for 72h instead of a confirm() popup. Undo
+    // Goes to Recently Deleted for 30 days instead of a confirm() popup. Undo
     // needs to reverse BOTH the part removal and the stock return above, or
     // the item would end up double-counted (back on the job AND back in stock).
     logTrashItem({

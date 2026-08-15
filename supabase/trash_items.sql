@@ -11,7 +11,7 @@
 -- inventory stock adjustments alongside a machine save), not a new
 -- transactional primitive.
 --
--- Same 72-hour recovery window as recently_deleted.sql's whole-record trash,
+-- Same 30-day recovery window as recently_deleted.sql's whole-record trash,
 -- and both surface together in one Settings → Recently Deleted list client-
 -- side (src/lib/db/trash.js merges the two).
 --
@@ -96,8 +96,8 @@ BEGIN
   IF v_row.restored_at IS NOT NULL THEN
     RAISE EXCEPTION 'Already restored';
   END IF;
-  IF v_row.created_at < now() - interval '72 hours' THEN
-    RAISE EXCEPTION 'This is past the 72-hour recovery window';
+  IF v_row.created_at < now() - interval '30 days' THEN
+    RAISE EXCEPTION 'This is past the 30-day recovery window';
   END IF;
   IF NOT _trash_item_allowed_column(v_row.item_type) THEN
     RAISE EXCEPTION 'Unknown item type';
@@ -130,7 +130,7 @@ AS $$
   FROM trash_items t
   WHERE t.user_id = auth.uid()
     AND t.restored_at IS NULL
-    AND t.created_at > now() - interval '72 hours'
+    AND t.created_at > now() - interval '30 days'
   ORDER BY t.created_at DESC;
 $$;
 
