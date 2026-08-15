@@ -6,6 +6,8 @@ import { parseNum } from '../../lib/helpers';
 import { getPref, savePref } from '../../lib/db/preferences';
 import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
+import { findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
+import { toastError, toastUndo } from '../../lib/toast';
 import { deletePhoto } from '../../lib/storage';
 import LoadoutSection from '../ui/LoadoutSection';
 import PhotoAdder from '../ui/PhotoAdder';
@@ -615,16 +617,32 @@ export default function StockItemTab({ tableType, label, machines, session, prof
 
   // ── Delete ──────────────────────────────────────────────────────────────────
   const remove = async item => {
-    const noun = tableType === 'part' ? 'part' : 'consumable';
-    if (!confirm(`Delete this ${noun}?`)) return;
-    (item?.photos || []).forEach(url => deletePhoto(url));
     if (tableType === 'part') {
+      // Inventory ("parts") isn't wired into Recently Deleted yet — the
+      // activity_log trigger doesn't cover that table (see
+      // supabase/activity_log.sql's covered-tables list) — so this stays a
+      // real confirm() for now rather than a silent, actually-permanent delete.
+      if (!confirm('Delete this part?')) return;
+      (item?.photos || []).forEach(url => deletePhoto(url));
       const updated = await deleteInventoryItem(userId, item.id);
       setItems(updated);
-    } else {
+      return;
+    }
+
+    try {
       await deleteConsumable(item.id);
       setItems(prev => prev.filter(i => i.id !== item.id));
-    }
+    } catch (e) { toastError('Delete failed: ' + e.message); return; }
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    const logId = await findMyRecentlyDeletedLogId('consumables', item.id);
+    if (!logId) return;
+    toastUndo(`${item?.name || 'Consumable'} deleted`, async () => {
+      try {
+        const { record } = await restoreDeletedRecord(logId);
+        setItems(prev => [record || item, ...prev]);
+      } catch (e) { toastError("Couldn't undo — " + e.message); }
+    });
   };
 
   // ── Qty change ──────────────────────────────────────────────────────────────

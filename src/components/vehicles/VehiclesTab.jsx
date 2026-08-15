@@ -5,6 +5,8 @@ import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { getVehicles, upsertVehicle, deleteVehicle } from '../../lib/db/vehicles';
 import { deletePhoto } from '../../lib/storage';
+import { findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
+import { toastError, toastUndo } from '../../lib/toast';
 import { getAssignedTo, assignAsset, unassignAsset } from '../../lib/db/assetAssignments';
 import { getCompanyMembers } from '../../lib/db/users';
 import LoadoutSection from '../ui/LoadoutSection';
@@ -514,11 +516,21 @@ export default function VehiclesTab({ vehicles, setVehicles, session, profile, c
   };
 
   const remove = async (id) => {
-    if (!confirm('Delete this vehicle?')) return;
     const v = vehicles.find(x => x.id === id);
-    (v?.photos || []).forEach(url => deletePhoto(url));
-    await deleteVehicle(id);
-    setVehicles(prev => prev.filter(v => v.id !== id));
+    try {
+      await deleteVehicle(id);
+      setVehicles(prev => prev.filter(x => x.id !== id));
+    } catch (e) { toastError('Delete failed: ' + e.message); return; }
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    const logId = await findMyRecentlyDeletedLogId('vehicles', id);
+    if (!logId) return;
+    toastUndo(`${v?.name || 'Vehicle'} deleted`, async () => {
+      try {
+        const { record } = await restoreDeletedRecord(logId);
+        setVehicles(prev => [record || v, ...prev]);
+      } catch (e) { toastError("Couldn't undo — " + e.message); }
+    });
   };
 
   return (

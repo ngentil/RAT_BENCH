@@ -4,7 +4,8 @@ import { SL, FL, Empty } from '../ui/shared';
 import { getPref, savePref } from '../../lib/db/preferences';
 import PhotoAdder from '../ui/PhotoAdder';
 import { getTools, saveToolItem, deleteToolItem } from '../../lib/db/tools';
-import { deletePhoto } from '../../lib/storage';
+import { findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
+import { toastError, toastUndo } from '../../lib/toast';
 import { fmtDate, fmtMoney } from '../../lib/helpers';
 import LoadoutSection from '../ui/LoadoutSection';
 import AssetTile from '../ui/AssetTile';
@@ -440,11 +441,21 @@ export default function ToolsTab({ session, profile, company, refreshKey }) {
   };
 
   const remove = async (toolId) => {
-    if (!confirm("Delete this tool?")) return;
     const t = tools.find(x => x.id === toolId);
-    (t?.photos || []).forEach(url => deletePhoto(url));
-    await deleteToolItem(toolId);
-    setTools(prev => prev.filter(t => t.id !== toolId));
+    try {
+      await deleteToolItem(toolId);
+      setTools(prev => prev.filter(x => x.id !== toolId));
+    } catch (e) { toastError('Delete failed: ' + e.message); return; }
+
+    // Goes to Recently Deleted for 72h instead of a confirm() popup.
+    const logId = await findMyRecentlyDeletedLogId('tools', toolId);
+    if (!logId) return;
+    toastUndo(`${t?.name || 'Tool'} deleted`, async () => {
+      try {
+        const { record } = await restoreDeletedRecord(logId);
+        setTools(prev => [record || t, ...prev]);
+      } catch (e) { toastError("Couldn't undo — " + e.message); }
+    });
   };
 
   return (

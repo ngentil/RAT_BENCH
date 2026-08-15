@@ -1,8 +1,7 @@
 import { supabase } from '../supabase';
 import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
-import { deletePhoto } from '../storage';
 
-function fromDb(r) {
+export function fromDb(r) {
   return {
     id:          r.id,
     userId:      r.user_id,
@@ -80,10 +79,9 @@ export async function upsertConsumable(item) {
 }
 
 export async function deleteConsumable(id) {
-  try {
-    const { data } = await supabase.from('consumables').select('photos').eq('id', id).single();
-    (data?.photos || []).forEach(url => deletePhoto(url));
-  } catch {}
+  // Storage photos deliberately NOT deleted here — goes into Recently
+  // Deleted for 72h instead (see supabase/recently_deleted.sql); the 72h
+  // expiry sweep does the actual Storage cleanup.
   await unassignAllByChild('consumable', id);
   const { error } = await supabase.from('consumables').delete().eq('id', id);
   if (error) throw error;

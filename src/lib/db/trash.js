@@ -1,6 +1,10 @@
 import { supabase } from '../supabase';
 import { fromDb as fromDbMachine } from './transforms';
 import { fromDb as fromDbClient } from './clients';
+import { fromDb as fromDbVehicle } from './vehicles';
+import { fromDb as fromDbEquipment } from './equipment';
+import { fromDb as fromDbTool } from './tools';
+import { fromDb as fromDbConsumable } from './consumables';
 
 // "Recently Deleted" client helpers — two underlying sources merged into one
 // list (see supabase/recently_deleted.sql and supabase/trash_items.sql):
@@ -79,13 +83,16 @@ export async function findMyRecentlyDeletedLogId(tableName, recordId) {
 
 // The RPC hands back the raw re-inserted row (snake_case DB columns) — this
 // converts it to the shape the rest of the app actually works with, so a
-// caller can push the result straight into machines/clients state. Only
-// machines/clients are wired up so far (vehicles/equipment/tools/consumables
-// each have their own fromDb() too — same dispatch pattern, add as those get
-// wired into the trash flow); anything else is returned as-is.
+// caller can push the result straight into machines/clients/etc. state.
+// company_members has no fromDb() of its own (UsersTab reads it as a plain
+// row already) so it's deliberately absent here — returned as-is.
 const RECORD_TRANSFORMS = {
   machines: fromDbMachine,
   clients: fromDbClient,
+  vehicles: fromDbVehicle,
+  equipment: fromDbEquipment,
+  tools: fromDbTool,
+  consumables: fromDbConsumable,
 };
 
 // Restores a whole-record delete (machine/client/vehicle/equipment/tool/

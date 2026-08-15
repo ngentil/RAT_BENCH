@@ -1,6 +1,5 @@
 import { supabase } from '../supabase';
 import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
-import { deletePhoto } from '../storage';
 
 function toDb(t) {
   return {
@@ -26,7 +25,7 @@ function toDb(t) {
   };
 }
 
-function fromDb(r) {
+export function fromDb(r) {
   return {
     id:              r.id,
     userId:          r.user_id,
@@ -115,12 +114,10 @@ export async function saveToolItem(tool) {
 }
 
 export async function deleteToolItem(id) {
-  const { data } = await supabase.from('tools').select('photos, service_log').eq('id', id).single();
-  (data?.photos || []).forEach(url => deletePhoto(url));
-  (data?.service_log || []).forEach(entry => {
-    if (entry.plugPhoto) deletePhoto(entry.plugPhoto);
-    (entry.jobPhotos || []).forEach(url => deletePhoto(url));
-  });
+  // Storage photos deliberately NOT deleted here — goes into Recently
+  // Deleted for 72h instead (see supabase/recently_deleted.sql); the 72h
+  // expiry sweep does the actual Storage cleanup. Asset-permission grants
+  // are still cleared immediately — a known, accepted gap on restore.
   await unassignAllByChild('tool', id);
   await supabase.from('asset_permissions').delete().eq('asset_type', 'tool').eq('asset_id', id);
   const { error } = await supabase.from('tools').delete().eq('id', id);
