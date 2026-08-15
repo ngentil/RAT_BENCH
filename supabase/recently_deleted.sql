@@ -54,7 +54,7 @@ BEGIN
 
   IF TG_OP = 'DELETE' THEN
     v_new := to_jsonb(OLD);
-    v_snapshot := v_new; -- full row, for 30 days undo — see recently_deleted.sql
+    v_snapshot := v_new; -- full row, for 30-day undo — see recently_deleted.sql
   ELSE
     v_new := to_jsonb(NEW);
   END IF;
