@@ -1124,7 +1124,7 @@ function JobCard({ m, clientMap, clients, company, session, profile, onUpdate, o
             </div>
           )}
           {onClose && (
-            <button onClick={ev => { ev.stopPropagation(); onClose(); }} style={{ width: "100%", marginTop: 8, padding: "9px 14px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace", background: "transparent", border: "1px solid " + BRD, color: MUT, cursor: "pointer" }}>✕ Close</button>
+            <button onClick={ev => { ev.stopPropagation(); onClose(); }} style={{ width: "100%", marginTop: 8, padding: "9px 14px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: 2, fontFamily: "'IBM Plex Mono',monospace", background: "transparent", border: "1px solid " + GRN + "55", color: GRN, cursor: "pointer" }}>✕ Close</button>
           )}
           {(m.timeLog?.length >= 5) && (
             <div style={{ marginTop: 10 }}>
