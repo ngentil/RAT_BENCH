@@ -17,7 +17,6 @@ import TermsPage from './components/legal/TermsPage';
 import PrivacyPage from './components/legal/PrivacyPage';
 import DataRetentionPage from './components/legal/DataRetentionPage';
 import SettingsPage from './components/settings/SettingsPage';
-import GlobalSearch from './components/ui/GlobalSearch';
 import Tracker from './components/tracker/Tracker';
 import JobBoard from './components/tracker/JobBoard';
 import WikiTab from './components/wiki/WikiTab';
@@ -41,7 +40,6 @@ function App(){
   const [tab,setTab]=useState("tracker");
   const [workshopTab,setWorkshopTab]=useState("parts");
   const [officeTab,setOfficeTab]=useState("clients");
-  const [showGlobalSearch,setShowGlobalSearch]=useState(false);
   // A search-result click sets this, then whichever tab/sub-tab it just
   // switched to consumes it once (via each tab's own initialSearch prop,
   // mirroring templateMachineId's consume-once pattern below) to pre-fill
@@ -504,11 +502,9 @@ function App(){
             )}
           </span>
           {session?.user?.is_anonymous&&<button onClick={signOut} style={{...btnG,...sm,fontSize:10}}>Sign Out</button>}
-          {!session?.user?.is_anonymous&&<button onClick={()=>setShowGlobalSearch(true)} title="Search machines, clients, vehicles, equipment, tools, parts, wiki" style={{...btnG,...sm,fontSize:10}}>🔍</button>}
           {!session?.user?.is_anonymous&&<button onClick={()=>setTab("settings")} style={{...btnG,...sm,fontSize:10}}>⚙️</button>}
         </div>
       </div>
-      {showGlobalSearch&&<GlobalSearch machines={machines} clients={clients} vehicles={vehicles} equipment={equipment} tools={tools} onJumpTo={jumpToSearchResult} onClose={()=>setShowGlobalSearch(false)}/>}
       <div className="tab-bar tab-bar-rocker" style={{background:SURF,borderBottom:"1px solid "+BRD,overflowX:"auto",overflowY:"hidden",display:"flex",scrollbarWidth:"none"}}>
         {mainTabsToShow.map(t=>{
           const active=tab===t.id;
@@ -574,7 +570,7 @@ function App(){
         </div>
       )}
 
-      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)} active={tab==="tracker"} initialSearch={tab==="tracker"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
+      <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} vehicles={vehicles} equipment={equipment} tools={tools} onJumpTo={jumpToSearchResult} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)} active={tab==="tracker"} initialSearch={tab==="tracker"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={benchMachines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="community"&&communityTab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")} initialSlug={tab==="community"&&communityTab==="wiki"?jumpQuery:null} onInitialSlugConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="community"&&communityTab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)} onOpenThread={(id)=>{setCommunityTab("messages");setPendingThreadId(id);}} pendingListingId={pendingListingId} onConsumePendingListing={()=>setPendingListingId(null)}/>}</div>
