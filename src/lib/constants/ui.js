@@ -90,7 +90,7 @@ export const BADGE_PALETTE = [
 // kept first so an account that's never chosen one still sees its current
 // color highlighted in the grid.
 export const ACCENT_PRESETS = [
-  "#e8670a", // orange (default)
+  "#e8670a", // orange
   "#ef4444", // red
   "#f43f5e", // rose
   "#ec4899", // pink
@@ -105,7 +105,7 @@ export const ACCENT_PRESETS = [
   "#22c55e", // green
   "#84cc16", // lime
   "#eab308", // yellow
-  "#f59e0b", // amber
+  "#f59e0b", // amber (default)
 ];
 
 export const TILE_COLOR_DEFAULTS = {

@@ -125,7 +125,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
   const _jLayout = _jAct;
   const _jTile   = _jAct;
   const _jDel    = {..._jBase,background:RED,color:"#fff"};
-  const _jClose  = {..._jBase,background:"transparent",border:"1px solid "+BRD,color:MUT};
+  const _jClose  = {..._jBase,background:"transparent",border:"1px solid "+GRN+"55",color:GRN};
 
   return (
     <div className="panel-fastened" style={{background:SURF,border:"1px solid "+(timerRunning?GRN+"55":BRD),borderRadius:3,marginBottom:8,overflow:"hidden",position:"relative",boxShadow:timerRunning?"0 0 8px "+GRN+"22":undefined}}>
