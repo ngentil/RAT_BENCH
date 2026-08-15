@@ -9,6 +9,7 @@ import PhotoAdder from '../ui/PhotoAdder';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { lookupWikiEntry, getWikiMakes, getWikiModels } from '../../lib/wiki';
 import { getPref, savePref } from '../../lib/db/preferences';
+import { toastUndo } from '../../lib/toast';
 
 function WikiAutocomplete({ value, onChange, fetchSuggestions, placeholder, style }) {
   const [suggestions, setSuggestions] = React.useState([]);
@@ -1961,7 +1962,10 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 {fasteners.map((f,idx)=>(
                   fastEditIdx===idx
                     ? <StudForm key={f.id||idx} s={f} onSave={saveFastener} onCancel={()=>setFastEditIdx(null)} />
-                    : <StudCard key={f.id||idx} s={f} onEdit={()=>{setFastEditIdx(idx);setFastAdding(false);}} onRemove={()=>{if(confirm("Remove this entry?"))setFasteners(prev=>prev.filter((_,i)=>i!==idx));}} />
+                    : <StudCard key={f.id||idx} s={f} onEdit={()=>{setFastEditIdx(idx);setFastAdding(false);}} onRemove={()=>{
+                        setFasteners(prev=>prev.filter((_,i)=>i!==idx));
+                        toastUndo("Fastener entry removed",()=>setFasteners(prev=>[...prev,f]));
+                      }} />
                 ))}
                 {fastAdding&&<StudForm s={{}} onSave={saveFastener} onCancel={()=>setFastAdding(false)} />}
                 {!fastAdding&&fastEditIdx===null&&<button onClick={()=>setFastAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Fastener</button>}
@@ -2449,7 +2453,10 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 {lighting.map((l,idx)=>(
                   lightEditIdx===idx
                     ? <LightingForm key={l.id||idx} l={l} onSave={sv=>{setLighting(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||crypto.randomUUID()}:x));setLightEditIdx(null);}} onCancel={()=>setLightEditIdx(null)} />
-                    : <LightingCard key={l.id||idx} l={l} onEdit={()=>{setLightEditIdx(idx);setLightAdding(false);}} onRemove={()=>{if(confirm("Remove this entry?"))setLighting(prev=>prev.filter((_,i)=>i!==idx));}} />
+                    : <LightingCard key={l.id||idx} l={l} onEdit={()=>{setLightEditIdx(idx);setLightAdding(false);}} onRemove={()=>{
+                        setLighting(prev=>prev.filter((_,i)=>i!==idx));
+                        toastUndo("Lighting entry removed",()=>setLighting(prev=>[...prev,l]));
+                      }} />
                 ))}
                 {lightAdding&&<LightingForm l={{}} onSave={sv=>{setLighting(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setLightAdding(false);}} onCancel={()=>setLightAdding(false)} />}
                 {!lightAdding&&lightEditIdx===null&&<button onClick={()=>setLightAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Light</button>}
@@ -2871,7 +2878,10 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
                 {attachments.map((a,idx)=>(
                   attachEditIdx===idx
                     ? <AttachForm key={a.id||idx} a={a} onSave={sv=>{setAttachments(prev=>prev.map((x,i)=>i===idx?{...sv,id:x.id||crypto.randomUUID()}:x));setAttachEditIdx(null);}} onCancel={()=>setAttachEditIdx(null)} />
-                    : <AttachCard key={a.id||idx} a={a} onEdit={()=>{setAttachEditIdx(idx);setAttachAdding(false);}} onRemove={()=>{if(confirm("Remove this attachment?"))setAttachments(prev=>prev.filter((_,i)=>i!==idx));}} />
+                    : <AttachCard key={a.id||idx} a={a} onEdit={()=>{setAttachEditIdx(idx);setAttachAdding(false);}} onRemove={()=>{
+                        setAttachments(prev=>prev.filter((_,i)=>i!==idx));
+                        toastUndo("Attachment removed",()=>setAttachments(prev=>[...prev,a]));
+                      }} />
                 ))}
                 {attachAdding&&<AttachForm a={{}} onSave={sv=>{setAttachments(prev=>[...prev,{...sv,id:crypto.randomUUID()}]);setAttachAdding(false);}} onCancel={()=>setAttachAdding(false)} />}
                 {!attachAdding&&attachEditIdx===null&&<button onClick={()=>setAttachAdding(true)} style={{...btnG,width:"100%",marginTop:4}}>+ Add Attachment</button>}

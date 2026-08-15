@@ -8,7 +8,6 @@ import { getInventory, saveInventoryItem, deleteInventoryItem, adjustStock } fro
 import { getConsumables, upsertConsumable, deleteConsumable, adjustConsumableQty } from '../../lib/db/consumables';
 import { findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
 import { toastError, toastUndo } from '../../lib/toast';
-import { deletePhoto } from '../../lib/storage';
 import LoadoutSection from '../ui/LoadoutSection';
 import PhotoAdder from '../ui/PhotoAdder';
 import PhotoViewer from '../ui/PhotoViewer';
@@ -524,7 +523,7 @@ function StockCard({ item, tableType, typeConfig, onEdit, onDelete, onQR, onQtyC
 }
 
 // ── Main tab ──────────────────────────────────────────────────────────────────
-export default function StockItemTab({ tableType, label, machines, session, profile, company, onGoToBilling }) {
+export default function StockItemTab({ tableType, label, machines, session, profile, company, onGoToBilling, initialSearch, onInitialSearchConsumed }) {
   const typeConfig = tableType === 'part' ? {
     categories: PART_CATEGORIES,
     groups:     PART_CATEGORY_GROUPS,
@@ -547,6 +546,11 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   const [formItem, setFormItem] = useState(null);
   const [qrItem, setQrItem]     = useState(null);
   const [search, setSearch]     = useState('');
+  useEffect(() => {
+    if (!initialSearch) return;
+    setSearch(initialSearch);
+    onInitialSearchConsumed?.();
+  }, [initialSearch]);
   const [groupFilter, setGroupFilter] = useState(null);
 
   const [showSort, setShowSort]       = useState(false);
@@ -618,14 +622,19 @@ export default function StockItemTab({ tableType, label, machines, session, prof
   // ── Delete ──────────────────────────────────────────────────────────────────
   const remove = async item => {
     if (tableType === 'part') {
-      // Inventory ("parts") isn't wired into Recently Deleted yet — the
-      // activity_log trigger doesn't cover that table (see
-      // supabase/activity_log.sql's covered-tables list) — so this stays a
-      // real confirm() for now rather than a silent, actually-permanent delete.
-      if (!confirm('Delete this part?')) return;
-      (item?.photos || []).forEach(url => deletePhoto(url));
       const updated = await deleteInventoryItem(userId, item.id);
       setItems(updated);
+
+      // Goes to Recently Deleted for 72h instead of a confirm() popup — see
+      // supabase/inventory_recently_deleted.sql.
+      const logId = await findMyRecentlyDeletedLogId('inventory_items', item.id);
+      if (!logId) return;
+      toastUndo(`${item?.name || 'Part'} deleted`, async () => {
+        try {
+          await restoreDeletedRecord(logId);
+          setItems(await getInventory(userId));
+        } catch (e) { toastError("Couldn't undo — " + e.message); }
+      });
       return;
     }
 

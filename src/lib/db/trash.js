@@ -5,6 +5,7 @@ import { fromDb as fromDbVehicle } from './vehicles';
 import { fromDb as fromDbEquipment } from './equipment';
 import { fromDb as fromDbTool } from './tools';
 import { fromDb as fromDbConsumable } from './consumables';
+import { fromDb as fromDbInventory } from './inventory';
 
 // "Recently Deleted" client helpers — two underlying sources merged into one
 // list (see supabase/recently_deleted.sql and supabase/trash_items.sql):
@@ -24,6 +25,7 @@ const WHOLE_RECORD_LABELS = {
   tools: 'Tool',
   consumables: 'Consumable',
   company_members: 'Team member',
+  inventory_items: 'Part',
 };
 
 const TRASH_ITEM_LABELS = {
@@ -93,6 +95,7 @@ const RECORD_TRANSFORMS = {
   equipment: fromDbEquipment,
   tools: fromDbTool,
   consumables: fromDbConsumable,
+  inventory_items: fromDbInventory,
 };
 
 // Restores a whole-record delete (machine/client/vehicle/equipment/tool/

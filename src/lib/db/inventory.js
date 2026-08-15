@@ -1,9 +1,8 @@
 import { supabase } from '../supabase';
 import { unassignAllByChild, syncAssignmentChildName } from './assetAssignments';
-import { deletePhoto } from '../storage';
 
 
-function fromDb(r) {
+export function fromDb(r) {
   const p = r.payload || {};
   const stockQty = p.stockQty != null ? Number(p.stockQty) : 0;
   const minQty   = p.minQuantity != null ? Number(p.minQuantity) : (p.minStock != null ? Number(p.minStock) : null);
@@ -102,9 +101,10 @@ export async function saveInventoryItem(userId, item) {
 }
 
 export async function deleteInventoryItem(userId, itemId) {
+  // Storage photos deliberately NOT deleted here — the row goes into
+  // Recently Deleted for 72h instead (see supabase/recently_deleted.sql);
+  // the 72h expiry sweep does the actual Storage cleanup.
   try {
-    const { data } = await supabase.from('inventory_items').select('payload').eq('id', itemId).eq('user_id', userId).single();
-    (data?.payload?.photos || []).forEach(url => deletePhoto(url));
     await unassignAllByChild('part', itemId);
     await supabase.from('inventory_items').delete().eq('id', itemId).eq('user_id', userId);
   } catch (e) { console.warn('deleteInventoryItem Supabase failed:', e); }

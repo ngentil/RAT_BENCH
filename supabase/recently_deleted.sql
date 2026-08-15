@@ -77,17 +77,22 @@ BEGIN
         v_before int := COALESCE(jsonb_array_length(v_old->'photos'), 0);
         v_after  int := COALESCE(jsonb_array_length(v_new->'photos'), 0);
       BEGIN
-        v_detail := COALESCE(v_new->>'name', v_new->>'title', left(v_record_id, 8))
+        v_detail := COALESCE(v_new->>'name', v_new->'payload'->>'name', v_new->>'title', left(v_record_id, 8))
           || ' — ' || CASE WHEN v_after > v_before THEN 'added a photo' WHEN v_after < v_before THEN 'removed a photo' ELSE 'reordered photos' END;
       END;
     ELSE
-      v_detail := COALESCE(v_new->>'name', v_new->>'title', v_new->>'edit_summary', v_new->>'role', left(v_record_id, 8))
+      v_detail := COALESCE(v_new->>'name', v_new->'payload'->>'name', v_new->>'title', v_new->>'edit_summary', v_new->>'role', left(v_record_id, 8))
         || ' (' || array_to_string(v_changed, ', ') || ')';
     END IF;
   ELSIF TG_OP = 'DELETE' THEN
-    v_detail := COALESCE(v_new->>'name', v_new->>'title', v_new->>'role', left(v_record_id, 8));
+    -- v_new->'payload'->>'name' covers inventory_items, which stores almost
+    -- everything (including its display name) inside one jsonb `payload`
+    -- column rather than a flat `name` column like the other trashed
+    -- tables — without this fallback, a deleted part's Recently Deleted row
+    -- would show a truncated uuid instead of its actual name.
+    v_detail := COALESCE(v_new->>'name', v_new->'payload'->>'name', v_new->>'title', v_new->>'role', left(v_record_id, 8));
   ELSE
-    v_detail := COALESCE(v_new->>'name', v_new->>'title', v_new->>'edit_summary', v_new->>'role', left(v_record_id, 8));
+    v_detail := COALESCE(v_new->>'name', v_new->'payload'->>'name', v_new->>'title', v_new->>'edit_summary', v_new->>'role', left(v_record_id, 8));
   END IF;
 
   INSERT INTO activity_log (actor_id, actor_email, action, table_name, record_id, company_id, detail, source, snapshot)
@@ -106,9 +111,14 @@ $$;
 -- marketplace_listings/machine_bookings are collaborative/public-facing
 -- content with their own edit-history or moderation model already; folding
 -- them into a personal "my recently deleted" undo isn't the right fit).
+-- This is the ONE place this list is defined — inventory_recently_deleted.sql
+-- (which extends this file to also cover inventory_items) deliberately does
+-- NOT redefine this function itself; CREATE OR REPLACE would silently
+-- clobber whichever version ran last if two files both tried to own it, so
+-- re-running this file alone would otherwise quietly regress the allowlist.
 CREATE OR REPLACE FUNCTION _recently_deleted_allowed_table(p_table text)
 RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
-  SELECT p_table IN ('machines', 'vehicles', 'equipment', 'tools', 'consumables', 'clients', 'company_members', 'services');
+  SELECT p_table IN ('machines', 'vehicles', 'equipment', 'tools', 'consumables', 'clients', 'company_members', 'services', 'inventory_items');
 $$;
 
 -- Returns the caller's own deleted rows from the last 72 hours that haven't
