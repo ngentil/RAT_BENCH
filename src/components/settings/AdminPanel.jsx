@@ -342,7 +342,11 @@ function UsersTab() {
 // supabase/remove_paywall_system.sql) rather than left dormant. Rat Bench
 // is free with no plan to bring per-seat/per-invoice billing back —
 // monetization is planned via marketplace ads/sponsored listings instead.
-const LAUNCH_FLAG_ORDER = ['community', 'wiki', 'marketplace'];
+// member_cap came back separately, same day (supabase/member_cap.sql) —
+// deleting the paywall had deleted the member-count-limit concept along
+// with it, which turned out not to be intended; this is a plain
+// abuse-prevention cap, nothing to do with billing.
+const LAUNCH_FLAG_ORDER = ['community', 'wiki', 'marketplace', 'member_cap'];
 const LAUNCH_FLAG_META = {
   community: {
     label: 'Community section (master switch)',
@@ -355,6 +359,10 @@ const LAUNCH_FLAG_META = {
   marketplace: {
     label: 'Marketplace & Messages',
     desc: 'Marketplace and Messages tabs in Community, plus the public /marketplace and /listing pages. Messages has no use without Marketplace, so one switch covers both. Also requires the master switch above to be on.',
+  },
+  member_cap: {
+    label: 'Team member limit',
+    desc: 'On = every company is capped at the member count below (beyond the owner, who never counts against it) — a plain abuse-prevention limit, not tied to billing. Off = unlimited team members for every company.',
   },
 };
 
@@ -373,6 +381,11 @@ function FlagsTab() {
 
   const toggle = async (f) => {
     await supabase.from('feature_flags').update({ enabled: !f.enabled }).eq('id', f.id);
+    load();
+  };
+
+  const setNumericValue = async (f, value) => {
+    await supabase.from('feature_flags').update({ value }).eq('id', f.id);
     load();
   };
 
@@ -418,6 +431,14 @@ function FlagsTab() {
               {f.enabled ? 'ON' : 'OFF'}
             </button>
           </div>
+          {f.key === 'member_cap' && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid ' + BRD, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 9, color: MUT }}>Member limit per company:</span>
+              <input type="number" min="1" style={{ ...inp, width: 70, padding: '4px 8px', fontSize: 11 }}
+                defaultValue={f.value ?? 10} key={f.value}
+                onBlur={e => { const n = parseInt(e.target.value, 10); if (Number.isFinite(n) && n >= 1 && n !== f.value) setNumericValue(f, n); }} />
+            </div>
+          )}
         </div>
       ))}
 

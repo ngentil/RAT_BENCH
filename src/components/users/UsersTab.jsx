@@ -3,6 +3,7 @@ import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/st
 import { getCompanyMembers, removeMember, regenerateInviteCode, updateMemberRole, findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
 import { toastUndo, toastError } from '../../lib/toast';
 import { SL } from '../ui/shared';
+import { useFeatureFlags } from '../../lib/featureFlagsContext';
 
 const ROLES = ["admin", "technician", "viewer"];
 
@@ -44,6 +45,7 @@ function RoleBadge({ role }) {
 // heading already says "Users") rather than as a standalone top-level tab —
 // suppresses this component's own heading and outer page padding.
 export default function UsersTab({ company, session, profile, setCompany, embedded = false }) {
+  const { memberCap } = useFeatureFlags();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -55,6 +57,13 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
 
   const myMember = members.find(m => m.user_id === session?.user?.id);
   const isOwner = myMember?.role === 'owner';
+
+  // Owner never counts against the cap — matches join_company_by_invite()'s
+  // server-side rule (supabase/member_cap.sql), which is what actually
+  // enforces this; this is purely a heads-up so the owner isn't surprised
+  // by a "reached its member limit" error after already sharing the code.
+  const nonOwnerCount = members.filter(m => m.role !== 'owner').length;
+  const atCap = memberCap != null && nonOwnerCount >= memberCap;
 
   useEffect(() => {
     if (!company) return;
@@ -169,7 +178,9 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
         {embedded ? <div /> : <SL t="Users" />}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em" }}>
-            {loading ? "…" : `${members.length} member${members.length !== 1 ? "s" : ""}`}
+            {loading ? "…" : memberCap != null
+              ? `${members.length} member${members.length !== 1 ? "s" : ""} · ${nonOwnerCount}/${memberCap}`
+              : `${members.length} member${members.length !== 1 ? "s" : ""}`}
           </span>
           {isOwner && (
             <button onClick={() => setShowInvite(x => !x)} style={{ ...btnA, ...sm }}>
@@ -191,6 +202,11 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
             Share this code with your team member. They enter it in{" "}
             <span style={{ color: TXT }}>Settings → Company → Join with Code</span>.
           </div>
+          {atCap && (
+            <div style={{ fontSize: 10, color: RED, marginBottom: 12, lineHeight: 1.6, background: RED + "11", border: "1px solid " + RED + "44", borderRadius: 2, padding: "8px 10px" }}>
+              This organisation has reached its member limit ({nonOwnerCount}/{memberCap}) — anyone joining with this code will be turned away until someone leaves.
+            </div>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{
               fontSize: 22, fontWeight: 700, letterSpacing: "0.25em", color: TXT,
