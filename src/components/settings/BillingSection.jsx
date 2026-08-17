@@ -4,6 +4,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { getCompanyMembers } from '../../lib/db';
 import { createBillingSetup, updateSeatSubscription, listInvoices, setSubscriptionCancellation, setInvoiceAddonActive } from '../../lib/billing';
 import { InvoiceAddonPaymentSetup } from '../office/InvoicePaywallModal';
+import { useFeatureFlags } from '../../lib/featureFlagsContext';
 
 // Matches Postgres's to_char(now(),'YYYY-MM') key used by
 // check_and_use_invoice_credit() (supabase/invoice_addon_billing.sql) closely
@@ -167,6 +168,7 @@ function PaymentSetup({ company, seats, onDone, onCancel }) {
 // 5/month cap (see supabase/invoice_addon_billing.sql). Independent of
 // per-seat billing: a company can enable this without ever setting up seats.
 function InvoicingSection({ company, setCompany }) {
+  const { invoicesFree } = useFeatureFlags();
   const [showSetup, setShowSetup] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -190,6 +192,20 @@ function InvoicingSection({ company, setCompany }) {
     }
     setSaving(false);
   };
+
+  // Launch mode: invoicing is free and uncapped for everyone (toggle in
+  // Admin Panel → Flags → invoices_free), so there's nothing to upgrade to —
+  // skip the whole paid-plan UI. A company that somehow already has an
+  // active subscription (addonActive) still gets the real management UI
+  // below so they're never stuck paying with no way to cancel.
+  if (invoicesFree && !addonActive) {
+    return (
+      <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid ' + BRD }}>
+        <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Invoicing</div>
+        <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>Unlimited invoices, free — same as Quotes.</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid ' + BRD }}>
@@ -248,6 +264,7 @@ function InvoicingSection({ company, setCompany }) {
 }
 
 function BillingSection({ company, setCompany }) {
+  const { freeSeatCap: FREE_SEAT_CAP } = useFeatureFlags();
   const [seatsInUse, setSeatsInUse] = useState(0);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
@@ -302,6 +319,12 @@ function BillingSection({ company, setCompany }) {
 
   const hasSubscription = !!company.stripe_subscription_id || (company.paid_seats || 0) > 0;
   const isCanceling = company._cancelAtPeriodEnd;
+  // Launch mode: every company gets at least FREE_SEAT_CAP seats beyond the
+  // owner at no cost (toggle in Admin Panel → Flags → free_seats;
+  // supabase/launch_flags_admin.sql enforces the matching floor
+  // server-side) — a plain floor under whatever they've actually paid for,
+  // not conditional on having a subscription at all.
+  const effectiveSeatCap = Math.max(company.paid_seats || 0, FREE_SEAT_CAP);
 
   if (!PUBLISHABLE_KEY) {
     return (
@@ -314,7 +337,9 @@ function BillingSection({ company, setCompany }) {
   return (
     <div>
       <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7, marginBottom: 14 }}>
-        Your own seat is always free. Every other member of this organisation — added via an invite code — uses one paid seat at $10/month.
+        {FREE_SEAT_CAP > 0 && !hasSubscription
+          ? `Your own seat is always free, and this organisation gets ${FREE_SEAT_CAP} more free seats for team members added via an invite code.`
+          : 'Your own seat is always free. Every other member of this organisation — added via an invite code — uses one paid seat at $10/month.'}
       </div>
 
       {loadingMembers ? (
@@ -335,7 +360,7 @@ function BillingSection({ company, setCompany }) {
           <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Seats in use</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: TXT }}>{seatsInUse} / {company.paid_seats || 0}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: TXT }}>{seatsInUse} / {effectiveSeatCap}{!hasSubscription && ' (free)'}</div>
             </div>
             <div>
               <div style={{ fontSize: 7, color: MUT, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Status</div>
@@ -352,7 +377,9 @@ function BillingSection({ company, setCompany }) {
           {err && <div style={{ fontSize: 10, color: RED, marginBottom: 10 }}>{err}</div>}
 
           {!hasSubscription ? (
-            <button onClick={openSetup} style={{ ...btnA, ...sm }}>Set Up Billing</button>
+            FREE_SEAT_CAP > 0
+              ? <div style={{ fontSize: 10, color: MUT, lineHeight: 1.7 }}>{FREE_SEAT_CAP} free seats included — no billing needed yet.</div>
+              : <button onClick={openSetup} style={{ ...btnA, ...sm }}>Set Up Billing</button>
           ) : (
             <>
               {(company.paid_seats || 0) > seatsInUse && (

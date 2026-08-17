@@ -329,6 +329,35 @@ function UsersTab() {
 }
 
 // ─── Feature Flags ───────────────────────────────────────────────────────────
+// Launch-mode flags (see docs/FEATURE_MAP.md section 19 and
+// supabase/launch_flags_admin.sql) get their own labeled, described section
+// above the generic key/label CRUD list below — same feature_flags table,
+// same toggle mechanism, just friendlier for the five keys the app itself
+// actually reads. Anything else an admin adds through "+ New Flag" is just
+// a plain flag with no special app behavior wired to it (yet).
+const LAUNCH_FLAG_ORDER = ['community', 'wiki', 'marketplace', 'invoices_free', 'free_seats'];
+const LAUNCH_FLAG_META = {
+  community: {
+    label: 'Community section (master switch)',
+    desc: 'Overrides Wiki and Marketplace together, regardless of their own switches below — turn this off to hide the whole Community tab no matter what they say. Turning it back on doesn’t show anything by itself, it just stops overriding those two.',
+  },
+  wiki: {
+    label: 'Wiki',
+    desc: 'Wiki tab in Community, plus the public wiki.ratbench.net site. Off = hidden everywhere, including that subdomain. Also requires the master switch above to be on.',
+  },
+  marketplace: {
+    label: 'Marketplace & Messages',
+    desc: 'Marketplace and Messages tabs in Community, plus the public /marketplace and /listing pages. Messages has no use without Marketplace, so one switch covers both. Also requires the master switch above to be on.',
+  },
+  invoices_free: {
+    label: 'Free unlimited invoicing',
+    desc: 'On = invoices are free and uncapped for every company, same as Quotes. Off = restores the original 5 free/month cap + $20/mo Business add-on.',
+  },
+  free_seats: {
+    label: 'Free team seats',
+    desc: 'On = every company gets the seat count below for free, no purchase needed. Off = restores the original $10/seat paid model (a new company gets 0 free seats).',
+  },
+};
 
 function FlagsTab() {
   const [flags,    setFlags]    = useState([]);
@@ -348,6 +377,11 @@ function FlagsTab() {
     load();
   };
 
+  const setSeatValue = async (f, value) => {
+    await supabase.from('feature_flags').update({ value }).eq('id', f.id);
+    load();
+  };
+
   const add = async () => {
     if (!newKey.trim() || !newLabel.trim()) return;
     await supabase.from('feature_flags').insert({
@@ -364,12 +398,48 @@ function FlagsTab() {
     load();
   };
 
+  // Fixed display order (community first, as the master switch) rather than
+  // DB row order — the seed INSERT writes all five rows in one statement, so
+  // created_at ties don't reliably sort the way an admin would expect.
+  const launchFlags = LAUNCH_FLAG_ORDER.map(key => flags.find(f => f.key === key)).filter(Boolean);
+  const customFlags = flags.filter(f => !LAUNCH_FLAG_META[f.key]);
+
   return (
     <div>
-      {flags.length === 0 && !adding && (
-        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No flags yet.</div>
+      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Launch Mode</div>
+      {launchFlags.length === 0 && (
+        <div style={{ fontSize: 10, color: MUT, marginBottom: 16 }}>
+          None of the four launch-mode rows exist yet — run supabase/launch_flags_admin.sql to seed them.
+        </div>
       )}
-      {flags.map(f => (
+      {launchFlags.map(f => (
+        <div key={f.id} style={{ ...card, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, color: TXT, fontWeight: 700 }}>{LAUNCH_FLAG_META[f.key].label}</div>
+              <div style={{ fontSize: 9, color: MUT, marginTop: 3, lineHeight: 1.5 }}>{LAUNCH_FLAG_META[f.key].desc}</div>
+            </div>
+            <button onClick={() => toggle(f)} style={{ ...btnG, ...sm, fontSize: 9, minWidth: 36, flexShrink: 0,
+              color: f.enabled ? GRN : MUT, border: '1px solid ' + (f.enabled ? GRN : '#333') }}>
+              {f.enabled ? 'ON' : 'OFF'}
+            </button>
+          </div>
+          {f.key === 'free_seats' && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid ' + BRD, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 9, color: MUT }}>Free seats per company:</span>
+              <input type="number" min="0" style={{ ...inp, width: 70, padding: '4px 8px', fontSize: 11 }}
+                defaultValue={f.value ?? 10} key={f.value}
+                onBlur={e => { const n = parseInt(e.target.value, 10); if (Number.isFinite(n) && n >= 0 && n !== f.value) setSeatValue(f, n); }} />
+            </div>
+          )}
+        </div>
+      ))}
+
+      <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, margin: '20px 0 10px' }}>Custom Flags</div>
+      {customFlags.length === 0 && !adding && (
+        <div style={{ fontSize: 10, color: MUT, textAlign: 'center', padding: 24 }}>No custom flags yet.</div>
+      )}
+      {customFlags.map(f => (
         <div key={f.id} style={{ ...card, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 11, color: TXT, fontWeight: 700 }}>{f.label}</div>
