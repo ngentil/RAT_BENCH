@@ -7,6 +7,7 @@ import { getEquipment } from './lib/db/equipment';
 import { getTools } from './lib/db/tools';
 import { fromDb } from './lib/db/transforms';
 import { TABS, WORKSHOP_TABS, OFFICE_TABS, COMMUNITY_TABS } from './lib/constants';
+import { WIKI_HIDDEN, MARKETPLACE_HIDDEN } from './lib/launchFlags';
 import { getMachineServiceStatus } from './lib/helpers';
 import { savePref, migrateLocalPreferences } from './lib/db/preferences';
 import { applyTabOrder } from './lib/tabOrder';
@@ -35,6 +36,13 @@ import VehiclesTab from './components/vehicles/VehiclesTab';
 import EquipmentTab from './components/equipment/EquipmentTab';
 import ConsumablesTab from './components/consumables/ConsumablesTab';
 
+// Community sub-tab ids forced off by launch flags, regardless of the
+// per-user tab_order.community_hidden preference — Messages rides along
+// with Marketplace since a thread can't exist without a listing.
+const LAUNCH_HIDDEN_COMMUNITY_IDS = [
+  ...(WIKI_HIDDEN ? ['wiki'] : []),
+  ...(MARKETPLACE_HIDDEN ? ['marketplace', 'messages'] : []),
+];
 
 function App(){
   const [tab,setTab]=useState("tracker");
@@ -322,11 +330,18 @@ function App(){
       const first=OFFICE_TABS.find(t=>!offHidden.includes(t.id));
       if(first) setOfficeTab(first.id);
     }
-    // Same again for Community.
-    const commHidden=profile?.tab_order?.community_hidden;
-    if(Array.isArray(commHidden)&&commHidden.includes(communityTab)){
+    // Same again for Community — merged with the launch-flag hidden ids,
+    // which apply to everyone regardless of their own tab_order preference.
+    const commHidden=[...(profile?.tab_order?.community_hidden||[]),...LAUNCH_HIDDEN_COMMUNITY_IDS];
+    if(commHidden.includes(communityTab)){
       const first=COMMUNITY_TABS.find(t=>!commHidden.includes(t.id));
       if(first) setCommunityTab(first.id);
+    }
+    // Community itself has nothing left to show if every sub-tab is hidden —
+    // bounce off the top-level tab too, same as validTopIds above but for a
+    // tab id that's still nominally "valid" yet empty.
+    if(tab==="community"&&COMMUNITY_TABS.every(t=>commHidden.includes(t.id))){
+      setTab("tracker");
     }
   },[profile,company]);
 
@@ -463,13 +478,15 @@ function App(){
     OFFICE_TABS.filter(t=>!savedOfficeHidden?.includes(t.id)),
     profile?.tab_order?.office
   );
-  const savedCommunityHidden = profile?.tab_order?.community_hidden;
+  const savedCommunityHidden = [...(profile?.tab_order?.community_hidden||[]),...LAUNCH_HIDDEN_COMMUNITY_IDS];
   const visibleCommunityTabs = applyTabOrder(
-    COMMUNITY_TABS.filter(t=>!savedCommunityHidden?.includes(t.id)),
+    COMMUNITY_TABS.filter(t=>!savedCommunityHidden.includes(t.id)),
     profile?.tab_order?.community
   );
   const orderedMainTabs = applyTabOrder(TABS, profile?.tab_order?.main);
-  const mainTabsToShow = orderedMainTabs;
+  // Community has nothing left to show once every sub-tab is launch-hidden —
+  // drop the top-level tab entirely rather than leave an empty shell in nav.
+  const mainTabsToShow = orderedMainTabs.filter(t=>t.id!=="community"||visibleCommunityTabs.length>0);
 
   return (
     <div style={{minHeight:"100vh",background:BG,color:TXT,fontFamily:"'IBM Plex Mono',monospace",display:"flex",flexDirection:"column",overflowX:"hidden"}}>
@@ -572,9 +589,12 @@ function App(){
 
       <div style={{display:tab==="tracker"?"contents":"none"}}><Tracker     machines={machines} setMachines={setMachines} company={company} profile={profile} setProfile={setProfile} clients={clients} vehicles={vehicles} equipment={equipment} tools={tools} onJumpTo={jumpToSearchResult} isGuest={!!session?.user?.is_anonymous} onGoToBilling={()=>goToBilling("unknown")} templateMachineId={templateMachineId} onTemplateClear={()=>setTemplateMachineId(null)} active={tab==="tracker"} initialSearch={tab==="tracker"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="jobs"?"contents":"none"}}><JobBoard    machines={benchMachines} setMachines={setMachines} profile={profile} company={company} session={session} clients={clients} onGoToBilling={()=>goToBilling("unknown")}/></div>
-      <div style={{display:tab==="community"&&communityTab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")} initialSlug={tab==="community"&&communityTab==="wiki"?jumpQuery:null} onInitialSlugConsumed={()=>setJumpQuery(null)}/></div>
-      <div style={{display:tab==="community"&&communityTab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)} onOpenThread={(id)=>{setCommunityTab("messages");setPendingThreadId(id);}} pendingListingId={pendingListingId} onConsumePendingListing={()=>setPendingListingId(null)}/>}</div>
-      <div style={{display:tab==="community"&&communityTab==="messages"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MessagesTab profile={profile} pendingThreadId={pendingThreadId} onConsumePendingThread={()=>setPendingThreadId(null)} onOpenListing={(id)=>{setCommunityTab("marketplace");setPendingListingId(id);}} onUnreadChange={setMessagesUnread}/>}</div>
+      {/* Actual conditional rendering (not the usual display:none toggle) while
+          launch-hidden — these should never mount, fetch, or hold state at
+          all, not just stay visually hidden. */}
+      {!WIKI_HIDDEN&&<div style={{display:tab==="community"&&communityTab==="wiki"?"block":"none",padding:16,flex:1,overflowY:"auto"}}><WikiTab session={session} profile={profile} company={company} setMachines={setMachines} onGoToBilling={()=>goToBilling("unknown")} initialSlug={tab==="community"&&communityTab==="wiki"?jumpQuery:null} onInitialSlugConsumed={()=>setJumpQuery(null)}/></div>}
+      {!MARKETPLACE_HIDDEN&&<div style={{display:tab==="community"&&communityTab==="marketplace"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MarketplaceTab machines={activeMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} setMachines={setMachines} setEquipment={setEquipment} onToolRelisted={()=>setToolsRefreshKey(k=>k+1)} onOpenThread={(id)=>{setCommunityTab("messages");setPendingThreadId(id);}} pendingListingId={pendingListingId} onConsumePendingListing={()=>setPendingListingId(null)}/>}</div>}
+      {!MARKETPLACE_HIDDEN&&<div style={{display:tab==="community"&&communityTab==="messages"?"block":"none",padding:16,flex:1,overflowY:"auto"}}>{profile&&<MessagesTab profile={profile} pendingThreadId={pendingThreadId} onConsumePendingThread={()=>setPendingThreadId(null)} onOpenListing={(id)=>{setCommunityTab("marketplace");setPendingListingId(id);}} onUnreadChange={setMessagesUnread}/>}</div>}
       <div style={{display:tab==="workshop"&&workshopTab==="reminders"?"contents":"none"}}><ServiceReminders machines={machines} setMachines={setMachines} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="parts"?"contents":"none"}}><PartsTab machines={machines} session={session} profile={profile} company={company} onGoToBilling={()=>goToBilling("unknown")} initialSearch={tab==="workshop"&&workshopTab==="parts"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
       <div style={{display:tab==="workshop"&&workshopTab==="tools"?"contents":"none"}}><ToolsTab session={session} profile={profile} company={company} refreshKey={toolsRefreshKey} onGoToBilling={()=>goToBilling("unknown")} initialSearch={tab==="workshop"&&workshopTab==="tools"?jumpQuery:null} onInitialSearchConsumed={()=>setJumpQuery(null)}/></div>
