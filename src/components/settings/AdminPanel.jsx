@@ -371,6 +371,7 @@ function FlagsTab() {
   const [adding,   setAdding]   = useState(false);
   const [newKey,   setNewKey]   = useState('');
   const [newLabel, setNewLabel] = useState('');
+  const [msg,      setMsg]      = useState(null);
 
   const load = async () => {
     const { data } = await supabase.from('feature_flags').select('*').order('created_at');
@@ -379,29 +380,44 @@ function FlagsTab() {
 
   useEffect(() => { load(); }, []);
 
+  // Every write below now checks {error} and (for update()) how many rows
+  // actually changed — a write silently blocked by RLS (wrong auth.email(),
+  // or the write policy never having been (re-)applied) previously looked
+  // identical to a successful no-op change, since load() just re-fetched
+  // the same unchanged data either way with nothing telling you why.
   const toggle = async (f) => {
-    await supabase.from('feature_flags').update({ enabled: !f.enabled }).eq('id', f.id);
+    setMsg(null);
+    const { data, error } = await supabase.from('feature_flags').update({ enabled: !f.enabled }).eq('id', f.id).select();
+    if (error) { setMsg({ ok: false, text: `Couldn't update "${f.key}": ${error.message}` }); return; }
+    if (!data?.length) { setMsg({ ok: false, text: `"${f.key}" wasn't updated — you may not have write access (check the admin email in the RLS policy matches your login).` }); return; }
     load();
   };
 
   const setNumericValue = async (f, value) => {
-    await supabase.from('feature_flags').update({ value }).eq('id', f.id);
+    setMsg(null);
+    const { data, error } = await supabase.from('feature_flags').update({ value }).eq('id', f.id).select();
+    if (error) { setMsg({ ok: false, text: `Couldn't update "${f.key}": ${error.message}` }); return; }
+    if (!data?.length) { setMsg({ ok: false, text: `"${f.key}" wasn't updated — you may not have write access.` }); return; }
     load();
   };
 
   const add = async () => {
     if (!newKey.trim() || !newLabel.trim()) return;
-    await supabase.from('feature_flags').insert({
+    setMsg(null);
+    const { error } = await supabase.from('feature_flags').insert({
       key:   newKey.trim().toLowerCase().replace(/\s+/g, '_'),
       label: newLabel.trim(),
     });
+    if (error) { setMsg({ ok: false, text: `Couldn't add flag: ${error.message}` }); return; }
     setNewKey(''); setNewLabel(''); setAdding(false);
     load();
   };
 
   const del = async (id) => {
     if (!confirm('Delete this flag?')) return;
-    await supabase.from('feature_flags').delete().eq('id', id);
+    setMsg(null);
+    const { error } = await supabase.from('feature_flags').delete().eq('id', id);
+    if (error) { setMsg({ ok: false, text: `Couldn't delete flag: ${error.message}` }); return; }
     load();
   };
 
@@ -413,6 +429,7 @@ function FlagsTab() {
 
   return (
     <div>
+      <Msg m={msg} />
       <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Launch Mode</div>
       {launchFlags.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, marginBottom: 16 }}>
