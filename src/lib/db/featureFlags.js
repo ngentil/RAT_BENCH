@@ -6,15 +6,20 @@ import { supabase } from '../supabase';
 // defaults are the fallback if the table can't be read for any reason
 // (offline, RLS misconfigured, row missing) — they match exactly what
 // Rat Bench launches with, so a read failure never accidentally exposes a
-// paywall or hidden feature that's supposed to be off/free.
+// hidden feature that's supposed to be off.
+//
+// invoices_free/free_seats were removed here (see
+// supabase/remove_paywall_system.sql) once the paywall UI/RPCs they gated
+// were deleted outright rather than left dormant — Rat Bench is free with
+// no plan to reintroduce per-seat or per-invoice billing; monetization is
+// planned via marketplace ads/sponsored listings instead, a separate
+// system with no flag of its own yet.
 export const DEFAULT_FLAGS = {
   wiki: false,          // Wiki tab hidden
   marketplace: false,   // Marketplace + Messages hidden
-  invoicesFree: true,   // invoices free & uncapped
-  freeSeatCap: 10,       // free team seats beyond the owner, no purchase needed
 };
 
-const KEYS = ['community', 'wiki', 'marketplace', 'invoices_free', 'free_seats'];
+const KEYS = ['community', 'wiki', 'marketplace'];
 
 // Every consumer (App.jsx's context provider, main.jsx's pre-render check
 // for the public wiki/marketplace routes) calls this the same way — a
@@ -32,14 +37,8 @@ export async function getFeatureFlags() {
 
   const byKey = Object.fromEntries(data.map(r => [r.key, r]));
   const communityOn = byKey.community?.enabled ?? true;
-  const freeSeatsOn = byKey.free_seats?.enabled ?? true;
   return {
     wiki: communityOn && (byKey.wiki?.enabled ?? DEFAULT_FLAGS.wiki),
     marketplace: communityOn && (byKey.marketplace?.enabled ?? DEFAULT_FLAGS.marketplace),
-    invoicesFree: byKey.invoices_free?.enabled ?? DEFAULT_FLAGS.invoicesFree,
-    // 0 when the flag's off — matches _free_seat_cap()'s SQL side, which
-    // then makes GREATEST(paid_seats, 0) a no-op and restores the original
-    // paid-only seat model exactly.
-    freeSeatCap: freeSeatsOn ? (byKey.free_seats?.value ?? DEFAULT_FLAGS.freeSeatCap) : 0,
   };
 }

@@ -3,7 +3,6 @@ import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/st
 import { getCompanyMembers, removeMember, regenerateInviteCode, updateMemberRole, findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
 import { toastUndo, toastError } from '../../lib/toast';
 import { SL } from '../ui/shared';
-import { useFeatureFlags } from '../../lib/featureFlagsContext';
 
 const ROLES = ["admin", "technician", "viewer"];
 
@@ -45,7 +44,6 @@ function RoleBadge({ role }) {
 // heading already says "Users") rather than as a standalone top-level tab —
 // suppresses this component's own heading and outer page padding.
 export default function UsersTab({ company, session, profile, setCompany, embedded = false }) {
-  const { freeSeatCap: FREE_SEAT_CAP } = useFeatureFlags();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -57,16 +55,6 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
 
   const myMember = members.find(m => m.user_id === session?.user?.id);
   const isOwner = myMember?.role === 'owner';
-
-  // Every non-owner member uses one paid seat — matches join_company_by_invite()'s
-  // server-side rule (supabase/company_billing.sql), which is what actually
-  // enforces this; this is purely a heads-up so the owner isn't surprised by
-  // a "no seats available" error after already sharing the code.
-  const paidSeatsInUse = members.filter(m => m.role !== 'owner').length;
-  // Floored at FREE_SEAT_CAP regardless of what's actually paid for — see
-  // Admin Panel → Flags → free_seats and the matching BillingSection.jsx logic.
-  const paidSeatsTotal = Math.max(company.paid_seats || 0, FREE_SEAT_CAP);
-  const seatsAvailable = paidSeatsTotal - paidSeatsInUse;
 
   useEffect(() => {
     if (!company) return;
@@ -122,10 +110,8 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
   };
 
   // Removable = anyone but the owner and myself (mirrors rpc_remove_member's
-  // own guard). Selecting several people who've left and removing them in
-  // one shot — rather than one confirm dialog per person — is what actually
-  // gets unused paid seats freed up; see the "unused paid seats" hint in
-  // BillingSection, which reads straight off this same members list.
+  // own guard). Selecting several people at once and removing them in one
+  // shot beats a confirm dialog per person.
   const selectableIds = members.filter(m => m.role !== 'owner' && m.user_id !== session?.user?.id).map(m => m.user_id);
   const allSelected = selectableIds.length > 0 && selectableIds.every(id => selected.has(id));
 
@@ -183,7 +169,7 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
         {embedded ? <div /> : <SL t="Users" />}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em" }}>
-            {loading ? "…" : `${members.length} member${members.length !== 1 ? "s" : ""} · ${paidSeatsInUse}/${paidSeatsTotal} ${FREE_SEAT_CAP > 0 ? "free" : "paid"} seats`}
+            {loading ? "…" : `${members.length} member${members.length !== 1 ? "s" : ""}`}
           </span>
           {isOwner && (
             <button onClick={() => setShowInvite(x => !x)} style={{ ...btnA, ...sm }}>
@@ -205,13 +191,6 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
             Share this code with your team member. They enter it in{" "}
             <span style={{ color: TXT }}>Settings → Company → Join with Code</span>.
           </div>
-          {seatsAvailable <= 0 && (
-            <div style={{ fontSize: 10, color: RED, marginBottom: 12, lineHeight: 1.6, background: RED + "11", border: "1px solid " + RED + "44", borderRadius: 2, padding: "8px 10px" }}>
-              {FREE_SEAT_CAP > 0
-                ? `No free seats left (${paidSeatsInUse}/${paidSeatsTotal} in use) — anyone joining with this code will be turned away until someone leaves.`
-                : `No paid seats available (${paidSeatsInUse}/${paidSeatsTotal} in use) — anyone joining with this code will be turned away until you add more seats in Billing below.`}
-            </div>
-          )}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{
               fontSize: 22, fontWeight: 700, letterSpacing: "0.25em", color: TXT,

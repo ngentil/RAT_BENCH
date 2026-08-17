@@ -6,17 +6,15 @@ import { getInventory, adjustStock } from '../../lib/db/inventory';
 import { getConsumables, adjustConsumableQty } from '../../lib/db/consumables';
 import { generateInvoicePDF } from '../../lib/invoicePdf';
 import { getLatestDocumentForMachine } from '../../lib/db/billingDocuments';
-import { checkAndUseInvoiceCredit } from '../../lib/db/invoiceCredits';
 import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnG, btnA, sm, inp } from '../../lib/styles';
 import { SL, SkullRating, Divider } from '../ui/shared';
 import { mIcon } from '../../lib/helpers';
 import { parseLocalDate, isOverdueLocal } from '../../lib/dates';
-import { toastError, toastSuccess, toastUndo } from '../../lib/toast';
+import { toastError, toastUndo } from '../../lib/toast';
 import MachineTile from '../machine/MachineTile';
 import MachineRow from '../machine/MachineRow';
 import MachinePhotoRow from '../machine/MachinePhotoRow';
 import MoveToStoragePanel from '../machine/MoveToStoragePanel';
-import InvoicePaywallModal from '../office/InvoicePaywallModal';
 
 const ORANGE = "#e8a20a";
 
@@ -115,7 +113,6 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
   const [regen, setRegen] = useState(null);
   const [checking, setChecking] = useState(null); // docType currently being checked
   const [noCompany, setNoCompany] = useState(false); // Invoice clicked with no company set up
-  const [paywall, setPaywall] = useState(null); // credit-check result while the free cap is showing
   const log = machine.timeLog || [];
   const hasParts = (machine.parts || []).length > 0;
   if (!log.length && !hasParts) return null;
@@ -182,19 +179,15 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
   // Regenerate check: does this machine already have a quote/invoice logged
   // under Office? If so, ask merge-into-existing vs keep-as-new-copy instead
   // of silently minting another numbered document every time. Invoices
-  // additionally require a company (quotes don't) and consume a free-tier
-  // credit — merging counts too, since it brings in genuinely new billable
-  // hours/parts even though it reuses the old invoice number.
+  // additionally require a company (quotes don't) — merging still counts as
+  // generating, since it brings in genuinely new billable hours/parts even
+  // though it reuses the old invoice number.
   const handleGenerate = async (docType) => {
     if (docType === 'invoice' && !company?.id) { setNoCompany(true); return; }
     setChecking(docType);
     try {
       const existing = await getLatestDocumentForMachine(machine.id, docType);
       if (existing) { setRegen({ docType, existing }); return; }
-      if (docType === 'invoice') {
-        const credit = await checkAndUseInvoiceCredit(company.id);
-        if (!credit.allowed) { setPaywall(credit); return; }
-      }
       await generateInvoicePDF(machine, company, clients, userId, docType, onUpdate);
     } catch (err) {
       console.error('regenerate check:', err);
@@ -206,17 +199,6 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
 
   const resolveRegen = async (mergeInto) => {
     const { docType, existing } = regen;
-    if (docType === 'invoice') {
-      try {
-        const credit = await checkAndUseInvoiceCredit(company.id);
-        if (!credit.allowed) { setRegen(null); setPaywall(credit); return; }
-      } catch (err) {
-        console.error('invoice credit check:', err);
-        setRegen(null);
-        toastError("Couldn't check your invoice credit — check connection");
-        return;
-      }
-    }
     setRegen(null);
     await generateInvoicePDF(machine, company, clients, userId, docType, onUpdate, mergeInto ? existing : null);
   };
@@ -242,11 +224,6 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
         ) : (
           <span style={{ fontSize: 9, color: MUT, letterSpacing: "0.06em", flex: 1 }}>Parts only — no time logged</span>
         )}
-        {company?.invoice_addon_status === 'active' && (
-          <span title="Invoice add-on active — unlimited invoicing for this organisation" style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", color: GRN, border: "1px solid " + GRN + "55", background: GRN + "15", padding: "4px 6px", borderRadius: 2, flexShrink: 0 }}>
-            ★ BUSINESS
-          </span>
-        )}
         <button disabled={!!checking} onClick={() => handleGenerate('quote')} style={{ ...btnG, padding: "11px 18px", fontSize: 11, borderRadius: 3, opacity: checking === 'quote' ? 0.6 : 1 }}>Quote</button>
         <button disabled={!!checking} onClick={() => handleGenerate('invoice')} style={{ ...btnA, padding: "11px 18px", fontSize: 11, borderRadius: 3, opacity: checking === 'invoice' ? 0.6 : 1 }}>Invoice</button>
       </div>
@@ -271,14 +248,6 @@ function TimeLogSection({ machine, company, clients, userId, onUpdate }) {
             <button onClick={() => setNoCompany(false)} style={{ ...btnG, ...sm, fontSize: 9 }}>Got it</button>
           </div>
         </div>
-      )}
-      {paywall && (
-        <InvoicePaywallModal
-          company={company}
-          usage={paywall}
-          onClose={() => setPaywall(null)}
-          onUnlocked={() => { setPaywall(null); toastSuccess("Invoice add-on active — try generating again."); }}
-        />
       )}
       {expanded && log.length > 0 && (
         <div style={{ marginTop: 8 }}>

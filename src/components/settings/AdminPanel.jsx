@@ -332,10 +332,17 @@ function UsersTab() {
 // Launch-mode flags (see docs/FEATURE_MAP.md section 19 and
 // supabase/launch_flags_admin.sql) get their own labeled, described section
 // above the generic key/label CRUD list below — same feature_flags table,
-// same toggle mechanism, just friendlier for the five keys the app itself
+// same toggle mechanism, just friendlier for the keys the app itself
 // actually reads. Anything else an admin adds through "+ New Flag" is just
 // a plain flag with no special app behavior wired to it (yet).
-const LAUNCH_FLAG_ORDER = ['community', 'wiki', 'marketplace', 'invoices_free', 'free_seats'];
+//
+// invoices_free/free_seats used to live here too, gating the invoice-cap
+// paywall and per-seat billing — both were deleted outright (code, RPCs,
+// edge functions, and their feature_flags rows; see
+// supabase/remove_paywall_system.sql) rather than left dormant. Rat Bench
+// is free with no plan to bring per-seat/per-invoice billing back —
+// monetization is planned via marketplace ads/sponsored listings instead.
+const LAUNCH_FLAG_ORDER = ['community', 'wiki', 'marketplace'];
 const LAUNCH_FLAG_META = {
   community: {
     label: 'Community section (master switch)',
@@ -348,14 +355,6 @@ const LAUNCH_FLAG_META = {
   marketplace: {
     label: 'Marketplace & Messages',
     desc: 'Marketplace and Messages tabs in Community, plus the public /marketplace and /listing pages. Messages has no use without Marketplace, so one switch covers both. Also requires the master switch above to be on.',
-  },
-  invoices_free: {
-    label: 'Free unlimited invoicing',
-    desc: 'On = invoices are free and uncapped for every company, same as Quotes. Off = restores the original 5 free/month cap + $20/mo Business add-on.',
-  },
-  free_seats: {
-    label: 'Free team seats',
-    desc: 'On = every company gets the seat count below for free, no purchase needed. Off = restores the original $10/seat paid model (a new company gets 0 free seats).',
   },
 };
 
@@ -374,11 +373,6 @@ function FlagsTab() {
 
   const toggle = async (f) => {
     await supabase.from('feature_flags').update({ enabled: !f.enabled }).eq('id', f.id);
-    load();
-  };
-
-  const setSeatValue = async (f, value) => {
-    await supabase.from('feature_flags').update({ value }).eq('id', f.id);
     load();
   };
 
@@ -409,7 +403,7 @@ function FlagsTab() {
       <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Launch Mode</div>
       {launchFlags.length === 0 && (
         <div style={{ fontSize: 10, color: MUT, marginBottom: 16 }}>
-          None of the four launch-mode rows exist yet — run supabase/launch_flags_admin.sql to seed them.
+          None of the launch-mode rows exist yet — run supabase/launch_flags_admin.sql to seed them.
         </div>
       )}
       {launchFlags.map(f => (
@@ -424,14 +418,6 @@ function FlagsTab() {
               {f.enabled ? 'ON' : 'OFF'}
             </button>
           </div>
-          {f.key === 'free_seats' && (
-            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid ' + BRD, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 9, color: MUT }}>Free seats per company:</span>
-              <input type="number" min="0" style={{ ...inp, width: 70, padding: '4px 8px', fontSize: 11 }}
-                defaultValue={f.value ?? 10} key={f.value}
-                onBlur={e => { const n = parseInt(e.target.value, 10); if (Number.isFinite(n) && n >= 0 && n !== f.value) setSeatValue(f, n); }} />
-            </div>
-          )}
         </div>
       ))}
 
