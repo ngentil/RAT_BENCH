@@ -42,11 +42,55 @@
 -- before this file existed) — they're pure UI nav-visibility flags, not
 -- backed by an RLS gate on wiki_entries/marketplace_listings.
 --
--- Requires: admin_tables_rls.sql (feature_flags table), launch_free_invoices.sql,
--- and launch_free_seats.sql already applied, in that order.
+-- Requires: launch_free_invoices.sql and launch_free_seats.sql already
+-- applied, in that order. admin_tables_rls.sql is NOT actually required —
+-- this file no longer assumes it was ever cleanly applied (see below).
 -- Run in Supabase SQL Editor.
 
+-- admin_tables_rls.sql's CREATE TABLE IF NOT EXISTS defines the full
+-- intended shape (id/key/label/enabled/created_at), but if feature_flags
+-- already existed before that file was written — e.g. created ad hoc via
+-- the Supabase dashboard, which is exactly what its own header comment
+-- says happened ("was being used by AdminPanel but had no tracked
+-- schema/RLS") — CREATE TABLE IF NOT EXISTS is a silent no-op against it
+-- and never adds whatever columns/constraints/RLS the live table is
+-- missing. Rather than assume that file ever actually ran, this section
+-- defensively brings the table up to its full intended shape no matter
+-- which columns/policies already exist, so this file works standalone.
+CREATE TABLE IF NOT EXISTS feature_flags (
+  id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  key        text,
+  label      text,
+  enabled    boolean     NOT NULL DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS key text;
+ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS label text;
+ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS enabled boolean NOT NULL DEFAULT false;
+ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS value integer;
+-- Backfill any pre-existing rows (from before label/key were guaranteed
+-- present) before locking either down as NOT NULL, then apply the
+-- constraints admin_tables_rls.sql always intended.
+UPDATE feature_flags SET label = key WHERE label IS NULL AND key IS NOT NULL;
+UPDATE feature_flags SET label = 'Untitled flag' WHERE label IS NULL;
+ALTER TABLE feature_flags ALTER COLUMN label SET NOT NULL;
+ALTER TABLE feature_flags ALTER COLUMN key SET NOT NULL;
+-- ON CONFLICT (key) below needs a real unique constraint, not just "no
+-- duplicates happen to exist yet" — add one if the table didn't already
+-- have it under some other name (a duplicate under a different name would
+-- just be a harmless redundant index, not an error).
+DO $$
+BEGIN
+  ALTER TABLE feature_flags ADD CONSTRAINT feature_flags_key_key UNIQUE (key);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS feature_flags_admin_write ON feature_flags;
+CREATE POLICY feature_flags_admin_write ON feature_flags
+  FOR ALL TO authenticated
+  USING     (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'))
+  WITH CHECK (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'));
 
 -- Seed the five rows if they don't already exist — matches the exact
 -- behavior the app already ships with, so applying (or re-applying) this
