@@ -1,10 +1,10 @@
 -- Wires the launch-mode toggles (invoices free, Wiki hidden, Marketplace
--- hidden, free seat cap — see docs/FEATURE_MAP.md section 19) into the
--- existing feature_flags table (admin_tables_rls.sql) so they're flippable
--- from the Admin Panel's Flags tab at runtime, instead of requiring a code
--- change + redeploy to touch src/lib/launchFlags.js's old hardcoded
--- constants (that file is now deleted — this table is the single source of
--- truth for all four).
+-- hidden, free seat cap, plus a Community master switch — see
+-- docs/FEATURE_MAP.md section 19) into the existing feature_flags table
+-- (admin_tables_rls.sql) so they're flippable from the Admin Panel's Flags
+-- tab at runtime, instead of requiring a code change + redeploy to touch
+-- src/lib/launchFlags.js's old hardcoded constants (that file is now
+-- deleted — this table is the single source of truth for all five).
 --
 -- feature_flags only had `enabled boolean` before; this adds a nullable
 -- numeric `value` column so free_seats can carry its seat-count alongside
@@ -13,19 +13,34 @@
 --
 -- Naming/polarity: every flag name is what "on" gives you (not what it
 -- restricts), so the Admin Panel's ON/OFF button always reads naturally —
---   wiki           on = Wiki tab visible
---   marketplace    on = Marketplace + Messages visible
+--   community      on = Community section reachable at all (master
+--                  switch — see below); off overrides wiki/marketplace
+--                  regardless of their own state
+--   wiki           on = Wiki tab visible (still requires community on too)
+--   marketplace    on = Marketplace + Messages visible (still requires
+--                  community on too)
 --   invoices_free  on = invoices free & uncapped (off = restores the
 --                  original 5/month cap + $20/mo add-on)
 --   free_seats     on = every company gets `value` free seats beyond the
 --                  owner, no purchase required (off = restores the
 --                  original paid-only per-seat model)
 --
+-- `community` is a pure master AND on top of wiki/marketplace, combined
+-- client-side in src/lib/db/featureFlags.js's getFeatureFlags() — turning
+-- community off hides Wiki and Marketplace together no matter what those
+-- two switches say; turning community back on doesn't itself show
+-- anything, it just stops overriding wiki/marketplace's own switches.
+-- Defaults to true (unlocked) so today's two-switch behavior is unchanged
+-- unless an admin deliberately reaches for this as a stronger override.
+--
 -- This file becomes the sole owner of _invoices_free() and _free_seat_cap()
 -- once applied — launch_free_invoices.sql / launch_free_seats.sql each
 -- define their own hardcoded version first, and re-running either of THOSE
 -- files after this one would silently clobber the Admin Panel's control
 -- over them (see the warning in each of those files' own header comment).
+-- community/wiki/marketplace have no SQL-side enforcement at all (same as
+-- before this file existed) — they're pure UI nav-visibility flags, not
+-- backed by an RLS gate on wiki_entries/marketplace_listings.
 --
 -- Requires: admin_tables_rls.sql (feature_flags table), launch_free_invoices.sql,
 -- and launch_free_seats.sql already applied, in that order.
@@ -33,12 +48,15 @@
 
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS value integer;
 
--- Seed the four rows if they don't already exist — matches the exact
--- behavior the old hardcoded launchFlags.js constants shipped with, so
--- applying this file doesn't change anything until an admin touches a
--- switch. ON CONFLICT DO NOTHING so re-running this file never stomps on
--- whatever an admin has already set.
+-- Seed the five rows if they don't already exist — matches the exact
+-- behavior the app already ships with, so applying (or re-applying) this
+-- file doesn't change anything until an admin touches a switch. ON
+-- CONFLICT DO NOTHING so re-running this file never stomps on whatever an
+-- admin has already set, and adding the `community` row here later (after
+-- the original four were already seeded in production) is exactly as safe
+-- as the first run — each row conflict-checks independently.
 INSERT INTO feature_flags (key, label, enabled, value) VALUES
+  ('community',     'Community section (master switch)', true,  null),
   ('wiki',          'Wiki',                              false, null),
   ('marketplace',   'Marketplace & Messages',             false, null),
   ('invoices_free', 'Free unlimited invoicing',           true,  null),

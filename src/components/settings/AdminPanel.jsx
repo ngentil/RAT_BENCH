@@ -332,17 +332,22 @@ function UsersTab() {
 // Launch-mode flags (see docs/FEATURE_MAP.md section 19 and
 // supabase/launch_flags_admin.sql) get their own labeled, described section
 // above the generic key/label CRUD list below — same feature_flags table,
-// same toggle mechanism, just friendlier for the four keys the app itself
+// same toggle mechanism, just friendlier for the five keys the app itself
 // actually reads. Anything else an admin adds through "+ New Flag" is just
 // a plain flag with no special app behavior wired to it (yet).
+const LAUNCH_FLAG_ORDER = ['community', 'wiki', 'marketplace', 'invoices_free', 'free_seats'];
 const LAUNCH_FLAG_META = {
+  community: {
+    label: 'Community section (master switch)',
+    desc: 'Overrides Wiki and Marketplace together, regardless of their own switches below — turn this off to hide the whole Community tab no matter what they say. Turning it back on doesn’t show anything by itself, it just stops overriding those two.',
+  },
   wiki: {
     label: 'Wiki',
-    desc: 'Wiki tab in Community, plus the public wiki.ratbench.net site. Off = hidden everywhere, including that subdomain.',
+    desc: 'Wiki tab in Community, plus the public wiki.ratbench.net site. Off = hidden everywhere, including that subdomain. Also requires the master switch above to be on.',
   },
   marketplace: {
     label: 'Marketplace & Messages',
-    desc: 'Marketplace and Messages tabs in Community, plus the public /marketplace and /listing pages. Messages has no use without Marketplace, so one switch covers both.',
+    desc: 'Marketplace and Messages tabs in Community, plus the public /marketplace and /listing pages. Messages has no use without Marketplace, so one switch covers both. Also requires the master switch above to be on.',
   },
   invoices_free: {
     label: 'Free unlimited invoicing',
@@ -393,7 +398,10 @@ function FlagsTab() {
     load();
   };
 
-  const launchFlags = flags.filter(f => LAUNCH_FLAG_META[f.key]);
+  // Fixed display order (community first, as the master switch) rather than
+  // DB row order — the seed INSERT writes all five rows in one statement, so
+  // created_at ties don't reliably sort the way an admin would expect.
+  const launchFlags = LAUNCH_FLAG_ORDER.map(key => flags.find(f => f.key === key)).filter(Boolean);
   const customFlags = flags.filter(f => !LAUNCH_FLAG_META[f.key]);
 
   return (
