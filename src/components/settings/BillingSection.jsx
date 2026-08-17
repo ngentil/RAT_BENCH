@@ -4,7 +4,7 @@ import { ACC, MUT, BRD, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/styles';
 import { getCompanyMembers } from '../../lib/db';
 import { createBillingSetup, updateSeatSubscription, listInvoices, setSubscriptionCancellation, setInvoiceAddonActive } from '../../lib/billing';
 import { InvoiceAddonPaymentSetup } from '../office/InvoicePaywallModal';
-import { INVOICES_FREE, FREE_SEAT_CAP } from '../../lib/launchFlags';
+import { useFeatureFlags } from '../../lib/featureFlagsContext';
 
 // Matches Postgres's to_char(now(),'YYYY-MM') key used by
 // check_and_use_invoice_credit() (supabase/invoice_addon_billing.sql) closely
@@ -168,6 +168,7 @@ function PaymentSetup({ company, seats, onDone, onCancel }) {
 // 5/month cap (see supabase/invoice_addon_billing.sql). Independent of
 // per-seat billing: a company can enable this without ever setting up seats.
 function InvoicingSection({ company, setCompany }) {
+  const { invoicesFree } = useFeatureFlags();
   const [showSetup, setShowSetup] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -192,12 +193,12 @@ function InvoicingSection({ company, setCompany }) {
     setSaving(false);
   };
 
-  // Launch mode: invoicing is free and uncapped for everyone (see
-  // src/lib/launchFlags.js), so there's nothing to upgrade to — skip the
-  // whole paid-plan UI. A company that somehow already has an active
-  // subscription (addonActive) still gets the real management UI below so
-  // they're never stuck paying with no way to cancel.
-  if (INVOICES_FREE && !addonActive) {
+  // Launch mode: invoicing is free and uncapped for everyone (toggle in
+  // Admin Panel → Flags → invoices_free), so there's nothing to upgrade to —
+  // skip the whole paid-plan UI. A company that somehow already has an
+  // active subscription (addonActive) still gets the real management UI
+  // below so they're never stuck paying with no way to cancel.
+  if (invoicesFree && !addonActive) {
     return (
       <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid ' + BRD }}>
         <div style={{ fontSize: 9, color: ACC, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Invoicing</div>
@@ -263,6 +264,7 @@ function InvoicingSection({ company, setCompany }) {
 }
 
 function BillingSection({ company, setCompany }) {
+  const { freeSeatCap: FREE_SEAT_CAP } = useFeatureFlags();
   const [seatsInUse, setSeatsInUse] = useState(0);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
@@ -318,8 +320,8 @@ function BillingSection({ company, setCompany }) {
   const hasSubscription = !!company.stripe_subscription_id || (company.paid_seats || 0) > 0;
   const isCanceling = company._cancelAtPeriodEnd;
   // Launch mode: every company gets at least FREE_SEAT_CAP seats beyond the
-  // owner at no cost (see src/lib/launchFlags.js and
-  // supabase/launch_free_seats.sql, which enforces the matching floor
+  // owner at no cost (toggle in Admin Panel → Flags → free_seats;
+  // supabase/launch_flags_admin.sql enforces the matching floor
   // server-side) — a plain floor under whatever they've actually paid for,
   // not conditional on having a subscription at all.
   const effectiveSeatCap = Math.max(company.paid_seats || 0, FREE_SEAT_CAP);

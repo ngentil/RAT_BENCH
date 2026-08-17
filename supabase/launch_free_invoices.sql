@@ -1,17 +1,26 @@
 -- Launch mode: invoices are free and uncapped for everyone, same as Quotes
--- always have been (see src/lib/launchFlags.js's INVOICES_FREE — keep this
--- file's _invoices_free() in sync with that constant if it ever changes).
--- The 5/month cap and $20/mo add-on machinery in invoice_addon_billing.sql
--- stays completely intact — this only teaches check_and_use_invoice_credit()
--- to treat "launch mode" the same as an active add-on: usage is still
--- tracked (so Billing's "X invoices this month" stays meaningful once this
--- flips back off), it's just never allowed to block.
+-- always have been. The 5/month cap and $20/mo add-on machinery in
+-- invoice_addon_billing.sql stays completely intact — this only teaches
+-- check_and_use_invoice_credit() to treat "launch mode" the same as an
+-- active add-on: usage is still tracked (so Billing's "X invoices this
+-- month" stays meaningful once this flips back off), it's just never
+-- allowed to block.
 --
 -- Deliberately a separate file rather than editing invoice_addon_billing.sql
 -- in place — same layering convention as inventory_recently_deleted.sql
 -- extending recently_deleted.sql, so the original cap logic is never lost,
 -- just bypassed, and reverting later is deleting this one file plus the
 -- matching client-side flag rather than reconstructing anything.
+--
+-- IMPORTANT — _invoices_free() ownership: this file's version hardcodes
+-- `true`. If launch_flags_admin.sql is ALSO applied (recommended — it's
+-- what makes this toggleable from the Admin Panel's Flags tab instead of
+-- requiring a SQL deploy to flip), that file redefines _invoices_free()
+-- again to read from the feature_flags table instead. Once you're using
+-- the Admin Panel toggle, do NOT re-run this file alone afterward — it
+-- would silently revert _invoices_free() back to the hardcoded `true`,
+-- undoing whatever the admin toggle is actually set to. Re-run
+-- launch_flags_admin.sql (or both, in that order) instead.
 --
 -- Requires: invoice_addon_billing.sql already applied.
 -- Run in Supabase SQL Editor.

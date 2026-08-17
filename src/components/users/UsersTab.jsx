@@ -3,7 +3,7 @@ import { ACC, MUT, BRD, SURF, TXT, GRN, RED, btnA, btnG, sm } from '../../lib/st
 import { getCompanyMembers, removeMember, regenerateInviteCode, updateMemberRole, findMyRecentlyDeletedLogId, restoreDeletedRecord } from '../../lib/db';
 import { toastUndo, toastError } from '../../lib/toast';
 import { SL } from '../ui/shared';
-import { FREE_SEAT_CAP } from '../../lib/launchFlags';
+import { useFeatureFlags } from '../../lib/featureFlagsContext';
 
 const ROLES = ["admin", "technician", "viewer"];
 
@@ -45,6 +45,7 @@ function RoleBadge({ role }) {
 // heading already says "Users") rather than as a standalone top-level tab —
 // suppresses this component's own heading and outer page padding.
 export default function UsersTab({ company, session, profile, setCompany, embedded = false }) {
+  const { freeSeatCap: FREE_SEAT_CAP } = useFeatureFlags();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -63,7 +64,7 @@ export default function UsersTab({ company, session, profile, setCompany, embedd
   // a "no seats available" error after already sharing the code.
   const paidSeatsInUse = members.filter(m => m.role !== 'owner').length;
   // Floored at FREE_SEAT_CAP regardless of what's actually paid for — see
-  // src/lib/launchFlags.js and the matching BillingSection.jsx logic.
+  // Admin Panel → Flags → free_seats and the matching BillingSection.jsx logic.
   const paidSeatsTotal = Math.max(company.paid_seats || 0, FREE_SEAT_CAP);
   const seatsAvailable = paidSeatsTotal - paidSeatsInUse;
 

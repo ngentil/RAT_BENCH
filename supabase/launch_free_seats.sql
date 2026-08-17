@@ -1,18 +1,26 @@
 -- Launch mode: every company gets a free floor of seats beyond the owner,
--- no purchase required (see src/lib/launchFlags.js's FREE_SEAT_CAP — keep
--- this file's _free_seat_cap() in sync with that constant if it changes).
--- A brand-new company starts at paid_seats = 0, which without this means
--- the owner can't add a single teammate without paying — see
--- company_billing.sql's join_company_by_invite(). This redefines that one
--- function to check GREATEST(paid_seats, _free_seat_cap()) instead of
--- paid_seats alone; a company that's actually paid for more than the free
--- cap keeps whatever larger number it paid for.
+-- no purchase required. A brand-new company starts at paid_seats = 0, which
+-- without this means the owner can't add a single teammate without paying
+-- — see company_billing.sql's join_company_by_invite(). This redefines
+-- that one function to check GREATEST(paid_seats, _free_seat_cap())
+-- instead of paid_seats alone; a company that's actually paid for more
+-- than the free cap keeps whatever larger number it paid for.
 --
 -- Deliberately a separate file rather than editing company_billing.sql in
 -- place — same layering convention as inventory_recently_deleted.sql
--- extending recently_deleted.sql. Set _free_seat_cap() back to 0 (or delete
--- this file and re-run company_billing.sql) to fully restore the original
--- paid-only behavior once seat billing comes back.
+-- extending recently_deleted.sql.
+--
+-- IMPORTANT — _free_seat_cap() ownership: this file's version hardcodes
+-- 10. If launch_flags_admin.sql is ALSO applied (recommended — it's what
+-- makes this toggleable from the Admin Panel's Flags tab instead of
+-- requiring a SQL deploy to flip), that file redefines _free_seat_cap()
+-- again to read from the feature_flags table instead (returning 0 — fully
+-- paid-only, matching the original company_billing.sql behavior — whenever
+-- the admin turns the free_seats flag off). Once you're using the Admin
+-- Panel toggle, do NOT re-run this file alone afterward — it would
+-- silently revert _free_seat_cap() back to the hardcoded 10, undoing
+-- whatever the admin toggle is actually set to. Re-run
+-- launch_flags_admin.sql (or both, in that order) instead.
 --
 -- Requires: company_billing.sql already applied.
 -- Run in Supabase SQL Editor.
