@@ -64,22 +64,31 @@ CREATE TABLE IF NOT EXISTS feature_flags (
   enabled    boolean     NOT NULL DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
+ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid();
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS key text;
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS label text;
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS enabled boolean NOT NULL DEFAULT false;
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS value integer;
--- Backfill any pre-existing rows (from before label/key were guaranteed
--- present) before locking either down as NOT NULL, then apply the
--- constraints admin_tables_rls.sql always intended.
+-- Backfill any pre-existing rows (from before id/label/key were guaranteed
+-- present) before locking any of them down as NOT NULL/unique, then apply
+-- the constraints admin_tables_rls.sql always intended. id specifically
+-- turned out to be missing on the live table too, not just label — the
+-- client's toggle()/setNumericValue()/del() all key off .eq('id', f.id),
+-- so every one of them failed with "column feature_flags.id does not
+-- exist" until this ran.
+UPDATE feature_flags SET id = gen_random_uuid() WHERE id IS NULL;
 UPDATE feature_flags SET label = key WHERE label IS NULL AND key IS NOT NULL;
 UPDATE feature_flags SET label = 'Untitled flag' WHERE label IS NULL;
+ALTER TABLE feature_flags ALTER COLUMN id SET NOT NULL;
 ALTER TABLE feature_flags ALTER COLUMN label SET NOT NULL;
 ALTER TABLE feature_flags ALTER COLUMN key SET NOT NULL;
--- ON CONFLICT (key) below needs a real unique constraint, not just "no
--- duplicates happen to exist yet" — add one if the table didn't already
--- have it under some other name (a duplicate under a different name would
--- just be a harmless redundant index, not an error).
+-- id needs to be unique for .eq('id', ...) lookups to be meaningful, and
+-- ON CONFLICT (key) below needs a real unique constraint on key too, not
+-- just "no duplicates happen to exist yet" — add both if the table didn't
+-- already have them under some other name (a duplicate under a different
+-- name would just be a harmless redundant index, not an error).
+CREATE UNIQUE INDEX IF NOT EXISTS feature_flags_id_idx ON feature_flags (id);
 DO $$
 BEGIN
   ALTER TABLE feature_flags ADD CONSTRAINT feature_flags_key_key UNIQUE (key);
