@@ -339,10 +339,10 @@ function UsersTab() {
 // invoices_free/free_seats used to live here too, gating the invoice-cap
 // paywall and per-seat billing — both were deleted outright (code, RPCs,
 // edge functions, and their feature_flags rows; see
-// supabase/remove_paywall_system.sql) rather than left dormant. Rat Bench
+// supabase/launch_flags_admin.sql) rather than left dormant. Rat Bench
 // is free with no plan to bring per-seat/per-invoice billing back —
 // monetization is planned via marketplace ads/sponsored listings instead.
-// member_cap came back separately, same day (supabase/member_cap.sql) —
+// member_cap came back separately, same day (also launch_flags_admin.sql) —
 // deleting the paywall had deleted the member-count-limit concept along
 // with it, which turned out not to be intended; this is a plain
 // abuse-prevention cap, nothing to do with billing.
