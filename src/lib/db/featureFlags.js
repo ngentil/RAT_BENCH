@@ -10,15 +10,15 @@ import { supabase } from '../supabase';
 // supposed to have a limit.
 //
 // invoices_free/free_seats were removed here (see
-// supabase/remove_paywall_system.sql) once the paywall UI/RPCs they gated
+// supabase/launch_flags_admin.sql) once the paywall UI/RPCs they gated
 // were deleted outright rather than left dormant — Rat Bench is free with
 // no plan to reintroduce per-seat or per-invoice billing; monetization is
 // planned via marketplace ads/sponsored listings instead, a separate
-// system with no flag of its own yet. member_cap (see
-// supabase/member_cap.sql) came back separately, same day — deleting the
-// paywall had deleted the member-limit concept along with it, which turned
-// out not to be intended; this is a plain abuse-prevention cap, not tied
-// to billing in any way.
+// system with no flag of its own yet. member_cap (also
+// supabase/launch_flags_admin.sql) came back separately, same day —
+// deleting the paywall had deleted the member-limit concept along with
+// it, which turned out not to be intended; this is a plain
+// abuse-prevention cap, not tied to billing in any way.
 export const DEFAULT_FLAGS = {
   wiki: false,          // Wiki tab hidden
   marketplace: false,   // Marketplace + Messages hidden

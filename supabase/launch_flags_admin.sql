@@ -1,62 +1,64 @@
--- Wires the launch-mode toggles (invoices free, Wiki hidden, Marketplace
--- hidden, free seat cap, plus a Community master switch — see
--- docs/FEATURE_MAP.md section 19) into the existing feature_flags table
--- (admin_tables_rls.sql) so they're flippable from the Admin Panel's Flags
--- tab at runtime, instead of requiring a code change + redeploy to touch
--- src/lib/launchFlags.js's old hardcoded constants (that file is now
--- deleted — this table is the single source of truth for all five).
+-- Sets up the entire admin-controllable launch-flags system in one file:
+-- brings the feature_flags table up to full shape no matter what state it's
+-- actually in live, wires it up with RLS, seeds the three real launch flags
+-- (community/wiki/marketplace) plus a plain unpaid member_cap, and defines
+-- join_company_by_invite() in its final form enforcing that cap — no
+-- billing involved anywhere. See docs/FEATURE_MAP.md section 19.
 --
--- feature_flags only had `enabled boolean` before; this adds a nullable
--- numeric `value` column so free_seats can carry its seat-count alongside
--- its on/off state, without a second table. Every other existing/future
--- flag just leaves value null.
+-- History (why this one file exists instead of several): this started as
+-- three separate migrations applied same-day — launch_flags_admin.sql
+-- (schema + seed + a bypass for the invoice/seat paywall), a standalone
+-- member_cap.sql (re-adding a plain cap after the paywall was deleted
+-- outright), and remove_paywall_system.sql (dropping the paywall's
+-- orphaned functions/flags). Two different files each redefined
+-- join_company_by_invite() at different points, which meant running them
+-- out of order — or re-running an earlier one after a later one — could
+-- silently revert the function to an earlier, wrong form. Also turned out
+-- the live feature_flags table was missing not just `label` but `id`
+-- entirely, discovered only because every Admin Panel toggle failed with
+-- "column feature_flags.id does not exist" and had no error message to
+-- explain why until that got fixed too. All of that is now one file that
+-- defines every function exactly once, already in its final form, so
+-- there's nothing left for a re-run — of this file, in any order, any
+-- number of times — to clobber.
 --
 -- Naming/polarity: every flag name is what "on" gives you (not what it
--- restricts), so the Admin Panel's ON/OFF button always reads naturally —
---   community      on = Community section reachable at all (master
---                  switch — see below); off overrides wiki/marketplace
---                  regardless of their own state
---   wiki           on = Wiki tab visible (still requires community on too)
---   marketplace    on = Marketplace + Messages visible (still requires
---                  community on too)
---   invoices_free  on = invoices free & uncapped (off = restores the
---                  original 5/month cap + $20/mo add-on)
---   free_seats     on = every company gets `value` free seats beyond the
---                  owner, no purchase required (off = restores the
---                  original paid-only per-seat model)
+-- restricts) —
+--   community    on = Community section reachable at all (master switch);
+--                off overrides wiki/marketplace regardless of their own state
+--   wiki         on = Wiki tab + public wiki.ratbench.net visible (also
+--                requires community on)
+--   marketplace  on = Marketplace + Messages tabs + public /marketplace,
+--                /listing pages visible (also requires community on)
+--   member_cap   on = every company capped at `value` members beyond the
+--                owner (who never counts against it) — a plain
+--                abuse-prevention limit, nothing to do with billing. Off =
+--                unlimited members for every company.
+-- `community` combines with wiki/marketplace entirely client-side, in
+-- src/lib/db/featureFlags.js's getFeatureFlags() — not a fourth field of
+-- its own, since every consumer just reads flags.wiki/flags.marketplace.
 --
--- `community` is a pure master AND on top of wiki/marketplace, combined
--- client-side in src/lib/db/featureFlags.js's getFeatureFlags() — turning
--- community off hides Wiki and Marketplace together no matter what those
--- two switches say; turning community back on doesn't itself show
--- anything, it just stops overriding wiki/marketplace's own switches.
--- Defaults to true (unlocked) so today's two-switch behavior is unchanged
--- unless an admin deliberately reaches for this as a stronger override.
+-- Deliberately NOT touched: companies.paid_seats / subscription_status /
+-- stripe_customer_id / stripe_subscription_id / invoice_addon_status /
+-- invoice_addon_subscription_id / invoice_usage — all now-vestigial but
+-- harmless historical columns from the deleted paywall, same reasoning
+-- remove_tier_system.sql used for profiles.tier: dropping columns other
+-- code might still reference is a needless, irreversible risk for no
+-- remaining functional benefit. _paid_seats_in_use() (company_billing.sql)
+-- is reused unchanged for the member count below despite its now-stale
+-- name — a rename earns nothing functional.
 --
--- This file becomes the sole owner of _invoices_free() and _free_seat_cap()
--- once applied — launch_free_invoices.sql / launch_free_seats.sql each
--- define their own hardcoded version first, and re-running either of THOSE
--- files after this one would silently clobber the Admin Panel's control
--- over them (see the warning in each of those files' own header comment).
--- community/wiki/marketplace have no SQL-side enforcement at all (same as
--- before this file existed) — they're pure UI nav-visibility flags, not
--- backed by an RLS gate on wiki_entries/marketplace_listings.
---
--- Requires: launch_free_invoices.sql and launch_free_seats.sql already
--- applied, in that order. admin_tables_rls.sql is NOT actually required —
--- this file no longer assumes it was ever cleanly applied (see below).
+-- Requires: company_billing.sql (_paid_seats_in_use()). Does NOT require
+-- admin_tables_rls.sql, invoice_addon_billing.sql, launch_free_invoices.sql,
+-- or launch_free_seats.sql to have ever been applied — this file assumes
+-- nothing about the table's prior state and brings it up to full shape
+-- itself. Safe to re-run on its own, any time, any number of times.
 -- Run in Supabase SQL Editor.
 
--- admin_tables_rls.sql's CREATE TABLE IF NOT EXISTS defines the full
--- intended shape (id/key/label/enabled/created_at), but if feature_flags
--- already existed before that file was written — e.g. created ad hoc via
--- the Supabase dashboard, which is exactly what its own header comment
--- says happened ("was being used by AdminPanel but had no tracked
--- schema/RLS") — CREATE TABLE IF NOT EXISTS is a silent no-op against it
--- and never adds whatever columns/constraints/RLS the live table is
--- missing. Rather than assume that file ever actually ran, this section
--- defensively brings the table up to its full intended shape no matter
--- which columns/policies already exist, so this file works standalone.
+-- ── feature_flags: bring the table up to full shape regardless of its
+-- actual current state (it may not exist at all, or may be missing any
+-- subset of these columns/constraints from being created ad hoc before any
+-- migration file ever described it) ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS feature_flags (
   id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   key        text,
@@ -70,83 +72,124 @@ ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS label text;
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS enabled boolean NOT NULL DEFAULT false;
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
 ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS value integer;
--- Backfill any pre-existing rows (from before id/label/key were guaranteed
--- present) before locking any of them down as NOT NULL/unique, then apply
--- the constraints admin_tables_rls.sql always intended. id specifically
--- turned out to be missing on the live table too, not just label — the
--- client's toggle()/setNumericValue()/del() all key off .eq('id', f.id),
--- so every one of them failed with "column feature_flags.id does not
--- exist" until this ran.
+-- Backfill any pre-existing rows before locking columns down as NOT
+-- NULL/unique. The client's toggle()/setNumericValue()/del() all key off
+-- .eq('id', f.id) — without a real id every one of them fails outright.
 UPDATE feature_flags SET id = gen_random_uuid() WHERE id IS NULL;
 UPDATE feature_flags SET label = key WHERE label IS NULL AND key IS NOT NULL;
 UPDATE feature_flags SET label = 'Untitled flag' WHERE label IS NULL;
 ALTER TABLE feature_flags ALTER COLUMN id SET NOT NULL;
 ALTER TABLE feature_flags ALTER COLUMN label SET NOT NULL;
 ALTER TABLE feature_flags ALTER COLUMN key SET NOT NULL;
--- id needs to be unique for .eq('id', ...) lookups to be meaningful, and
--- ON CONFLICT (key) below needs a real unique constraint on key too, not
--- just "no duplicates happen to exist yet" — add both if the table didn't
--- already have them under some other name (a duplicate under a different
--- name would just be a harmless redundant index, not an error).
+-- id needs to be unique for .eq('id', ...) to be meaningful; key needs a
+-- real unique constraint for ON CONFLICT (key) below to work at all — add
+-- both if the table didn't already have them under some other name (a
+-- duplicate under a different name is just a harmless redundant index).
 CREATE UNIQUE INDEX IF NOT EXISTS feature_flags_id_idx ON feature_flags (id);
 DO $$
 BEGIN
   ALTER TABLE feature_flags ADD CONSTRAINT feature_flags_key_key UNIQUE (key);
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
+
 ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS feature_flags_admin_write ON feature_flags;
 CREATE POLICY feature_flags_admin_write ON feature_flags
   FOR ALL TO authenticated
   USING     (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'))
   WITH CHECK (auth.email() IN ('nathan.gentil.ai@gmail.com', 'nathan.gentil@gmail.com'));
-
--- Seed the five rows if they don't already exist — matches the exact
--- behavior the app already ships with, so applying (or re-applying) this
--- file doesn't change anything until an admin touches a switch. ON
--- CONFLICT DO NOTHING so re-running this file never stomps on whatever an
--- admin has already set, and adding the `community` row here later (after
--- the original four were already seeded in production) is exactly as safe
--- as the first run — each row conflict-checks independently.
-INSERT INTO feature_flags (key, label, enabled, value) VALUES
-  ('community',     'Community section (master switch)', true,  null),
-  ('wiki',          'Wiki',                              false, null),
-  ('marketplace',   'Marketplace & Messages',             false, null),
-  ('invoices_free', 'Free unlimited invoicing',           true,  null),
-  ('free_seats',    'Free team seats (no seat purchase)', true,  10)
-ON CONFLICT (key) DO NOTHING;
-
--- feature_flags previously only granted SELECT to `authenticated` — the
--- public wiki.ratbench.net subdomain and /marketplace, /listing/:id routes
--- (src/main.jsx) need to read these flags before any session exists at all
--- (a first-time anonymous visitor), so this also grants the built-in `anon`
--- role read access. Flags carry no sensitive data (just booleans/small
--- integers), so this is safe.
+-- The public wiki.ratbench.net subdomain and /marketplace, /listing/:id
+-- routes (src/main.jsx) need to read these flags before any session
+-- exists at all (a first-time anonymous visitor), so this also grants the
+-- built-in `anon` role read access. Flags carry no sensitive data (just
+-- booleans/small integers), so this is safe.
 GRANT SELECT ON feature_flags TO anon;
 DROP POLICY IF EXISTS feature_flags_read ON feature_flags;
 CREATE POLICY feature_flags_read ON feature_flags
   FOR SELECT TO anon, authenticated
   USING (true);
 
--- Re-point the two launch-mode SQL helpers (originally hardcoded literals
--- in launch_free_invoices.sql / launch_free_seats.sql) at this table
--- instead, so flipping a switch in the Admin Panel takes effect immediately
--- server-side too — no separate SQL deploy needed to match a UI change.
--- STABLE (not IMMUTABLE, which the original versions incorrectly used) since
--- the result can now change between calls as the underlying row changes.
-CREATE OR REPLACE FUNCTION _invoices_free()
-RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT COALESCE((SELECT enabled FROM feature_flags WHERE key = 'invoices_free'), true);
-$$;
+-- Seed the four real flags if they don't already exist — matches the exact
+-- behavior the app ships with, so applying (or re-applying) this file
+-- doesn't change anything until an admin touches a switch. ON CONFLICT DO
+-- NOTHING so re-running never stomps on whatever an admin has already set.
+INSERT INTO feature_flags (key, label, enabled, value) VALUES
+  ('community',   'Community section (master switch)',  true, null),
+  ('wiki',        'Wiki',                                false, null),
+  ('marketplace', 'Marketplace & Messages',              false, null),
+  ('member_cap',  'Team member limit (per company)',     true, 10)
+ON CONFLICT (key) DO NOTHING;
 
--- Only apply the free floor when the flag is actually on — off means
--- GREATEST(paid_seats, 0) = paid_seats, i.e. exactly the original
--- paid-only behavior from company_billing.sql, no special-casing needed in
--- join_company_by_invite() itself.
-CREATE OR REPLACE FUNCTION _free_seat_cap()
+-- NULL means uncapped (flag off) — deliberately not 0, which would mean
+-- "cap at zero members," the opposite of what "off" should do.
+CREATE OR REPLACE FUNCTION _member_cap()
 RETURNS integer LANGUAGE sql STABLE AS $$
-  SELECT CASE WHEN COALESCE((SELECT enabled FROM feature_flags WHERE key = 'free_seats'), true)
-    THEN COALESCE((SELECT value FROM feature_flags WHERE key = 'free_seats'), 10)
-    ELSE 0
+  SELECT CASE WHEN COALESCE((SELECT enabled FROM feature_flags WHERE key = 'member_cap'), true)
+    THEN COALESCE((SELECT value FROM feature_flags WHERE key = 'member_cap'), 10)
+    ELSE NULL
   END;
 $$;
+
+-- ── join_company_by_invite(), final form ─────────────────────────────────────
+-- No paid_seats/billing involvement at all — gated purely by _member_cap().
+CREATE OR REPLACE FUNCTION join_company_by_invite(invite_code_input text)
+RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+  v_uid        uuid := auth.uid();
+  v_company_id uuid;
+  v_cap        integer := _member_cap();
+  v_already_member boolean;
+BEGIN
+  SELECT id INTO v_company_id
+  FROM companies
+  WHERE invite_code = upper(trim(invite_code_input));
+
+  IF v_company_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid invite code';
+  END IF;
+
+  -- Prevent joining if already a member of a different company
+  IF EXISTS (
+    SELECT 1 FROM company_members
+    WHERE user_id = v_uid AND company_id != v_company_id
+  ) THEN
+    RAISE EXCEPTION 'Leave your current organisation before joining another';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM company_members WHERE company_id = v_company_id AND user_id = v_uid
+  ) INTO v_already_member;
+
+  -- Only a genuinely new member counts against the cap — rejoining after
+  -- leaving (or an ON CONFLICT no-op below) doesn't need a fresh check.
+  IF NOT v_already_member AND v_cap IS NOT NULL THEN
+    IF _paid_seats_in_use(v_company_id) >= v_cap THEN
+      RAISE EXCEPTION 'This organisation has reached its member limit — ask the owner to free up a spot before you can join';
+    END IF;
+  END IF;
+
+  INSERT INTO company_members (company_id, user_id, role, joined_at)
+  VALUES (v_company_id, v_uid, 'viewer', now())
+  ON CONFLICT (company_id, user_id) DO NOTHING;
+
+  UPDATE profiles SET company_id = v_company_id WHERE id = v_uid;
+
+  RETURN v_company_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION join_company_by_invite(text) TO authenticated;
+
+-- ── Cleanup: orphaned billing-gate RPCs and stale flag rows ──────────────────
+-- Nothing calls any of these anymore — BillingSection.jsx, InvoicePaywallModal.jsx,
+-- src/lib/billing.js, and src/lib/db/invoiceCredits.js were all deleted from
+-- the client. Harmless no-ops if they were never created on this database.
+DROP FUNCTION IF EXISTS check_and_use_invoice_credit(uuid);
+DROP FUNCTION IF EXISTS _invoices_free();
+DROP FUNCTION IF EXISTS _free_seat_cap();
+-- invoices_free/free_seats controlled functionality that no longer exists
+-- in any form (free or paid) — remove the rows rather than leave them
+-- around describing nothing. Harmless no-op if they were never seeded.
+DELETE FROM feature_flags WHERE key IN ('invoices_free', 'free_seats');
