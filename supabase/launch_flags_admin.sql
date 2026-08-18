@@ -82,15 +82,14 @@ ALTER TABLE feature_flags ALTER COLUMN id SET NOT NULL;
 ALTER TABLE feature_flags ALTER COLUMN label SET NOT NULL;
 ALTER TABLE feature_flags ALTER COLUMN key SET NOT NULL;
 -- id needs to be unique for .eq('id', ...) to be meaningful; key needs a
--- real unique constraint for ON CONFLICT (key) below to work at all — add
--- both if the table didn't already have them under some other name (a
--- duplicate under a different name is just a harmless redundant index).
+-- real unique index for ON CONFLICT (key) below to work at all — Postgres
+-- matches ON CONFLICT against any unique index on those columns, not
+-- specifically a named UNIQUE constraint, so a plain index is enough and
+-- sidesteps naming a constraint that might already exist under some other
+-- name (which raises a bare "already exists" that isn't even reliably the
+-- duplicate_object SQLSTATE — it was 42P07/duplicate_table in practice).
 CREATE UNIQUE INDEX IF NOT EXISTS feature_flags_id_idx ON feature_flags (id);
-DO $$
-BEGIN
-  ALTER TABLE feature_flags ADD CONSTRAINT feature_flags_key_key UNIQUE (key);
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+CREATE UNIQUE INDEX IF NOT EXISTS feature_flags_key_idx ON feature_flags (key);
 
 ALTER TABLE feature_flags ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS feature_flags_admin_write ON feature_flags;
