@@ -10,6 +10,7 @@ import { WikiTrackerModal } from '../wiki/WikiModals';
 import { lookupWikiEntry, getWikiMakes, getWikiModels } from '../../lib/wiki';
 import { getPref, savePref } from '../../lib/db/preferences';
 import { toastUndo } from '../../lib/toast';
+import { useFeatureFlags } from '../../lib/featureFlagsContext';
 
 function WikiAutocomplete({ value, onChange, fetchSuggestions, placeholder, style }) {
   const [suggestions, setSuggestions] = React.useState([]);
@@ -75,6 +76,7 @@ function WikiAutocomplete({ value, onChange, fetchSuggestions, placeholder, styl
 }
 
 function MachineForm({existing,onSave,onClose,company,units="metric",profile,isGuest}){
+  const {wiki:wikiFlagOn}=useFeatureFlags();
   const e=existing||{};
   // "New" includes template prefills (no id yet) — only true edits of a saved
   // machine start with spec sections collapsed.
@@ -3157,7 +3159,7 @@ function MachineForm({existing,onSave,onClose,company,units="metric",profile,isG
         </div>
         <div style={{...mdlF,gap:8,justifyContent:"stretch"}}>
           <button style={{...btnG,flex:1,minHeight:52,fontSize:13}} onClick={onClose}>Cancel</button>
-          {!isGuest&&existing&&profile&&make&&model&&<button style={{...btnG,flex:1,minHeight:52,fontSize:13}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
+          {wikiFlagOn&&!isGuest&&existing&&profile&&make&&model&&<button style={{...btnG,flex:1,minHeight:52,fontSize:13}} onClick={()=>setShowWikiModal(true)}>🌐 Wiki</button>}
           <button style={{...btnA,flex:1,minHeight:52,fontSize:13,fontWeight:700}} onClick={save}>{existing?"Save Changes":"Add Machine"}</button>
         </div>
       </div>

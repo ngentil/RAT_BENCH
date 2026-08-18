@@ -11,11 +11,13 @@ import { hl } from '../wiki/wikiSearchHighlight';
 import { WikiTrackerModal } from '../wiki/WikiModals';
 import { deletePhoto } from '../../lib/storage';
 import { toastError, toastUndo } from '../../lib/toast';
+import { useFeatureFlags } from '../../lib/featureFlagsContext';
 const PdfExportModal = lazy(() => import('../pdf/PdfExportModal'));
 import ServiceModal from '../ui/ServiceModal';
 import MachineForm from './MachineForm';
 import MoveToStoragePanel from './MoveToStoragePanel';
 function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,showGuide,onTutDismiss,onCardOpened,initialOpen,hideCollapse,onClose,searchQuery,searchTokens,onMoveToBench,onBookIn}){
+  const {wiki:wikiFlagOn}=useFeatureFlags();
   const [open,setOpen]=useState(!!initialOpen);
   const [svcs,setSvcs]=useState([]);
   const [loaded,setLoaded]=useState(false);
@@ -450,7 +452,7 @@ function MachineCard({machine,onUpdate,onDelete,company,profile,clients,isGuest,
           <div style={{padding:"0 10px 14px",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
             {withGuide("all specs\n& intervals",<button style={_jEdit} onClick={ev=>{ev.stopPropagation();setShowEdit(true);}}>Edit Machine</button>)}
             {withGuide("export\nspec sheet",<button style={_jPdf} onClick={ev=>{ev.stopPropagation();if(!loaded){getServices(m.id).then(s=>{setSvcs(s||[]);setLoaded(true);setShowPdfOpts(true);});}else setShowPdfOpts(true);}}>📄 PDF</button>)}
-            {!isGuest&&m.make&&m.model&&<button style={_jWiki} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
+            {wikiFlagOn&&!isGuest&&m.make&&m.model&&<button style={_jWiki} onClick={ev=>{ev.stopPropagation();setShowWiki(true);}}>🌐 Wiki</button>}
             {withGuide("public\nlink ↗",<button style={_jShare} onClick={ev=>{ev.stopPropagation();navigator.clipboard.writeText(window.location.origin+'/m/'+m.id);setCopied(true);setTimeout(()=>setCopied(false),2000);}}>{copied?'✓ Copied':'🔗 Share'}</button>)}
             {withGuide("customise\nlayout",<button style={_jLayout} onClick={ev=>{ev.stopPropagation();setShowExpandConfig(true);}}>⚙️ Layout</button>)}
             {withGuide("configure\nbadges",<button style={_jTile} onClick={ev=>{ev.stopPropagation();setShowConfig(true);}}>⚙️ Tile</button>)}
