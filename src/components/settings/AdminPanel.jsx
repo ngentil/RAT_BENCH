@@ -130,6 +130,13 @@ function OverviewTab() {
 const rowBtn  = { fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '10px 8px', borderRadius: 3, cursor: 'pointer', minHeight: 40, border: '1px solid #3a1a1a', background: 'none', color: '#884040' };
 const delBtn  = { ...rowBtn, minHeight: 44, background: '#2a0a0a', borderColor: RED, color: RED, fontSize: 11 };
 
+// Beta-testable flags an admin can override per user, independent of the
+// global feature_flags row — same keys as LAUNCH_FLAG_ORDER's wiki/
+// marketplace so a single override table (supabase/user_feature_flags.sql)
+// covers both. Extend this list as new features grow their own launch flag.
+const BETA_FLAG_KEYS = ['wiki', 'marketplace'];
+const BETA_FLAG_LABELS = { wiki: 'Wiki', marketplace: 'Marketplace' };
+
 function UsersTab() {
   const [search, setSearch]     = useState('');
   const [users,  setUsers]      = useState([]);
@@ -139,6 +146,16 @@ function UsersTab() {
   const [msg,    setMsg]        = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [selected, setSelected] = useState(() => new Set());
+  // { [user_id]: { wiki: true|false|undefined, marketplace: ... } } —
+  // undefined means "no override row", i.e. inherit the global flag.
+  const [overrides, setOverrides] = useState({});
+
+  const loadOverrides = useCallback(async () => {
+    const { data } = await supabase.from('user_feature_flags').select('user_id,flag_key,enabled');
+    const byUser = {};
+    for (const r of data || []) { (byUser[r.user_id] ??= {})[r.flag_key] = r.enabled; }
+    setOverrides(byUser);
+  }, []);
 
   const load = useCallback(async (q = '') => {
     setLoading(true);
@@ -146,9 +163,22 @@ function UsersTab() {
     setUsers(data || []);
     setLoadError(error ? error.message : null);
     setLoading(false);
-  }, []);
+    loadOverrides();
+  }, [loadOverrides]);
 
   useEffect(() => { load(); }, [load]);
+
+  // value is 'default' (remove any override — inherit the global flag),
+  // 'on', or 'off'. Optimistic local update so the dropdown doesn't flicker
+  // back to its old value while the write is in flight.
+  const setOverride = async (userId, flagKey, value) => {
+    setMsg(null);
+    setOverrides(prev => ({ ...prev, [userId]: { ...prev[userId], [flagKey]: value === 'default' ? undefined : value === 'on' } }));
+    const result = value === 'default'
+      ? await supabase.from('user_feature_flags').delete().eq('user_id', userId).eq('flag_key', flagKey)
+      : await supabase.from('user_feature_flags').upsert({ user_id: userId, flag_key: flagKey, enabled: value === 'on' }, { onConflict: 'user_id,flag_key' });
+    if (result.error) { setMsg({ ok: false, text: `Couldn't update ${flagKey} override: ${result.error.message}` }); loadOverrides(); }
+  };
 
   const deactivate = async (email) => {
     if (!confirm(`Deactivate ${email}?`)) return;
@@ -305,6 +335,26 @@ function UsersTab() {
               </div>
             </div>
           </div>
+          {!isProtected && (
+            <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+              {BETA_FLAG_KEYS.map(key => {
+                const ov = overrides[u.id]?.[key];
+                const value = ov === undefined ? 'default' : (ov ? 'on' : 'off');
+                return (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: MUT }}>
+                    {BETA_FLAG_LABELS[key]}
+                    <select value={value} onChange={e => setOverride(u.id, key, e.target.value)}
+                      style={{ ...inp, fontSize: 9, padding: '4px 6px', width: 'auto',
+                        color: value === 'on' ? GRN : value === 'off' ? RED : MUT }}>
+                      <option value="default">Default</option>
+                      <option value="on">On (beta)</option>
+                      <option value="off">Off</option>
+                    </select>
+                  </label>
+                );
+              })}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
             <button onClick={() => deactivate(u.email)} disabled={anyBusy} style={{ ...rowBtn, opacity: anyBusy ? 0.5 : 1 }}>
               Deactivate

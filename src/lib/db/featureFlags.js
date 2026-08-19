@@ -44,11 +44,30 @@ export async function getFeatureFlags() {
   const byKey = Object.fromEntries(data.map(r => [r.key, r]));
   const communityOn = byKey.community?.enabled ?? true;
   const memberCapOn = byKey.member_cap?.enabled ?? true;
-  return {
+  const base = {
     wiki: communityOn && (byKey.wiki?.enabled ?? DEFAULT_FLAGS.wiki),
     marketplace: communityOn && (byKey.marketplace?.enabled ?? DEFAULT_FLAGS.marketplace),
     // null when the flag's off — matches _member_cap()'s SQL side, which
     // then skips the cap check in join_company_by_invite() entirely.
     memberCap: memberCapOn ? (byKey.member_cap?.value ?? DEFAULT_FLAGS.memberCap) : null,
+  };
+
+  // Per-user beta overrides (supabase/user_feature_flags.sql) — an admin can
+  // flip wiki/marketplace on for a hand-picked tester even while the global
+  // flag (and the community master switch) is still off, to trial a feature
+  // before public launch. RLS self-scopes the read to the caller's own
+  // rows, so this is safe to run unconditionally, including for a logged-
+  // out visitor (no session = no rows = base flags stand as-is).
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return base;
+
+  const { data: overrides } = await supabase.from('user_feature_flags').select('flag_key,enabled').eq('user_id', session.user.id);
+  if (!overrides?.length) return base;
+
+  const overrideByKey = Object.fromEntries(overrides.map(r => [r.flag_key, r.enabled]));
+  return {
+    ...base,
+    wiki: overrideByKey.wiki ?? base.wiki,
+    marketplace: overrideByKey.marketplace ?? base.marketplace,
   };
 }
