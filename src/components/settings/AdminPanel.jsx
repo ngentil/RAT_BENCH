@@ -130,12 +130,13 @@ function OverviewTab() {
 const rowBtn  = { fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '10px 8px', borderRadius: 3, cursor: 'pointer', minHeight: 40, border: '1px solid #3a1a1a', background: 'none', color: '#884040' };
 const delBtn  = { ...rowBtn, minHeight: 44, background: '#2a0a0a', borderColor: RED, color: RED, fontSize: 11 };
 
-// Beta-testable flags an admin can override per user, independent of the
-// global feature_flags row — same keys as LAUNCH_FLAG_ORDER's wiki/
-// marketplace so a single override table (supabase/user_feature_flags.sql)
-// covers both. Extend this list as new features grow their own launch flag.
-const BETA_FLAG_KEYS = ['wiki', 'marketplace'];
-const BETA_FLAG_LABELS = { wiki: 'Wiki', marketplace: 'Marketplace' };
+// Per-user override dropdowns are driven live off whatever rows exist in
+// feature_flags (see loadFlagOptions below) rather than a hardcoded list —
+// any flag added in the Flags tab (built-in or via "+ New Flag") shows up
+// here automatically, no code change needed. member_cap is the one
+// exclusion: it holds a number, not an on/off switch, so a per-user
+// override wouldn't mean anything for it.
+const NON_OVERRIDABLE_FLAG_KEYS = ['member_cap'];
 
 function UsersTab() {
   const [search, setSearch]     = useState('');
@@ -149,12 +150,19 @@ function UsersTab() {
   // { [user_id]: { wiki: true|false|undefined, marketplace: ... } } —
   // undefined means "no override row", i.e. inherit the global flag.
   const [overrides, setOverrides] = useState({});
+  // [{key,label}] — every overridable row currently in feature_flags.
+  const [flagOptions, setFlagOptions] = useState([]);
 
   const loadOverrides = useCallback(async () => {
     const { data } = await supabase.from('user_feature_flags').select('user_id,flag_key,enabled');
     const byUser = {};
     for (const r of data || []) { (byUser[r.user_id] ??= {})[r.flag_key] = r.enabled; }
     setOverrides(byUser);
+  }, []);
+
+  const loadFlagOptions = useCallback(async () => {
+    const { data } = await supabase.from('feature_flags').select('key,label').order('created_at');
+    setFlagOptions((data || []).filter(f => !NON_OVERRIDABLE_FLAG_KEYS.includes(f.key)));
   }, []);
 
   const load = useCallback(async (q = '') => {
@@ -164,7 +172,8 @@ function UsersTab() {
     setLoadError(error ? error.message : null);
     setLoading(false);
     loadOverrides();
-  }, [loadOverrides]);
+    loadFlagOptions();
+  }, [loadOverrides, loadFlagOptions]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -335,15 +344,15 @@ function UsersTab() {
               </div>
             </div>
           </div>
-          {!isProtected && (
+          {!isProtected && flagOptions.length > 0 && (
             <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-              {BETA_FLAG_KEYS.map(key => {
-                const ov = overrides[u.id]?.[key];
+              {flagOptions.map(f => {
+                const ov = overrides[u.id]?.[f.key];
                 const value = ov === undefined ? 'default' : (ov ? 'on' : 'off');
                 return (
-                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: MUT }}>
-                    {BETA_FLAG_LABELS[key]}
-                    <select value={value} onChange={e => setOverride(u.id, key, e.target.value)}
+                  <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9, color: MUT }}>
+                    {f.label}
+                    <select value={value} onChange={e => setOverride(u.id, f.key, e.target.value)}
                       style={{ ...inp, fontSize: 9, padding: '4px 6px', width: 'auto',
                         color: value === 'on' ? GRN : value === 'off' ? RED : MUT }}>
                       <option value="default">Default</option>
